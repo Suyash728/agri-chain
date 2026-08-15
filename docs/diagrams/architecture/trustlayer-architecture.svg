@@ -1,0 +1,234 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 1080" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#8C97AE" flood-opacity="0.32"/>
+    </filter>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7.5,3 L0,6 Z" fill="#5A6579"/>
+    </marker>
+    <marker id="arG" markerWidth="10" markerHeight="10" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7.5,3 L0,6 Z" fill="#1F9D6B"/>
+    </marker>
+    <marker id="arR" markerWidth="10" markerHeight="10" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7.5,3 L0,6 Z" fill="#C0453B"/>
+    </marker>
+    <marker id="arT" markerWidth="10" markerHeight="10" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7.5,3 L0,6 Z" fill="#17879E"/>
+    </marker>
+  </defs>
+
+  <rect width="1480" height="1080" fill="#FFFFFF"/>
+
+  <!-- ===== TITLE ===== -->
+  <text x="40" y="50" font-size="29" font-weight="bold" fill="#111834">Blockchain Traceability with an AI Trust Layer — System Architecture</text>
+  <text x="40" y="78" font-size="15.5" fill="#5A6579">Perishable-goods cold chain &#183; layers mapped to the survey&#8217;s literature phases; callouts mark the research gaps addressed</text>
+
+  <!-- ===== LAYER 1: PHYSICAL / IoT ===== -->
+  <rect x="40" y="104" width="1000" height="176" rx="13" fill="#F2F7FC" stroke="#BFD3E6" filter="url(#s)"/>
+  <text x="64" y="132" font-size="15" font-weight="bold" fill="#17879E">LAYER 1 &#183; DATA CAPTURE (IoT)</text>
+  <text x="330" y="132" font-size="12.5" fill="#6B7280">&#8592; Survey Phase II: IoT, Digital Twins &amp; Infrastructure Integration</text>
+
+  <rect x="64" y="146" width="290" height="116" rx="10" fill="#FFFFFF" stroke="#17879E" stroke-width="1.6"/>
+  <text x="82" y="174" font-size="14.5" font-weight="bold" fill="#1A1F2E">Simulated sensor fleet &#9733;</text>
+  <text x="82" y="197" font-size="12" fill="#3E4658">N virtual trackers on real routes</text>
+  <text x="82" y="216" font-size="12" fill="#3E4658">emit: lat, lng, temp, timestamp</text>
+  <text x="82" y="240" font-size="11.5" fill="#C0453B" font-weight="bold">+ fault injection: GPS spoof,</text>
+  <text x="82" y="256" font-size="11.5" fill="#C0453B" font-weight="bold">temp spike, dropout, replay</text>
+
+  <rect x="372" y="146" width="250" height="116" rx="10" fill="#FFFFFF" stroke="#9AA6BF" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <text x="390" y="174" font-size="14.5" font-weight="bold" fill="#5A6579">Optional: 1 real device</text>
+  <text x="390" y="197" font-size="12" fill="#5A6579">ESP32 + NEO-6M GPS</text>
+  <text x="390" y="216" font-size="12" fill="#5A6579">+ DHT22 temperature</text>
+  <text x="390" y="240" font-size="11.5" fill="#8A5A00">proof of viability only &#8212;</text>
+  <text x="390" y="256" font-size="11.5" fill="#8A5A00">not the evaluation backbone</text>
+
+  <rect x="640" y="146" width="376" height="116" rx="10" fill="#0E1730"/>
+  <text x="660" y="174" font-size="14.5" font-weight="bold" fill="#17BEBB">Why simulation is the backbone</text>
+  <text x="660" y="199" font-size="12" fill="#C9D6F0">The AI layer must be *evaluated* against</text>
+  <text x="660" y="218" font-size="12" fill="#C9D6F0">controllable, repeatable, labelled faults.</text>
+  <text x="660" y="243" font-size="12" fill="#F5A623">A real sensor cannot spoof itself on cue.</text>
+
+  <!-- transport arrow -->
+  <line x1="540" y1="282" x2="540" y2="322" stroke="#5A6579" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="552" y="308" font-size="12.5" fill="#5A6579">MQTT / HTTPS telemetry</text>
+
+  <!-- ===== LAYER 2: AI TRUST LAYER ===== -->
+  <rect x="40" y="326" width="1000" height="212" rx="13" fill="#FDF1F0" stroke="#F0BDB8" stroke-width="1.6" filter="url(#s)"/>
+  <text x="64" y="354" font-size="15" font-weight="bold" fill="#C0453B">LAYER 2 &#183; AI TRUST LAYER  &#9733; OUR RESEARCH CONTRIBUTION</text>
+  <text x="640" y="354" font-size="12.5" fill="#6B7280">&#8592; addresses Gap 5: Oracle &amp; off-chain data trust</text>
+
+  <rect x="64" y="368" width="252" height="150" rx="10" fill="#FFFFFF" stroke="#C0453B" stroke-width="1.5"/>
+  <text x="82" y="396" font-size="14" font-weight="bold" fill="#1A1F2E">Ingestion &#183; FastAPI</text>
+  <text x="82" y="419" font-size="12" fill="#3E4658">validate schema, buffer</text>
+  <text x="82" y="438" font-size="12" fill="#3E4658">time-series window per device</text>
+  <text x="82" y="462" font-size="12" fill="#3E4658">device auth / signature check</text>
+  <text x="82" y="494" font-size="11.5" fill="#6B7280">Python &#183; MQTT client</text>
+
+  <rect x="334" y="368" width="300" height="150" rx="10" fill="#241018" stroke="#C0453B" stroke-width="1.8"/>
+  <text x="354" y="396" font-size="14" font-weight="bold" fill="#FFFFFF">Anomaly detection model</text>
+  <text x="354" y="420" font-size="12" fill="#C9D6F0">v1: Isolation Forest + physical</text>
+  <text x="354" y="438" font-size="12" fill="#C9D6F0">bounds (speed/temp plausibility)</text>
+  <text x="354" y="462" font-size="12" fill="#C9D6F0">v2: LSTM-autoencoder on the</text>
+  <text x="354" y="480" font-size="12" fill="#C9D6F0">sensor time series</text>
+  <text x="354" y="505" font-size="11.5" fill="#F5A623">&#8594; anomaly score per reading</text>
+
+  <rect x="652" y="368" width="364" height="150" rx="10" fill="#FFFFFF" stroke="#C0453B" stroke-width="1.5"/>
+  <text x="672" y="396" font-size="14" font-weight="bold" fill="#1A1F2E">Verdict &amp; routing</text>
+  <rect x="672" y="410" width="150" height="40" rx="7" fill="#E6F7F3" stroke="#1F9D6B"/>
+  <text x="686" y="435" font-size="12.5" font-weight="bold" fill="#0E7A63">VALID &#8594; on-chain</text>
+  <rect x="836" y="410" width="164" height="40" rx="7" fill="#FDECEC" stroke="#C0453B"/>
+  <text x="850" y="435" font-size="12.5" font-weight="bold" fill="#C0453B">ANOMALOUS &#8594; quarantine</text>
+  <text x="672" y="472" font-size="12" fill="#3E4658">Rejected data never becomes immutable.</text>
+  <text x="672" y="493" font-size="12" fill="#3E4658">Quarantine stored off-chain with reason</text>
+  <text x="672" y="511" font-size="12" fill="#3E4658">code + audit trail for review.</text>
+
+  <!-- arrows within layer 2 -->
+  <line x1="318" y1="443" x2="332" y2="443" stroke="#5A6579" stroke-width="2.2" marker-end="url(#ar)"/>
+  <line x1="636" y1="443" x2="650" y2="443" stroke="#5A6579" stroke-width="2.2" marker-end="url(#ar)"/>
+
+  <!-- valid path down -->
+  <line x1="746" y1="540" x2="746" y2="584" stroke="#1F9D6B" stroke-width="2.8" marker-end="url(#arG)"/>
+  <text x="758" y="568" font-size="12.5" fill="#1F9D6B" font-weight="bold">validated events only</text>
+  <!-- quarantine path right-down to offchain -->
+  <path d="M1000,490 L1024,490 L1024,760 L1058,760" fill="none" stroke="#C0453B" stroke-width="2.4" stroke-dasharray="6 5" marker-end="url(#arR)"/>
+  <text x="1024" y="852" font-size="11.5" fill="#C0453B" text-anchor="middle">quarantined</text>
+  <text x="1024" y="868" font-size="11.5" fill="#C0453B" text-anchor="middle">readings</text>
+
+  <!-- ===== LAYER 3: ORACLE + BLOCKCHAIN ===== -->
+  <rect x="40" y="588" width="1000" height="252" rx="13" fill="#F1EEFA" stroke="#C9BEE8" stroke-width="1.6" filter="url(#s)"/>
+  <text x="64" y="616" font-size="15" font-weight="bold" fill="#5B4B9E">LAYER 3 &#183; BLOCKCHAIN &amp; SMART CONTRACTS</text>
+  <text x="470" y="616" font-size="12.5" fill="#6B7280">&#8592; Survey Phases I &amp; III: Blockchain foundations &#183; Smart contracts &amp; governance</text>
+
+  <rect x="64" y="630" width="216" height="94" rx="10" fill="#FFFFFF" stroke="#5B4B9E" stroke-width="1.5"/>
+  <text x="82" y="658" font-size="14" font-weight="bold" fill="#1A1F2E">Oracle writer</text>
+  <text x="82" y="681" font-size="12" fill="#3E4658">signs &amp; submits txn</text>
+  <text x="82" y="700" font-size="12" fill="#3E4658">batches to cut gas</text>
+  <text x="82" y="716" font-size="11.5" fill="#6B7280">ethers.js &#183; backend wallet</text>
+
+  <!-- contracts cluster -->
+  <rect x="298" y="630" width="718" height="190" rx="10" fill="#FFFFFF" stroke="#5B4B9E" stroke-width="1.5"/>
+  <text x="318" y="656" font-size="14" font-weight="bold" fill="#1A1F2E">Smart contracts &#183; Solidity ^0.8 on Polygon Amoy (chain ID 80002)</text>
+
+  <rect x="318" y="668" width="216" height="66" rx="8" fill="#F1EEFA" stroke="#B7A9DC"/>
+  <text x="332" y="690" font-size="12.5" font-weight="bold" fill="#3B2E70">ProductRegistry</text>
+  <text x="332" y="708" font-size="11.5" fill="#4A4160">batch/lot identity, origin,</text>
+  <text x="332" y="724" font-size="11.5" fill="#4A4160">metadata CID</text>
+
+  <rect x="548" y="668" width="216" height="66" rx="8" fill="#F1EEFA" stroke="#B7A9DC"/>
+  <text x="562" y="690" font-size="12.5" font-weight="bold" fill="#3B2E70">CustodyTransfer</text>
+  <text x="562" y="708" font-size="11.5" fill="#4A4160">farmer &#8594; warehouse &#8594;</text>
+  <text x="562" y="724" font-size="11.5" fill="#4A4160">dark store &#8594; consumer</text>
+
+  <rect x="778" y="668" width="222" height="66" rx="8" fill="#F1EEFA" stroke="#B7A9DC"/>
+  <text x="792" y="690" font-size="12.5" font-weight="bold" fill="#3B2E70">ColdChainMonitor</text>
+  <text x="792" y="708" font-size="11.5" fill="#4A4160">temp/location events,</text>
+  <text x="792" y="724" font-size="11.5" fill="#4A4160">breach flags + AI verdict</text>
+
+  <rect x="318" y="744" width="330" height="62" rx="8" fill="#EAF6F2" stroke="#1F9D6B"/>
+  <text x="332" y="766" font-size="12.5" font-weight="bold" fill="#0E7A63">AccessControl (OpenZeppelin roles)</text>
+  <text x="332" y="784" font-size="11.5" fill="#234038">SUPPLIER / TRANSPORTER / STORE / AUDITOR</text>
+  <text x="332" y="800" font-size="11" fill="#0E7A63">&#8594; addresses Gap 4: contract security</text>
+
+  <rect x="662" y="744" width="338" height="62" rx="8" fill="#FFF6E6" stroke="#F5A623"/>
+  <text x="676" y="766" font-size="12.5" font-weight="bold" fill="#8A5A00">On-chain = hashes + events only</text>
+  <text x="676" y="784" font-size="11.5" fill="#6B4A00">bulk telemetry stays off-chain (hybrid design)</text>
+  <text x="676" y="800" font-size="11" fill="#8A5A00">&#8594; addresses Gaps 1 &amp; 3: scalability, privacy</text>
+
+  <line x1="282" y1="677" x2="296" y2="677" stroke="#5A6579" stroke-width="2.2" marker-end="url(#ar)"/>
+
+  <!-- ===== LAYER 4: APPLICATION ===== -->
+  <rect x="40" y="874" width="1000" height="170" rx="13" fill="#EAF1FB" stroke="#BFD3E6" filter="url(#s)"/>
+  <text x="64" y="902" font-size="15" font-weight="bold" fill="#1C4E80">LAYER 4 &#183; APPLICATION (dApp)</text>
+  <text x="420" y="902" font-size="12.5" fill="#6B7280">&#8592; Survey Phase V: transparency for stakeholders &amp; consumers</text>
+
+  <rect x="64" y="916" width="228" height="110" rx="10" fill="#FFFFFF" stroke="#1C4E80" stroke-width="1.5"/>
+  <text x="82" y="944" font-size="13.5" font-weight="bold" fill="#1A1F2E">Traceability view</text>
+  <text x="82" y="966" font-size="11.5" fill="#3E4658">full farm-to-consumer</text>
+  <text x="82" y="984" font-size="11.5" fill="#3E4658">journey + cold-chain log</text>
+  <text x="82" y="1008" font-size="11.5" fill="#6B7280">Next.js 14 + ethers.js</text>
+
+  <rect x="310" y="916" width="228" height="110" rx="10" fill="#FFFFFF" stroke="#1C4E80" stroke-width="1.5"/>
+  <text x="328" y="944" font-size="13.5" font-weight="bold" fill="#1A1F2E">Inventory dashboard</text>
+  <text x="328" y="966" font-size="11.5" fill="#3E4658">stock by dark store,</text>
+  <text x="328" y="984" font-size="11.5" fill="#3E4658">expiry &amp; spoilage alerts</text>
+  <text x="328" y="1008" font-size="11.5" fill="#6B7280">the Blinkit/Zepto angle</text>
+
+  <rect x="556" y="916" width="228" height="110" rx="10" fill="#FFFFFF" stroke="#1C4E80" stroke-width="1.5"/>
+  <text x="574" y="944" font-size="13.5" font-weight="bold" fill="#1A1F2E">Consumer QR lookup</text>
+  <text x="574" y="966" font-size="11.5" fill="#3E4658">scan a pack &#8594; verified</text>
+  <text x="574" y="984" font-size="11.5" fill="#3E4658">provenance from chain</text>
+  <text x="574" y="1008" font-size="11.5" fill="#6B7280">public, no wallet needed</text>
+
+  <rect x="802" y="916" width="214" height="110" rx="10" fill="#FFFFFF" stroke="#1C4E80" stroke-width="1.5"/>
+  <text x="820" y="944" font-size="13.5" font-weight="bold" fill="#1A1F2E">Wallet &amp; roles</text>
+  <text x="820" y="966" font-size="11.5" fill="#3E4658">MetaMask connect,</text>
+  <text x="820" y="984" font-size="11.5" fill="#3E4658">role-gated actions</text>
+  <text x="820" y="1008" font-size="11.5" fill="#6B7280">wagmi / RainbowKit</text>
+
+  <line x1="540" y1="842" x2="540" y2="872" stroke="#5A6579" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="552" y="862" font-size="12" fill="#5A6579">reads on-chain state</text>
+
+  <!-- ===== RIGHT COLUMN: OFF-CHAIN STORAGE ===== -->
+  <rect x="1060" y="588" width="380" height="256" rx="13" fill="#F7F4EC" stroke="#E0D3B0" stroke-width="1.5" filter="url(#s)"/>
+  <text x="1082" y="616" font-size="15" font-weight="bold" fill="#8A5A00">OFF-CHAIN STORAGE (hybrid)</text>
+
+  <rect x="1082" y="630" width="336" height="90" rx="10" fill="#FFFFFF" stroke="#D8C48E"/>
+  <text x="1100" y="656" font-size="13.5" font-weight="bold" fill="#1A1F2E">Supabase (Postgres)</text>
+  <text x="1100" y="678" font-size="11.5" fill="#3E4658">raw telemetry history, inventory tables,</text>
+  <text x="1100" y="696" font-size="11.5" fill="#3E4658">quarantined readings + reason codes,</text>
+  <text x="1100" y="712" font-size="11.5" fill="#3E4658">accounts &amp; dashboard queries</text>
+
+  <rect x="1082" y="734" width="336" height="90" rx="10" fill="#FFFFFF" stroke="#D8C48E"/>
+  <text x="1100" y="760" font-size="13.5" font-weight="bold" fill="#1A1F2E">IPFS (Pinata / web3.storage)</text>
+  <text x="1100" y="782" font-size="11.5" fill="#3E4658">certificates, invoices, product images</text>
+  <text x="1100" y="800" font-size="11.5" fill="#3E4658">only the content hash (CID) goes</text>
+  <text x="1100" y="816" font-size="11.5" fill="#8A5A00">on-chain &#8212; keeps ledger small &amp; private</text>
+
+  <!-- link chain <-> ipfs -->
+  <path d="M1016,790 L1058,790" fill="none" stroke="#8A5A00" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+  <text x="1037" y="780" font-size="11" fill="#8A5A00" text-anchor="middle">CID</text>
+
+  <!-- ===== RIGHT COLUMN: RESEARCH GAPS ===== -->
+  <rect x="1060" y="104" width="380" height="452" rx="13" fill="#0E1730" filter="url(#s)"/>
+  <text x="1082" y="136" font-size="16" font-weight="bold" fill="#17BEBB">RESEARCH GAPS ADDRESSED</text>
+  <text x="1082" y="158" font-size="12" fill="#C9D6F0">(as identified in the survey)</text>
+
+  <rect x="1082" y="174" width="336" height="66" rx="9" fill="#18213F" stroke="#2C3A5E"/>
+  <text x="1098" y="198" font-size="12.5" font-weight="bold" fill="#FFFFFF">1 &#183; Scalability</text>
+  <text x="1098" y="219" font-size="11.5" fill="#C9D6F0">hybrid on/off-chain + batched writes;</text>
+  <text x="1098" y="234" font-size="11.5" fill="#C9D6F0">L2 (Polygon) not L1</text>
+
+  <rect x="1082" y="250" width="336" height="58" rx="9" fill="#18213F" stroke="#2C3A5E"/>
+  <text x="1098" y="274" font-size="12.5" font-weight="bold" fill="#FFFFFF">3 &#183; Privacy &amp; confidentiality</text>
+  <text x="1098" y="295" font-size="11.5" fill="#C9D6F0">hashes on-chain, sensitive data off-chain</text>
+
+  <rect x="1082" y="318" width="336" height="66" rx="9" fill="#18213F" stroke="#2C3A5E"/>
+  <text x="1098" y="342" font-size="12.5" font-weight="bold" fill="#FFFFFF">4 &#183; Smart-contract security</text>
+  <text x="1098" y="363" font-size="11.5" fill="#C9D6F0">OpenZeppelin AccessControl, role gating,</text>
+  <text x="1098" y="378" font-size="11.5" fill="#C9D6F0">Hardhat test suite (+ optional LLM audit)</text>
+
+  <rect x="1082" y="394" width="336" height="98" rx="9" fill="#123B34" stroke="#17BEBB" stroke-width="1.8"/>
+  <text x="1098" y="418" font-size="13" font-weight="bold" fill="#17BEBB">5 &#183; ORACLE / OFF-CHAIN DATA TRUST &#9733;</text>
+  <text x="1098" y="440" font-size="11.5" fill="#C9D6F0">&#8220;Blockchain guarantees the integrity of</text>
+  <text x="1098" y="456" font-size="11.5" fill="#C9D6F0">captured data, not its truthfulness.&#8221;</text>
+  <text x="1098" y="478" font-size="11.5" fill="#F5A623" font-weight="bold">&#8594; our AI trust layer is the answer</text>
+
+  <rect x="1082" y="502" width="336" height="40" rx="9" fill="#18213F" stroke="#2C3A5E"/>
+  <text x="1098" y="527" font-size="11.5" fill="#8A98BE">2 &#183; Interoperability &#8212; out of scope (noted as future work)</text>
+
+  <!-- ===== SDG FOOTER ===== -->
+  <rect x="1060" y="874" width="380" height="170" rx="13" fill="#F2F7FC" stroke="#BFD3E6" filter="url(#s)"/>
+  <text x="1082" y="902" font-size="15" font-weight="bold" fill="#1C4E80">UN SDG ALIGNMENT</text>
+  <rect x="1082" y="916" width="100" height="52" rx="8" fill="#DDA63A"/>
+  <text x="1132" y="940" font-size="12" font-weight="bold" fill="#FFFFFF" text-anchor="middle">SDG 2</text>
+  <text x="1132" y="958" font-size="10.5" fill="#FFFFFF" text-anchor="middle">Zero Hunger</text>
+  <rect x="1192" y="916" width="100" height="52" rx="8" fill="#BF8B2E"/>
+  <text x="1242" y="940" font-size="12" font-weight="bold" fill="#FFFFFF" text-anchor="middle">SDG 12</text>
+  <text x="1242" y="958" font-size="10.5" fill="#FFFFFF" text-anchor="middle">Responsible</text>
+  <rect x="1302" y="916" width="116" height="52" rx="8" fill="#FD6925"/>
+  <text x="1360" y="940" font-size="12" font-weight="bold" fill="#FFFFFF" text-anchor="middle">SDG 9</text>
+  <text x="1360" y="958" font-size="10.5" fill="#FFFFFF" text-anchor="middle">Infrastructure</text>
+  <text x="1082" y="994" font-size="11.5" fill="#3E4658">Reduces food loss via cold-chain accountability,</text>
+  <text x="1082" y="1012" font-size="11.5" fill="#3E4658">enables responsible consumption through verified</text>
+  <text x="1082" y="1030" font-size="11.5" fill="#3E4658">provenance, and hardens digital supply infrastructure.</text>
+</svg>

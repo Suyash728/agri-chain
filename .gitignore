@@ -1,0 +1,52 @@
+# ---------- Node / Next.js ----------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# ---------- Python / FastAPI ----------
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ---------- ML artifacts ----------
+*.pkl
+*.joblib
+*.h5
+
+# ---------- Solidity / Hardhat ----------
+artifacts/
+cache/
+typechain/
+typechain-types/
+deployments/localhost/
+.openzeppelin/
+
+# ---------- Secrets / env ----------
+.env
+.env.*
+!.env.example
+
+# ---------- Editors / OS ----------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.swp

@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 860" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <filter id="sd" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#8C97AE" flood-opacity="0.30"/>
+    </filter>
+    <marker id="a" markerWidth="10" markerHeight="10" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7.5,3 L0,6 Z" fill="#5A6579"/>
+    </marker>
+    <marker id="ag" markerWidth="10" markerHeight="10" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7.5,3 L0,6 Z" fill="#1F9D6B"/>
+    </marker>
+    <marker id="ao" markerWidth="10" markerHeight="10" refX="7.5" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L7.5,3 L0,6 Z" fill="#C77700"/>
+    </marker>
+  </defs>
+  <rect width="1240" height="860" fill="#FFFFFF"/>
+
+  <text x="40" y="48" font-size="27" font-weight="bold" fill="#111834">System Design — Simplified View</text>
+  <text x="40" y="75" font-size="15" fill="#5A6579">Four user roles &#183; the physical goods flow &#183; what the system records and verifies</text>
+
+  <!-- ===== ROW 1: THE FOUR ACTORS ===== -->
+  <text x="40" y="118" font-size="14" font-weight="bold" fill="#1C4E80">USERS &amp; PHYSICAL GOODS FLOW</text>
+
+  <!-- Farmer -->
+  <rect x="40" y="132" width="248" height="104" rx="12" fill="#E9F6EE" stroke="#1F9D6B" stroke-width="1.6" filter="url(#sd)"/>
+  <text x="62" y="162" font-size="17" font-weight="bold" fill="#0E5C3F">&#127793;  Farmer</text>
+  <text x="62" y="187" font-size="12.5" fill="#234038">registers a harvest batch</text>
+  <text x="62" y="206" font-size="12.5" fill="#234038">crop, quantity, origin, date</text>
+  <text x="62" y="225" font-size="12" fill="#0E7A63">sees consumer feedback &#8617;</text>
+
+  <!-- Warehouse -->
+  <rect x="328" y="132" width="248" height="104" rx="12" fill="#EAF1FB" stroke="#1C4E80" stroke-width="1.6" filter="url(#sd)"/>
+  <text x="350" y="162" font-size="17" font-weight="bold" fill="#12365C">&#127981;  Warehouse</text>
+  <text x="350" y="187" font-size="12.5" fill="#22364F">accepts &amp; stores the batch</text>
+  <text x="350" y="206" font-size="12.5" fill="#22364F">logs storage conditions</text>
+  <text x="350" y="225" font-size="12" fill="#1C4E80">confirms custody transfer</text>
+
+  <!-- Dark store / Retailer -->
+  <rect x="616" y="132" width="248" height="104" rx="12" fill="#F1EEFA" stroke="#5B4B9E" stroke-width="1.6" filter="url(#sd)"/>
+  <text x="638" y="162" font-size="17" font-weight="bold" fill="#3B2E70">&#127978;  Dark store / Retailer</text>
+  <text x="638" y="187" font-size="12.5" fill="#4A4160">receives stock, manages</text>
+  <text x="638" y="206" font-size="12.5" fill="#4A4160">inventory &amp; expiry</text>
+  <text x="638" y="225" font-size="12" fill="#5B4B9E">sells to consumer</text>
+
+  <!-- Consumer -->
+  <rect x="904" y="132" width="296" height="104" rx="12" fill="#FFF4E6" stroke="#C77700" stroke-width="1.6" filter="url(#sd)"/>
+  <text x="926" y="162" font-size="17" font-weight="bold" fill="#8A5300">&#128100;  Consumer</text>
+  <text x="926" y="187" font-size="12.5" fill="#6B4A00">scans QR &#8594; sees full journey</text>
+  <text x="926" y="206" font-size="12.5" fill="#6B4A00">verifies origin &amp; freshness</text>
+  <text x="926" y="225" font-size="12.5" fill="#C77700" font-weight="bold">&#11088; reviews the batch</text>
+
+  <!-- goods flow arrows -->
+  <line x1="290" y1="184" x2="326" y2="184" stroke="#5A6579" stroke-width="2.6" marker-end="url(#a)"/>
+  <line x1="578" y1="184" x2="614" y2="184" stroke="#5A6579" stroke-width="2.6" marker-end="url(#a)"/>
+  <line x1="866" y1="184" x2="902" y2="184" stroke="#5A6579" stroke-width="2.6" marker-end="url(#a)"/>
+  <text x="308" y="176" font-size="10.5" fill="#5A6579" text-anchor="middle">goods</text>
+  <text x="596" y="176" font-size="10.5" fill="#5A6579" text-anchor="middle">goods</text>
+  <text x="884" y="176" font-size="10.5" fill="#5A6579" text-anchor="middle">goods</text>
+
+  <!-- review feedback loop: consumer back to farmer -->
+  <path d="M1052,240 L1052,272 L164,272 L164,240" fill="none" stroke="#C77700" stroke-width="2.2" stroke-dasharray="7 5" marker-end="url(#ao)"/>
+  <rect x="470" y="256" width="300" height="32" rx="8" fill="#FFF4E6" stroke="#E0AA5F"/>
+  <text x="620" y="277" font-size="12.5" fill="#8A5300" text-anchor="middle" font-weight="bold">&#11088; review &amp; rating loops back to the farmer</text>
+
+  <!-- ===== ROW 2: THE SYSTEM ===== -->
+  <rect x="40" y="312" width="1160" height="242" rx="14" fill="#F7F9FC" stroke="#C7D2E6" stroke-width="1.5" filter="url(#sd)"/>
+  <text x="64" y="342" font-size="14" font-weight="bold" fill="#1A1F2E">THE SYSTEM — every actor interacts through one web app</text>
+
+  <!-- web app -->
+  <rect x="64" y="358" width="256" height="172" rx="11" fill="#FFFFFF" stroke="#1C4E80" stroke-width="1.6"/>
+  <text x="84" y="386" font-size="15" font-weight="bold" fill="#1A1F2E">Web App (dApp)</text>
+  <text x="84" y="410" font-size="12" fill="#3E4658">role-based login</text>
+  <text x="84" y="430" font-size="12" fill="#3E4658">batch registration &amp; handoff</text>
+  <text x="84" y="450" font-size="12" fill="#3E4658">inventory dashboard</text>
+  <text x="84" y="470" font-size="12" fill="#3E4658">QR scan &#8594; traceability view</text>
+  <text x="84" y="490" font-size="12" fill="#3E4658">review &amp; rating form</text>
+  <text x="84" y="514" font-size="11.5" fill="#6B7280">Next.js</text>
+
+  <!-- sensors -->
+  <rect x="344" y="358" width="230" height="172" rx="11" fill="#FFFFFF" stroke="#17879E" stroke-width="1.6"/>
+  <text x="364" y="386" font-size="15" font-weight="bold" fill="#1A1F2E">IoT Sensors</text>
+  <text x="364" y="410" font-size="12" fill="#3E4658">track the batch in transit</text>
+  <text x="364" y="430" font-size="12" fill="#3E4658">location + temperature</text>
+  <text x="364" y="450" font-size="12" fill="#3E4658">+ humidity, timestamps</text>
+  <text x="364" y="478" font-size="11.5" fill="#17879E" font-weight="bold">simulated fleet</text>
+  <text x="364" y="496" font-size="11.5" fill="#6B7280">(+ optional 1 real device)</text>
+
+  <!-- AI trust layer -->
+  <rect x="598" y="358" width="256" height="172" rx="11" fill="#241018" stroke="#C0453B" stroke-width="1.8"/>
+  <text x="618" y="386" font-size="15" font-weight="bold" fill="#FFFFFF">AI Trust Layer &#9733;</text>
+  <text x="618" y="410" font-size="12" fill="#C9D6F0">checks every sensor reading</text>
+  <text x="618" y="430" font-size="12" fill="#C9D6F0">before it is recorded</text>
+  <rect x="618" y="444" width="102" height="30" rx="6" fill="#123B34" stroke="#1F9D6B"/>
+  <text x="669" y="464" font-size="11.5" fill="#4ADE9B" text-anchor="middle" font-weight="bold">genuine &#10003;</text>
+  <rect x="730" y="444" width="106" height="30" rx="6" fill="#3A1414" stroke="#C0453B"/>
+  <text x="783" y="464" font-size="11.5" fill="#FF9A8C" text-anchor="middle" font-weight="bold">suspicious &#10007;</text>
+  <text x="618" y="498" font-size="11.5" fill="#F5A623">bad data never gets stored</text>
+  <text x="618" y="516" font-size="11.5" fill="#F5A623">permanently</text>
+
+  <!-- blockchain -->
+  <rect x="878" y="358" width="300" height="172" rx="11" fill="#FFFFFF" stroke="#5B4B9E" stroke-width="1.8"/>
+  <text x="898" y="386" font-size="15" font-weight="bold" fill="#1A1F2E">Blockchain</text>
+  <text x="898" y="410" font-size="12" fill="#3E4658">permanent, tamper-proof record</text>
+  <text x="898" y="434" font-size="12" fill="#4A4160">&#8226; batch identity &amp; origin</text>
+  <text x="898" y="454" font-size="12" fill="#4A4160">&#8226; who handed to whom, when</text>
+  <text x="898" y="474" font-size="12" fill="#4A4160">&#8226; condition &amp; breach alerts</text>
+  <text x="898" y="494" font-size="12" fill="#4A4160">&#8226; smart contracts enforce rules</text>
+  <text x="898" y="518" font-size="11.5" fill="#6B7280">Solidity on Polygon Amoy</text>
+
+  <!-- arrows in system row -->
+  <line x1="576" y1="444" x2="596" y2="444" stroke="#5A6579" stroke-width="2.4" marker-end="url(#a)"/>
+  <line x1="856" y1="444" x2="876" y2="444" stroke="#1F9D6B" stroke-width="2.6" marker-end="url(#ag)"/>
+  <text x="866" y="352" font-size="11" fill="#1F9D6B" text-anchor="middle" font-weight="bold">only verified</text>
+  <text x="866" y="340" font-size="11" fill="#1F9D6B" text-anchor="middle" font-weight="bold">data passes &#8594;</text>
+  <!-- app <-> chain -->
+  <path d="M192,536 L192,566 L1028,566 L1028,536" fill="none" stroke="#5B4B9E" stroke-width="2.2" marker-end="url(#a)"/>
+  <text x="610" y="584" font-size="12" fill="#5B4B9E" text-anchor="middle">the app reads &amp; writes the chain (role-gated)</text>
+
+  <!-- ===== ROW 3: STORAGE ===== -->
+  <rect x="40" y="614" width="566" height="206" rx="14" fill="#F7F4EC" stroke="#E0D3B0" stroke-width="1.5" filter="url(#sd)"/>
+  <text x="64" y="644" font-size="14" font-weight="bold" fill="#8A5A00">WHAT IS STORED WHERE  (hybrid design)</text>
+
+  <rect x="64" y="660" width="248" height="140" rx="10" fill="#FFFFFF" stroke="#B7A9DC"/>
+  <text x="84" y="686" font-size="13.5" font-weight="bold" fill="#3B2E70">On the blockchain</text>
+  <text x="84" y="710" font-size="12" fill="#4A4160">batch identity &amp; origin</text>
+  <text x="84" y="730" font-size="12" fill="#4A4160">custody transfers</text>
+  <text x="84" y="750" font-size="12" fill="#4A4160">condition/breach flags</text>
+  <text x="84" y="770" font-size="12" fill="#4A4160">hashes only &#8212; never bulk data</text>
+  <text x="84" y="791" font-size="11" fill="#6B7280">small, permanent, verifiable</text>
+
+  <rect x="336" y="660" width="248" height="140" rx="10" fill="#FFFFFF" stroke="#D8C48E"/>
+  <text x="356" y="686" font-size="13.5" font-weight="bold" fill="#8A5300">Off-chain (Supabase / IPFS)</text>
+  <text x="356" y="710" font-size="12" fill="#6B4A00">full sensor history</text>
+  <text x="356" y="730" font-size="12" fill="#6B4A00">inventory &amp; expiry tables</text>
+  <text x="356" y="750" font-size="12" fill="#6B4A00">consumer review text</text>
+  <text x="356" y="770" font-size="12" fill="#6B4A00">images, certificates (IPFS)</text>
+  <text x="356" y="791" font-size="11" fill="#6B7280">large, cheap, editable</text>
+
+  <!-- ===== ROW 3b: THE ONE-LINE IDEA ===== -->
+  <rect x="632" y="614" width="568" height="206" rx="14" fill="#0E1730" filter="url(#sd)"/>
+  <text x="658" y="646" font-size="15" font-weight="bold" fill="#17BEBB">THE CORE IDEA IN ONE LINE</text>
+  <text x="658" y="684" font-size="15" fill="#FFFFFF">A blockchain makes records</text>
+  <text x="658" y="708" font-size="15" font-weight="bold" fill="#FFFFFF">permanent &#8212; but permanence is</text>
+  <text x="658" y="732" font-size="15" font-weight="bold" fill="#FFFFFF">worthless if the data was wrong.</text>
+  <text x="658" y="766" font-size="14" fill="#C9D6F0">So we put an AI checkpoint in front of it,</text>
+  <text x="658" y="788" font-size="14" fill="#17BEBB" font-weight="bold">so only trustworthy data gets recorded forever.</text>
+</svg>
