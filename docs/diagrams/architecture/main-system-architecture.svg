@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 1230" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <filter id="s" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#8C97AE" flood-opacity="0.32"/>
+    </filter>
+    <marker id="ar" markerWidth="13" markerHeight="13" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#3E4658"/>
+    </marker>
+    <marker id="arG" markerWidth="13" markerHeight="13" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#1F9D6B"/>
+    </marker>
+    <marker id="arR" markerWidth="13" markerHeight="13" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#C0453B"/>
+    </marker>
+    <marker id="arB" markerWidth="13" markerHeight="13" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#8A5A00"/>
+    </marker>
+    <marker id="arN" markerWidth="13" markerHeight="13" refX="9" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L9,4 L0,8 Z" fill="#2D3E6B"/>
+    </marker>
+  </defs>
+
+  <rect width="1480" height="1230" fill="#FFFFFF"/>
+
+  <text x="40" y="50" font-size="30" font-weight="bold" fill="#111834">Blockchain Traceability with an AI Trust Layer — System Architecture</text>
+  <text x="40" y="79" font-size="16" fill="#5A6579">Decentralized IoT–Blockchain framework with customized smart contracts for agricultural supply chains</text>
+
+  <!-- ============ LAYER 1 · DATA CAPTURE ============ -->
+  <rect x="40" y="100" width="1400" height="140" rx="13" fill="#F2F7FC" stroke="#BFD3E6" stroke-width="1.6" filter="url(#s)"/>
+  <text x="64" y="128" font-size="16" font-weight="bold" fill="#17879E">LAYER 1 · DATA CAPTURE (IoT)</text>
+
+  <rect x="64" y="142" width="664" height="80" rx="10" fill="#FFFFFF" stroke="#17879E" stroke-width="1.8"/>
+  <text x="388" y="190" font-size="19" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Simulated Sensor Fleet</text>
+  <polygon points="512.0,166.0 514.2,171.9 520.6,172.2 515.6,176.2 517.3,182.3 512.0,178.8 506.7,182.3 508.4,176.2 503.4,172.2 509.8,171.9" fill="#17879E"/>
+
+  <rect x="752" y="142" width="664" height="80" rx="10" fill="#FFFFFF" stroke="#9AA6BF" stroke-width="1.6" stroke-dasharray="7 5"/>
+  <text x="1084" y="190" font-size="19" font-weight="bold" fill="#5A6579" text-anchor="middle">Physical Device (ESP32 + LTE + GNSS)</text>
+
+  <line x1="740" y1="244" x2="740" y2="290" stroke="#3E4658" stroke-width="3" marker-end="url(#ar)"/>
+  <rect x="756" y="252" width="196" height="22" rx="5" fill="#FFFFFF"/>
+  <text x="758" y="268" font-size="14.5" fill="#3E4658">MQTT / HTTPS telemetry</text>
+
+  <!-- ============ LAYER 2 · AI TRUST LAYER ============ -->
+  <rect x="40" y="296" width="1000" height="160" rx="13" fill="#FDF1F0" stroke="#F0BDB8" stroke-width="1.6" filter="url(#s)"/>
+  <text x="64" y="324" font-size="16" font-weight="bold" fill="#C0453B">LAYER 2 · AI TRUST LAYER — RESEARCH CONTRIBUTION</text>
+  <polygon points="546.0,304.0 548.2,309.9 554.6,310.2 549.6,314.2 551.3,320.3 546.0,316.8 540.7,320.3 542.4,314.2 537.4,310.2 543.8,309.9" fill="#C0453B"/>
+
+  <rect x="64" y="338" width="250" height="100" rx="10" fill="#FFFFFF" stroke="#C0453B" stroke-width="1.7"/>
+  <text x="189" y="395" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Ingestion · FastAPI</text>
+
+  <rect x="346" y="338" width="250" height="100" rx="10" fill="#241018" stroke="#C0453B" stroke-width="1.9"/>
+  <text x="471" y="385" font-size="18" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Anomaly Detection</text>
+  <text x="471" y="409" font-size="18" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Model</text>
+
+  <rect x="628" y="338" width="388" height="100" rx="10" fill="#FFFFFF" stroke="#C0453B" stroke-width="1.7"/>
+  <text x="822" y="366" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Verdict &amp; Routing</text>
+  <rect x="646" y="378" width="172" height="44" rx="7" fill="#E6F7F3" stroke="#1F9D6B" stroke-width="1.4"/>
+  <text x="732" y="406" font-size="14.5" font-weight="bold" fill="#0E7A63" text-anchor="middle">VALID → on-chain</text>
+  <rect x="830" y="378" width="170" height="44" rx="7" fill="#FDECEC" stroke="#C0453B" stroke-width="1.4"/>
+  <text x="915" y="399" font-size="14.5" font-weight="bold" fill="#C0453B" text-anchor="middle">ANOMALOUS</text>
+  <text x="915" y="415" font-size="14.5" font-weight="bold" fill="#C0453B" text-anchor="middle">→ quarantine</text>
+
+  <line x1="316" y1="388" x2="344" y2="388" stroke="#3E4658" stroke-width="3" marker-end="url(#ar)"/>
+  <line x1="598" y1="388" x2="626" y2="388" stroke="#3E4658" stroke-width="3" marker-end="url(#ar)"/>
+
+  <line x1="822" y1="458" x2="822" y2="500" stroke="#1F9D6B" stroke-width="3.2" marker-end="url(#arG)"/>
+  <rect x="838" y="466" width="176" height="22" rx="5" fill="#FFFFFF"/>
+  <text x="840" y="482" font-size="14.5" fill="#1F9D6B" font-weight="bold">validated events only</text>
+
+  <path d="M1016,400 L1050,400 L1050,370 L1076,370" fill="none" stroke="#C0453B" stroke-width="2.8" stroke-dasharray="7 5" marker-end="url(#arR)"/>
+
+  <!-- ============ LAYER 3 · BLOCKCHAIN ============ -->
+  <rect x="40" y="506" width="1000" height="230" rx="13" fill="#F1EEFA" stroke="#C9BEE8" stroke-width="1.6" filter="url(#s)"/>
+  <text x="64" y="534" font-size="16" font-weight="bold" fill="#5B4B9E">LAYER 3 · BLOCKCHAIN &amp; SMART CONTRACTS</text>
+
+  <rect x="64" y="550" width="184" height="60" rx="10" fill="#FFFFFF" stroke="#5B4B9E" stroke-width="1.7"/>
+  <text x="156" y="587" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Oracle Writer</text>
+
+  <rect x="282" y="548" width="734" height="172" rx="10" fill="#FFFFFF" stroke="#5B4B9E" stroke-width="1.7"/>
+  <text x="300" y="574" font-size="16" font-weight="bold" fill="#1A1F2E">Smart Contracts · Solidity ^0.8 on Polygon Amoy (chain ID 80002)</text>
+
+  <rect x="296" y="586" width="170" height="52" rx="8" fill="#F1EEFA" stroke="#B7A9DC" stroke-width="1.4"/>
+  <text x="381" y="618" font-size="15" font-weight="bold" fill="#3B2E70" text-anchor="middle">ProductRegistry</text>
+  <rect x="478" y="586" width="170" height="52" rx="8" fill="#F1EEFA" stroke="#B7A9DC" stroke-width="1.4"/>
+  <text x="563" y="618" font-size="15" font-weight="bold" fill="#3B2E70" text-anchor="middle">CustodyTransfer</text>
+  <rect x="660" y="586" width="170" height="52" rx="8" fill="#F1EEFA" stroke="#B7A9DC" stroke-width="1.4"/>
+  <text x="745" y="618" font-size="15" font-weight="bold" fill="#3B2E70" text-anchor="middle">ColdChainMonitor</text>
+  <rect x="842" y="586" width="170" height="52" rx="8" fill="#FFF6E6" stroke="#F5A623" stroke-width="1.6"/>
+  <text x="918" y="618" font-size="15" font-weight="bold" fill="#8A5A00" text-anchor="middle">PolicyConfig</text>
+  <polygon points="1000.0,610.0 1001.9,615.0 1007.1,615.2 1003.0,618.5 1004.7,623.8 1000.0,620.8 995.3,623.8 997.0,618.5 992.9,615.2 998.1,615.0" fill="#8A5A00"/>
+
+  <rect x="296" y="652" width="352" height="54" rx="8" fill="#EAF6F2" stroke="#1F9D6B" stroke-width="1.5"/>
+  <text x="472" y="685" font-size="16" font-weight="bold" fill="#0E7A63" text-anchor="middle">AccessControl · Role Registry</text>
+  <rect x="660" y="652" width="352" height="54" rx="8" fill="#F7F4EC" stroke="#D8C48E" stroke-width="1.5"/>
+  <text x="836" y="685" font-size="16" font-weight="bold" fill="#8A5A00" text-anchor="middle">On-chain = Hashes + Events Only</text>
+
+  <line x1="252" y1="580" x2="278" y2="580" stroke="#3E4658" stroke-width="3" marker-end="url(#ar)"/>
+
+  <!-- ============ OFF-CHAIN COLUMN ============ -->
+  <rect x="1080" y="296" width="360" height="440" rx="13" fill="#F7F4EC" stroke="#E0D3B0" stroke-width="1.6" filter="url(#s)"/>
+  <text x="1102" y="324" font-size="16" font-weight="bold" fill="#8A5A00">OFF-CHAIN SERVICES &amp; STORAGE</text>
+
+  <rect x="1102" y="340" width="316" height="80" rx="10" fill="#FDECEC" stroke="#E4A9A3" stroke-width="1.5"/>
+  <text x="1260" y="387" font-size="18" font-weight="bold" fill="#8C2F26" text-anchor="middle">Quarantine Store</text>
+
+  <rect x="1102" y="440" width="316" height="80" rx="10" fill="#FFFFFF" stroke="#D8C48E" stroke-width="1.5"/>
+  <text x="1260" y="487" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Event Indexer</text>
+
+  <rect x="1102" y="540" width="316" height="80" rx="10" fill="#FFFFFF" stroke="#D8C48E" stroke-width="1.5"/>
+  <text x="1260" y="587" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Supabase (Postgres)</text>
+
+  <rect x="1102" y="640" width="316" height="80" rx="10" fill="#FFFFFF" stroke="#D8C48E" stroke-width="1.5"/>
+  <text x="1260" y="687" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">IPFS (Pinata)</text>
+
+  <line x1="1260" y1="522" x2="1260" y2="538" stroke="#8A5A00" stroke-width="3" marker-end="url(#arB)"/>
+  <rect x="1274" y="524" width="62" height="18" rx="4" fill="#F7F4EC"/>
+  <text x="1278" y="537" font-size="13" fill="#8A5A00">mirror</text>
+
+  <path d="M1016,584 L1058,584 L1058,480 L1100,480" fill="none" stroke="#3E4658" stroke-width="2.8" marker-end="url(#ar)"/>
+  <rect x="1044" y="500" width="60" height="20" rx="4" fill="#F7F4EC"/>
+  <text x="1048" y="514" font-size="13.5" fill="#3E4658">events</text>
+
+  <path d="M1016,680 L1100,680" fill="none" stroke="#8A5A00" stroke-width="2.8" stroke-dasharray="6 4" marker-end="url(#arB)"/>
+  <rect x="1030" y="656" width="40" height="20" rx="4" fill="#F7F4EC"/>
+  <text x="1034" y="670" font-size="13.5" fill="#8A5A00">CID</text>
+
+  <!-- ============ LAYER 4 · APPLICATION ============ -->
+  <rect x="40" y="790" width="1400" height="140" rx="13" fill="#EAF1FB" stroke="#BFD3E6" stroke-width="1.6" filter="url(#s)"/>
+  <text x="64" y="818" font-size="16" font-weight="bold" fill="#1C4E80">LAYER 4 · APPLICATION (dApp)</text>
+
+  <rect x="64" y="832" width="320" height="80" rx="10" fill="#FFFFFF" stroke="#1C4E80" stroke-width="1.7"/>
+  <text x="224" y="879" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Traceability View</text>
+  <rect x="408" y="832" width="320" height="80" rx="10" fill="#FFFFFF" stroke="#1C4E80" stroke-width="1.7"/>
+  <text x="568" y="870" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Inventory &amp; Expiry</text>
+  <text x="568" y="892" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Dashboard</text>
+  <rect x="752" y="832" width="320" height="80" rx="10" fill="#FFFFFF" stroke="#1C4E80" stroke-width="1.7"/>
+  <text x="912" y="879" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Consumer QR Lookup</text>
+  <rect x="1096" y="832" width="320" height="80" rx="10" fill="#FFFFFF" stroke="#1C4E80" stroke-width="1.7"/>
+  <text x="1256" y="879" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Wallet &amp; Role Gating</text>
+
+  <line x1="400" y1="738" x2="400" y2="786" stroke="#3E4658" stroke-width="2.6" stroke-dasharray="7 5" marker-end="url(#ar)"/>
+  <rect x="414" y="748" width="140" height="22" rx="5" fill="#FFFFFF"/>
+  <text x="416" y="764" font-size="14.5" fill="#3E4658">verify on-chain</text>
+
+  <line x1="1260" y1="738" x2="1260" y2="786" stroke="#8A5A00" stroke-width="3.2" marker-end="url(#arB)"/>
+  <rect x="1274" y="748" width="154" height="22" rx="5" fill="#FFFFFF"/>
+  <text x="1276" y="764" font-size="14.5" fill="#8A5A00">dashboards read</text>
+
+  <line x1="740" y1="932" x2="740" y2="972" stroke="#3E4658" stroke-width="3" marker-end="url(#ar)"/>
+  <rect x="756" y="940" width="146" height="22" rx="5" fill="#FFFFFF"/>
+  <text x="758" y="956" font-size="14.5" fill="#3E4658">role-gated access</text>
+
+  <!-- ============ LAYER 5 · USERS ============ -->
+  <rect x="40" y="978" width="1400" height="222" rx="13" fill="#EEF2FA" stroke="#C5CFE4" stroke-width="1.6" filter="url(#s)"/>
+  <text x="64" y="1006" font-size="16" font-weight="bold" fill="#2D3E6B">LAYER 5 · USERS &amp; ACCESS CONTROL</text>
+
+  <rect x="64" y="1020" width="320" height="56" rx="10" fill="#FFFFFF" stroke="#2D3E6B" stroke-width="1.7"/>
+  <text x="224" y="1055" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Farmer</text>
+  <rect x="408" y="1020" width="320" height="56" rx="10" fill="#FFFFFF" stroke="#2D3E6B" stroke-width="1.7"/>
+  <text x="568" y="1055" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Logistics Partner</text>
+  <rect x="752" y="1020" width="320" height="56" rx="10" fill="#FFFFFF" stroke="#2D3E6B" stroke-width="1.7"/>
+  <text x="912" y="1055" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Retailer / Dark Store</text>
+  <rect x="1096" y="1020" width="320" height="56" rx="10" fill="#FFFFFF" stroke="#2D3E6B" stroke-width="1.7"/>
+  <text x="1256" y="1055" font-size="18" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Consumer</text>
+
+  <line x1="224" y1="1100" x2="1256" y2="1100" stroke="#2D3E6B" stroke-width="2.4"/>
+  <line x1="224" y1="1100" x2="224" y2="1080" stroke="#2D3E6B" stroke-width="2.4" marker-end="url(#arN)"/>
+  <line x1="568" y1="1100" x2="568" y2="1080" stroke="#2D3E6B" stroke-width="2.4" marker-end="url(#arN)"/>
+  <line x1="912" y1="1100" x2="912" y2="1080" stroke="#2D3E6B" stroke-width="2.4" marker-end="url(#arN)"/>
+  <line x1="1256" y1="1100" x2="1256" y2="1080" stroke="#2D3E6B" stroke-width="2.4" marker-end="url(#arN)"/>
+  <line x1="740" y1="1124" x2="740" y2="1100" stroke="#2D3E6B" stroke-width="2.4"/>
+
+  <rect x="418" y="1106" width="644" height="20" fill="#EEF2FA"/>
+  <text x="740" y="1120" font-size="13.5" fill="#2D3E6B" text-anchor="middle">manages accounts · assigns on-chain roles · configures crop policies</text>
+
+  <rect x="600" y="1124" width="280" height="56" rx="10" fill="#0E1730" stroke="#2D3E6B" stroke-width="1.7"/>
+  <text x="740" y="1159" font-size="18" font-weight="bold" fill="#17BEBB" text-anchor="middle">ADMIN</text>
+</svg>

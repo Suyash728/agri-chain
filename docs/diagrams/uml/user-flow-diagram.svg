@@ -1,0 +1,228 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1290" font-family="Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L6.5,3 L0,6 Z" fill="#333333"/>
+    </marker>
+  </defs>
+
+  <rect width="1700" height="1290" fill="#FFFFFF"/>
+
+  <text x="850" y="42" font-size="26" font-weight="bold" fill="#111834" text-anchor="middle">User Flow Diagram — All Actor Types</text>
+
+  <!-- START -->
+  <rect x="750" y="66" width="200" height="52" rx="26" fill="#E8F5EC" stroke="#2E7D45" stroke-width="2"/>
+  <text x="850" y="99" font-size="19" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Start</text>
+  <line x1="850" y1="118" x2="850" y2="146" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <!-- DECISION -->
+  <path d="M850,150 L1140,215 L850,280 L560,215 Z" fill="#FDF3D8" stroke="#D9A520" stroke-width="2"/>
+  <text x="850" y="223" font-size="20" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Who is the user?</text>
+
+  <!-- BUS -->
+  <line x1="190" y1="300" x2="1510" y2="300" stroke="#333333" stroke-width="2"/>
+  <line x1="850" y1="280" x2="850" y2="300" stroke="#333333" stroke-width="2"/>
+  <line x1="190" y1="300" x2="190" y2="336" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="520" y1="300" x2="520" y2="336" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="850" y1="300" x2="850" y2="336" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="1180" y1="300" x2="1180" y2="336" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="1510" y1="300" x2="1510" y2="336" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <text x="190" y="292" font-size="16" font-weight="bold" fill="#2D3E6B" text-anchor="middle">Admin</text>
+  <text x="520" y="292" font-size="16" font-weight="bold" fill="#1F7A4C" text-anchor="middle">Farmer</text>
+  <text x="838" y="292" font-size="16" font-weight="bold" fill="#1C5E9E" text-anchor="end">Logistics Partner</text>
+  <text x="1180" y="292" font-size="16" font-weight="bold" fill="#B87309" text-anchor="middle">Retailer / Dark Store</text>
+  <text x="1510" y="292" font-size="16" font-weight="bold" fill="#0E7A70" text-anchor="middle">Consumer</text>
+
+  <!-- ============ ADMIN COLUMN (x=50, center 190) ============ -->
+  <rect x="50" y="340" width="280" height="64" rx="10" fill="#EEF1F8" stroke="#2D3E6B" stroke-width="1.8"/>
+  <text x="190" y="379" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Login / Connect Wallet</text>
+  <line x1="190" y1="404" x2="190" y2="434" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="50" y="438" width="280" height="64" rx="10" fill="#EEF1F8" stroke="#2D3E6B" stroke-width="1.8"/>
+  <text x="190" y="477" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Admin Dashboard</text>
+  <line x1="190" y1="502" x2="190" y2="532" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="50" y="536" width="280" height="64" rx="10" fill="#EEF1F8" stroke="#2D3E6B" stroke-width="1.8"/>
+  <text x="190" y="566" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Approve Accounts &amp;</text>
+  <text x="190" y="587" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Assign On-Chain Roles</text>
+  <line x1="190" y1="600" x2="190" y2="630" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="50" y="634" width="280" height="64" rx="10" fill="#FFF6E6" stroke="#B87309" stroke-width="1.8"/>
+  <text x="190" y="664" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Configure Crop Policy</text>
+  <text x="190" y="685" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Thresholds</text>
+  <line x1="190" y1="698" x2="190" y2="728" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="50" y="732" width="280" height="64" rx="10" fill="#FDECEC" stroke="#C0453B" stroke-width="1.8"/>
+  <text x="190" y="762" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Review Quarantine</text>
+  <text x="190" y="783" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">&amp; Anomaly Alerts</text>
+  <line x1="190" y1="796" x2="190" y2="826" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="50" y="830" width="280" height="64" rx="10" fill="#F1EEFA" stroke="#5B4B9E" stroke-width="1.8"/>
+  <text x="190" y="869" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Blockchain Update</text>
+  <line x1="190" y1="894" x2="190" y2="924" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="50" y="928" width="280" height="64" rx="10" fill="#EEF1F8" stroke="#2D3E6B" stroke-width="1.8"/>
+  <text x="190" y="967" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Confirmation</text>
+  <line x1="190" y1="992" x2="190" y2="1022" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="90" y="1026" width="200" height="52" rx="26" fill="#E8F5EC" stroke="#2E7D45" stroke-width="2"/>
+  <text x="190" y="1059" font-size="19" font-weight="bold" fill="#1A1F2E" text-anchor="middle">End</text>
+
+  <!-- ============ FARMER COLUMN (x=380, center 520) ============ -->
+  <rect x="380" y="340" width="280" height="64" rx="10" fill="#E8F5EC" stroke="#1F7A4C" stroke-width="1.8"/>
+  <text x="520" y="379" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Login / Connect Wallet</text>
+  <line x1="520" y1="404" x2="520" y2="434" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="380" y="438" width="280" height="64" rx="10" fill="#E8F5EC" stroke="#1F7A4C" stroke-width="1.8"/>
+  <text x="520" y="477" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Farmer Dashboard</text>
+  <line x1="520" y1="502" x2="520" y2="532" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="380" y="536" width="280" height="64" rx="10" fill="#E8F5EC" stroke="#1F7A4C" stroke-width="1.8"/>
+  <text x="520" y="566" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Register Farm &amp;</text>
+  <text x="520" y="587" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Crop Batch</text>
+  <line x1="520" y1="600" x2="520" y2="630" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="380" y="634" width="280" height="64" rx="10" fill="#E8F5EC" stroke="#1F7A4C" stroke-width="1.8"/>
+  <text x="520" y="664" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Attach IoT Device</text>
+  <text x="520" y="685" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">&amp; Generate Batch QR</text>
+  <line x1="520" y1="698" x2="520" y2="728" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="380" y="732" width="280" height="64" rx="10" fill="#FFF6E6" stroke="#B87309" stroke-width="1.8"/>
+  <text x="520" y="762" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Hand Over to Logistics</text>
+  <text x="520" y="783" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">(record sale price)</text>
+  <line x1="520" y1="796" x2="520" y2="826" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="380" y="830" width="280" height="64" rx="10" fill="#F1EEFA" stroke="#5B4B9E" stroke-width="1.8"/>
+  <text x="520" y="869" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Blockchain Update</text>
+  <line x1="520" y1="894" x2="520" y2="924" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="380" y="928" width="280" height="64" rx="10" fill="#E8F5EC" stroke="#1F7A4C" stroke-width="1.8"/>
+  <text x="520" y="958" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Confirmation &amp;</text>
+  <text x="520" y="979" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Earnings Update</text>
+  <line x1="520" y1="992" x2="520" y2="1022" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="420" y="1026" width="200" height="52" rx="26" fill="#E8F5EC" stroke="#2E7D45" stroke-width="2"/>
+  <text x="520" y="1059" font-size="19" font-weight="bold" fill="#1A1F2E" text-anchor="middle">End</text>
+
+  <!-- ============ LOGISTICS COLUMN (x=710, center 850) ============ -->
+  <rect x="710" y="340" width="280" height="64" rx="10" fill="#E7F1FB" stroke="#1C5E9E" stroke-width="1.8"/>
+  <text x="850" y="379" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Login / Connect Wallet</text>
+  <line x1="850" y1="404" x2="850" y2="434" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="710" y="438" width="280" height="64" rx="10" fill="#E7F1FB" stroke="#1C5E9E" stroke-width="1.8"/>
+  <text x="850" y="477" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Logistics Dashboard</text>
+  <line x1="850" y1="502" x2="850" y2="532" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="710" y="536" width="280" height="64" rx="10" fill="#E7F1FB" stroke="#1C5E9E" stroke-width="1.8"/>
+  <text x="850" y="575" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Accept Custody</text>
+  <line x1="850" y1="600" x2="850" y2="630" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="710" y="634" width="280" height="64" rx="10" fill="#FDF1F0" stroke="#C0453B" stroke-width="1.8"/>
+  <text x="850" y="664" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Transit — IoT Telemetry</text>
+  <text x="850" y="685" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Streams Continuously</text>
+  <line x1="850" y1="698" x2="850" y2="728" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="710" y="732" width="280" height="64" rx="10" fill="#FFF6E6" stroke="#B87309" stroke-width="1.8"/>
+  <text x="850" y="762" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Hand Over to Retailer</text>
+  <text x="850" y="783" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">(record freight price)</text>
+  <line x1="850" y1="796" x2="850" y2="826" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="710" y="830" width="280" height="64" rx="10" fill="#F1EEFA" stroke="#5B4B9E" stroke-width="1.8"/>
+  <text x="850" y="869" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Blockchain Update</text>
+  <line x1="850" y1="894" x2="850" y2="924" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="710" y="928" width="280" height="64" rx="10" fill="#E7F1FB" stroke="#1C5E9E" stroke-width="1.8"/>
+  <text x="850" y="958" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Confirmation &amp;</text>
+  <text x="850" y="979" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Breach Report</text>
+  <line x1="850" y1="992" x2="850" y2="1022" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="750" y="1026" width="200" height="52" rx="26" fill="#E8F5EC" stroke="#2E7D45" stroke-width="2"/>
+  <text x="850" y="1059" font-size="19" font-weight="bold" fill="#1A1F2E" text-anchor="middle">End</text>
+
+  <!-- ============ RETAILER COLUMN (x=1040, center 1180) ============ -->
+  <rect x="1040" y="340" width="280" height="64" rx="10" fill="#FFF4E2" stroke="#B87309" stroke-width="1.8"/>
+  <text x="1180" y="379" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Login / Connect Wallet</text>
+  <line x1="1180" y1="404" x2="1180" y2="434" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1040" y="438" width="280" height="64" rx="10" fill="#FFF4E2" stroke="#B87309" stroke-width="1.8"/>
+  <text x="1180" y="477" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Dark Store Dashboard</text>
+  <line x1="1180" y1="502" x2="1180" y2="532" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1040" y="536" width="280" height="64" rx="10" fill="#FFF4E2" stroke="#B87309" stroke-width="1.8"/>
+  <text x="1180" y="566" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Accept Custody &amp;</text>
+  <text x="1180" y="587" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Verify Cold-Chain Log</text>
+  <line x1="1180" y1="600" x2="1180" y2="630" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1040" y="634" width="280" height="64" rx="10" fill="#FFF4E2" stroke="#B87309" stroke-width="1.8"/>
+  <text x="1180" y="664" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Update Inventory &amp;</text>
+  <text x="1180" y="685" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Expiry Alerts</text>
+  <line x1="1180" y1="698" x2="1180" y2="728" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1040" y="732" width="280" height="64" rx="10" fill="#FFF6E6" stroke="#B87309" stroke-width="1.8"/>
+  <text x="1180" y="762" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Record Sale to Consumer</text>
+  <text x="1180" y="783" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">(record retail price)</text>
+  <line x1="1180" y1="796" x2="1180" y2="826" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1040" y="830" width="280" height="64" rx="10" fill="#F1EEFA" stroke="#5B4B9E" stroke-width="1.8"/>
+  <text x="1180" y="869" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Blockchain Update</text>
+  <line x1="1180" y1="894" x2="1180" y2="924" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1040" y="928" width="280" height="64" rx="10" fill="#FFF4E2" stroke="#B87309" stroke-width="1.8"/>
+  <text x="1180" y="967" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Confirmation</text>
+  <line x1="1180" y1="992" x2="1180" y2="1022" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1080" y="1026" width="200" height="52" rx="26" fill="#E8F5EC" stroke="#2E7D45" stroke-width="2"/>
+  <text x="1180" y="1059" font-size="19" font-weight="bold" fill="#1A1F2E" text-anchor="middle">End</text>
+
+  <!-- ============ CONSUMER COLUMN (x=1370, center 1510) ============ -->
+  <rect x="1370" y="340" width="280" height="64" rx="10" fill="#E4F5F3" stroke="#0E7A70" stroke-width="1.8"/>
+  <text x="1510" y="370" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Scan QR Code</text>
+  <text x="1510" y="391" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">(no wallet required)</text>
+  <line x1="1510" y1="404" x2="1510" y2="434" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1370" y="438" width="280" height="64" rx="10" fill="#E4F5F3" stroke="#0E7A70" stroke-width="1.8"/>
+  <text x="1510" y="477" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Retrieve Product Info</text>
+  <line x1="1510" y1="502" x2="1510" y2="532" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1370" y="536" width="280" height="64" rx="10" fill="#E4F5F3" stroke="#0E7A70" stroke-width="1.8"/>
+  <text x="1510" y="575" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Verify Blockchain Record</text>
+  <line x1="1510" y1="600" x2="1510" y2="630" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1370" y="634" width="280" height="64" rx="10" fill="#E4F5F3" stroke="#0E7A70" stroke-width="1.8"/>
+  <text x="1510" y="664" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">View Farm-to-Fork</text>
+  <text x="1510" y="685" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Journey</text>
+  <line x1="1510" y1="698" x2="1510" y2="728" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1370" y="732" width="280" height="64" rx="10" fill="#FFF6E6" stroke="#B87309" stroke-width="1.8"/>
+  <text x="1510" y="762" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">View Price Trail &amp;</text>
+  <text x="1510" y="783" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Farmer's Share</text>
+  <line x1="1510" y1="796" x2="1510" y2="826" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1370" y="830" width="280" height="64" rx="10" fill="#E4F5F3" stroke="#0E7A70" stroke-width="1.8"/>
+  <text x="1510" y="869" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Submit Review &amp; Rating</text>
+  <line x1="1510" y1="894" x2="1510" y2="924" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1370" y="928" width="280" height="64" rx="10" fill="#E4F5F3" stroke="#0E7A70" stroke-width="1.8"/>
+  <text x="1510" y="958" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">Feedback Routed</text>
+  <text x="1510" y="979" font-size="16" font-weight="bold" fill="#1A1F2E" text-anchor="middle">to Farmer</text>
+  <line x1="1510" y1="992" x2="1510" y2="1022" stroke="#333333" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="1410" y="1026" width="200" height="52" rx="26" fill="#E8F5EC" stroke="#2E7D45" stroke-width="2"/>
+  <text x="1510" y="1059" font-size="19" font-weight="bold" fill="#1A1F2E" text-anchor="middle">End</text>
+
+  <!-- ===== LEGEND ===== -->
+  <rect x="50" y="1110" width="1600" height="140" rx="12" fill="#F7F8FB" stroke="#D5DBE8" stroke-width="1.5"/>
+  <text x="74" y="1140" font-size="16" font-weight="bold" fill="#1A1F2E">Legend</text>
+
+  <rect x="74" y="1156" width="30" height="20" rx="5" fill="#F1EEFA" stroke="#5B4B9E" stroke-width="1.6"/>
+  <text x="116" y="1172" font-size="15" fill="#3E4658">Step writes an immutable record to Polygon Amoy</text>
+
+  <rect x="580" y="1156" width="30" height="20" rx="5" fill="#FFF6E6" stroke="#B87309" stroke-width="1.6"/>
+  <text x="622" y="1172" font-size="15" fill="#3E4658">Step records a price — feeds the profit-transparency trail</text>
+
+  <rect x="1160" y="1156" width="30" height="20" rx="5" fill="#FDF1F0" stroke="#C0453B" stroke-width="1.6"/>
+  <text x="1202" y="1172" font-size="15" fill="#3E4658">Step involves the AI trust layer</text>
+
+  <text x="74" y="1208" font-size="15" fill="#3E4658">Custody handoffs chain across columns: Farmer → Logistics Partner → Retailer / Dark Store → Consumer. Each handoff is a single on-chain</text>
+  <text x="74" y="1231" font-size="15" fill="#3E4658">CustodyTransfer transaction signed by the current holder, carrying the price paid. Only the Consumer path requires no wallet.</text>
+</svg>

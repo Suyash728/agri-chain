@@ -1,0 +1,176 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2324 2226" font-family="Arial, Helvetica, sans-serif">
+<rect width="2324" height="2226" fill="#FFFFFF"/>
+<defs><marker id="a" markerWidth="12" markerHeight="12" refX="9" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L9,4 L0,8 Z" fill="#2A2F3A"/></marker><marker id="ad" markerWidth="12" markerHeight="12" refX="9" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L9,4 L0,8" fill="none" stroke="#6B7280" stroke-width="1.5"/></marker><marker id="ag" markerWidth="12" markerHeight="12" refX="9" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L9,4 L0,8 Z" fill="#1F9D6B"/></marker><marker id="ar" markerWidth="12" markerHeight="12" refX="9" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L9,4 L0,8 Z" fill="#C0453B"/></marker></defs>
+<text x="1162" y="56" font-size="32" font-weight="bold" fill="#111834" text-anchor="middle">Sequence Diagram — Farm-to-Fork Traceability with AI Trust Layer</text>
+<line x1="148" y1="166" x2="148" y2="2130" stroke="#2D3E6B" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="70" y="104" width="156" height="62" rx="9" fill="#EEF1F8" stroke="#2D3E6B" stroke-width="2"/>
+<text x="148" y="142" font-size="17" font-weight="bold" fill="#2D3E6B" text-anchor="middle">Admin</text>
+<line x1="330" y1="166" x2="330" y2="2130" stroke="#1F7A4C" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="252" y="104" width="156" height="62" rx="9" fill="#E8F5EC" stroke="#1F7A4C" stroke-width="2"/>
+<text x="330" y="142" font-size="17" font-weight="bold" fill="#1F7A4C" text-anchor="middle">Farmer</text>
+<line x1="512" y1="166" x2="512" y2="2130" stroke="#1C5E9E" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="434" y="104" width="156" height="62" rx="9" fill="#E7F1FB" stroke="#1C5E9E" stroke-width="2"/>
+<text x="512" y="131" font-size="17" font-weight="bold" fill="#1C5E9E" text-anchor="middle">Logistics</text>
+<text x="512" y="151" font-size="17" font-weight="bold" fill="#1C5E9E" text-anchor="middle">Partner</text>
+<line x1="694" y1="166" x2="694" y2="2130" stroke="#B87309" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="616" y="104" width="156" height="62" rx="9" fill="#FFF4E2" stroke="#B87309" stroke-width="2"/>
+<text x="694" y="142" font-size="17" font-weight="bold" fill="#B87309" text-anchor="middle">Retailer</text>
+<line x1="876" y1="166" x2="876" y2="2130" stroke="#0E7A70" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="798" y="104" width="156" height="62" rx="9" fill="#E4F5F3" stroke="#0E7A70" stroke-width="2"/>
+<text x="876" y="142" font-size="17" font-weight="bold" fill="#0E7A70" text-anchor="middle">Consumer</text>
+<line x1="1058" y1="166" x2="1058" y2="2130" stroke="#1C4E80" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="980" y="104" width="156" height="62" rx="9" fill="#EAF1FB" stroke="#1C4E80" stroke-width="2"/>
+<text x="1058" y="142" font-size="17" font-weight="bold" fill="#1C4E80" text-anchor="middle">dApp</text>
+<line x1="1240" y1="166" x2="1240" y2="2130" stroke="#17879E" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="1162" y="104" width="156" height="62" rx="9" fill="#F2F7FC" stroke="#17879E" stroke-width="2"/>
+<text x="1240" y="142" font-size="17" font-weight="bold" fill="#17879E" text-anchor="middle">IoT Device</text>
+<line x1="1422" y1="166" x2="1422" y2="2130" stroke="#C0453B" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="1344" y="104" width="156" height="62" rx="9" fill="#FDF1F0" stroke="#C0453B" stroke-width="2"/>
+<text x="1422" y="131" font-size="17" font-weight="bold" fill="#C0453B" text-anchor="middle">AI</text>
+<text x="1422" y="151" font-size="17" font-weight="bold" fill="#C0453B" text-anchor="middle">Trust Layer</text>
+<line x1="1604" y1="166" x2="1604" y2="2130" stroke="#8A5A00" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="1526" y="104" width="156" height="62" rx="9" fill="#F7F4EC" stroke="#8A5A00" stroke-width="2"/>
+<text x="1604" y="142" font-size="17" font-weight="bold" fill="#8A5A00" text-anchor="middle">Supabase</text>
+<line x1="1786" y1="166" x2="1786" y2="2130" stroke="#5B4B9E" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="1708" y="104" width="156" height="62" rx="9" fill="#F1EEFA" stroke="#5B4B9E" stroke-width="2"/>
+<text x="1786" y="131" font-size="17" font-weight="bold" fill="#5B4B9E" text-anchor="middle">Oracle</text>
+<text x="1786" y="151" font-size="17" font-weight="bold" fill="#5B4B9E" text-anchor="middle">Writer</text>
+<line x1="1968" y1="166" x2="1968" y2="2130" stroke="#3F4CA8" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="1890" y="104" width="156" height="62" rx="9" fill="#EBEDFA" stroke="#3F4CA8" stroke-width="2"/>
+<text x="1968" y="142" font-size="17" font-weight="bold" fill="#3F4CA8" text-anchor="middle">Blockchain</text>
+<line x1="2150" y1="166" x2="2150" y2="2130" stroke="#8A5A00" stroke-width="1.6" stroke-dasharray="7 6" opacity="0.55"/>
+<rect x="2072" y="104" width="156" height="62" rx="9" fill="#F7F4EC" stroke="#8A5A00" stroke-width="2"/>
+<text x="2150" y="142" font-size="17" font-weight="bold" fill="#8A5A00" text-anchor="middle">Indexer</text>
+<rect x="1294" y="1086" width="370" height="96" rx="6" fill="#FFFFFF" fill-opacity="0.55" stroke="#8A93A8" stroke-width="1.5" stroke-dasharray="6 4"/>
+<path d="M1294,1086 h64 v22 h-56 l-8,-8 Z" fill="#EDF0F5" stroke="#8A93A8" stroke-width="1.3"/>
+<text x="1308" y="1102" font-size="14" font-weight="bold" fill="#4A5265">alt</text>
+<line x1="1294" y1="1139" x2="1664" y2="1139" stroke="#8A93A8" stroke-width="1.2" stroke-dasharray="5 4"/>
+<rect x="46" y="200" width="2232" height="30" rx="7" fill="#F0F3F9" stroke="#D5DBE8" stroke-width="1.2"/>
+<text x="62" y="221" font-size="18" font-weight="bold" fill="#2D3E6B">1 · Setup</text>
+<text x="280" y="221" font-size="17" fill="#6B7280">Admin grants on-chain roles and configures crop policy</text>
+<line x1="148" y1="264" x2="1058" y2="264" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="469" y="242" width="268" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="603" y="257" font-size="17" fill="#2A2F3A" text-anchor="middle">assign roles · set crop policy</text>
+<line x1="1058" y1="310" x2="1968" y2="310" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1400" y="288" width="226" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1513" y="303" font-size="17" fill="#2A2F3A" text-anchor="middle">grantRole() · setPolicy()</text>
+<line x1="1968" y1="356" x2="2150" y2="356" stroke="#6B7280" stroke-width="2" stroke-dasharray="8 5" marker-end="url(#ad)"/>
+<rect x="1954" y="334" width="209" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="2059" y="349" font-size="17" fill="#5A6579" text-anchor="middle">RoleGranted · PolicySet</text>
+<line x1="2150" y1="402" x2="1604" y2="402" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1844" y="380" width="66" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1877" y="395" font-size="17" fill="#2A2F3A" text-anchor="middle">mirror</text>
+<rect x="46" y="438" width="2232" height="30" rx="7" fill="#F0F3F9" stroke="#D5DBE8" stroke-width="1.2"/>
+<text x="62" y="459" font-size="18" font-weight="bold" fill="#2D3E6B">2 · Batch registration</text>
+<text x="280" y="459" font-size="17" fill="#6B7280">Farmer creates the batch identity</text>
+<line x1="330" y1="502" x2="1058" y2="502" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="627" y="480" width="134" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="694" y="495" font-size="17" fill="#2A2F3A" text-anchor="middle">register batch</text>
+<line x1="1058" y1="548" x2="1968" y2="548" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1442" y="526" width="142" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1513" y="541" font-size="17" fill="#2A2F3A" text-anchor="middle">registerBatch()</text>
+<line x1="1968" y1="594" x2="2150" y2="594" stroke="#6B7280" stroke-width="2" stroke-dasharray="8 5" marker-end="url(#ad)"/>
+<rect x="1988" y="572" width="142" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="2059" y="587" font-size="17" fill="#5A6579" text-anchor="middle">BatchRegistered</text>
+<line x1="1058" y1="640" x2="330" y2="640" stroke="#6B7280" stroke-width="2" stroke-dasharray="8 5" marker-end="url(#ad)"/>
+<rect x="631" y="618" width="125" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="694" y="633" font-size="17" fill="#5A6579" text-anchor="middle">batch ID + QR</text>
+<rect x="46" y="676" width="2232" height="30" rx="7" fill="#F0F3F9" stroke="#D5DBE8" stroke-width="1.2"/>
+<text x="62" y="697" font-size="18" font-weight="bold" fill="#2D3E6B">3 · Custody handoff</text>
+<text x="280" y="697" font-size="17" fill="#6B7280">Farmer → Logistics Partner · price recorded on-chain</text>
+<line x1="330" y1="740" x2="1058" y2="740" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="594" y="718" width="201" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="694" y="733" font-size="17" fill="#2A2F3A" text-anchor="middle">hand over + sale price</text>
+<line x1="1058" y1="786" x2="1968" y2="786" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1434" y="764" width="159" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1513" y="779" font-size="17" fill="#2A2F3A" text-anchor="middle">transferCustody()</text>
+<line x1="1968" y1="832" x2="2150" y2="832" stroke="#6B7280" stroke-width="2" stroke-dasharray="8 5" marker-end="url(#ad)"/>
+<rect x="1975" y="810" width="167" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="2059" y="825" font-size="17" fill="#5A6579" text-anchor="middle">CustodyTransferred</text>
+<rect x="46" y="868" width="2232" height="30" rx="7" fill="#F0F3F9" stroke="#D5DBE8" stroke-width="1.2"/>
+<text x="62" y="889" font-size="18" font-weight="bold" fill="#2D3E6B">4 · Transit</text>
+<text x="280" y="889" font-size="17" fill="#6B7280">loop — repeats for every sensor reading</text>
+<line x1="1240" y1="932" x2="1422" y2="932" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1231" y="910" width="201" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1331" y="925" font-size="17" fill="#2A2F3A" text-anchor="middle">signed reading + nonce</text>
+<line x1="1422" y1="978" x2="1604" y2="978" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1434" y="956" width="159" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1513" y="971" font-size="17" fill="#2A2F3A" text-anchor="middle">store raw reading</text>
+<line x1="1422" y1="1024" x2="1604" y2="1024" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1421" y="1002" width="184" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1513" y="1017" font-size="17" fill="#2A2F3A" text-anchor="middle">read crop thresholds</text>
+<path d="M1422,1056 h44 v26 h-44" fill="none" stroke="#2A2F3A" stroke-width="1.9" marker-end="url(#a)"/>
+<text x="1476" y="1076" font-size="17" fill="#2A2F3A">validate</text>
+<line x1="1422" y1="1116" x2="1604" y2="1116" stroke="#1F9D6B" stroke-width="2" marker-end="url(#ag)"/>
+<rect x="1400" y="1094" width="226" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1513" y="1109" font-size="17" fill="#0E7A63" font-weight="bold" text-anchor="middle">VALID — enqueue for chain</text>
+<line x1="1422" y1="1162" x2="1604" y2="1162" stroke="#C0453B" stroke-width="2" marker-end="url(#ar)"/>
+<rect x="1375" y="1140" width="276" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1513" y="1155" font-size="17" fill="#C0453B" font-weight="bold" text-anchor="middle">ANOMALOUS — quarantine + reason</text>
+<line x1="1786" y1="1208" x2="1604" y2="1208" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1611" y="1186" width="167" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1695" y="1201" font-size="17" fill="#2A2F3A" text-anchor="middle">claim queued batch</text>
+<line x1="1786" y1="1254" x2="1968" y2="1254" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1751" y="1232" width="251" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1877" y="1247" font-size="17" fill="#2A2F3A" text-anchor="middle">recordConditions() — batched</text>
+<line x1="1968" y1="1300" x2="2150" y2="1300" stroke="#6B7280" stroke-width="2" stroke-dasharray="8 5" marker-end="url(#ad)"/>
+<rect x="1912" y="1278" width="293" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="2059" y="1293" font-size="17" fill="#5A6579" text-anchor="middle">ConditionRecorded · BreachFlagged</text>
+<line x1="2150" y1="1346" x2="1604" y2="1346" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1844" y="1324" width="66" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1877" y="1339" font-size="17" fill="#2A2F3A" text-anchor="middle">mirror</text>
+<line x1="1604" y1="1392" x2="1058" y2="1392" stroke="#6B7280" stroke-width="2" stroke-dasharray="8 5" marker-end="url(#ad)"/>
+<rect x="1264" y="1370" width="134" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1331" y="1385" font-size="17" fill="#5A6579" text-anchor="middle">breach flagged</text>
+<line x1="1058" y1="1438" x2="512" y2="1438" stroke="#6B7280" stroke-width="2" stroke-dasharray="8 5" marker-end="url(#ad)"/>
+<rect x="710" y="1416" width="150" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="785" y="1431" font-size="17" fill="#5A6579" text-anchor="middle">cold-chain alert</text>
+<rect x="46" y="1474" width="2232" height="30" rx="7" fill="#F0F3F9" stroke="#D5DBE8" stroke-width="1.2"/>
+<text x="62" y="1495" font-size="18" font-weight="bold" fill="#2D3E6B">5 · Custody handoff</text>
+<text x="280" y="1495" font-size="17" fill="#6B7280">Logistics Partner → Retailer</text>
+<line x1="512" y1="1538" x2="1058" y2="1538" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="672" y="1516" width="226" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="785" y="1531" font-size="17" fill="#2A2F3A" text-anchor="middle">hand over + freight price</text>
+<line x1="1058" y1="1584" x2="1968" y2="1584" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1434" y="1562" width="159" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1513" y="1577" font-size="17" fill="#2A2F3A" text-anchor="middle">transferCustody()</text>
+<rect x="46" y="1620" width="2232" height="30" rx="7" fill="#F0F3F9" stroke="#D5DBE8" stroke-width="1.2"/>
+<text x="62" y="1641" font-size="18" font-weight="bold" fill="#2D3E6B">6 · Retail sale</text>
+<text x="280" y="1641" font-size="17" fill="#6B7280">Retailer closes the chain</text>
+<line x1="694" y1="1684" x2="1058" y2="1684" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="759" y="1662" width="234" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="876" y="1677" font-size="17" fill="#2A2F3A" text-anchor="middle">record sale + retail price</text>
+<line x1="1058" y1="1730" x2="1968" y2="1730" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1417" y="1708" width="192" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1513" y="1723" font-size="17" fill="#2A2F3A" text-anchor="middle">transferCustody(SOLD)</text>
+<rect x="46" y="1766" width="2232" height="30" rx="7" fill="#F0F3F9" stroke="#D5DBE8" stroke-width="1.2"/>
+<text x="62" y="1787" font-size="18" font-weight="bold" fill="#2D3E6B">7 · Consumer verification</text>
+<text x="280" y="1787" font-size="17" fill="#6B7280">public — no wallet required</text>
+<line x1="876" y1="1830" x2="1058" y2="1830" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="930" y="1808" width="75" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="967" y="1823" font-size="17" fill="#2A2F3A" text-anchor="middle">scan QR</text>
+<line x1="1058" y1="1876" x2="1604" y2="1876" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1210" y="1854" width="243" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1331" y="1869" font-size="17" fill="#2A2F3A" text-anchor="middle">fetch journey + price trail</text>
+<line x1="1058" y1="1922" x2="1968" y2="1922" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1446" y="1900" width="134" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1513" y="1915" font-size="17" fill="#2A2F3A" text-anchor="middle">verify tx hash</text>
+<line x1="1058" y1="1968" x2="876" y2="1968" stroke="#6B7280" stroke-width="2" stroke-dasharray="8 5" marker-end="url(#ad)"/>
+<rect x="892" y="1946" width="150" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="967" y="1961" font-size="17" fill="#5A6579" text-anchor="middle">verified journey</text>
+<line x1="876" y1="2014" x2="1058" y2="2014" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="904" y="1992" width="125" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="967" y="2007" font-size="17" fill="#2A2F3A" text-anchor="middle">submit review</text>
+<line x1="1058" y1="2060" x2="1604" y2="2060" stroke="#2A2F3A" stroke-width="2" marker-end="url(#a)"/>
+<rect x="1277" y="2038" width="108" height="20" rx="4" fill="#FFFFFF" opacity="0.95"/>
+<text x="1331" y="2053" font-size="17" fill="#2A2F3A" text-anchor="middle">save review</text>
+<rect x="46" y="2150" width="2232" height="52" rx="9" fill="#F7F8FB" stroke="#D5DBE8" stroke-width="1.4"/>
+<line x1="70" y1="2177" x2="110" y2="2177" stroke="#2A2F3A" stroke-width="2.4"/>
+<text x="120" y="2182" font-size="17" fill="#3E4658">call / write</text>
+<line x1="236.8" y1="2177" x2="276.8" y2="2177" stroke="#6B7280" stroke-width="2.4" stroke-dasharray="8 5"/>
+<text x="286.8" y="2182" font-size="17" fill="#3E4658">return or emitted event</text>
+<line x1="496.00000000000006" y1="2177" x2="536.0" y2="2177" stroke="#1F9D6B" stroke-width="2.4"/>
+<text x="546.0" y="2182" font-size="17" fill="#3E4658">accepted by AI trust layer</text>
+<line x1="780.4000000000001" y1="2177" x2="820.4000000000001" y2="2177" stroke="#C0453B" stroke-width="2.4"/>
+<text x="830.4000000000001" y="2182" font-size="17" fill="#3E4658">rejected — never reaches the chain</text>
+</svg>

@@ -1,0 +1,334 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3314 1445" font-family="Arial, Helvetica, sans-serif">
+<rect width="3314" height="1445" fill="#FFFFFF"/>
+<defs><marker id="crow" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M10,0 L0,4 L10,8" fill="none" stroke="#8A93A8" stroke-width="1.3"/></marker></defs>
+<text x="1657" y="54" font-size="30" font-weight="bold" fill="#111834" text-anchor="middle">Off-Chain Database Schema — Decentralized IoT-Blockchain Agricultural Traceability Platform</text>
+<text x="1657" y="86" font-size="17" fill="#5A6579" text-anchor="middle">Entity Relationship Diagram (Crow's Foot Notation) · PostgreSQL / Supabase Layer</text>
+<text x="194" y="150" font-size="17" font-weight="bold" fill="#2E6FBF" text-anchor="middle" letter-spacing="0.5">USER MANAGEMENT</text>
+<line x1="44" y1="162" x2="344" y2="162" stroke="#2E6FBF" stroke-width="2.4" opacity="0.55"/>
+<text x="612" y="150" font-size="17" font-weight="bold" fill="#1F7A4C" text-anchor="middle" letter-spacing="0.5">AGRICULTURE</text>
+<line x1="462" y1="162" x2="762" y2="162" stroke="#1F7A4C" stroke-width="2.4" opacity="0.55"/>
+<text x="1030" y="150" font-size="17" font-weight="bold" fill="#C2701A" text-anchor="middle" letter-spacing="0.5">SUPPLY CHAIN</text>
+<line x1="880" y1="162" x2="1180" y2="162" stroke="#C2701A" stroke-width="2.4" opacity="0.55"/>
+<text x="1448" y="150" font-size="17" font-weight="bold" fill="#0E8C93" text-anchor="middle" letter-spacing="0.5">IOT LAYER</text>
+<line x1="1298" y1="162" x2="1598" y2="162" stroke="#0E8C93" stroke-width="2.4" opacity="0.55"/>
+<text x="1866" y="150" font-size="17" font-weight="bold" fill="#7B4BC0" text-anchor="middle" letter-spacing="0.5">AI TRUST LAYER</text>
+<line x1="1716" y1="162" x2="2016" y2="162" stroke="#7B4BC0" stroke-width="2.4" opacity="0.55"/>
+<text x="2284" y="150" font-size="17" font-weight="bold" fill="#3F4CA8" text-anchor="middle" letter-spacing="0.5">BLOCKCHAIN</text>
+<line x1="2134" y1="162" x2="2434" y2="162" stroke="#3F4CA8" stroke-width="2.4" opacity="0.55"/>
+<text x="2702" y="150" font-size="17" font-weight="bold" fill="#C9A227" text-anchor="middle" letter-spacing="0.5">CONSUMER</text>
+<line x1="2552" y1="162" x2="2852" y2="162" stroke="#C9A227" stroke-width="2.4" opacity="0.55"/>
+<text x="3120" y="150" font-size="17" font-weight="bold" fill="#C43B63" text-anchor="middle" letter-spacing="0.5">DOCUMENTS/IPFS</text>
+<line x1="2970" y1="162" x2="3270" y2="162" stroke="#C43B63" stroke-width="2.4" opacity="0.55"/>
+<path d="M194,327 L194,367" fill="none" stroke="#8A93A8" stroke-width="1.5" marker-end="url(#crow)"/>
+<rect x="166" y="338" width="56" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="194" y="351" font-size="13" fill="#6B7280" text-anchor="middle">assigns</text>
+<path d="M344,509 L403,509 L403,313 L462,313" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="385" y="398" width="36" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="403" y="411" font-size="13" fill="#6B7280" text-anchor="middle">owns</text>
+<path d="M612,427 L612,467" fill="none" stroke="#8A93A8" stroke-width="1.5" marker-end="url(#crow)"/>
+<rect x="581" y="438" width="63" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="612" y="451" font-size="13" fill="#6B7280" text-anchor="middle">produces</text>
+<path d="M612,798 L612,838" fill="none" stroke="#8A93A8" stroke-width="1.5" marker-end="url(#crow)"/>
+<rect x="571" y="809" width="83" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="612" y="822" font-size="13" fill="#6B7280" text-anchor="middle">packaged as</text>
+<path d="M344,509 L821,509 L821,304 L880,304" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="793" y="393" width="56" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="821" y="406" font-size="13" fill="#6B7280" text-anchor="middle">manages</text>
+<path d="M344,509 L821,509 L821,550 L880,550" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="803" y="516" width="36" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="821" y="529" font-size="13" fill="#6B7280" text-anchor="middle">owns</text>
+<path d="M762,617 L821,617 L821,805 L880,805" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="786" y="698" width="69" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="821" y="711" font-size="13" fill="#6B7280" text-anchor="middle">stored as</text>
+<path d="M762,617 L821,617 L821,1101 L880,1101" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="786" y="846" width="69" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="821" y="859" font-size="13" fill="#6B7280" text-anchor="middle">transfers</text>
+<path d="M762,617 L1239,617 L1239,329 L1298,329" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="1194" y="460" width="89" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="1239" y="473" font-size="13" fill="#6B7280" text-anchor="middle">monitored by</text>
+<path d="M1448,477 L1448,517" fill="none" stroke="#8A93A8" stroke-width="1.5" marker-end="url(#crow)"/>
+<rect x="1413" y="488" width="69" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="1448" y="501" font-size="13" fill="#6B7280" text-anchor="middle">generates</text>
+<path d="M1448,477 L1448,838" fill="none" stroke="#8A93A8" stroke-width="1.5" marker-end="url(#crow)"/>
+<rect x="1420" y="648" width="56" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="1448" y="661" font-size="13" fill="#6B7280" text-anchor="middle">records</text>
+<path d="M1598,650 L1657,650 L1657,329 L1716,329" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="1612" y="476" width="89" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="1657" y="489" font-size="13" fill="#6B7280" text-anchor="middle">validated by</text>
+<path d="M1866,517 L1866,477" fill="none" stroke="#8A93A8" stroke-width="1.5" marker-end="url(#crow)"/>
+<rect x="1838" y="488" width="56" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="1866" y="501" font-size="13" fill="#6B7280" text-anchor="middle">governs</text>
+<path d="M1598,650 L1657,650 L1657,946 L1716,946" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="1626" y="785" width="63" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="1657" y="798" font-size="13" fill="#6B7280" text-anchor="middle">triggers</text>
+<path d="M2016,329 L2075,329 L2075,321 L2134,321" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="2030" y="312" width="89" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="2075" y="325" font-size="13" fill="#6B7280" text-anchor="middle">committed as</text>
+<path d="M2016,329 L2075,329 L2075,609 L2134,609" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="2040" y="456" width="69" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="2075" y="469" font-size="13" fill="#6B7280" text-anchor="middle">logged by</text>
+<path d="M762,617 L2493,617 L2493,288 L2552,288" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="2452" y="439" width="83" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="2493" y="452" font-size="13" fill="#6B7280" text-anchor="middle">anchored by</text>
+<path d="M762,617 L2493,617 L2493,500 L2552,500" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="2462" y="545" width="63" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="2493" y="558" font-size="13" fill="#6B7280" text-anchor="middle">receives</text>
+<path d="M762,617 L2911,617 L2911,296 L2970,296" fill="none" stroke="#A9B1C4" stroke-width="1.4" marker-end="url(#crow)"/>
+<rect x="2863" y="443" width="96" height="18" fill="#FFFFFF" opacity="0.92" rx="4"/>
+<text x="2911" y="456" font-size="13" fill="#6B7280" text-anchor="middle">documented by</text>
+<rect x="44" y="196" width="300" height="131" rx="10" fill="#FFFFFF" stroke="#BBD5F2" stroke-width="1.8"/>
+<path d="M44,206 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#2E6FBF"/>
+<text x="194" y="223" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Role</text>
+<circle cx="62" cy="256" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="78" y="261" font-size="15.5" font-weight="bold" fill="#1A1F2E">role_id</text>
+<text x="78" y="286" font-size="15.5" fill="#3E4658">role_name</text>
+<text x="78" y="311" font-size="15.5" fill="#3E4658">description</text>
+<rect x="44" y="367" width="300" height="306" rx="10" fill="#FFFFFF" stroke="#BBD5F2" stroke-width="1.8"/>
+<path d="M44,377 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#2E6FBF"/>
+<text x="194" y="394" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">User</text>
+<circle cx="62" cy="427" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="78" y="432" font-size="15.5" font-weight="bold" fill="#1A1F2E">user_id</text>
+<circle cx="62" cy="452" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="78" y="457" font-size="15.5" fill="#3E4658" font-style="italic">role_id</text>
+<text x="78" y="482" font-size="15.5" fill="#3E4658">full_name</text>
+<text x="78" y="507" font-size="15.5" fill="#3E4658">email</text>
+<text x="78" y="532" font-size="15.5" fill="#3E4658">phone</text>
+<text x="78" y="557" font-size="15.5" fill="#3E4658">password_hash</text>
+<text x="78" y="582" font-size="15.5" fill="#3E4658">wallet_address</text>
+<text x="78" y="607" font-size="15.5" fill="#3E4658">organization</text>
+<text x="78" y="632" font-size="15.5" fill="#3E4658">status</text>
+<text x="78" y="657" font-size="15.5" fill="#3E4658">created_at</text>
+<rect x="462" y="196" width="300" height="231" rx="10" fill="#FFFFFF" stroke="#BEE2CC" stroke-width="1.8"/>
+<path d="M462,206 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#1F7A4C"/>
+<text x="612" y="223" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Farm</text>
+<circle cx="480" cy="256" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="496" y="261" font-size="15.5" font-weight="bold" fill="#1A1F2E">farm_id</text>
+<circle cx="480" cy="281" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="496" y="286" font-size="15.5" fill="#3E4658" font-style="italic">farmer_id</text>
+<text x="496" y="311" font-size="15.5" fill="#3E4658">farm_name</text>
+<text x="496" y="336" font-size="15.5" fill="#3E4658">address</text>
+<text x="496" y="361" font-size="15.5" fill="#3E4658">latitude</text>
+<text x="496" y="386" font-size="15.5" fill="#3E4658">longitude</text>
+<text x="496" y="411" font-size="15.5" fill="#3E4658">certification_cid</text>
+<rect x="462" y="467" width="300" height="331" rx="10" fill="#FFFFFF" stroke="#BEE2CC" stroke-width="1.8"/>
+<path d="M462,477 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#1F7A4C"/>
+<text x="612" y="494" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Batch</text>
+<circle cx="480" cy="527" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="496" y="532" font-size="15.5" font-weight="bold" fill="#1A1F2E">batch_id</text>
+<circle cx="480" cy="552" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="496" y="557" font-size="15.5" fill="#3E4658" font-style="italic">farm_id</text>
+<text x="496" y="582" font-size="15.5" fill="#3E4658">crop_name</text>
+<text x="496" y="607" font-size="15.5" fill="#3E4658">variety</text>
+<text x="496" y="632" font-size="15.5" fill="#3E4658">quantity</text>
+<text x="496" y="657" font-size="15.5" fill="#3E4658">unit</text>
+<text x="496" y="682" font-size="15.5" fill="#3E4658">harvest_date</text>
+<text x="496" y="707" font-size="15.5" fill="#3E4658">origin</text>
+<text x="496" y="732" font-size="15.5" fill="#3E4658">blockchain_hash</text>
+<text x="496" y="757" font-size="15.5" fill="#3E4658">metadata_cid</text>
+<text x="496" y="782" font-size="15.5" fill="#3E4658">status</text>
+<rect x="462" y="838" width="300" height="206" rx="10" fill="#FFFFFF" stroke="#BEE2CC" stroke-width="1.8"/>
+<path d="M462,848 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#1F7A4C"/>
+<text x="612" y="865" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Product</text>
+<circle cx="480" cy="898" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="496" y="903" font-size="15.5" font-weight="bold" fill="#1A1F2E">product_id</text>
+<circle cx="480" cy="923" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="496" y="928" font-size="15.5" fill="#3E4658" font-style="italic">batch_id</text>
+<text x="496" y="953" font-size="15.5" fill="#3E4658">product_name</text>
+<text x="496" y="978" font-size="15.5" fill="#3E4658">category</text>
+<text x="496" y="1003" font-size="15.5" fill="#3E4658">packaging_date</text>
+<text x="496" y="1028" font-size="15.5" fill="#3E4658">expiry_date</text>
+<rect x="880" y="196" width="300" height="206" rx="10" fill="#FFFFFF" stroke="#F3D6B4" stroke-width="1.8"/>
+<path d="M880,206 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#C2701A"/>
+<text x="1030" y="223" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Warehouse</text>
+<circle cx="898" cy="256" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="914" y="261" font-size="15.5" font-weight="bold" fill="#1A1F2E">warehouse_id</text>
+<circle cx="898" cy="281" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="914" y="286" font-size="15.5" fill="#3E4658" font-style="italic">manager_id</text>
+<text x="914" y="311" font-size="15.5" fill="#3E4658">warehouse_name</text>
+<text x="914" y="336" font-size="15.5" fill="#3E4658">address</text>
+<text x="914" y="361" font-size="15.5" fill="#3E4658">latitude</text>
+<text x="914" y="386" font-size="15.5" fill="#3E4658">longitude</text>
+<rect x="880" y="442" width="300" height="206" rx="10" fill="#FFFFFF" stroke="#F3D6B4" stroke-width="1.8"/>
+<path d="M880,452 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#C2701A"/>
+<text x="1030" y="469" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">RetailStore</text>
+<circle cx="898" cy="502" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="914" y="507" font-size="15.5" font-weight="bold" fill="#1A1F2E">retailer_id</text>
+<circle cx="898" cy="527" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="914" y="532" font-size="15.5" fill="#3E4658" font-style="italic">owner_id</text>
+<text x="914" y="557" font-size="15.5" fill="#3E4658">store_name</text>
+<text x="914" y="582" font-size="15.5" fill="#3E4658">address</text>
+<text x="914" y="607" font-size="15.5" fill="#3E4658">latitude</text>
+<text x="914" y="632" font-size="15.5" fill="#3E4658">longitude</text>
+<rect x="880" y="688" width="300" height="231" rx="10" fill="#FFFFFF" stroke="#F3D6B4" stroke-width="1.8"/>
+<path d="M880,698 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#C2701A"/>
+<text x="1030" y="715" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Inventory</text>
+<circle cx="898" cy="748" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="914" y="753" font-size="15.5" font-weight="bold" fill="#1A1F2E">inventory_id</text>
+<circle cx="898" cy="773" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="914" y="778" font-size="15.5" fill="#3E4658" font-style="italic">owner_id</text>
+<circle cx="898" cy="798" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="914" y="803" font-size="15.5" fill="#3E4658" font-style="italic">batch_id</text>
+<text x="914" y="828" font-size="15.5" fill="#3E4658">quantity</text>
+<text x="914" y="853" font-size="15.5" fill="#3E4658">storage_location</text>
+<text x="914" y="878" font-size="15.5" fill="#3E4658">expiry_date</text>
+<text x="914" y="903" font-size="15.5" fill="#3E4658">status</text>
+<rect x="880" y="959" width="300" height="306" rx="10" fill="#FFFFFF" stroke="#F3D6B4" stroke-width="1.8"/>
+<path d="M880,969 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#C2701A"/>
+<text x="1030" y="986" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">CustodyTransfer</text>
+<circle cx="898" cy="1019" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="914" y="1024" font-size="15.5" font-weight="bold" fill="#1A1F2E">transfer_id</text>
+<circle cx="898" cy="1044" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="914" y="1049" font-size="15.5" fill="#3E4658" font-style="italic">batch_id</text>
+<circle cx="898" cy="1069" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="914" y="1074" font-size="15.5" fill="#3E4658" font-style="italic">from_user_id</text>
+<circle cx="898" cy="1094" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="914" y="1099" font-size="15.5" fill="#3E4658" font-style="italic">to_user_id</text>
+<circle cx="898" cy="1119" r="5" fill="#C0453B"/>
+<text x="914" y="1124" font-size="15.5" font-weight="bold" fill="#C0453B">price_paise</text>
+<text x="914" y="1149" font-size="15.5" fill="#3E4658">transfer_state</text>
+<text x="914" y="1174" font-size="15.5" fill="#3E4658">transfer_date</text>
+<text x="914" y="1199" font-size="15.5" fill="#3E4658">transfer_location</text>
+<text x="914" y="1224" font-size="15.5" fill="#3E4658">blockchain_tx_hash</text>
+<text x="914" y="1249" font-size="15.5" fill="#3E4658">remarks</text>
+<rect x="1298" y="196" width="300" height="281" rx="10" fill="#FFFFFF" stroke="#B5E3E5" stroke-width="1.8"/>
+<path d="M1298,206 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#0E8C93"/>
+<text x="1448" y="223" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">SensorDevice</text>
+<circle cx="1316" cy="256" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="1332" y="261" font-size="15.5" font-weight="bold" fill="#1A1F2E">device_id</text>
+<circle cx="1316" cy="281" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="1332" y="286" font-size="15.5" fill="#3E4658" font-style="italic">batch_id</text>
+<text x="1332" y="311" font-size="15.5" fill="#3E4658">device_name</text>
+<text x="1332" y="336" font-size="15.5" fill="#3E4658">device_type</text>
+<text x="1332" y="361" font-size="15.5" fill="#3E4658">serial_number</text>
+<text x="1332" y="386" font-size="15.5" fill="#3E4658">hmac_secret</text>
+<text x="1332" y="411" font-size="15.5" fill="#3E4658">last_nonce</text>
+<text x="1332" y="436" font-size="15.5" fill="#3E4658">firmware_version</text>
+<text x="1332" y="461" font-size="15.5" fill="#3E4658">status</text>
+<rect x="1298" y="517" width="300" height="281" rx="10" fill="#FFFFFF" stroke="#B5E3E5" stroke-width="1.8"/>
+<path d="M1298,527 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#0E8C93"/>
+<text x="1448" y="544" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">SensorReading</text>
+<circle cx="1316" cy="577" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="1332" y="582" font-size="15.5" font-weight="bold" fill="#1A1F2E">reading_id</text>
+<circle cx="1316" cy="602" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="1332" y="607" font-size="15.5" fill="#3E4658" font-style="italic">device_id</text>
+<text x="1332" y="632" font-size="15.5" fill="#3E4658">temperature</text>
+<text x="1332" y="657" font-size="15.5" fill="#3E4658">humidity</text>
+<text x="1332" y="682" font-size="15.5" fill="#3E4658">latitude</text>
+<text x="1332" y="707" font-size="15.5" fill="#3E4658">longitude</text>
+<text x="1332" y="732" font-size="15.5" fill="#3E4658">nonce</text>
+<text x="1332" y="757" font-size="15.5" fill="#3E4658">device_ts</text>
+<text x="1332" y="782" font-size="15.5" fill="#3E4658">received_at</text>
+<rect x="1298" y="838" width="300" height="156" rx="10" fill="#FFFFFF" stroke="#B5E3E5" stroke-width="1.8"/>
+<path d="M1298,848 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#0E8C93"/>
+<text x="1448" y="865" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">DeviceLog</text>
+<circle cx="1316" cy="898" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="1332" y="903" font-size="15.5" font-weight="bold" fill="#1A1F2E">log_id</text>
+<circle cx="1316" cy="923" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="1332" y="928" font-size="15.5" fill="#3E4658" font-style="italic">device_id</text>
+<text x="1332" y="953" font-size="15.5" fill="#3E4658">event</text>
+<text x="1332" y="978" font-size="15.5" fill="#3E4658">event_time</text>
+<rect x="1716" y="196" width="300" height="281" rx="10" fill="#FFFFFF" stroke="#D9C9F0" stroke-width="1.8"/>
+<path d="M1716,206 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#7B4BC0"/>
+<text x="1866" y="223" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">AIValidation</text>
+<circle cx="1734" cy="256" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="1750" y="261" font-size="15.5" font-weight="bold" fill="#1A1F2E">validation_id</text>
+<circle cx="1734" cy="281" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="1750" y="286" font-size="15.5" fill="#3E4658" font-style="italic">reading_id</text>
+<text x="1750" y="311" font-size="15.5" fill="#3E4658">verdict</text>
+<circle cx="1734" cy="331" r="5" fill="#C0453B"/>
+<text x="1750" y="336" font-size="15.5" font-weight="bold" fill="#C0453B">policy_breach</text>
+<text x="1750" y="361" font-size="15.5" fill="#3E4658">confidence_score</text>
+<text x="1750" y="386" font-size="15.5" fill="#3E4658">anomaly_score</text>
+<text x="1750" y="411" font-size="15.5" fill="#3E4658">model_version</text>
+<text x="1750" y="436" font-size="15.5" fill="#3E4658">reason</text>
+<text x="1750" y="461" font-size="15.5" fill="#3E4658">validated_at</text>
+<rect x="1716" y="517" width="300" height="281" rx="10" fill="#FFFFFF" stroke="#D9C9F0" stroke-width="1.8"/>
+<path d="M1716,527 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#7B4BC0"/>
+<text x="1866" y="544" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">PolicyConfiguration</text>
+<circle cx="1734" cy="577" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="1750" y="582" font-size="15.5" font-weight="bold" fill="#1A1F2E">policy_id</text>
+<text x="1750" y="607" font-size="15.5" fill="#3E4658">crop_name</text>
+<text x="1750" y="632" font-size="15.5" fill="#3E4658">min_temperature</text>
+<text x="1750" y="657" font-size="15.5" fill="#3E4658">max_temperature</text>
+<text x="1750" y="682" font-size="15.5" fill="#3E4658">humidity_min</text>
+<text x="1750" y="707" font-size="15.5" fill="#3E4658">humidity_max</text>
+<text x="1750" y="732" font-size="15.5" fill="#3E4658">max_transit_hours</text>
+<text x="1750" y="757" font-size="15.5" fill="#3E4658">version</text>
+<text x="1750" y="782" font-size="15.5" fill="#3E4658">updated_by</text>
+<rect x="1716" y="838" width="300" height="206" rx="10" fill="#FFFFFF" stroke="#D9C9F0" stroke-width="1.8"/>
+<path d="M1716,848 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#7B4BC0"/>
+<text x="1866" y="865" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Alert</text>
+<circle cx="1734" cy="898" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="1750" y="903" font-size="15.5" font-weight="bold" fill="#1A1F2E">alert_id</text>
+<circle cx="1734" cy="923" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="1750" y="928" font-size="15.5" fill="#3E4658" font-style="italic">reading_id</text>
+<text x="1750" y="953" font-size="15.5" fill="#3E4658">severity</text>
+<text x="1750" y="978" font-size="15.5" fill="#3E4658">alert_type</text>
+<text x="1750" y="1003" font-size="15.5" fill="#3E4658">description</text>
+<text x="1750" y="1028" font-size="15.5" fill="#3E4658">created_at</text>
+<rect x="2134" y="196" width="300" height="256" rx="10" fill="#FFFFFF" stroke="#C7CDEF" stroke-width="1.8"/>
+<path d="M2134,206 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#3F4CA8"/>
+<text x="2284" y="223" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">BlockchainRecord</text>
+<circle cx="2152" cy="256" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="2168" y="261" font-size="15.5" font-weight="bold" fill="#1A1F2E">record_id</text>
+<circle cx="2152" cy="281" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="2168" y="286" font-size="15.5" fill="#3E4658" font-style="italic">batch_id</text>
+<circle cx="2152" cy="306" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="2168" y="311" font-size="15.5" fill="#3E4658" font-style="italic">validation_id</text>
+<text x="2168" y="336" font-size="15.5" fill="#3E4658">tx_hash</text>
+<text x="2168" y="361" font-size="15.5" fill="#3E4658">block_number</text>
+<text x="2168" y="386" font-size="15.5" fill="#3E4658">gas_used</text>
+<text x="2168" y="411" font-size="15.5" fill="#3E4658">smart_contract</text>
+<text x="2168" y="436" font-size="15.5" fill="#3E4658">committed_at</text>
+<rect x="2134" y="492" width="300" height="231" rx="10" fill="#FFFFFF" stroke="#C7CDEF" stroke-width="1.8"/>
+<path d="M2134,502 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#3F4CA8"/>
+<text x="2284" y="519" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">OracleLog</text>
+<circle cx="2152" cy="552" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="2168" y="557" font-size="15.5" font-weight="bold" fill="#1A1F2E">oracle_log_id</text>
+<circle cx="2152" cy="577" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="2168" y="582" font-size="15.5" fill="#3E4658" font-style="italic">validation_id</text>
+<text x="2168" y="607" font-size="15.5" fill="#3E4658">action</text>
+<text x="2168" y="632" font-size="15.5" fill="#3E4658">status</text>
+<text x="2168" y="657" font-size="15.5" fill="#3E4658">attempts</text>
+<text x="2168" y="682" font-size="15.5" fill="#3E4658">tx_hash</text>
+<text x="2168" y="707" font-size="15.5" fill="#3E4658">action_time</text>
+<rect x="2552" y="196" width="300" height="156" rx="10" fill="#FFFFFF" stroke="#EFE0A8" stroke-width="1.8"/>
+<path d="M2552,206 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#C9A227"/>
+<text x="2702" y="223" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">QRCode</text>
+<circle cx="2570" cy="256" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="2586" y="261" font-size="15.5" font-weight="bold" fill="#1A1F2E">qr_id</text>
+<circle cx="2570" cy="281" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="2586" y="286" font-size="15.5" fill="#3E4658" font-style="italic">batch_id</text>
+<text x="2586" y="311" font-size="15.5" fill="#3E4658">qr_url</text>
+<text x="2586" y="336" font-size="15.5" fill="#3E4658">generated_at</text>
+<rect x="2552" y="392" width="300" height="206" rx="10" fill="#FFFFFF" stroke="#EFE0A8" stroke-width="1.8"/>
+<path d="M2552,402 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#C9A227"/>
+<text x="2702" y="419" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Review</text>
+<circle cx="2570" cy="452" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="2586" y="457" font-size="15.5" font-weight="bold" fill="#1A1F2E">review_id</text>
+<circle cx="2570" cy="477" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="2586" y="482" font-size="15.5" fill="#3E4658" font-style="italic">consumer_id</text>
+<circle cx="2570" cy="502" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="2586" y="507" font-size="15.5" fill="#3E4658" font-style="italic">batch_id</text>
+<text x="2586" y="532" font-size="15.5" fill="#3E4658">rating</text>
+<text x="2586" y="557" font-size="15.5" fill="#3E4658">review_text</text>
+<text x="2586" y="582" font-size="15.5" fill="#3E4658">review_date</text>
+<rect x="2970" y="196" width="300" height="181" rx="10" fill="#FFFFFF" stroke="#F3C2D3" stroke-width="1.8"/>
+<path d="M2970,206 a10,10 0 0 1 10,-10 h280 a10,10 0 0 1 10,10 v30 h-300 Z" fill="#C43B63"/>
+<text x="3120" y="223" font-size="19" font-weight="bold" fill="#FFFFFF" text-anchor="middle">Certificate</text>
+<circle cx="2988" cy="256" r="5" fill="#E8B10A" stroke="#9A7405"/>
+<text x="3004" y="261" font-size="15.5" font-weight="bold" fill="#1A1F2E">certificate_id</text>
+<circle cx="2988" cy="281" r="5" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.6"/>
+<text x="3004" y="286" font-size="15.5" fill="#3E4658" font-style="italic">batch_id</text>
+<text x="3004" y="311" font-size="15.5" fill="#3E4658">document_name</text>
+<text x="3004" y="336" font-size="15.5" fill="#3E4658">ipfs_cid</text>
+<text x="3004" y="361" font-size="15.5" fill="#3E4658">uploaded_at</text>
+<rect x="44" y="1359" width="3226" height="62" rx="10" fill="#F7F8FB" stroke="#D5DBE8" stroke-width="1.5"/>
+<circle cx="74" cy="1390" r="6" fill="#E8B10A" stroke="#9A7405"/>
+<text x="92" y="1395" font-size="15" fill="#3E4658">Primary Key</text>
+<circle cx="244" cy="1390" r="6" fill="#FFFFFF" stroke="#7A8398" stroke-width="1.8"/>
+<text x="262" y="1395" font-size="15" fill="#3E4658">Foreign Key</text>
+<circle cx="414" cy="1390" r="6" fill="#C0453B"/>
+<text x="432" y="1395" font-size="15" fill="#C0453B" font-weight="bold">Newly added — see notes</text>
+<text x="3250" y="1395" font-size="15" fill="#6B7280" text-anchor="end">Crow's foot notation · one-to-many unless marked otherwise</text>
+</svg>
