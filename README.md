@@ -1,4 +1,4 @@
-# KisanChain
+# AgriChain
 
 A blockchain-based farm-to-fork traceability system for perishable agricultural goods, where an AI trust layer validates IoT sensor data before it is written on-chain, and every price/margin along the chain is transparently recorded so the farmer's share is visible.
 
@@ -12,7 +12,7 @@ A blockchain-based farm-to-fork traceability system for perishable agricultural 
 .
 ├── docs/                                    Project documentation and design assets
 │   ├── proposal/                            Core project documents and decisions
-│   │   ├── KisanChain_Project_Context.md    Full context handoff — read this first
+│   │   ├── AgriChain_Project_Context.md    Full context handoff — read this first
 │   │   └── revised-account-list.md          The 5-account actor model and role responsibilities
 │   ├── research/
 │   │   └── agri-survey-paper.pdf            Base survey paper the project builds on

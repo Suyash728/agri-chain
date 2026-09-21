@@ -61,7 +61,7 @@ Her survey's "Research Gaps and Open Challenges" section lists five gaps. The pr
 |---|---|
 | **1. Scalability & performance** | Hybrid on/off‑chain design; batched writes; Layer‑2 (Polygon) not L1; only hashes + events on‑chain |
 | **2. Interoperability & standardization** | **Out of scope** — explicitly acknowledged as future work |
-| **3. Data privacy & confidentiality** | Sensitive business data off‑chain; only hashes/CIDs and flags on‑chain |
+| **3. Data privacy & confidentiality** | Sensitive business data off‑chain; only hashes/​CIDs and flags on‑chain |
 | **4. Smart‑contract security & reliability** | OpenZeppelin `AccessControl`, role gating, Hardhat test suite, **customized/parameterized contracts** (not hard‑coded), optional LLM‑assisted audit |
 | **5. Oracle & off‑chain data trust ★** | **THE CORE CONTRIBUTION** — the AI trust layer. Her survey states blockchain guarantees the *integrity* of captured data but not its *truthfulness*. An ML gatekeeper decides what deserves to be recorded immutably. |
 
@@ -133,7 +133,7 @@ OFF‑CHAIN: Supabase (telemetry, inventory, quarantine, reviews) + IPFS (docs, 
 - Deployed on **Vercel**
 
 **AI trust layer**
-- **FastAPI** (Python 3.11) · scikit‑learn (Isolation Forest) · PyTorch/Keras (LSTM‑autoencoder) · pandas/numpy
+- **FastAPI** (Python 3.11) · scikit‑learn (Isolation Forest) · PyTorch/Keras (LSTM-autoencoder) · pandas/numpy
 - **MQTT** (Mosquitto) or HTTPS ingestion
 - Deployed on **Render / Railway**
 
