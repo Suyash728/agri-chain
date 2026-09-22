@@ -123,3 +123,45 @@ session doesn't have to rediscover it.
 
 **What's next:**
 - Start `TASKS.md` Phase 1 (Environment) from Task 1.1.
+
+---
+
+## [Phase 3 — Backend API & Blockchain Integration] — 2026-09-23
+
+**What was done:**
+- Implemented Task 3.1: SQLite schema in `backend/db.py` for 5 tables (`batches`, `custody_events`, `readings`, `quarantine`, `policy`) and seeded demo policies for Tomato, Mango, Wheat.
+- Implemented Task 3.2: Web3 client in `backend/chain.py` connecting to local Hardhat node (`http://127.0.0.1:8545`) and deployed `AgriChainCore` contract (`0x5FbDB2315678afecb367f032d93F642f64180aa3`). Handled Web3 v8 API and batch ID bytes32 conversions.
+- Implemented Task 3.3: Rule-based AI trust validation layer in `backend/validation.py` validating temperature/humidity against policy table thresholds.
+- Implemented Task 3.4: `POST /telemetry` in `backend/main.py` with raw readings logged first, AI trust verification, on-chain recording for VALID readings, and quarantine logging for ANOMALOUS readings.
+- Implemented Task 3.5: `POST /batches` and `POST /batches/{batch_id}/custody` in `backend/main.py` with dual-write to SQLite and on-chain state updates.
+- Implemented Task 3.6: Farmer dashboard endpoints (`GET /farmer/kpis`, `GET /farmer/crops`, `GET /farmer/activity`) matching the exact mock shape from `design/src/data/mockData.js`.
+- Implemented Task 3.7: `GET /batches/{batch_id}/traceability` assembling the custody timeline from SQLite and cold-chain condition readings from on-chain `ConditionRecorded` events.
+
+**Files changed:**
+- `backend/db.py`: schema, seed policies, `init_db()`.
+- `backend/chain.py`: Web3 contract client methods and event queries.
+- `backend/validation.py`: policy threshold rule validation.
+- `backend/main.py`: FastAPI endpoints for telemetry, batches, custody, farmer dashboards, and traceability.
+- `contracts/scripts/deploy.cjs`: updated for ethers v6 syntax.
+- `TASKS.md`: checked off Tasks 3.1 through 3.7.
+
+**Decisions made (and why):**
+- Used `bytes32` conversion with utf-8 left-padding for strings <= 32 chars and keccak256 fallback for long strings, allowing human-readable batch IDs like `DEMO-BATCH-001` on-chain.
+- Defaulted participant addresses to Hardhat funded test accounts so API requests like `to_holder: "SafeXpress"` work seamlessly without needing frontend callers to know raw Ethereum hex addresses.
+- Used SQLite `Row` factory for dict-like database row access.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 3.1: `init_db()` created `agrichain.db` and verified all 5 tables and policy rows via SQLite.
+- Task 3.2: `chain.register_batch` returned real transaction hash on local Hardhat chain and queried back exact batch data.
+- Task 3.3: `validate_reading` returned `('VALID', None)` for 5.0°C and `('ANOMALOUS', ...)` for 42.0°C.
+- Task 3.4: `POST /telemetry` returned VALID with real tx hash for in-bounds reading, and ANOMALOUS with quarantine insertion for 42.0°C reading.
+- Task 3.5: Registered `DEMO-BATCH-001` and transferred custody to `SafeXpress` (`IN_TRANSIT`), verified on-chain state `1` and SQLite event history.
+- Task 3.6: `GET /farmer/kpis`, `/farmer/crops`, `/farmer/activity` returned matching mock shapes with real database-calculated values.
+- Task 3.7: `GET /batches/DEMO-BATCH-001/traceability` returned full batch journey, custody history with prices, and on-chain condition logs.
+
+**Open questions / blockers for next session:**
+- None. Phase 3 is 100% complete and verified against local Hardhat node.
+
+**What's next:**
+- Phase 4 — Simulator (Task 4.1: basic telemetry simulator script, Task 4.2: fault injection, Task 4.3: end-to-end isolated verification).
+

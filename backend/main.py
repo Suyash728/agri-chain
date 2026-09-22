@@ -454,3 +454,137 @@ def get_farmer_activity():
         return activities
     finally:
         conn.close()
+
+
+# ---------------- Traceability Endpoints ----------------
+
+@app.get("/batches/{batch_id}/traceability")
+def get_batch_traceability(batch_id: str):
+    """Returns traceabilityBatch matching mockData.js shape, populated from custody_events and on-chain ConditionRecorded events."""
+    conn = get_connection()
+    try:
+        batch_row = conn.execute("SELECT * FROM batches WHERE batch_id = ?", (batch_id,)).fetchone()
+        if not batch_row:
+            raise HTTPException(status_code=404, detail=f"Batch {batch_id} not found")
+
+        events = conn.execute(
+            "SELECT * FROM custody_events WHERE batch_id = ? ORDER BY id ASC",
+            (batch_id,),
+        ).fetchall()
+
+        steps = []
+        step_num = 1
+
+        reg_time = str(batch_row["created_at"])[:16]
+        steps.append({
+            "step": step_num,
+            "name": "Farm Registration",
+            "status": "Completed",
+            "timestamp": reg_time,
+            "location": f"{batch_row['origin_farm']}",
+            "holder": batch_row["farmer_name"],
+            "pricePaise": 0,
+        })
+        step_num += 1
+
+        for ev in events:
+            st = ev["state"]
+            t_str = str(ev["occurred_at"])[:16]
+            if st == "REGISTERED":
+                continue
+            elif st == "IN_TRANSIT":
+                steps.append({
+                    "step": step_num,
+                    "name": "Transport Dispatch",
+                    "status": "In Transit",
+                    "timestamp": t_str,
+                    "location": f"Transit with {ev['to_holder']}",
+                    "holder": ev["to_holder"],
+                    "pricePaise": ev["price_paise"],
+                })
+                step_num += 1
+            elif st == "IN_STORAGE":
+                steps.append({
+                    "step": step_num,
+                    "name": "Dark Store Arrival",
+                    "status": "In Storage",
+                    "timestamp": t_str,
+                    "location": f"{ev['to_holder']}",
+                    "holder": ev["to_holder"],
+                    "pricePaise": ev["price_paise"],
+                })
+                step_num += 1
+            elif st == "AT_RETAIL":
+                steps.append({
+                    "step": step_num,
+                    "name": "Retail Distribution",
+                    "status": "At Retail",
+                    "timestamp": t_str,
+                    "location": f"{ev['to_holder']}",
+                    "holder": ev["to_holder"],
+                    "pricePaise": ev["price_paise"],
+                })
+                step_num += 1
+            elif st == "SOLD":
+                steps.append({
+                    "step": step_num,
+                    "name": "Consumer Purchase",
+                    "status": "Delivered",
+                    "timestamp": t_str,
+                    "location": "Consumer Hub",
+                    "holder": ev["to_holder"],
+                    "pricePaise": ev["price_paise"],
+                })
+                step_num += 1
+
+        if steps:
+            current_location = steps[-1]["location"]
+        else:
+            current_location = batch_row["origin_farm"]
+
+        condition_log = []
+        try:
+            raw_conditions = chain.get_condition_records(batch_id)
+            for c in raw_conditions:
+                condition_log.append({
+                    "tempC": c["tempDeciC"] / 10.0,
+                    "humidityPct": c["humidityPct"],
+                    "breach": c["breach"],
+                })
+        except Exception:
+            readings = conn.execute(
+                "SELECT * FROM readings WHERE batch_id = ? AND verdict = 'VALID' ORDER BY id ASC",
+                (batch_id,),
+            ).fetchall()
+            for r in readings:
+                condition_log.append({
+                    "tempC": r["temp_c"],
+                    "humidityPct": r["humidity_pct"],
+                    "breach": False,
+                })
+
+        custody_history = []
+        for ev in events:
+            custody_history.append({
+                "fromHolder": ev["from_holder"],
+                "toHolder": ev["to_holder"],
+                "state": ev["state"],
+                "pricePaise": ev["price_paise"],
+                "priceRupees": ev["price_paise"] // 100,
+                "txHash": ev["tx_hash"],
+                "occurredAt": ev["occurred_at"],
+            })
+
+        return {
+            "batchId": batch_row["batch_id"],
+            "product": batch_row["crop_name"],
+            "quantity": "500 kg",
+            "harvestDate": batch_row["harvest_date"],
+            "currentLocation": current_location,
+            "farmDetails": f"{batch_row['origin_farm']}, {batch_row['farmer_name']}",
+            "steps": steps,
+            "conditionLog": condition_log,
+            "custodyHistory": custody_history,
+        }
+    finally:
+        conn.close()

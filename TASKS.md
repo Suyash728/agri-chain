@@ -216,7 +216,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   far (not the original mock numbers).
 
 ### Task 3.7 — `GET /batches/{batch_id}/traceability`
-- [ ] Add the route. Shape it to match `traceabilityBatch` in
+- [x] Add the route. Shape it to match `traceabilityBatch` in
   `design/src/data/mockData.js`. Populate the journey from `custody_events`
   (for the who/where/when/price) and from the contract's `ConditionRecorded`
   events (for the cold-chain log) — query events via `chain.py`, add a
