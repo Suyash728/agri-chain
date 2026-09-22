@@ -6,7 +6,20 @@ import {
   EarningsIllustration 
 } from './CropIllustrations';
 
-export const KPICards = ({ onCardClick }) => {
+export const KPICards = ({ metrics = [], onCardClick }) => {
+  const getMetric = (type, fallbackVal, fallbackUnit) => {
+    const item = Array.isArray(metrics) ? metrics.find(m => m.id === type || m.type === type) : null;
+    return {
+      value: item?.value ?? fallbackVal,
+      unit: item?.unit ?? fallbackUnit,
+    };
+  };
+
+  const inventory = getMetric('inventory', '3.45', 'Tonnes');
+  const orders = getMetric('orders', '4', 'Orders');
+  const shipments = getMetric('shipments', '2', 'In Transit');
+  const earnings = getMetric('earnings', '₹ 28,450', 'This Month');
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
       {/* Card 1: Total Inventory (Warm Soft Sage #F4F5E6) */}
@@ -21,11 +34,11 @@ export const KPICards = ({ onCardClick }) => {
           </span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-extrabold text-[#2D2620] tracking-tight">
-              3.45
+              {inventory.value}
             </span>
           </div>
           <span className="text-xs sm:text-sm font-bold text-[#556B2F] mt-0.5 block">
-            Tonnes
+            {inventory.unit}
           </span>
         </div>
         <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center pl-2">
@@ -45,11 +58,11 @@ export const KPICards = ({ onCardClick }) => {
           </span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-extrabold text-[#2D2620] tracking-tight">
-              4
+              {orders.value}
             </span>
           </div>
           <span className="text-xs sm:text-sm font-bold text-[#B85C38] mt-0.5 block">
-            Orders
+            {orders.unit}
           </span>
         </div>
         <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center pl-2">
@@ -69,11 +82,11 @@ export const KPICards = ({ onCardClick }) => {
           </span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-extrabold text-[#2D2620] tracking-tight">
-              2
+              {shipments.value}
             </span>
           </div>
           <span className="text-xs sm:text-sm font-bold text-[#2B6CB0] mt-0.5 block">
-            In Transit
+            {shipments.unit}
           </span>
         </div>
         <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center pl-2">
@@ -93,11 +106,11 @@ export const KPICards = ({ onCardClick }) => {
           </span>
           <div className="flex items-baseline gap-1">
             <span className="text-xl sm:text-2xl font-extrabold text-[#2D2620] tracking-tight">
-              ₹ 28,450
+              {earnings.value}
             </span>
           </div>
           <span className="text-xs sm:text-sm font-bold text-[#7C3AED] mt-0.5 block">
-            This Month
+            {earnings.unit}
           </span>
         </div>
         <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0 flex items-center justify-center pl-2">

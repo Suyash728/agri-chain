@@ -3,10 +3,11 @@ import { ArrowLeft, Search, ChevronRight } from 'lucide-react';
 import { cropCategories } from '../../data/mockData';
 import { cropIllustrationsMap, FruitsIllustration } from '../components/CropIllustrations';
 
-export const MyCropsView = ({ onBack, onSelectCategory, onSearchClick }) => {
+export const MyCropsView = ({ categories, onBack, onSelectCategory, onSearchClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredCategories = cropCategories.filter(cat => 
+  const list = categories && categories.length > 0 ? categories : cropCategories;
+  const filteredCategories = list.filter(cat => 
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
