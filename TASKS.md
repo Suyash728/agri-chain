@@ -194,7 +194,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
     `tx_hash`, and a matching row appears in `quarantine`.
 
 ### Task 3.5 — `POST /batches` and `POST /batches/{batch_id}/custody`
-- [ ] Add both routes per the table in `ARCHITECTURE.md` §7. Each should
+- [x] Add both routes per the table in `ARCHITECTURE.md` §7. Each should
   write to SQLite (`batches` or `custody_events`) **and** call the matching
   `chain.py` function, storing the returned `tx_hash`.
 - **DONE WHEN:** `curl -X POST localhost:8000/batches -d '{...}'` creates a
