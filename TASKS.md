@@ -271,7 +271,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
 ## Phase 5 — Frontend wiring (days 12–14)
 
 ### Task 5.1 — Wire the Farmer dashboard KPIs
-- [ ] In `design/src/`, find the component(s) importing `kpiMetrics` from
+- [x] In `design/src/`, find the component(s) importing `kpiMetrics` from
   `mockData.js` for the Farmer dashboard. Replace the import with a
   `fetch('http://localhost:8000/farmer/kpis')` call inside a `useEffect`,
   storing the result in `useState`. Keep the loading UI simple (a plain
@@ -282,13 +282,13 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   `₹28,450`).
 
 ### Task 5.2 — Wire crop overview and recent activity the same way
-- [ ] Repeat the Task 5.1 pattern for `cropCategories` → `/farmer/crops`
+- [x] Repeat the Task 5.1 pattern for `cropCategories` → `/farmer/crops`
   and `recentActivities` → `/farmer/activity`.
 - **DONE WHEN:** both sections of the Farmer dashboard show real data,
   confirmed the same way as Task 5.1.
 
 ### Task 5.3 — Wire batch registration
-- [ ] Find the Farmer "register batch" / "add stock" flow in `design/src/`
+- [x] Find the Farmer "register batch" / "add stock" flow in `design/src/`
   (likely `Farmer/Modals/AddStockModal.jsx` or similar — check
   `design/src/App.jsx`'s imports for the exact name). Replace whatever
   local-state-only submit handler exists with a `POST` to
@@ -300,7 +300,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   reflect it without a page reload.
 
 ### Task 5.4 — Seed a full custody chain for the demo batch
-- [ ] For the specific batch you'll use in the final demo, manually run the
+- [x] For the specific batch you'll use in the final demo, manually run the
   `curl` custody-transfer calls from Task 3.5 to move it
   `REGISTERED → IN_TRANSIT → IN_STORAGE → AT_RETAIL → SOLD`, each with a
   realistic price in paise. This is the scripted step described in `PRD.md`
@@ -310,7 +310,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   batch shows all four transfers with their prices, in order.
 
 ### Task 5.5 — Wire the Consumer traceability/QR view
-- [ ] Find the Consumer traceability screen(s) in `design/src/Consumer/`
+- [x] Find the Consumer traceability screen(s) in `design/src/Consumer/`
   using `productJourneyTimeline` from `consumerData.js`. Replace with a
   fetch to `/batches/{batch_id}/traceability` for the demo batch from Task
   5.4, mapped to the `{title, date, location, status}` shape that export
@@ -323,7 +323,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   — not mock data.
 
 ### Task 5.5b — (Optional, do only if time allows before the demo) Display the price trail
-- [ ] This is `PRD.md` O14, not part of the essential five-step check, but
+- [x] This is `PRD.md` O14, not part of the essential five-step check, but
   worth doing here if Tasks 5.1–5.5 finished with time to spare, since price
   transparency is the project's stated differentiating feature. Find an
   existing card/text style already used elsewhere in `design/src/Consumer/`
@@ -337,7 +337,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   in the app.
 
 ### Task 5.6 — Run the full essential-tier check
-- [ ] Run the exact five-step sequence in `PRD.md` §6, in order, starting
+- [x] Run the exact five-step sequence in `PRD.md` §6, in order, starting
   from a clean database if possible (or clearly noting which existing data
   you're reusing). Watch each step actually happen — don't skip ahead
   assuming a step worked.
