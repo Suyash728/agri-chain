@@ -274,3 +274,183 @@ def post_custody(batch_id: str, payload: CustodyTransferRequest):
         )
     finally:
         conn.close()
+
+
+# ---------------- Farmer Dashboard Endpoints ----------------
+
+@app.get("/farmer/kpis")
+def get_farmer_kpis():
+    """Returns kpiMetrics computed from SQLite rows matching mockData.js shape."""
+    conn = get_connection()
+    try:
+        total_batches = conn.execute("SELECT count(*) as cnt FROM batches").fetchone()["cnt"]
+        in_transit = conn.execute(
+            "SELECT count(DISTINCT batch_id) as cnt FROM custody_events WHERE state = 'IN_TRANSIT'"
+        ).fetchone()["cnt"]
+        earnings_paise = conn.execute(
+            "SELECT sum(price_paise) as total FROM custody_events"
+        ).fetchone()["total"] or 0
+        earnings_rupees = earnings_paise // 100
+        inv_tonnes = total_batches * 0.50
+
+        return [
+            {
+                "id": "inventory",
+                "title": "Total Inventory",
+                "value": f"{inv_tonnes:.2f}" if inv_tonnes > 0 else "0.00",
+                "unit": "Tonnes",
+                "type": "inventory",
+            },
+            {
+                "id": "orders",
+                "title": "Active Orders",
+                "value": str(total_batches),
+                "unit": "Orders",
+                "type": "orders",
+            },
+            {
+                "id": "shipments",
+                "title": "Shipments",
+                "value": str(in_transit),
+                "unit": "In Transit",
+                "type": "shipments",
+            },
+            {
+                "id": "earnings",
+                "title": "Total Earnings",
+                "value": f"₹ {earnings_rupees:,}",
+                "unit": "This Month",
+                "type": "earnings",
+            },
+        ]
+    finally:
+        conn.close()
+
+
+@app.get("/farmer/crops")
+def get_farmer_crops():
+    """Returns cropCategories matching mockData.js shape."""
+    conn = get_connection()
+    try:
+        batches = conn.execute("SELECT * FROM batches ORDER BY created_at DESC").fetchall()
+
+        crop_group_map = {
+            "mango": ("fruits", "Fruits"),
+            "banana": ("fruits", "Fruits"),
+            "tomato": ("vegetables", "Vegetables"),
+            "potato": ("vegetables", "Vegetables"),
+            "wheat": ("grains", "Grains"),
+            "rice": ("grains", "Grains"),
+            "chickpea": ("pulses", "Pulses & Legumes"),
+            "green gram": ("pulses", "Pulses & Legumes"),
+            "chilli": ("spices", "Spices"),
+            "turmeric": ("spices", "Spices"),
+            "cashew": ("dryfruits", "Dry Fruits & Nuts"),
+            "almond": ("dryfruits", "Dry Fruits & Nuts"),
+        }
+
+        categories = {
+            "fruits": {"id": "fruits", "name": "Fruits", "crops": []},
+            "vegetables": {"id": "vegetables", "name": "Vegetables", "crops": []},
+            "grains": {"id": "grains", "name": "Grains", "crops": []},
+            "pulses": {"id": "pulses", "name": "Pulses & Legumes", "crops": []},
+            "spices": {"id": "spices", "name": "Spices", "crops": []},
+            "dryfruits": {"id": "dryfruits", "name": "Dry Fruits & Nuts", "crops": []},
+        }
+
+        for b in batches:
+            crop_key = b["crop_name"].lower().strip()
+            cat_id, _ = crop_group_map.get(crop_key, ("vegetables", "Vegetables"))
+            categories[cat_id]["crops"].append({
+                "name": b["crop_name"],
+                "quantity": "0.50 Tonnes",
+                "value": "₹2,500",
+                "status": "In Stock",
+                "quality": f"Fresh Organic {b['crop_name']}",
+            })
+
+        result = []
+        for cat_id, cat in categories.items():
+            count = len(cat["crops"])
+            total_tonnes = count * 0.50
+            total_val = count * 2500
+            result.append({
+                "id": cat["id"],
+                "name": cat["name"],
+                "count": count,
+                "countLabel": f"{count} Crops",
+                "totalInventory": f"{total_tonnes:.2f} Tonnes",
+                "totalValue": f"₹{total_val:,}",
+                "crops": cat["crops"],
+            })
+        return result
+    finally:
+        conn.close()
+
+
+@app.get("/farmer/activity")
+def get_farmer_activity():
+    """Returns recentActivities matching mockData.js shape."""
+    conn = get_connection()
+    try:
+        events = conn.execute(
+            """
+            SELECT e.*, b.crop_name, b.farmer_name 
+            FROM custody_events e
+            JOIN batches b ON e.batch_id = b.batch_id
+            ORDER BY e.id DESC
+            LIMIT 10
+            """
+        ).fetchall()
+
+        activities = []
+        for e in events:
+            ev_id = f"act-{e['id']}"
+            state = e["state"]
+            date_str = str(e["occurred_at"])[:16]
+
+            if state == "REGISTERED":
+                activities.append({
+                    "id": ev_id,
+                    "type": "order",
+                    "title": f"Batch Registered #{e['batch_id']}",
+                    "status": "Confirmed",
+                    "statusType": "confirmed",
+                    "date": date_str,
+                    "amount": f"{e['crop_name']} Added",
+                })
+            elif state == "IN_TRANSIT":
+                activities.append({
+                    "id": ev_id,
+                    "type": "shipment",
+                    "title": f"Shipment #{e['batch_id']}",
+                    "status": "In Transit",
+                    "statusType": "intransit",
+                    "date": date_str,
+                    "amount": e["to_holder"] or "Logistics",
+                })
+            elif state == "SOLD":
+                price_rupees = e["price_paise"] // 100
+                activities.append({
+                    "id": ev_id,
+                    "type": "payment",
+                    "title": f"Batch Sold #{e['batch_id']}",
+                    "status": "Completed",
+                    "statusType": "payment",
+                    "date": date_str,
+                    "amount": f"₹{price_rupees:,}",
+                })
+            else:
+                activities.append({
+                    "id": ev_id,
+                    "type": "order",
+                    "title": f"Transfer #{e['batch_id']} ({state})",
+                    "status": state.capitalize(),
+                    "statusType": "inprogress",
+                    "date": date_str,
+                    "amount": e["to_holder"],
+                })
+
+        return activities
+    finally:
+        conn.close()

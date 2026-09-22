@@ -205,7 +205,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   SQLite and on-chain.
 
 ### Task 3.6 — `GET /farmer/kpis`, `/farmer/crops`, `/farmer/activity`
-- [ ] Add all three. Open `design/src/data/mockData.js`, find the
+- [x] Add all three. Open `design/src/data/mockData.js`, find the
   `kpiMetrics`, `cropCategories`, and `recentActivities` exports, and shape
   each response to match exactly (per `ARCHITECTURE.md` §4 and `RULES.md`
   §6). Values should be computed from real rows in SQLite (e.g. `Total
