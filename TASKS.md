@@ -234,7 +234,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
 ## Phase 4 — Simulator (days 10–11)
 
 ### Task 4.1 — Basic simulator
-- [ ] Create `simulator/simulate.py`. It should accept a `--batch-id` and
+- [x] Create `simulator/simulate.py`. It should accept a `--batch-id` and
   send a series of plausible readings (temperature/humidity within a
   reasonable range for whatever crop you're demoing) to
   `POST localhost:8000/telemetry`, one every few seconds, for a
