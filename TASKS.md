@@ -245,7 +245,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   `tx_hash` values.
 
 ### Task 4.2 — Fault injection flag
-- [ ] Add `--inject-fault temp_spike` (or similar). When set, one reading in
+- [x] Add `--inject-fault temp_spike` (or similar). When set, one reading in
   the stream should be replaced with an implausible value (e.g. temperature
   jumping to 45°C for one sample, then returning to normal) instead of a
   real one.
