@@ -174,7 +174,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   returns `ANOMALOUS` with a reason string that names the actual numbers.
 
 ### Task 3.4 — `POST /telemetry`
-- [ ] In `main.py`, add the route. It must, in this exact order (per
+- [x] In `main.py`, add the route. It must, in this exact order (per
   `RULES.md` §4):
   1. Insert the raw reading into the `readings` table first, with a
      placeholder verdict.
