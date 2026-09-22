@@ -140,7 +140,7 @@ contract address and where the ABI file lives, since Phase 3 needs both.**
 Keep the local Hardhat node from Task 2.5 running for this entire phase.
 
 ### Task 3.1 — SQLite schema
-- [ ] Create `backend/db.py` implementing exactly the five tables from
+- [x] Create `backend/db.py` implementing exactly the five tables from
   `ARCHITECTURE.md` §6. Include a function `init_db()` that creates the
   tables if they don't exist, and seed the `policy` table with 2–3 crops
   you plan to demo (e.g. tomato: 2–8°C, 85–95% humidity — adjust to
