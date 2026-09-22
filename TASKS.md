@@ -255,7 +255,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   temperature.
 
 ### Task 4.3 — Confirm the end-to-end pipeline in isolation
-- [ ] Run the simulator against a fresh batch (registered via `curl` per
+- [x] Run the simulator against a fresh batch (registered via `curl` per
   Task 3.5), with the fault flag on, and manually check: `readings` has
   the right count and verdicts, `quarantine` has exactly one row, and the
   contract's `ConditionRecorded` events (queryable via `chain.py` or

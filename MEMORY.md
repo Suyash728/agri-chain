@@ -165,3 +165,32 @@ session doesn't have to rediscover it.
 **What's next:**
 - Phase 4 — Simulator (Task 4.1: basic telemetry simulator script, Task 4.2: fault injection, Task 4.3: end-to-end isolated verification).
 
+---
+
+## [Phase 4 — Simulator & Fault Injection] — 2026-09-23
+
+**What was done:**
+- Implemented Task 4.1: Built `simulator/simulate.py` accepting `--batch-id`, `--crop-name`, `--duration`, `--interval`, `--endpoint`, and `--inject-fault`. Streams realistic cold-chain conditions to `POST /telemetry`.
+- Implemented Task 4.2: Implemented `--inject-fault temp_spike` generating a mid-stream 45.0°C temperature anomaly that is caught and quarantined by the AI trust layer.
+- Implemented Task 4.3: Performed isolated end-to-end verification against fresh batch `E2E-ISOLATED-001`. Verified count of raw readings (3), quarantined rows (1 naming 45.0°C), and smart contract events matching only the valid readings count (2).
+
+**Files changed:**
+- `simulator/simulate.py`: telemetry simulator CLI with fault injection.
+- `TASKS.md`: checked off Tasks 4.1, 4.2, and 4.3.
+
+**Decisions made (and why):**
+- Configured realistic temperature and humidity bounds tailored per crop (Tomato, Mango, Wheat) so simulated telemetry behaves realistically within cold-chain tolerances.
+- Injected faults mid-stream to emulate real-world sensor or refrigeration failures in transit.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 4.1: Streamed readings for `SIM-BATCH-001` with duration 10s; verified `VALID` responses and matching rows in SQLite `readings` with `tx_hash`.
+- Task 4.2: Ran with `--inject-fault temp_spike` on `FAULT-BATCH-001`; produced exactly 1 `ANOMALOUS` reading with `quarantine` row naming 45.0°C.
+- Task 4.3: Ran isolated verification on fresh batch `E2E-ISOLATED-001`; checked SQLite `readings` (count=3, 2 VALID with tx_hash, 1 ANOMALOUS), `quarantine` (count=1), and on-chain `ConditionRecorded` events (count=2 matching valid readings only).
+
+**Open questions / blockers for next session:**
+- None. Phase 4 is 100% complete.
+
+**What's next:**
+- Phase 5 — Frontend wiring (Tasks 5.1–5.6: wire Farmer dashboard, batch registration modal, Consumer traceability view, and run final essential demo check).
+
+
