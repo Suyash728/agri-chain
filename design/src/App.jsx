@@ -119,6 +119,7 @@ export default function App() {
 
   const handleAddStock = (newStock) => {
     setInventoryList([newStock, ...inventoryList]);
+    fetchFarmerData();
   };
 
   const handleLogout = () => {

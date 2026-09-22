@@ -7,30 +7,67 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
   const [successMsg, setSuccessMsg] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!cropName || !quantity || !price) return;
 
-    setSuccessMsg(true);
-    setTimeout(() => {
-      onAddStock({
-        id: `inv-${Date.now()}`,
-        name: cropName,
-        category: category,
-        quantity: `${quantity} Tonnes`,
-        rawKg: parseFloat(quantity) * 1000,
-        value: `₹ ${price}`,
-        status: "In Stock"
+    setLoading(true);
+    setErrorMsg(null);
+
+    const batchId = `BATCH-${Date.now().toString(36).toUpperCase()}`;
+    const payload = {
+      batch_id: batchId,
+      crop_name: cropName,
+      origin_farm: 'Nashik Organic Farm cluster 4',
+      harvest_date: new Date().toISOString().split('T')[0],
+      farmer_name: 'Rahul Patil'
+    };
+
+    try {
+      const res = await fetch('http://localhost:8000/batches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
-      setSuccessMsg(false);
-      setCropName('');
-      setQuantity('');
-      setPrice('');
-      onClose();
-    }, 1200);
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || 'Failed to register batch on blockchain');
+      }
+
+      const registered = await res.json();
+
+      setSuccessMsg(true);
+      setTimeout(() => {
+        if (onAddStock) {
+          onAddStock({
+            id: batchId,
+            name: cropName,
+            category: category,
+            quantity: `${quantity} Tonnes`,
+            rawKg: parseFloat(quantity) * 1000,
+            value: `₹ ${price}`,
+            status: "In Stock",
+            tx_hash: registered.tx_hash
+          });
+        }
+        setSuccessMsg(false);
+        setCropName('');
+        setQuantity('');
+        setPrice('');
+        setLoading(false);
+        onClose();
+      }, 1000);
+    } catch (err) {
+      console.error('Error adding stock batch:', err);
+      setErrorMsg(err.message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -116,12 +153,19 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
                 </div>
               </div>
 
+              {errorMsg && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-medium">
+                  {errorMsg}
+                </div>
+              )}
+
               <button 
                 type="submit"
-                className="w-full py-3.5 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all mt-2"
+                disabled={loading}
+                className="w-full py-3.5 bg-[#3D4E2A] hover:bg-[#2A371B] disabled:opacity-60 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all mt-2 cursor-pointer"
               >
                 <Plus className="w-5 h-5 text-white" />
-                <span>Submit & Verify Batch</span>
+                <span>{loading ? 'Registering on Blockchain...' : 'Submit & Verify Batch'}</span>
               </button>
             </>
           )}
