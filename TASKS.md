@@ -12,7 +12,7 @@ same commit that finishes it. After the last task in a phase, append the
 ## Phase 1 — Environment (days 1–2)
 
 ### Task 1.1 — Confirm the existing frontend runs
-- [ ] Run:
+- [x] Run:
   ```bash
   cd design
   npm install
@@ -25,7 +25,7 @@ same commit that finishes it. After the last task in a phase, append the
   (Total Inventory `3.45 Tonnes`, etc). Stop the dev server after confirming.
 
 ### Task 1.2 — Scaffold `contracts/`
-- [ ] Create the folder and initialize Hardhat:
+- [x] Create the folder and initialize Hardhat:
   ```bash
   mkdir contracts && cd contracts
   npm init -y
@@ -39,7 +39,7 @@ same commit that finishes it. After the last task in a phase, append the
   Task 2.1).
 
 ### Task 1.3 — Scaffold `backend/`
-- [ ] Create the folder and a virtual environment:
+- [x] Create the folder and a virtual environment:
   ```bash
   mkdir backend && cd backend
   python3 -m venv .venv
@@ -47,7 +47,7 @@ same commit that finishes it. After the last task in a phase, append the
   pip install fastapi uvicorn web3 sqlmodel python-dotenv
   pip freeze > requirements.txt
   ```
-- [ ] Create `backend/main.py` with just enough to prove FastAPI runs:
+- [x] Create `backend/main.py` with just enough to prove FastAPI runs:
   ```python
   from fastapi import FastAPI
   app = FastAPI()
@@ -75,25 +75,25 @@ same commit that finishes it. After the last task in a phase, append the
 ## Phase 2 — Smart contract (days 3–5)
 
 ### Task 2.1 — Write `AgriChainCore.sol`
-- [ ] Delete Hardhat's sample `contracts/contracts/Lock.sol`.
-- [ ] Create `contracts/contracts/AgriChainCore.sol` with exactly the
+- [x] Delete Hardhat's sample `contracts/contracts/Lock.sol`.
+- [x] Create `contracts/contracts/AgriChainCore.sol` with exactly the
   contract shown in `ARCHITECTURE.md` §5. Copy it directly — don't
   re-derive it from memory.
 - **DONE WHEN:** `npx hardhat compile` (from inside `contracts/`) succeeds
   with no errors.
 
 ### Task 2.2 — Test: register a batch
-- [ ] Create `contracts/test/AgriChainCore.test.js`. Write a test that
+- [x] Create `contracts/test/AgriChainCore.test.js`. Write a test that
   deploys the contract, calls `registerBatch` with sample data, and asserts
   the batch's `cropName` and `currentHolder` come back correctly from the
   `batches` mapping.
 - **DONE WHEN:** `npx hardhat test` shows this test passing.
 
 ### Task 2.3 — Test: custody transfer, including the one-directional rule
-- [ ] Add a test that registers a batch, then calls `transferCustody` moving
+- [x] Add a test that registers a batch, then calls `transferCustody` moving
   it `REGISTERED → IN_TRANSIT`, and asserts the state and `currentHolder`
   updated.
-- [ ] Add a second test that attempts an invalid transfer (e.g.
+- [x] Add a second test that attempts an invalid transfer (e.g.
   `AT_RETAIL → IN_TRANSIT`, moving backward) and asserts it reverts.
 - **DONE WHEN:** both tests pass, and the second one specifically fails
   (reverts) as expected — if it doesn't revert, `RULES.md` §5's
@@ -101,9 +101,9 @@ same commit that finishes it. After the last task in a phase, append the
   proceeding.
 
 ### Task 2.4 — Test: record a condition reading and the `onlyOwner` guard
-- [ ] Add a test that calls `recordCondition` from the deployer account and
+- [x] Add a test that calls `recordCondition` from the deployer account and
   asserts the `ConditionRecorded` event fires with the right values.
-- [ ] Add a test that attempts to call `recordCondition` (or `registerBatch`,
+- [x] Add a test that attempts to call `recordCondition` (or `registerBatch`,
   or `transferCustody`) from a **different** account than the deployer, and
   asserts it reverts with the `onlyOwner` message.
 - **DONE WHEN:** all four contract tests (2.2, 2.3 × 2, 2.4 × 2 — six total)
@@ -111,18 +111,18 @@ same commit that finishes it. After the last task in a phase, append the
   change needs at least one test."
 
 ### Task 2.5 — Deploy to a local Hardhat node
-- [ ] In one terminal, start a persistent local node:
+- [x] In one terminal, start a persistent local node:
   ```bash
   cd contracts && npx hardhat node
   ```
   Leave this running — it prints 20 funded test accounts with their private
   keys. **These are Hardhat's well-known public test keys — this is the
   account `RULES.md` §7 refers to for the essential build.**
-- [ ] In a second terminal, write and run a deployment script
+- [x] In a second terminal, write and run a deployment script
   (`contracts/scripts/deploy.js`) using Hardhat Ignition or a plain deploy
   script, targeting `--network localhost`. Have it print the deployed
   contract address.
-- [ ] Copy the deployed address and the contract's ABI (from
+- [x] Copy the deployed address and the contract's ABI (from
   `contracts/artifacts/contracts/AgriChainCore.sol/AgriChainCore.json`) —
   the backend needs both in Phase 3.
 - **DONE WHEN:** the deploy script prints a contract address, and that
