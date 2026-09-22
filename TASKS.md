@@ -162,7 +162,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   that same batch is queryable back from the contract with the right data.
 
 ### Task 3.3 — `validation.py` — the rule-based AI trust layer
-- [ ] Create `backend/validation.py` with one function,
+- [x] Create `backend/validation.py` with one function,
   `validate_reading(crop_name, temp_c, humidity_pct) -> (verdict, reason)`.
   It should:
   1. Look up the policy row for `crop_name` from the `policy` table.

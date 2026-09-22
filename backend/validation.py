@@ -1,49 +1,60 @@
-import os
+import pathlib
 import sqlite3
-from pathlib import Path
+from typing import Tuple, Optional
 
-# Path to SQLite DB.  The default location mirrors db.py’s default.
-_DB_PATH = Path.cwd() / "data" / "db.sqlite"
+DB_PATH = pathlib.Path(__file__).resolve().parent / "agrichain.db"
 
-# Helper: open a connection
 
-def get_connection(path: Path | str | None = None) -> sqlite3.Connection:
-    """Return a sqlite3.Connection to the agri‑chain database.
+def get_connection(path: pathlib.Path | str | None = None) -> sqlite3.Connection:
+    """Return a sqlite3.Connection to agrichain.db."""
+    db_path = pathlib.Path(path) if path else DB_PATH
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-    The function accepts a Path, str, or None.  When *None* it falls back to
-    ``data/db.sqlite`` relative to the current working directory.
-    """
-    db_path = Path(path) if path else _DB_PATH
-    return sqlite3.connect(db_path)
-
-# Policy lookup used by the rule‑based AI trust layer
 
 def _policy_for_crop(conn: sqlite3.Connection, crop_name: str):
     cur = conn.execute(
-        "SELECT min_temp_c, max_temp_c, min_humidity, max_humidity FROM policy WHERE crop_name = ?", (crop_name,)
+        "SELECT min_temp_c, max_temp_c, min_humidity, max_humidity FROM policy WHERE LOWER(crop_name) = LOWER(?)",
+        (crop_name,),
     )
     row = cur.fetchone()
     if not row:
         raise ValueError(f"No policy defined for crop '{crop_name}'")
-    return row  # (min_temp_c, max_temp_c, min_humidity, max_humidity)
+    return row["min_temp_c"], row["max_temp_c"], row["min_humidity"], row["max_humidity"]
 
 
-def validate_reading(crop_name: str, temp_c: float, humidity_pct: float):
-    """Rule‑based validation of a single telemetry reading.
+def validate_reading(
+    crop_name: str,
+    temp_c: float,
+    humidity_pct: float,
+    db_path: pathlib.Path | str | None = None,
+) -> Tuple[str, Optional[str]]:
+    """Rule-based validation of a single telemetry reading against crop policy.
 
-    Returns a tuple ``(verdict, reason)`` where *verdict* is ``"VALID"`` or
-    ``"ANOMALOUS"``.  For a valid reading *reason* is ``None``.
+    Returns:
+        (verdict, reason) where verdict is 'VALID' or 'ANOMALOUS'.
+        If VALID, reason is None. If ANOMALOUS, reason names the numbers.
     """
-    conn = get_connection()
+    conn = get_connection(db_path)
     try:
-        min_temp, max_temp, min_humidity, max_humidity = _policy_for_crop(conn, crop_name)
+        try:
+            min_temp, max_temp, min_hum, max_hum = _policy_for_crop(conn, crop_name)
+        except ValueError as e:
+            return ("ANOMALOUS", str(e))
     finally:
         conn.close()
 
-    if not (min_temp <= temp_c <= max_temp):
-        return ("ANOMALOUS", f"temperature {temp_c}°C outside policy [{min_temp}, {max_temp}]°C")
-    if not (min_humidity <= humidity_pct <= max_humidity):
-        return ("ANOMALOUS", f"humidity {humidity_pct}% outside policy [{min_humidity}, {max_humidity}]%")
-    return ("VALID", None)
+    temp_c = float(temp_c)
+    humidity_pct = float(humidity_pct)
 
-# End of validation.py
+    if temp_c > max_temp:
+        return ("ANOMALOUS", f"temperature {temp_c:.1f}°C above policy max {max_temp:.1f}°C")
+    if temp_c < min_temp:
+        return ("ANOMALOUS", f"temperature {temp_c:.1f}°C below policy min {min_temp:.1f}°C")
+    if humidity_pct > max_hum:
+        return ("ANOMALOUS", f"humidity {humidity_pct:.1f}% above policy max {max_hum:.1f}%")
+    if humidity_pct < min_hum:
+        return ("ANOMALOUS", f"humidity {humidity_pct:.1f}% below policy min {min_hum:.1f}%")
+
+    return ("VALID", None)
