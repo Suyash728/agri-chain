@@ -150,7 +150,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   `sqlite3 agrichain.db ".tables"` lists all five tables.
 
 ### Task 3.2 — `chain.py` — connect to the deployed contract
-- [ ] Create `backend/chain.py`. Load the RPC URL (`http://127.0.0.1:8545`
+- [x] Create `backend/chain.py`. Load the RPC URL (`http://127.0.0.1:8545`
   for the local Hardhat node), the contract address and ABI from Task 2.5,
   and a private key from `.env` (one of the Hardhat test accounts). Expose
   three functions: `register_batch(...)`, `transfer_custody(...)`,

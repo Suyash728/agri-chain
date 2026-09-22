@@ -4,8 +4,9 @@ const { ethers } = require("hardhat");
 async function main() {
   const AgriChainCore = await ethers.getContractFactory("AgriChainCore");
   const contract = await AgriChainCore.deploy();
-  console.log("Contract address:", contract.address);
-  console.log("ABI:", contract.interface.format("ethers5"));
+  await contract.waitForDeployment();
+  const address = await contract.getAddress();
+  console.log("Contract address:", address);
 }
 
 main()
