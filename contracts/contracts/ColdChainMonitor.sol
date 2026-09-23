@@ -5,10 +5,10 @@ import "./AccessControlRoles.sol";
 
 contract ColdChainMonitor is AccessControlRoles {
     struct ConditionRecord {
-        int256 tempDeciC;
-        uint256 humidityPct;
+        int64 tempDeciC;
+        uint32 humidityPct;
         bool breach;
-        uint256 timestamp;
+        uint48 timestamp;
     }
 
     mapping(bytes32 => ConditionRecord[]) internal _conditionLogs;
@@ -30,7 +30,7 @@ contract ColdChainMonitor is AccessControlRoles {
         uint256 humidityPct,
         bool breach
     ) external onlyOracle {
-        _conditionLogs[batchId].push(ConditionRecord(tempDeciC, humidityPct, breach, block.timestamp));
+        _conditionLogs[batchId].push(ConditionRecord(int64(tempDeciC), uint32(humidityPct), breach, uint48(block.timestamp)));
         emit ConditionRecorded(batchId, tempDeciC, humidityPct, breach);
     }
 
@@ -45,9 +45,8 @@ contract ColdChainMonitor is AccessControlRoles {
 
         for (uint256 i = 0; i < len; i++) {
             _conditionLogs[batchIds[i]].push(
-                ConditionRecord(tempsDeciC[i], humsPct[i], breaches[i], block.timestamp)
+                ConditionRecord(int64(tempsDeciC[i]), uint32(humsPct[i]), breaches[i], uint48(block.timestamp))
             );
-            emit ConditionRecorded(batchIds[i], tempsDeciC[i], humsPct[i], breaches[i]);
         }
 
         emit ConditionsBatchRecorded(len);

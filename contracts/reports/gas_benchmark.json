@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-09-23T15:44:09.552Z",
+  "network": "hardhat-local-evm",
+  "deploymentGas": {
+    "monolithicCore": 729935,
+    "modularProductRegistry": 852440,
+    "modularCustodyTransfer": 744186,
+    "modularColdChainMonitor": 842206,
+    "modularPolicyConfig": 590594,
+    "totalModularDeploy": 3029426
+  },
+  "operationsGas": {
+    "batchRegistration": {
+      "monolithic": 119085,
+      "modularWithRBAC": 118961
+    },
+    "custodyTransfer": {
+      "monolithic": 32949,
+      "modularWithRoleEnforcement": 57464
+    },
+    "singleConditionRecord": {
+      "monolithic": 28650,
+      "modularWithRBAC": 71484
+    }
+  },
+  "oracleBatchingEvaluation": [
+    {
+      "readingsCount": 5,
+      "singleTotalGas": 271920,
+      "batchedGas": 152392,
+      "savingsPercentage": 43.95,
+      "avgGasPerReading": 30478
+    },
+    {
+      "readingsCount": 10,
+      "singleTotalGas": 543840,
+      "batchedGas": 273046,
+      "savingsPercentage": 49.79,
+      "avgGasPerReading": 27305
+    },
+    {
+      "readingsCount": 20,
+      "singleTotalGas": 1087680,
+      "batchedGas": 514337,
+      "savingsPercentage": 52.71,
+      "avgGasPerReading": 25717
+    }
+  ]
+}
