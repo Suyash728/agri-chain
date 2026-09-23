@@ -53,4 +53,31 @@ describe("ProductRegistry (RBAC)", function () {
       registry.connect(farmer).registerBatch(batchId, cropName, originFarm, harvestDate, farmer.address)
     ).to.be.revertedWith("ProductRegistry: batch already exists");
   });
+
+  it("anchors IPFS document CID on-chain for an existing batch", async function () {
+    await registry.connect(farmer).registerBatch(batchId, cropName, originFarm, harvestDate, farmer.address);
+
+    const cid = "ipfs://QmSaQ9tsRGYUodzrtBmRmPTBykAE4oTR9zu7Lfjh9qVmMQ";
+    await expect(
+      registry.connect(farmer).setBatchDocument(batchId, "QUALITY_CERTIFICATE", cid)
+    ).to.emit(registry, "BatchDocumentAnchored").withArgs(batchId, "QUALITY_CERTIFICATE", cid);
+
+    const docs = await registry.getBatchDocuments(batchId);
+    expect(docs.length).to.equal(1);
+    expect(docs[0].docType).to.equal("QUALITY_CERTIFICATE");
+    expect(docs[0].ipfsCid).to.equal(cid);
+  });
+
+  it("reverts when setting document for unknown batch or unauthorized caller", async function () {
+    const unknownBatch = "0x" + "9".repeat(64);
+    const cid = "ipfs://QmSampleCID";
+    await expect(
+      registry.connect(farmer).setBatchDocument(unknownBatch, "LAB_REPORT", cid)
+    ).to.be.revertedWith("ProductRegistry: batch does not exist");
+
+    await registry.connect(farmer).registerBatch(batchId, cropName, originFarm, harvestDate, farmer.address);
+    await expect(
+      registry.connect(unauthorized).setBatchDocument(batchId, "LAB_REPORT", cid)
+    ).to.be.revertedWith("ProductRegistry: caller is not authorized as farmer or admin");
+  });
 });

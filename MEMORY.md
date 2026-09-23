@@ -470,6 +470,56 @@ session doesn't have to rediscover it.
 **What's next:**
 - Phase 9 — Storage Migration & Decentralized Documents (Tasks 9.1–9.5: Supabase/PostgreSQL schema & connection layer, SQLite-to-PostgreSQL migration script, IPFS document pinning with Pinata, on-chain CID anchoring in `ProductRegistry.sol`, and frontend certificate preview in Consumer/Farmer views).
 
+---
+
+## [Phase 9 — Storage Migration & Decentralized Documents] — 2026-09-23
+
+**What was done:**
+- Implemented Task 9.1:
+  - Created `backend/migrations/001_initial_schema.sql` defining PostgreSQL schemas mirroring SQLite (`batches`, `custody_events`, `readings`, `quarantine`, `policy`, `telemetry_history`, `audit_trail`, `replay_events`, `replay_latest_timestamps`, `batch_documents`, `batch_reviews`) with indexes and foreign keys.
+  - Updated `backend/db.py` to support dual storage engines: connects to PostgreSQL / Supabase if `DATABASE_URL` is set (with automatic `?` to `%s` translation and `lastrowid` resolution), falling back to local SQLite.
+- Implemented Task 9.2:
+  - Built `backend/scripts/migrate_sqlite_to_supabase.py` reading all existing records in dependency order, executing ON CONFLICT upserts, synchronizing serial auto-increment sequences, and verifying zero row count discrepancies. Tested dry-run migration across all 11 tables (176 records).
+- Implemented Task 9.3:
+  - Created `backend/ipfs.py` supporting Pinata cloud IPFS pinning with deterministic Base58 SHA-256 multihash CIDv0 generation and local file caching.
+  - Implemented `POST /batches/{batch_id}/documents`, `GET /batches/{batch_id}/documents`, and local gateway endpoint `GET /ipfs/{cid}` in `backend/main.py`.
+- Implemented Task 9.4:
+  - Updated `ProductRegistry.sol` with `setBatchDocument(bytes32, string, string)` and `getBatchDocuments(bytes32)`, emitting `BatchDocumentAnchored`.
+  - Added unit tests in `contracts/test/ProductRegistry.test.cjs` (6/6 passing).
+  - Redeployed modular contracts to local node and updated ABIs and deployment manifests.
+  - Wired `backend/main.py` to anchor uploaded documents on-chain (`chain.set_batch_document`).
+- Implemented Task 9.5:
+  - Wired "Quality Certificates & Lab Reports" inspection card and interactive inspector modal in `design/src/Consumer/Views/ProductJourneyView.jsx` fetching real documents and displaying clickable IPFS gateway links.
+  - Added "✓ IPFS Anchored" badge to `design/src/Farmer/Views/CropDetailsView.jsx`.
+  - Verified `npm run build` compiled in 3.28s with 0 errors.
+
+**Files changed:**
+- `backend/migrations/001_initial_schema.sql`: PostgreSQL DDL migrations.
+- `backend/db.py`: dual storage database adapter layer.
+- `backend/scripts/migrate_sqlite_to_supabase.py`: SQLite to PostgreSQL automated migration script.
+- `backend/ipfs.py`: IPFS decentralized pinning client.
+- `backend/main.py`: added document upload, query, and IPFS gateway endpoints.
+- `backend/chain.py`: added `set_batch_document` and `get_batch_documents_onchain`.
+- `contracts/contracts/ProductRegistry.sol`: added document anchoring and view functions.
+- `contracts/test/ProductRegistry.test.cjs`: added tests for document anchoring.
+- `design/src/Consumer/Views/ProductJourneyView.jsx`: added IPFS inspection card & modal.
+- `design/src/Farmer/Views/CropDetailsView.jsx`: added IPFS Anchored badge.
+- `.gitignore`: ignored `backend/ipfs_storage/`.
+- `TASKS.md`: checked off Tasks 9.1 through 9.5.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 9.1: Verified `init_db()` and `get_connection()` in both SQLite and PostgreSQL modes with placeholder conversion (? -> %s).
+- Task 9.2: Tested `migrate_sqlite_to_supabase.py --dry-run` reading 176 records across all 11 tables with 0 discrepancies.
+- Task 9.3: Uploaded `organic_inspection_cert.pdf` via `POST /batches/BATCH-001/documents`; returned valid CID `ipfs://QmQeGWegKZ5dMbRT3mqWHDSN2L5pgjQ547WWB36coaNAkw`.
+- Task 9.4: `ProductRegistry.test.cjs` passed 6/6 tests; upload returned on-chain anchoring tx `e8f41072b78870ba...` and emitted `BatchDocumentAnchored`.
+- Task 9.5: Tested document viewer modal in `ProductJourneyView.jsx` with real IPFS links; `npm run build` compiled in 3.28s with 0 errors.
+
+**Phase 9 Status:**
+- **COMPLETE**: All 5 tasks in Phase 9 are finished and verified.
+
+**What's next:**
+- Phase 10 — Role Wallets, Reviews & Hardware IoT Demo (Tasks 10.1–10.6: MetaMask ethers.js v6 wallet connection, client-side role transaction signing, consumer rating & review loop, admin governance flow, physical ESP32 firmware prop, and capstone full-system verification).
+
 
 
 

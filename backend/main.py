@@ -1,7 +1,7 @@
 import pathlib
 import sqlite3
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -10,6 +10,7 @@ from datetime import datetime, timezone, timedelta
 import json
 
 import chain
+import ipfs
 from db import get_connection, init_db, DB_PATH
 from validation import validate_reading
 
@@ -692,6 +693,121 @@ def post_custody(batch_id: str, payload: CustodyTransferRequest):
         )
     finally:
         conn.close()
+
+
+# ---------------- IPFS Decentralized Documents Endpoints (Phase 9) ----------------
+
+class BatchDocumentResponse(BaseModel):
+    id: int
+    batch_id: str
+    doc_type: str
+    ipfs_cid: str
+    file_name: str
+    uploaded_at: str
+    gateway_url: str
+    tx_hash: Optional[str] = None
+
+
+@app.post("/batches/{batch_id}/documents", response_model=BatchDocumentResponse)
+async def upload_batch_document(
+    batch_id: str,
+    file: UploadFile = File(...),
+    doc_type: str = Form("QUALITY_CERTIFICATE"),
+):
+    """Pins an uploaded batch certificate / lab report / photo to IPFS, anchors the CID on-chain,
+
+    and stores metadata in the database.
+    """
+    conn = get_connection()
+    try:
+        batch_row = conn.execute("SELECT * FROM batches WHERE batch_id = ?", (batch_id,)).fetchone()
+        if not batch_row:
+            raise HTTPException(status_code=404, detail=f"Batch {batch_id} not found")
+
+        file_bytes = await file.read()
+        filename = file.filename or "document.pdf"
+
+        # 1. Pin to IPFS
+        pin_result = ipfs.pin_document(file_bytes, filename=filename, doc_type=doc_type.upper())
+        ipfs_uri = pin_result["ipfs_uri"]
+        gateway_url = pin_result["gateway_url"]
+
+        # 2. Anchor on-chain in ProductRegistry (Task 9.4)
+        tx_hash = None
+        try:
+            tx_hash = chain.set_batch_document(batch_id, doc_type.upper(), ipfs_uri)
+        except Exception as e:
+            print(f"[documents] On-chain anchoring warning: {e}")
+
+        # 3. Store document metadata in database
+        cur = conn.execute(
+            """
+            INSERT INTO batch_documents (batch_id, doc_type, ipfs_cid, file_name, tx_hash)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (batch_id, doc_type.upper(), ipfs_uri, filename, tx_hash),
+        )
+        doc_id = cur.lastrowid
+        conn.commit()
+
+        row = conn.execute("SELECT * FROM batch_documents WHERE id = ?", (doc_id,)).fetchone()
+        uploaded_at = str(row["uploaded_at"]) if row else datetime.now().isoformat()
+
+        return BatchDocumentResponse(
+            id=doc_id or 1,
+            batch_id=batch_id,
+            doc_type=doc_type.upper(),
+            ipfs_cid=ipfs_uri,
+            file_name=filename,
+            uploaded_at=uploaded_at,
+            gateway_url=gateway_url,
+            tx_hash=tx_hash,
+        )
+    finally:
+        conn.close()
+
+
+@app.get("/batches/{batch_id}/documents", response_model=List[BatchDocumentResponse])
+def get_batch_documents(batch_id: str):
+    """Retrieve all anchored IPFS documents for a given batch from database and smart contract."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM batch_documents WHERE batch_id = ? ORDER BY id DESC",
+            (batch_id,),
+        ).fetchall()
+
+        results = []
+        for r in rows:
+            cid = r["ipfs_cid"].replace("ipfs://", "")
+            results.append(BatchDocumentResponse(
+                id=r["id"],
+                batch_id=r["batch_id"],
+                doc_type=r["doc_type"],
+                ipfs_cid=r["ipfs_cid"],
+                file_name=r["file_name"],
+                uploaded_at=str(r["uploaded_at"]),
+                gateway_url=f"https://gateway.pinata.cloud/ipfs/{cid}",
+                tx_hash=r["tx_hash"],
+            ))
+        return results
+    finally:
+        conn.close()
+
+
+@app.get("/ipfs/{cid}")
+def get_ipfs_asset(cid: str):
+    """Local IPFS gateway endpoint returning cached raw binary content."""
+    clean_cid = cid.replace("ipfs://", "")
+    content = ipfs.get_pinned_content(clean_cid)
+    if not content:
+        raise HTTPException(status_code=404, detail="IPFS asset not found")
+    media_type = "application/pdf"
+    if clean_cid.endswith(".png") or (len(content) > 8 and b"PNG" in content[:8]):
+        media_type = "image/png"
+    elif clean_cid.endswith(".jpg") or (len(content) > 10 and (b"JFIF" in content[:10] or b"Exif" in content[:10])):
+        media_type = "image/jpeg"
+    return Response(content=content, media_type=media_type)
 
 
 # ---------------- Farmer Dashboard Endpoints ----------------

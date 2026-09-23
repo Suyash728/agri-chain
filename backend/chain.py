@@ -386,3 +386,27 @@ def get_condition_records(batch_id: str, from_block: int = 0) -> list:
             print(f"[chain] ConditionRecorded legacy event error: {e}")
 
     return records
+
+
+def set_batch_document(batch_id: str, doc_type: str, ipfs_cid: str) -> str:
+    """Anchors an IPFS document CID on-chain in ProductRegistry."""
+    b32 = to_bytes32(batch_id)
+    if product_registry_contract:
+        return _send_tx(product_registry_contract, "setBatchDocument", b32, doc_type, ipfs_cid)
+    raise RuntimeError("ProductRegistry contract not configured for set_batch_document")
+
+
+def get_batch_documents_onchain(batch_id: str) -> list:
+    """Queries on-chain document records from ProductRegistry."""
+    b32 = to_bytes32(batch_id)
+    if product_registry_contract:
+        try:
+            records = product_registry_contract.functions.getBatchDocuments(b32).call()
+            return [
+                {"docType": r[0], "ipfsCid": r[1], "timestamp": r[2]}
+                for r in records
+            ]
+        except Exception as e:
+            print(f"[chain] getBatchDocuments warning: {e}")
+            return []
+    return []

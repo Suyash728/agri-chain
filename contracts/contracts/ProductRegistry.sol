@@ -12,7 +12,14 @@ contract ProductRegistry is AccessControlRoles {
         bool exists;
     }
 
+    struct DocumentRecord {
+        string docType;
+        string ipfsCid;
+        uint256 timestamp;
+    }
+
     mapping(bytes32 => Batch) public batches;
+    mapping(bytes32 => DocumentRecord[]) internal _batchDocuments;
 
     event BatchRegistered(bytes32 indexed batchId, string cropName, address indexed farmer);
     event BatchDocumentAnchored(bytes32 indexed batchId, string docType, string ipfsCid);
@@ -35,6 +42,20 @@ contract ProductRegistry is AccessControlRoles {
         require(!batches[batchId].exists, "ProductRegistry: batch already exists");
         batches[batchId] = Batch(cropName, originFarm, harvestDate, farmer, true);
         emit BatchRegistered(batchId, cropName, farmer);
+    }
+
+    function setBatchDocument(
+        bytes32 batchId,
+        string calldata docType,
+        string calldata ipfsCid
+    ) external onlyFarmerOrAdmin {
+        require(batches[batchId].exists, "ProductRegistry: batch does not exist");
+        _batchDocuments[batchId].push(DocumentRecord(docType, ipfsCid, block.timestamp));
+        emit BatchDocumentAnchored(batchId, docType, ipfsCid);
+    }
+
+    function getBatchDocuments(bytes32 batchId) external view returns (DocumentRecord[] memory) {
+        return _batchDocuments[batchId];
     }
 
     function getBatch(bytes32 batchId) external view returns (
