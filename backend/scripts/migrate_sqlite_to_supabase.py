@@ -28,6 +28,9 @@ BACKEND_DIR = ROOT_DIR / "backend"
 DEFAULT_SQLITE_PATH = BACKEND_DIR / "agrichain.db"
 MIGRATION_SQL_PATH = BACKEND_DIR / "migrations" / "001_initial_schema.sql"
 
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=ROOT_DIR / ".env")
+
 # Add backend to sys.path
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
@@ -134,6 +137,20 @@ def migrate_to_postgres(target_url: str, sqlite_path: pathlib.Path, dry_run: boo
                 conflict_clause = "ON CONFLICT (device_id, batch_id) DO UPDATE SET latest_timestamp = EXCLUDED.latest_timestamp"
             else:
                 conflict_clause = ""
+
+            # Ensure referenced batches exist before inserting child records
+            if table in ("readings", "custody_events", "batch_documents", "batch_reviews"):
+                referenced_batches = {r["batch_id"] for r in records if r.get("batch_id")}
+                with pg_conn.cursor() as cur:
+                    cur.execute("SELECT batch_id FROM batches")
+                    existing_b = {row["batch_id"] for row in cur.fetchall()}
+                    missing_b = referenced_batches - existing_b
+                    for mb in missing_b:
+                        cur.execute(
+                            "INSERT INTO batches (batch_id, crop_name, origin_farm, harvest_date, farmer_name) VALUES (%s, %s, %s, %s, %s) ON CONFLICT (batch_id) DO NOTHING",
+                            (mb, "tomato", "Simulated Farm", "2026-09-23", "Automated Simulation")
+                        )
+                pg_conn.commit()
 
             insert_sql = f"INSERT INTO {table} ({cols_str}) VALUES ({placeholders}) {conflict_clause}"
 

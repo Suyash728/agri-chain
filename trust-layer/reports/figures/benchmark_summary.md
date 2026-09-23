@@ -12,7 +12,7 @@
 | **Recall** | **1.0000** (100.0%) |
 | **F1-Score** | **0.9722** (97.2%) |
 | **False Positive Rate (FPR)** | **0.4000** (40.0%) |
-| Mean Pipeline Latency | 65.98 ms |
+| Mean Pipeline Latency | 32.13 ms |
 
 ## Fault-Wise Detection Breakdown
 | Fault Category | Total Trials | Detected Anomalous | Accepted Valid | Insufficient | Detection Rate (%) |

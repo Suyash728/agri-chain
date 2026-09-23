@@ -579,6 +579,39 @@ session doesn't have to rediscover it.
 **Phase 10 & Project Status:**
 - **COMPLETE**: All 10 Phases of the AgriChain Major Project are 100% implemented, tested, and verified end-to-end!
 
+---
+
+## [Supabase Cloud Project Migration & Verification] — 2026-09-24
+
+**What was done:**
+- Configured user's live cloud Supabase project (`uqqxncbftmiflhkjdovc` hosted in AWS Mumbai `ap-south-1`).
+- Configured connection string in `.env` to route through the Supabase IPv4 Session Pooler (`aws-0-ap-south-1.pooler.supabase.com:5432`), overcoming local ISP IPv6 routing limitations.
+- Executed `backend/scripts/migrate_sqlite_to_supabase.py`:
+  - Built PostgreSQL schema from `backend/migrations/001_initial_schema.sql` (tables, constraints, cascade rules, performance indexes).
+  - Migrated all records across all 11 tables (`policy`, `batches`, `custody_events`, `readings`, `quarantine`, `telemetry_history`, `audit_trail`, `replay_events`, `replay_latest_timestamps`, `batch_documents`, `batch_reviews`).
+  - Synchronized PostgreSQL serial auto-increment sequences (`custody_events.id=49`, `readings.id=151`, `quarantine.id=53`, `batch_documents.id=1`, `batch_reviews.id=1`).
+  - Verified 0 row count discrepancies detected across all 11 tables.
+- Redeployed modular smart contracts (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, `AccessControlRoles`) to the local Hardhat node and exported updated ABIs and manifests.
+- Ran `backend/scripts/verify_final_system.py` directly against the live Supabase cloud database, validating all 8 capstone stages with 100% pass:
+  1. Access Control Roles & batched condition writes on-chain.
+  2. AI Trust Layer multi-fault evaluation (F1: 0.9722 >= 0.95).
+  3. Multi-role journey: Farmer batch registration -> Logistics in-transit dispatch.
+  4. ESP32 nominal telemetry mined on-chain & push-button thermal breach quarantine.
+  5. Decentralized IPFS document pinning and on-chain CID anchoring.
+  6. Dark Store inbound GRN receiving & consumer checkout.
+  7. Verified post-checkout consumer review and 5-star rating aggregation.
+  8. End-to-end price breakdown and farmer fair price share validation.
+
+**Files changed:**
+- `.env`: updated with Supabase IPv4 connection pooler URI.
+- `backend/scripts/migrate_sqlite_to_supabase.py`: added environment loader and foreign-key batch guard for historical readings.
+- `backend/modular-deployments.json` & `contracts/amoy-deployments.json`: synchronized with local modular contract deployment.
+- `MEMORY.md`: appended Supabase migration and verification record.
+
+**Status:**
+- Supabase cloud database is **LIVE, populated, and operating as the primary database** for AgriChain!
+
+
 
 
 
