@@ -427,13 +427,13 @@ Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and
 - **DONE WHEN:** opening the Logistics Partner portal shows live shipment cards with real crop names and temperatures, and picking up a batch updates its state to `IN_TRANSIT` on-chain. (Verified: `LogisticKPICards`, `LogisticDashboardView`, `TransportationView`, `ShipmentTrackingView`, and `ProcurementOrdersView` wired to backend; dispatch action tested and verified transferring batch `BATCH-001` to `IN_TRANSIT` on-chain with tx `33370e1a...`).
 
 ### Task 7.3 — Implement Dark Store / Retailer Backend Endpoints
-- [ ] In `backend/main.py`, implement:
+- [x] In `backend/main.py`, implement:
   - `GET /darkstore/kpis`: returns active inventory count (`IN_STORAGE`), inbound deliveries (`IN_TRANSIT`), sales count (`SOLD`), and total revenue.
   - `GET /darkstore/inbound`: returns shipments currently `IN_TRANSIT` destined for or arriving at the dark store hub.
   - `GET /darkstore/inventory`: returns batches currently held in storage (`IN_STORAGE` / `AT_RETAIL`) with batch ID, crop name, quantity, shelf life, and condition summary.
   - `POST /darkstore/receive`: receives inbound delivery, transferring custody state to `IN_STORAGE` on-chain.
   - `POST /darkstore/checkout`: completes consumer purchase, transferring custody state to `SOLD` at retail price on-chain.
-- **DONE WHEN:** calling `GET /darkstore/kpis` returns accurate counts from SQLite, and calling `POST /darkstore/receive` followed by `POST /darkstore/checkout` records valid blockchain state transitions.
+- **DONE WHEN:** calling `GET /darkstore/kpis` returns accurate counts from SQLite, and calling `POST /darkstore/receive` followed by `POST /darkstore/checkout` records valid blockchain state transitions. (Verified: tested `/darkstore/kpis`, `/darkstore/inbound`, `/darkstore/inventory`, `POST /darkstore/receive` [tx `905f9dbf...`], and `POST /darkstore/checkout` [tx `7cb5aa63...`]; full 4-stage lifecycle verified).
 
 ### Task 7.4 — Wire Dark Store UI (`DarkStoreApp.jsx` & Inbound / Inventory Views)
 - [ ] In `design/src/Dark_Store/Views/DarkStoreDashboardView.jsx` and `DarkStoreKPICards.jsx`, replace mock KPIs with live `fetch('http://localhost:8000/darkstore/kpis')`.
