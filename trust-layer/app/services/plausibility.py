@@ -88,20 +88,102 @@ def run_plausibility_checks(
     checks: list[PlausibilityCheckResult] = []
 
     # ------------------------------------------------------------------
+    # 0. Crop Policy Environmental Limits (Temperature & Humidity)
+    # ------------------------------------------------------------------
+    if policy.min_temp_c is not None and current.temperature < policy.min_temp_c:
+        checks.append(
+            PlausibilityCheckResult(
+                name="crop_temperature_bounds_check",
+                passed=False,
+                reason_code="TEMPERATURE_OUT_OF_POLICY",
+                calculated_value=f"{current.temperature:.2f} °C",
+                threshold=f">= {policy.min_temp_c:.2f} °C",
+                details=(
+                    f"Temperature {current.temperature:.2f} °C is below policy minimum "
+                    f"of {policy.min_temp_c:.2f} °C for crop '{policy.crop_type}'."
+                ),
+            )
+        )
+    elif policy.max_temp_c is not None and current.temperature > policy.max_temp_c:
+        checks.append(
+            PlausibilityCheckResult(
+                name="crop_temperature_bounds_check",
+                passed=False,
+                reason_code="TEMPERATURE_OUT_OF_POLICY",
+                calculated_value=f"{current.temperature:.2f} °C",
+                threshold=f"<= {policy.max_temp_c:.2f} °C",
+                details=(
+                    f"Temperature {current.temperature:.2f} °C exceeds policy maximum "
+                    f"of {policy.max_temp_c:.2f} °C for crop '{policy.crop_type}'."
+                ),
+            )
+        )
+    elif policy.min_temp_c is not None or policy.max_temp_c is not None:
+        checks.append(
+            PlausibilityCheckResult(
+                name="crop_temperature_bounds_check",
+                passed=True,
+                calculated_value=f"{current.temperature:.2f} °C",
+                threshold=f"[{policy.min_temp_c}, {policy.max_temp_c}] °C",
+                details=f"Temperature {current.temperature:.2f} °C is within policy limits for crop '{policy.crop_type}'.",
+            )
+        )
+
+    if policy.min_humidity is not None and current.humidity < policy.min_humidity:
+        checks.append(
+            PlausibilityCheckResult(
+                name="crop_humidity_bounds_check",
+                passed=False,
+                reason_code="HUMIDITY_OUT_OF_POLICY",
+                calculated_value=f"{current.humidity:.2f} %",
+                threshold=f">= {policy.min_humidity:.2f} %",
+                details=(
+                    f"Humidity {current.humidity:.2f} % is below policy minimum "
+                    f"of {policy.min_humidity:.2f} % for crop '{policy.crop_type}'."
+                ),
+            )
+        )
+    elif policy.max_humidity is not None and current.humidity > policy.max_humidity:
+        checks.append(
+            PlausibilityCheckResult(
+                name="crop_humidity_bounds_check",
+                passed=False,
+                reason_code="HUMIDITY_OUT_OF_POLICY",
+                calculated_value=f"{current.humidity:.2f} %",
+                threshold=f"<= {policy.max_humidity:.2f} %",
+                details=(
+                    f"Humidity {current.humidity:.2f} % exceeds policy maximum "
+                    f"of {policy.max_humidity:.2f} % for crop '{policy.crop_type}'."
+                ),
+            )
+        )
+    elif policy.min_humidity is not None or policy.max_humidity is not None:
+        checks.append(
+            PlausibilityCheckResult(
+                name="crop_humidity_bounds_check",
+                passed=True,
+                calculated_value=f"{current.humidity:.2f} %",
+                threshold=f"[{policy.min_humidity}, {policy.max_humidity}] %",
+                details=f"Humidity {current.humidity:.2f} % is within policy limits for crop '{policy.crop_type}'.",
+            )
+        )
+
+    # ------------------------------------------------------------------
     # First-ever reading for a device
     # If no previous reading exists, all checks pass with an informative note.
     # ------------------------------------------------------------------
     if previous is None:
+        checks.append(
+            PlausibilityCheckResult(
+                name="initial_reading_check",
+                passed=True,
+                details="First reading for device/batch. No prior historical reading available for comparison.",
+            )
+        )
         return PlausibilityResult(
-            plausible=True,
+            plausible=all(c.passed for c in checks),
             stage=STAGE_NAME,
-            checks=[
-                PlausibilityCheckResult(
-                    name="initial_reading_check",
-                    passed=True,
-                    details="First reading for device/batch. No prior historical reading available for comparison.",
-                )
-            ],
+            checks=checks,
         )
 
     # Calculate elapsed time in seconds between readings

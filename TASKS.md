@@ -361,14 +361,14 @@ This phase integrates teammate Rutuja's standalone `trust-layer` module into the
 - **DONE WHEN:** running `pytest trust-layer/tests/ -v` passes all 132 tests (30 range + 13 plausibility + 11 features + 11 anomaly + 12 integrity + 14 verdict + 12 audit + 17 simulator + 12 oracle handoff) with 0 failures. (Verified: 143 passed in 11.03s).
 
 ### Task 6.2 — Implement persistent SQLite storage for history & audit
-- [ ] Currently `trust-layer/app/services/history.py` and `audit.py` use in-memory Python dictionaries (`_store`). Update or wrap them to persist records into SQLite (`backend/agrichain.db`) across process restarts.
-- [ ] Maintain the same repository interface (`get_last_reading`, `add_reading`, `record_audit`, `get_by_event_hash`, `get_quarantined_records`).
-- **DONE WHEN:** adding telemetry readings, restarting the application process, and calling `GET /telemetry/audit/{event_hash}` returns the persisted records without data loss.
+- [x] Currently `trust-layer/app/services/history.py` and `audit.py` use in-memory Python dictionaries (`_store`). Update or wrap them to persist records into SQLite (`backend/agrichain.db`) across process restarts.
+- [x] Maintain the same repository interface (`get_last_reading`, `add_reading`, `record_audit`, `get_by_event_hash`, `get_quarantined_records`).
+- **DONE WHEN:** adding telemetry readings, restarting the application process, and calling `GET /telemetry/audit/{event_hash}` returns the persisted records without data loss. (Verified: `telemetry_history`, `audit_trail`, and `replay_events` persisted to `agrichain.db`, retrievable across fresh instances; all 143 tests passing).
 
 ### Task 6.3 — Bind dynamic crop policies to AI trust validation
-- [ ] Connect `trust-layer/app/services/validator.py` and `plausibility.py` to `CropPolicy` loaded dynamically from SQLite `policy` table based on the batch's registered crop (`Tomato`, `Mango`, `Wheat`).
-- [ ] If no crop policy exists, gracefully fall back to default cold-chain thresholds in `app/config.py`.
-- **DONE WHEN:** sending a 15.0°C telemetry reading for a `Tomato` batch (max policy 10.0°C) is flagged `ANOMALOUS`, while sending 15.0°C for a `Wheat` batch (max policy 25.0°C) is evaluated as `VALID`.
+- [x] Connect `trust-layer/app/services/validator.py` and `plausibility.py` to `CropPolicy` loaded dynamically from SQLite `policy` table based on the batch's registered crop (`Tomato`, `Mango`, `Wheat`).
+- [x] If no crop policy exists, gracefully fall back to default cold-chain thresholds in `app/config.py` and conservative tomato defaults.
+- **DONE WHEN:** sending a 15.0°C telemetry reading for a `Tomato` batch (max policy 8.0°C) is flagged `ANOMALOUS`, while sending 15.0°C for a `Wheat` batch (max policy 25.0°C) is evaluated as `VALID`. (Verified: 147 tests pass in `trust-layer/tests/`, including `test_policy.py`).
 
 ### Task 6.4 — Connect backend ingestion to AI Trust Pipeline & Oracle Handoff
 - [ ] Update `backend/main.py:POST /telemetry` to execute the full AI Trust pipeline:

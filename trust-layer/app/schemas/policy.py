@@ -61,3 +61,19 @@ class CropPolicy(BaseModel):
         default_factory=lambda: MAX_TELEMETRY_GAP_SECONDS,
         description="Max telemetry gap in seconds.",
     )
+    min_temp_c: Optional[float] = Field(
+        default=None,
+        description="Minimum allowed temperature in °C for this crop.",
+    )
+    max_temp_c: Optional[float] = Field(
+        default=None,
+        description="Maximum allowed temperature in °C for this crop.",
+    )
+    min_humidity: Optional[float] = Field(
+        default=None,
+        description="Minimum allowed relative humidity in % for this crop.",
+    )
+    max_humidity: Optional[float] = Field(
+        default=None,
+        description="Maximum allowed relative humidity in % for this crop.",
+    )
