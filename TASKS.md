@@ -448,14 +448,14 @@ Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and
 - **DONE WHEN:** clicking "View Details" in the AI Trust view opens a modal displaying live quarantined incidents (e.g. simulated temperature spikes, GPS jumps, replay attacks) with their exact detection timestamps and reason codes. (Verified: `GET /telemetry/quarantine` returning persisted audit and quarantine records; created `QuarantineAuditModal.jsx` and wired to "View Details" button in `AITrustView.jsx`; `npm run build` compiled cleanly in 2.47s).
 
 ### Task 7.6 — End-to-End Multi-Role Workflow Verification
-- [ ] Create `backend/scripts/verify_phase7_e2e.py` testing the complete 4-role lifecycle:
+- [x] Create `backend/scripts/verify_phase7_e2e.py` testing the complete 4-role lifecycle:
   1. Farmer registers batch `P7-DEMO-001`.
   2. Logistics Partner picks up batch (`IN_TRANSIT`), streams valid telemetry, and injects 1 deliberate fault.
   3. AI Trust Layer quarantines the fault; verified via `GET /telemetry/quarantine`.
   4. Dark Store receives batch via Inbound GRN (`IN_STORAGE`).
   5. Consumer checks out batch (`SOLD`).
   6. Verify all 4 role portals (Farmer, Logistics, Dark Store, Consumer) reflect consistent on-chain and off-chain state.
-- **DONE WHEN:** running `python backend/scripts/verify_phase7_e2e.py` passes all 6 validation steps with zero errors.
+- **DONE WHEN:** running `python backend/scripts/verify_phase7_e2e.py` passes all 6 validation steps with zero errors. (Verified: executed against fresh batch `P7-DEMO-1790167068`, all 6 stages passed with 0 errors, full transparent price trail ₹0 -> ₹1,000 -> ₹1,400 -> ₹2,000 confirmed with 50.0% farmer share, and anomalous reading successfully quarantined off-chain).
 
 **→ End of Phase 7. Append a `MEMORY.md` entry.**
 
