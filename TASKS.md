@@ -380,7 +380,7 @@ This phase integrates teammate Rutuja's standalone `trust-layer` module into the
 - **DONE WHEN:** posting valid telemetry updates Hardhat blockchain condition events and SQLite audit records; posting an anomaly (temp spike, GPS jump, or replay attack) inserts a quarantine record and leaves on-chain event count unchanged. (Verified: `backend/scripts/verify_phase6_task4.py` and `backend/scripts/verify_phase5_e2e.py` passed with all checks confirmed).
 
 ### Task 6.5 — Integrate multi-fault telemetry simulation
-- [ ] Upgrade root `simulator/simulate.py` using `trust-layer/app/services/simulator.py` to support all 7 fault types:
+- [x] Upgrade root `simulator/simulate.py` using `trust-layer/app/services/simulator.py` to support all 7 fault types:
   - `--fault temp_spike`
   - `--fault humidity_spike`
   - `--fault gps_jump`
@@ -388,7 +388,7 @@ This phase integrates teammate Rutuja's standalone `trust-layer` module into the
   - `--fault replay_attack`
   - `--fault telemetry_gap`
   - `--fault composite`
-- **DONE WHEN:** running `python simulator/simulate.py --batch-id BATCH-001 --fault replay_attack` generates a duplicate sequence and causes the AI Trust layer to output `REPLAY_ATTACK_DETECTED` with disposition `QUARANTINED`.
+- **DONE WHEN:** running `python simulator/simulate.py --batch-id BATCH-001 --fault replay_attack` generates a duplicate sequence and causes the AI Trust layer to output `REPLAY_ATTACK_DETECTED` with disposition `QUARANTINED`. (Verified: executed against BATCH-001 with replay_attack, gps_jump, and temp_spike all correctly flagged and quarantined while clean samples were anchored on-chain).
 
 ### Task 6.6 — Run benchmark evaluation & export IEEE paper figures
 - [ ] Execute `POST /telemetry/evaluate` using `trust-layer/app/services/evaluation.py` on a balanced dataset of clean and faulted streams.

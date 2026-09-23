@@ -220,6 +220,8 @@ def post_telemetry(payload: TelemetryRequest):
 
         # If range validation failed, prepend reason codes
         all_reasons = range_reasons + [r for r in verdict.reason_codes if r not in range_reasons]
+        if "REPLAY_DETECTED" in all_reasons and "REPLAY_ATTACK_DETECTED" not in all_reasons:
+            all_reasons.append("REPLAY_ATTACK_DETECTED")
         if range_reasons and verdict.verdict != "ANOMALOUS":
             verdict.verdict = "ANOMALOUS"
             verdict.reason_codes = all_reasons
