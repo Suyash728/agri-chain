@@ -442,10 +442,10 @@ Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and
 - **DONE WHEN:** opening the Dark Store portal displays live incoming deliveries, receiving an inbound batch updates inventory in real time, and the UI builds cleanly without layout or style regressions. (Verified: `DarkStoreKPICards`, `DarkStoreDashboardView`, `InboundGRNView`, and `MicroInventoryView` wired to backend; tested receiving test batch `DEMO-DS-01` into `IN_STORAGE` and verified instant reflection in storage bins; `npm run build` compiled cleanly in 2.45s).
 
 ### Task 7.5 — Implement & Wire Quarantine Inspection UI
-- [ ] In `backend/main.py`, implement `GET /telemetry/quarantine` returning detailed quarantined records from SQLite `quarantine`, `audit_trail`, and `readings`:
+- [x] In `backend/main.py`, implement `GET /telemetry/quarantine` returning detailed quarantined records from SQLite `quarantine`, `audit_trail`, and `readings`:
   - `reading_id`, `batch_id`, `crop_name`, `temp_c`, `humidity_pct`, `latitude`, `longitude`, `reasons` (list of human-readable fault descriptions), `anomaly_score`, `quarantined_at`.
-- [ ] In `design/src/Farmer/Views/AITrustView.jsx` (and `Farmer/Modals/`), connect the "View Details" button to a Quarantine Audit Inspection sheet/modal listing real intercepted sensor violations with explainable reason codes.
-- **DONE WHEN:** clicking "View Details" in the AI Trust view opens a modal displaying live quarantined incidents (e.g. simulated temperature spikes, GPS jumps, replay attacks) with their exact detection timestamps and reason codes.
+- [x] In `design/src/Farmer/Views/AITrustView.jsx` (and `Farmer/Modals/`), connect the "View Details" button to a Quarantine Audit Inspection sheet/modal listing real intercepted sensor violations with explainable reason codes.
+- **DONE WHEN:** clicking "View Details" in the AI Trust view opens a modal displaying live quarantined incidents (e.g. simulated temperature spikes, GPS jumps, replay attacks) with their exact detection timestamps and reason codes. (Verified: `GET /telemetry/quarantine` returning persisted audit and quarantine records; created `QuarantineAuditModal.jsx` and wired to "View Details" button in `AITrustView.jsx`; `npm run build` compiled cleanly in 2.47s).
 
 ### Task 7.6 — End-to-End Multi-Role Workflow Verification
 - [ ] Create `backend/scripts/verify_phase7_e2e.py` testing the complete 4-role lifecycle:

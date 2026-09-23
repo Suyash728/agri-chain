@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { aiTrustData as initialData } from '../../data/mockData';
+import { QuarantineAuditModal } from '../Modals/QuarantineAuditModal';
 
 export const AITrustView = ({ onBack, onOpenDetails }) => {
   const [trustData, setTrustData] = useState(initialData);
+  const [isQuarantineOpen, setIsQuarantineOpen] = useState(false);
+
+  const handleOpenDetails = () => {
+    if (onOpenDetails) onOpenDetails();
+    setIsQuarantineOpen(true);
+  };
 
   useEffect(() => {
     fetch('http://localhost:8000/farmer/ai-trust')
@@ -101,8 +108,8 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
       {/* Centered View Details Action Button */}
       <div className="pt-1 flex justify-center">
         <button 
-          onClick={onOpenDetails}
-          className="text-xs font-bold text-[#3B3028] hover:text-[#556B2F] transition-colors py-1.5 px-4 rounded-lg bg-[#FAF7F0] border border-[#E6E1D5]"
+          onClick={handleOpenDetails}
+          className="text-xs font-bold text-[#3B3028] hover:text-[#556B2F] transition-colors py-1.5 px-4 rounded-lg bg-[#FAF7F0] border border-[#E6E1D5] cursor-pointer"
         >
           View Details
         </button>
@@ -123,6 +130,12 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
           </div>
         ))}
       </div>
+
+      {/* Quarantine Audit Modal */}
+      <QuarantineAuditModal 
+        isOpen={isQuarantineOpen} 
+        onClose={() => setIsQuarantineOpen(false)} 
+      />
     </div>
   );
 };

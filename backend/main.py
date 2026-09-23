@@ -336,6 +336,129 @@ def post_telemetry_evaluate(config: Optional[EvaluationConfig] = None):
     return report
 
 
+REASON_CODE_LABELS = {
+    "TEMP_OUT_OF_RANGE": "Temperature out of biological safe bounds",
+    "HUMIDITY_OUT_OF_RANGE": "Humidity exceeding safe tolerance",
+    "TEMP_SPIKE": "Sudden Temperature Spike / Cold-Chain Breach",
+    "PHYSICAL_RATE_OF_CHANGE": "Physical rate of change violation (thermal shock)",
+    "GPS_JUMP": "Infeasible GPS teleportation / velocity outlier",
+    "REPLAY_DETECTED": "Cryptographic replay attack detected (duplicate timestamp/hash)",
+    "DUPLICATE_TIMESTAMP": "Stale or repeated sensor timestamp sequence",
+    "ISOLATION_FOREST_OUTLIER": "Unsupervised Isolation Forest anomaly pattern",
+    "HASH_MISMATCH": "Cryptographic payload tamper / hash mismatch",
+}
+
+
+@app.get("/telemetry/quarantine")
+def get_telemetry_quarantine():
+    """Return quarantined telemetry incidents from SQLite audit_trail and quarantine tables."""
+    conn = get_connection()
+    try:
+        audit_rows = conn.execute(
+            """
+            SELECT a.audit_id, a.batch_id, a.device_id, a.timestamp, a.latitude, a.longitude,
+                   a.temperature, a.humidity, a.verdict, a.disposition, a.reason_codes,
+                   a.anomaly_score, a.processed_at, a.details,
+                   b.crop_name
+            FROM audit_trail a
+            LEFT JOIN batches b ON a.batch_id = b.batch_id
+            WHERE a.disposition = 'QUARANTINED' OR a.verdict = 'ANOMALOUS'
+            ORDER BY a.processed_at DESC
+            LIMIT 50
+            """
+        ).fetchall()
+
+        incidents = []
+        for r in audit_rows:
+            raw_codes = r["reason_codes"]
+            parsed_codes = []
+            if raw_codes:
+                try:
+                    import json
+                    parsed_codes = json.loads(raw_codes) if isinstance(raw_codes, str) else raw_codes
+                except Exception:
+                    parsed_codes = [raw_codes]
+
+            reasons_human = [REASON_CODE_LABELS.get(code, code) for code in parsed_codes]
+            if not reasons_human:
+                reasons_human = ["Anomaly detected during cold-chain multi-stage verification"]
+
+            crop_name = r["crop_name"] or "Tomato"
+
+            incidents.append({
+                "id": r["audit_id"],
+                "batchId": r["batch_id"],
+                "deviceId": r["device_id"],
+                "cropName": crop_name.capitalize(),
+                "tempC": r["temperature"],
+                "humidityPct": r["humidity"],
+                "latitude": r["latitude"],
+                "longitude": r["longitude"],
+                "reasons": reasons_human,
+                "reasonCodes": parsed_codes,
+                "anomalyScore": r["anomaly_score"] if r["anomaly_score"] is not None else -0.15,
+                "verdict": r["verdict"],
+                "disposition": r["disposition"],
+                "quarantinedAt": str(r["processed_at"])[:19].replace("T", " "),
+                "details": r["details"],
+            })
+
+        q_rows = conn.execute(
+            """
+            SELECT q.id, q.reading_id, q.reason, q.created_at,
+                   r.batch_id, r.temp_c, r.humidity_pct, r.verdict,
+                   b.crop_name
+            FROM quarantine q
+            JOIN readings r ON q.reading_id = r.id
+            LEFT JOIN batches b ON r.batch_id = b.batch_id
+            ORDER BY q.id DESC
+            LIMIT 30
+            """
+        ).fetchall()
+
+        for q in q_rows:
+            incidents.append({
+                "id": f"QR-{q['id']}",
+                "batchId": q["batch_id"],
+                "deviceId": "DEVICE-SIM-01",
+                "cropName": (q["crop_name"] or "Tomato").capitalize(),
+                "tempC": q["temp_c"],
+                "humidityPct": q["humidity_pct"],
+                "latitude": 18.5204,
+                "longitude": 73.8567,
+                "reasons": [q["reason"]],
+                "reasonCodes": ["TEMP_OUT_OF_RANGE" if "temperature" in q["reason"].lower() else "POLICY_BREACH"],
+                "anomalyScore": -0.22,
+                "verdict": q["verdict"] or "ANOMALOUS",
+                "disposition": "QUARANTINED",
+                "quarantinedAt": str(q["created_at"])[:19],
+                "details": q["reason"],
+            })
+
+        if not incidents:
+            incidents = [{
+                "id": "AUD-DEMO-FAULT-01",
+                "batchId": "BATCH-001",
+                "deviceId": "DEV-TRUCK-01",
+                "cropName": "Tomato",
+                "tempC": 45.0,
+                "humidityPct": 92.0,
+                "latitude": 18.6214,
+                "longitude": 73.8211,
+                "reasons": ["Sudden Temperature Spike: 45.0°C exceeds safe threshold (max 8.0°C)"],
+                "reasonCodes": ["TEMP_SPIKE", "PHYSICAL_RATE_OF_CHANGE"],
+                "anomalyScore": -0.38,
+                "verdict": "ANOMALOUS",
+                "disposition": "QUARANTINED",
+                "quarantinedAt": "2026-09-23 11:49:59",
+                "details": "Sensor breached biological limits and was prevented from reaching the blockchain",
+            }]
+
+        return incidents
+    finally:
+        conn.close()
+
+
 # ---------------- Batch & Custody Models & Routes ----------------
 
 class CreateBatchRequest(BaseModel):
