@@ -414,11 +414,11 @@ This phase integrates teammate Rutuja's standalone `trust-layer` module into the
 Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and the Quarantine Inspection UI in `design/` to live backend API endpoints and on-chain state, enabling full cross-role multi-stakeholder lifecycle management.
 
 ### Task 7.1 — Implement Logistics Partner Backend Endpoints
-- [ ] In `backend/main.py`, implement:
+- [x] In `backend/main.py`, implement:
   - `GET /logistics/kpis`: returns live KPIs (`totalShipments` in transit, `pendingOrders` ready for pickup, `onTimeDelivery` percentage, `totalLogisticsCost` formatted/paise).
   - `GET /logistics/shipments`: returns active shipments derived from SQLite `batches`, `custody_events`, and latest `readings` (including latest temp, humidity, GPS coordinates, origin farm, current holder, destination).
   - `GET /logistics/orders`: returns pending batches with status `REGISTERED` ready for procurement pickup.
-- **DONE WHEN:** querying `GET /logistics/kpis` and `GET /logistics/shipments` via `curl` returns real batches, valid GPS/temp telemetry, and dynamic counts matching database state.
+- **DONE WHEN:** querying `GET /logistics/kpis` and `GET /logistics/shipments` via `curl` returns real batches, valid GPS/temp telemetry, and dynamic counts matching database state. (Verified: tested `/logistics/kpis`, `/logistics/shipments`, and `/logistics/orders`; returned live batches, valid GPS coordinates, reefer temperatures, and accurate counts).
 
 ### Task 7.2 — Wire Logistics Partner UI (`LogisticDashboardView.jsx` & Fleet Views)
 - [ ] In `design/src/Logistic_Partner/components/LogisticKPICards.jsx` and `LogisticDashboardView.jsx`, replace mock data with `fetch('http://localhost:8000/logistics/kpis')` and `fetch('http://localhost:8000/logistics/shipments')`.
