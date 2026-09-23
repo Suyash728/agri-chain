@@ -637,6 +637,32 @@ session doesn't have to rediscover it.
 - `design/src/index.css`: added `.no-scrollbar` utility.
 - `MEMORY.md`: appended audit and fix record.
 
+---
+
+## [Review-2 Documentation & System Architecture Package] — 2026-09-24
+
+**What was done:**
+- Created dedicated presentation and evaluation directory `review-2/` containing:
+  - `review-2/README.md`: directory navigation, quick executive summary, and capstone verification instructions.
+  - `review-2/SYSTEM_ARCHITECTURE_AND_WORKING.md`: master technical document detailing the full system working based on the current development version (All 10 Phases Complete).
+- Authored 7 comprehensive, presentation-ready Mermaid visual diagrams:
+  1. **High-Level 5-Tier System Architecture** (`flowchart TD`): Edge IoT & Hardware $\to$ AI Trust Layer $\to$ Modular Smart Contracts $\to$ Hybrid Storage (Supabase & IPFS) $\to$ Multi-Role Web3 Frontend.
+  2. **Pre-Chain AI Trust Layer 6-Stage Pipeline** (`flowchart TD`): Ingestion $\to$ Range Bounds $\to$ 11-D Feature Extraction $\to$ Isolation Forest ML $\to$ SHA-256 Anti-Replay $\to$ Verdict Engine.
+  3. **Modular Smart Contract Class & State Transition Architecture** (`classDiagram` and `stateDiagram-v2`): OpenZeppelin RBAC, `ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, and `PolicyConfig`.
+  4. **Database Entity-Relationship Model** (`erDiagram`): 11 normalized relational tables in live Supabase PostgreSQL (AWS Mumbai).
+  5. **Physical IoT Edge Layer & Telemetry Streaming Flow** (`flowchart LR`): ESP32 hardware node, DHT22 sensor, NEO-6M GPS, GPIO 4 breach button, and Python simulator.
+  6. **End-to-End Product Lifecycle & Custody Sequence Diagram** (`sequenceDiagram`): Complete actor interaction trace across Farmer, Logistics Partner, Dark Store, and Consumer.
+  7. **Supply Chain Price Trail & Economics Breakdown** (`flowchart LR`): On-chain markup trail proving the **50.00% farmer fair share**.
+- Added exhaustive technical documentation of:
+  - Mathematical models for Isolation Forest average path length and anomaly score.
+  - EVM 32-byte storage slot packing and oracle condition batching gas benchmark (saving 52.71% gas).
+  - Review-2 Faculty Viva Defense Q&A covering the GIGO problem, thermodynamic feature physics, replay attack prevention, and access controls.
+
+**Files changed:**
+- `review-2/README.md`: created review-2 index.
+- `review-2/SYSTEM_ARCHITECTURE_AND_WORKING.md`: created complete technical and architectural explanation with 7 Mermaid diagrams.
+- `MEMORY.md`: appended Review-2 documentation entry.
+
 
 
 

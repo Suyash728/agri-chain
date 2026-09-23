@@ -20,7 +20,7 @@ AgriChain is organized into 5 interconnected architectural tiers:
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                    TIER 1: PHYSICAL IOT & SIMULATION                   │
-│  ESP32 Microcontroller + DHT22 + NEO-6M GPS + GPIO 4 Breach Trigger   │
+│  ESP32 Microcontroller + DHT22 + NEO-6M GPS + GPIO 4 Breach Trigger    |
 │  Python Stream Simulator (7 fault scenarios: freeze, spike, drift...)  │
 └───────────────────────────────────┬────────────────────────────────────┘
                                     │ HTTP /telemetry
@@ -117,6 +117,10 @@ AgriChain is organized into 5 interconnected architectural tiers:
 │   │   ├── Consumer/                        Consumer storefront (marketplace, QR journey, IPFS modal)
 │   │   └── utils/contracts.js               Contract addresses, ABIs, and Web3 helpers
 │   └── index.html                           Application root
+│
+├── review-2/                                Capstone Review 2 Presentation & Architecture Package
+│   ├── README.md                            Review 2 executive index & verification checklist
+│   └── SYSTEM_ARCHITECTURE_AND_WORKING.md   Complete technical working, 7 Mermaid diagrams & viva defense
 │
 └── docs/                                    Formal Project Documentation
     ├── proposal/                            Project context and 5-account actor model
