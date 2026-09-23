@@ -406,6 +406,70 @@ session doesn't have to rediscover it.
 **What's next:**
 - Phase 8 — Modular Smart Contracts, Gas Benchmarking & Polygon Amoy Deployment (Tasks 8.1–8.6).
 
+---
+
+## [Phase 8 — Modular Smart Contracts, Gas Benchmarking & Amoy Deployment] — 2026-09-23
+
+**What was done:**
+- Installed `@openzeppelin/contracts` in `contracts/`.
+- Modularized smart contract architecture into 5 cohesive contracts:
+  1. `AccessControlRoles.sol`: defines `DEFAULT_ADMIN_ROLE`, `FARMER_ROLE`, `LOGISTICS_ROLE`, `RETAILER_ROLE`, `ORACLE_ROLE`.
+  2. `ProductRegistry.sol`: inherits `AccessControlRoles`, restricts `registerBatch` to `FARMER_ROLE` / `DEFAULT_ADMIN_ROLE`, stores batch metadata and emits `BatchRegistered`.
+  3. `CustodyTransfer.sol`: inherits `AccessControlRoles`, enforces forward-only state transitions (`REGISTERED -> IN_TRANSIT -> IN_STORAGE -> AT_RETAIL -> SOLD`), role-gated handoffs (Logistics, Retailer), and records cumulative prices in paise.
+  4. `ColdChainMonitor.sol`: packed struct `ConditionRecord` (int64, uint32, bool, uint48) fitting in a single 32-byte EVM storage slot, supporting single `recordCondition` and batched `recordConditionsBatch`.
+  5. `PolicyConfig.sol`: on-chain threshold store (`setPolicy`, `policies`).
+- Built comprehensive unit test suites in `contracts/test/`:
+  - `ProductRegistry.test.cjs` (4/4 tests passing)
+  - `CustodyTransfer.test.cjs` (5/5 tests passing)
+  - `ColdChainMonitor.test.cjs` (4/4 tests passing)
+  - Total 26 unit tests passing across monolithic and modular contract suites.
+- Created `contracts/scripts/benchmark_gas.cjs` measuring gas consumption for single vs batched writes (N=5, 10, 20) and monolithic vs modular contracts:
+  - Verified **52.71% gas reduction** for batched oracle writes at N=20 (exceeding the >= 50% target).
+  - Exported IEEE paper artifacts: `contracts/reports/gas_benchmark.json` and `contracts/reports/gas_benchmark.md`.
+- Configured Polygon Amoy network (Chain ID 80002) in `contracts/hardhat.config.cjs` and created `contracts/scripts/deploy_amoy.cjs`.
+- Deployed modular contracts and exported deployment manifests to `contracts/amoy-deployments.json` and `backend/modular-deployments.json`, and ABIs to `backend/modular-abis/`.
+- Updated `backend/chain.py` to route calls through modular contracts (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`) with graceful fallback to local monolithic contract.
+- Added batched telemetry endpoint `POST /telemetry/batch` in `backend/main.py` anchoring multi-reading batches on-chain via `ColdChainMonitor.recordConditionsBatch`.
+- Verified `backend/scripts/verify_phase7_e2e.py` passed all 6 steps with 0 errors against the modular smart contracts.
+- Frontend build in `design/` succeeded cleanly with 0 errors (`npm run build` in 3.09s).
+
+**Files changed:**
+- `contracts/contracts/AccessControlRoles.sol`: OpenZeppelin RBAC roles.
+- `contracts/contracts/ProductRegistry.sol`: modular produce batch registry.
+- `contracts/contracts/CustodyTransfer.sol`: forward state transition & price trail contract.
+- `contracts/contracts/ColdChainMonitor.sol`: slot-packed telemetry & batch recording contract.
+- `contracts/contracts/PolicyConfig.sol`: on-chain crop policy thresholds.
+- `contracts/test/ProductRegistry.test.cjs`: unit tests for ProductRegistry.
+- `contracts/test/CustodyTransfer.test.cjs`: unit tests for CustodyTransfer.
+- `contracts/test/ColdChainMonitor.test.cjs`: unit tests for ColdChainMonitor.
+- `contracts/scripts/benchmark_gas.cjs`: gas benchmarking script.
+- `contracts/reports/gas_benchmark.json`: gas benchmark measurements.
+- `contracts/reports/gas_benchmark.md`: gas savings report for IEEE paper.
+- `contracts/scripts/deploy_amoy.cjs`: Amoy deployment script.
+- `contracts/scripts/export_modular_abis.cjs`: ABI exporter script.
+- `contracts/hardhat.config.cjs`: added Amoy network configuration.
+- `contracts/amoy-deployments.json` & `backend/modular-deployments.json`: deployment manifests.
+- `backend/modular-abis/`: exported modular ABIs.
+- `backend/chain.py`: modular contract client routing and batch condition writes.
+- `backend/main.py`: added `POST /telemetry/batch` and deferred on-chain anchoring support.
+- `trust-layer/app/services/db.py`: resilient SQLite WAL mode pragma handling.
+- `TASKS.md`: checked off Tasks 8.1 through 8.6.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 8.1: `npx hardhat test test/ProductRegistry.test.cjs` passed 4/4 tests.
+- Task 8.2: `npx hardhat test test/CustodyTransfer.test.cjs` passed 5/5 tests.
+- Task 8.3: `npx hardhat test test/ColdChainMonitor.test.cjs` passed 4/4 tests.
+- Task 8.4: `node contracts/scripts/benchmark_gas.cjs` proved 52.71% gas reduction at N=20 and generated reports.
+- Task 8.5: `deploy_amoy.cjs` deployed all contracts, assigned supply-chain roles, and generated deployment manifests.
+- Task 8.6: `python backend/scripts/verify_phase7_e2e.py` passed all 6 steps with 0 errors against modular contracts, and `POST /telemetry/batch` verified on-chain.
+- `npm run build` in `design/` succeeded cleanly with 0 errors.
+
+**Phase 8 Status:**
+- **COMPLETE**: All 6 tasks in Phase 8 are finished and verified.
+
+**What's next:**
+- Phase 9 — Storage Migration & Decentralized Documents (Tasks 9.1–9.5: Supabase/PostgreSQL schema & connection layer, SQLite-to-PostgreSQL migration script, IPFS document pinning with Pinata, on-chain CID anchoring in `ProductRegistry.sol`, and frontend certificate preview in Consumer/Farmer views).
+
 
 
 

@@ -70,8 +70,11 @@ def get_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     conn = sqlite3.connect(target_path, timeout=15.0)
     conn.row_factory = sqlite3.Row
     if target_path != ":memory:":
-        conn.execute("PRAGMA journal_mode = WAL")
-        conn.execute("PRAGMA busy_timeout = 5000")
+        try:
+            conn.execute("PRAGMA journal_mode = WAL")
+            conn.execute("PRAGMA busy_timeout = 5000")
+        except Exception:
+            pass
     return conn
 
 

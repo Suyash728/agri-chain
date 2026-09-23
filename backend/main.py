@@ -132,8 +132,20 @@ class TelemetryResponse(BaseModel):
     anomaly_score: Optional[float] = None
 
 
+class TelemetryBatchRequest(BaseModel):
+    readings: List[TelemetryRequest]
+
+
+class TelemetryBatchResponse(BaseModel):
+    total_received: int
+    valid_count: int
+    quarantined_count: int
+    tx_hash: Optional[str] = None
+    results: List[TelemetryResponse]
+
+
 @app.post("/telemetry", response_model=TelemetryResponse)
-def post_telemetry(payload: TelemetryRequest):
+def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
     """Ingest a telemetry reading with AI trust validation, anomaly detection, and quarantine."""
     conn = get_connection()
     try:
@@ -258,6 +270,23 @@ def post_telemetry(payload: TelemetryRequest):
 
         # 10. Execute Oracle Handoff (blockchain anchor) or Quarantine
         if final_verdict == "VALID":
+            if not anchor_onchain:
+                conn.execute(
+                    "UPDATE readings SET verdict = 'VALID' WHERE id = ?",
+                    (reading_id,),
+                )
+                conn.commit()
+                return TelemetryResponse(
+                    verdict="VALID",
+                    reason=None,
+                    tx_hash=None,
+                    reading_id=reading_id,
+                    event_hash=integrity.event_hash,
+                    disposition="READY_FOR_ORACLE",
+                    reason_codes=[],
+                    anomaly_score=anomaly.anomaly_score if anomaly else None,
+                )
+
             temp_deci_c = int(round(temp_c * 10))
             humidity_pct_int = int(round(humidity_pct))
             try:
@@ -326,6 +355,67 @@ def post_telemetry(payload: TelemetryRequest):
             )
     finally:
         conn.close()
+
+
+@app.post("/telemetry/batch", response_model=TelemetryBatchResponse)
+def post_telemetry_batch(batch_payload: TelemetryBatchRequest):
+    """Processes a batch of telemetry readings through the AI Trust Layer,
+
+    anchoring all valid readings in a single batched blockchain transaction.
+    """
+    individual_responses = []
+    valid_items = []
+
+    for req in batch_payload.readings:
+        resp = post_telemetry(req, anchor_onchain=False)
+        individual_responses.append(resp)
+        if resp.verdict == "VALID":
+            temp = req.temp_c if req.temp_c is not None else req.temperature
+            hum = req.humidity_pct if req.humidity_pct is not None else req.humidity
+            valid_items.append({
+                "reading_id": resp.reading_id,
+                "batch_id": req.batch_id,
+                "temp_deci_c": int(round(float(temp) * 10)),
+                "hum_pct": int(round(float(hum))),
+                "breach": False,
+            })
+
+    valid_count = len(valid_items)
+    quarantined_count = len(individual_responses) - valid_count
+    batch_tx_hash = None
+
+    if valid_items:
+        batch_ids = [item["batch_id"] for item in valid_items]
+        temps = [item["temp_deci_c"] for item in valid_items]
+        hums = [item["hum_pct"] for item in valid_items]
+        breaches = [item["breach"] for item in valid_items]
+
+        try:
+            batch_tx_hash = chain.record_conditions_batch(batch_ids, temps, hums, breaches)
+            conn = get_connection()
+            try:
+                for item in valid_items:
+                    conn.execute(
+                        "UPDATE readings SET tx_hash = ? WHERE id = ?",
+                        (batch_tx_hash, item["reading_id"]),
+                    )
+                conn.commit()
+            finally:
+                conn.close()
+
+            for resp in individual_responses:
+                if resp.verdict == "VALID":
+                    resp.tx_hash = batch_tx_hash
+        except Exception as e:
+            print(f"[batch_telemetry] Batch write error: {e}")
+
+    return TelemetryBatchResponse(
+        total_received=len(batch_payload.readings),
+        valid_count=valid_count,
+        quarantined_count=quarantined_count,
+        tx_hash=batch_tx_hash,
+        results=individual_responses,
+    )
 
 
 @app.post("/telemetry/evaluate", response_model=EvaluationReport)
