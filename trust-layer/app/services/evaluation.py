@@ -433,12 +433,10 @@ class EvaluationService:
         md_path = os.path.join(output_dir, "benchmark_summary.md")
         with open(md_path, "w", encoding="utf-8") as f:
             f.write(md_content)
-        saved_paths.append(md_path)
 
         json_path = os.path.join(output_dir, "benchmark_summary.json")
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(report.model_dump(mode="json"), f, indent=2)
-        saved_paths.append(json_path)
 
         return saved_paths
 

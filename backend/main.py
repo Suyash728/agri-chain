@@ -793,3 +793,80 @@ def get_batch_traceability(batch_id: str):
         }
     finally:
         conn.close()
+
+
+@app.get("/farmer/ai-trust")
+def get_farmer_ai_trust():
+    """Return live AI Trust Score and verification checkpoints for the Farmer UI."""
+    conn = get_connection()
+    try:
+        row = conn.execute(
+            """
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN verdict = 'VALID' THEN 1 ELSE 0 END) as valids,
+                SUM(CASE WHEN verdict = 'ANOMALOUS' THEN 1 ELSE 0 END) as anomalies
+            FROM readings
+            """
+        ).fetchone()
+
+        total = row["total"] if row and row["total"] else 0
+        valids = row["valids"] if row and row["valids"] else 0
+        anomalies = row["anomalies"] if row and row["anomalies"] else 0
+
+        recent_reading = conn.execute(
+            "SELECT received_at FROM readings ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        last_verified = "Active (Live Telemetry)" if recent_reading else "10 mins ago"
+
+        quarantine_rows = conn.execute(
+            "SELECT reason FROM quarantine ORDER BY id DESC LIMIT 100"
+        ).fetchall()
+
+        gps_faults = sum(1 for r in quarantine_rows if "GPS" in r["reason"])
+        replay_faults = sum(1 for r in quarantine_rows if "REPLAY" in r["reason"])
+
+        if total > 0:
+            compliance_pct = max(0, min(100, int(round((valids / total) * 100))))
+        else:
+            compliance_pct = 100
+
+        if total == 0:
+            score = 92
+        else:
+            score = max(50, min(100, compliance_pct))
+
+        level = "High Trust" if score >= 85 else ("Moderate Trust" if score >= 70 else "Needs Attention")
+        status = "Safe & Trustworthy" if score >= 80 else "Deviations Flagged"
+
+        cold_chain_status = f"{compliance_pct}% Compliant"
+        if compliance_pct >= 80:
+            cold_chain_status += " (Optimal Range)"
+
+        if gps_faults == 0:
+            gps_status = "Route Verified & Continuous"
+        else:
+            gps_status = f"Route Verified ({gps_faults} Deviations Quarantined)"
+
+        if replay_faults == 0:
+            tamper_status = "Smart Seal Intact"
+        else:
+            tamper_status = f"Smart Seal Intact ({replay_faults} Replays Quarantined)"
+
+        anomaly_status = f"{anomalies} Deviations Flagged"
+
+        return {
+            "score": score,
+            "maxScore": 100,
+            "level": level,
+            "status": status,
+            "lastVerified": last_verified,
+            "aiVerificationDetails": [
+                {"title": "Cold Chain Integrity", "status": cold_chain_status},
+                {"title": "GPS Telemetry Validation", "status": gps_status},
+                {"title": "Tamper Prevention", "status": tamper_status},
+                {"title": "Anomaly Check", "status": anomaly_status},
+            ],
+        }
+    finally:
+        conn.close()

@@ -397,13 +397,13 @@ This phase integrates teammate Rutuja's standalone `trust-layer` module into the
 - **DONE WHEN:** `trust-layer/reports/figures/` contains publication-ready PNG figures and a markdown/JSON summary table showing overall F1-score >= 0.90. (Verified: `POST /telemetry/evaluate` executed with 40 trials across normal + 7 faults; F1-score=0.9722, precision=0.9459, recall=1.0000; exported all 4 PNG figures and markdown/JSON tables to `trust-layer/reports/figures/`).
 
 ### Task 6.7 — Wire Farmer AI Trust Screen (`AITrustView.jsx`) to live checkpoints
-- [ ] In `backend/main.py`, implement `GET /farmer/ai-trust` returning the live verification status matching `aiTrustData` in `mockData.js`:
+- [x] In `backend/main.py`, implement `GET /farmer/ai-trust` returning the live verification status matching `aiTrustData` in `mockData.js`:
   - Cold Chain Integrity (percentage compliant from recent audit logs)
   - GPS Telemetry Validation (route velocity continuity check)
   - Tamper Prevention (cryptographic seal & replay status)
   - Anomaly Check (number of deviations flagged)
-- [ ] In `design/src/Farmer/Views/AITrustView.jsx`, replace mock `aiTrustData` with a `fetch('http://localhost:8000/farmer/ai-trust')` call inside `useEffect`.
-- **DONE WHEN:** opening the AI Trust Score view in the running Farmer UI displays live checkpoint status derived from real processed telemetry.
+- [x] In `design/src/Farmer/Views/AITrustView.jsx`, replace mock `aiTrustData` with a `fetch('http://localhost:8000/farmer/ai-trust')` call inside `useEffect`.
+- **DONE WHEN:** opening the AI Trust Score view in the running Farmer UI displays live checkpoint status derived from real processed telemetry. (Verified: `GET /farmer/ai-trust` tested and returning live audit-derived metrics; `AITrustView.jsx` wired and tested; frontend built cleanly with 0 errors).
 
 **→ End of Phase 6. Append a `MEMORY.md` entry.**
 

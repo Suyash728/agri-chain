@@ -1,8 +1,23 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
-import { aiTrustData } from '../../data/mockData';
+import { aiTrustData as initialData } from '../../data/mockData';
 
 export const AITrustView = ({ onBack, onOpenDetails }) => {
+  const [trustData, setTrustData] = useState(initialData);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/farmer/ai-trust')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json && json.score !== undefined) {
+          setTrustData(json);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch live AI trust data, using fallback:', err);
+      });
+  }, []);
+
   return (
     <div className="bg-white border border-[#E6E1D5] rounded-2xl p-4 sm:p-5 flex flex-col gap-4 shadow-xs max-w-xl mx-auto w-full">
       {/* Top Row: Back Arrow + Large AI Trust Score Title */}
@@ -32,13 +47,13 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
           <div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl sm:text-4xl font-extrabold text-[#2E3A1F]">
-                {aiTrustData.score}
+                {trustData.score}
               </span>
               <span className="text-base sm:text-lg font-bold text-[#3B3028]">
-                /{aiTrustData.maxScore}
+                /{trustData.maxScore}
               </span>
               <span className="text-xs sm:text-sm font-bold text-[#3D5220] ml-1.5 whitespace-nowrap">
-                {aiTrustData.level}
+                {trustData.level}
               </span>
             </div>
 
@@ -98,7 +113,7 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
         <h3 className="text-xs font-bold uppercase tracking-wider text-[#786E65]">
           AI Verification Checkpoints
         </h3>
-        {aiTrustData.aiVerificationDetails.map((item, idx) => (
+        {trustData.aiVerificationDetails.map((item, idx) => (
           <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-xs">
             <div className="flex items-center gap-2.5">
               <CheckCircle className="w-4 h-4 text-[#3D5220]" />
