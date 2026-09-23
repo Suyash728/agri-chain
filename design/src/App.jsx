@@ -98,6 +98,9 @@ export default function App() {
   // Tab state for Logistics Partner portal
   const [logisticTab, setLogisticTab] = useState('dashboard');
 
+  // Tab state for Consumer portal
+  const [consumerTab, setConsumerTab] = useState('home');
+
   // Shared Modals state
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isAddStockOpen, setIsAddStockOpen] = useState(false);
@@ -134,7 +137,7 @@ export default function App() {
       <div className="min-h-screen bg-[#FAF7F0] text-[#3B3028] font-sans antialiased flex flex-col md:flex-row select-none">
         
         {/* Role Switcher & Web3 Wallet Floating Control Bar */}
-        <div className="fixed top-3 right-4 sm:right-6 z-50 flex items-center gap-1.5 p-1 bg-white/90 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-sm">
+        <div className="fixed top-3 right-4 sm:right-6 z-50 flex items-center gap-1.5 p-1 bg-white/90 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-sm max-w-[calc(100vw-1.5rem)] overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveRole('farmer')}
             className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
@@ -169,7 +172,10 @@ export default function App() {
             <span>Dark Store</span>
           </button>
           <button
-            onClick={() => setActiveRole('consumer')}
+            onClick={() => {
+              setActiveRole('consumer');
+              if (consumerTab === 'onboarding') setConsumerTab('home');
+            }}
             className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeRole === 'consumer' 
                 ? 'bg-[#354424] text-white shadow-xs' 
@@ -195,7 +201,7 @@ export default function App() {
             onLogout={handleLogout}
           />
 
-          <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-14 md:pt-8">
+          <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-14 md:pt-16">
             {logisticTab === 'dashboard' && (
               <LogisticDashboardView 
                 onSelectTab={handleSelectLogisticTab} 
@@ -249,7 +255,7 @@ export default function App() {
             onLogout={handleLogout}
           />
 
-          <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-14 md:pt-8">
+          <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-14 md:pt-16">
             {farmerTab === 'dashboard' && (
               <div className="flex flex-col gap-6 animate-fade-in">
                 <FarmerHeader onOpenNotifications={() => setIsNotificationsOpen(true)} />
@@ -508,10 +514,14 @@ export default function App() {
       {/* ========================================== */}
       {activeRole === 'consumer' && (
         <div className="w-full min-h-screen flex-1 bg-[#FAF7F0]">
-          <ConsumerApp onLogout={(role) => {
-            if (role) setActiveRole(role);
-            else handleLogout();
-          }} />
+          <ConsumerApp 
+            currentTab={consumerTab}
+            onSelectTab={setConsumerTab}
+            onLogout={(role) => {
+              if (role) setActiveRole(role);
+              else handleLogout();
+            }} 
+          />
         </div>
       )}
 

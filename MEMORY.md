@@ -611,6 +611,32 @@ session doesn't have to rediscover it.
 **Status:**
 - Supabase cloud database is **LIVE, populated, and operating as the primary database** for AgriChain!
 
+---
+
+## [Frontend Audit & Accounts Navigation Bar Fix] — 2026-09-24
+
+**What was done:**
+- Extensively audited the frontend navigation architecture and diagnosed two root causes for the accounts navigation bar issues:
+  1. **Inconsistent top-right accounts bar on tab switch**: `design/src/Consumer/ConsumerApp.jsx` rendered a duplicate, conflicting floating bar (`fixed top-3 right-4 sm:right-6 z-50`) whenever `activeView !== 'onboarding'`. This duplicate bar lacked the Web3 `WalletConnect` component and vertical divider. When entering the Consumer dashboard, this duplicate bar was overlaid on top of `App.jsx`'s global floating control bar, causing the `Connect Wallet` button to vanish and the control layout to jump/shift across role transitions.
+  2. **Consumer tab resetting to login screen**: In `App.jsx`, when the user selected another role (`Farmer`, `Logistics`, or `Dark Store`), `<ConsumerApp />` unmounted. Upon clicking "Consumer" in the top-right bar, `<ConsumerApp />` remounted with its local initial state `const [activeView, setActiveView] = useState('onboarding')`, forcing the user back to the login/onboarding screen on every role switch.
+- Implemented solutions across the frontend:
+  - **Single Source of Truth for Accounts Bar**: Removed the duplicate floating bar in `ConsumerApp.jsx`. `App.jsx`'s top-level floating bar is now the single, persistent controller across all views with `Farmer | Logistics Partner | Dark Store | Consumer | [divider] | WalletConnect`.
+  - **Lifting Consumer Tab State**: Lifted `consumerTab` state to `App.jsx` (`const [consumerTab, setConsumerTab] = useState('home')`), passing `currentTab={consumerTab}` and `onSelectTab={setConsumerTab}` into `ConsumerApp`.
+  - **Persistent Consumer Routing**: Clicking the "Consumer" button in the accounts bar now guarantees the user remains on (or switches to) `'home'` instead of resetting to `'onboarding'`. Sub-view navigation within Consumer preserves active sub-tabs across role switches.
+  - **Responsive Scrollbar & Overflow**: Added `max-w-[calc(100vw-1.5rem)] overflow-x-auto no-scrollbar` to the floating bar and defined clean `.no-scrollbar` utility classes in `index.css`.
+  - **Header & Layout Clearance**: Adjusted top padding across `ConsumerHeader.jsx` (`pt-14 md:pt-16`), Logistics `<main>` (`pt-14 md:pt-16`), Farmer `<main>` (`pt-14 md:pt-16`), and Dark Store `<main>` (`pt-14 md:pt-16`) to guarantee zero layout collision with the fixed floating accounts bar.
+- Tested and verified:
+  - `npm run build` compiled with 0 errors in 3.99s.
+  - Live Vite dev server verified serving updated JSX cleanly.
+
+**Files changed:**
+- `design/src/App.jsx`: lifted `consumerTab` state, updated Consumer button onClick, added responsive overflow, and adjusted main container padding.
+- `design/src/Consumer/ConsumerApp.jsx`: accepted `currentTab` and `onSelectTab` props, removed duplicate floating bar.
+- `design/src/Consumer/components/ConsumerHeader.jsx`: adjusted top padding to `pt-14 md:pt-16`.
+- `design/src/Dark_Store/DarkStoreApp.jsx`: adjusted top padding to `pt-14 md:pt-16`.
+- `design/src/index.css`: added `.no-scrollbar` utility.
+- `MEMORY.md`: appended audit and fix record.
+
 
 
 

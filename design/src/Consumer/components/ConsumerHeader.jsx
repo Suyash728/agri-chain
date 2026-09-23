@@ -20,7 +20,7 @@ export const ConsumerHeader = ({
   ];
 
   return (
-    <header className="bg-[#FAF7F0] pt-3 pb-0 z-30 border-b border-[#E6E1D5] flex flex-col gap-2.5 flex-shrink-0">
+    <header className="bg-[#FAF7F0] pt-14 md:pt-16 pb-0 z-30 border-b border-[#E6E1D5] flex flex-col gap-2.5 flex-shrink-0">
       {/* 1. Top Consumer Greeting Row */}
       <div className="px-4 md:px-8 flex justify-between items-center">
         <div>

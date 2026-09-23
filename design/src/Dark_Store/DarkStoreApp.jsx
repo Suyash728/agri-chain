@@ -42,7 +42,7 @@ export const DarkStoreApp = () => {
         onLogout={handleLogout}
       />
 
-      <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-14 md:pt-8">
+      <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-14 md:pt-16">
         {darkStoreTab === 'dashboard' && (
           <DarkStoreDashboardView 
             onSelectTab={handleSelectTab} 

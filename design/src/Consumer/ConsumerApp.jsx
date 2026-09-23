@@ -29,9 +29,13 @@ import { NotificationsModal } from './Modals/NotificationsModal';
 import { initialCartItems } from './data/consumerData';
 import { CheckCircle2 } from 'lucide-react';
 
-export const ConsumerApp = ({ onLogout }) => {
-  // Onboarding is the default Consumer launch screen
-  const [activeView, setActiveView] = useState('onboarding');
+export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
+  const [internalView, setInternalView] = useState('home');
+  const activeView = onSelectTab ? currentTab : internalView;
+  const setActiveView = (view) => {
+    if (onSelectTab) onSelectTab(view);
+    else setInternalView(view);
+  };
   const [cartItems, setCartItems] = useState(initialCartItems);
   const [appliedCoupon, setAppliedCoupon] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
@@ -151,38 +155,6 @@ export const ConsumerApp = ({ onLogout }) => {
 
   return (
     <MobileContainer>
-      {/* Top-Right Role Switcher Floating Bar (Restored on Consumer Dashboard Only) */}
-      <div className="fixed top-3 right-4 sm:right-6 z-50 flex items-center gap-1.5 p-1 bg-white/90 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-sm">
-        <button
-          onClick={() => onLogout && onLogout('farmer')}
-          className="px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 text-[#666057] hover:text-[#2D2620]"
-        >
-          <span>🌿</span>
-          <span>Farmer</span>
-        </button>
-        <button
-          onClick={() => onLogout && onLogout('logistics')}
-          className="px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 text-[#666057] hover:text-[#2D2620]"
-        >
-          <span>🚛</span>
-          <span>Logistics Partner</span>
-        </button>
-        <button
-          onClick={() => onLogout && onLogout('darkstore')}
-          className="px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 text-[#666057] hover:text-[#2D2620]"
-        >
-          <span>🏬</span>
-          <span>Dark Store</span>
-        </button>
-        <button
-          onClick={() => onLogout && onLogout('consumer')}
-          className="px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 bg-[#354424] text-white shadow-xs"
-        >
-          <span>🛒</span>
-          <span>Consumer</span>
-        </button>
-      </div>
-
       {/* Toast Notification Popup */}
       {toastMessage && (
         <div className="fixed top-16 right-4 sm:right-8 z-50 bg-[#354424] text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-bounce">
