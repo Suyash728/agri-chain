@@ -485,12 +485,12 @@ Goal: Modularize `AgriChainCore.sol` into 5 cohesive smart contracts with OpenZe
 - **DONE WHEN:** running `npx hardhat test test/CustodyTransfer.test.cjs` verifies that backward state transitions revert, unauthorized accounts cannot transfer custody, and prices are accurately recorded in event logs. (Verified: `test/CustodyTransfer.test.cjs` passed 5/5 tests confirming forward state transitions, price recording, and unauthorized/backward reverts).
 
 ### Task 8.3 — Implement `PolicyConfig.sol` & `ColdChainMonitor.sol` with Batched Writes
-- [ ] Create `contracts/contracts/PolicyConfig.sol`: on-chain threshold store (`setPolicy(string crop, int256 minTempDeciC, int256 maxTempDeciC, uint256 minHumPct, uint256 maxHumPct)`).
-- [ ] Create `contracts/contracts/ColdChainMonitor.sol` inheriting `AccessControlRoles`:
+- [x] Create `contracts/contracts/PolicyConfig.sol`: on-chain threshold store (`setPolicy(string crop, int256 minTempDeciC, int256 maxTempDeciC, uint256 minHumPct, uint256 maxHumPct)`).
+- [x] Create `contracts/contracts/ColdChainMonitor.sol` inheriting `AccessControlRoles`:
   - `recordCondition(bytes32 batchId, int256 tempDeciC, uint256 humidityPct, bool breach)` restricted to `ORACLE_ROLE`.
   - `recordConditionsBatch(bytes32[] batchIds, int256[] tempsDeciC, uint256[] humsPct, bool[] breaches)` to batch multiple readings into a single transaction.
-- [ ] Write unit tests in `contracts/test/ColdChainMonitor.test.cjs`.
-- **DONE WHEN:** running `npx hardhat test test/ColdChainMonitor.test.cjs` verifies both single and batched condition writes, confirming that unauthorized accounts are rejected and condition logs match input arrays.
+- [x] Write unit tests in `contracts/test/ColdChainMonitor.test.cjs`.
+- **DONE WHEN:** running `npx hardhat test test/ColdChainMonitor.test.cjs` verifies both single and batched condition writes, confirming that unauthorized accounts are rejected and condition logs match input arrays. (Verified: `test/ColdChainMonitor.test.cjs` passed 4/4 tests confirming single condition recording, batched condition recording, unauthorized access revert, and array length verification).
 
 ### Task 8.4 — Gas Consumption Benchmarking & IEEE Paper Measurement
 - [ ] Create `contracts/scripts/benchmark_gas.cjs` executing:
