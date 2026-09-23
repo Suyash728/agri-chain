@@ -476,13 +476,13 @@ Goal: Modularize `AgriChainCore.sol` into 5 cohesive smart contracts with OpenZe
 - **DONE WHEN:** running `npx hardhat test test/ProductRegistry.test.cjs` verifies successful batch registration by an account with `FARMER_ROLE`, and reverts with unauthorized error when called by an account without the role. (Verified: `test/ProductRegistry.test.cjs` passed 4/4 tests verifying admin/farmer authorization, unauthorized caller revert, and duplicate batch prevention).
 
 ### Task 8.2 — Implement `CustodyTransfer.sol` with Forward State & Price Enforcement
-- [ ] Create `contracts/contracts/CustodyTransfer.sol` inheriting `AccessControlRoles`:
+- [x] Create `contracts/contracts/CustodyTransfer.sol` inheriting `AccessControlRoles`:
   - Enforces forward-only state transitions: `uint8(newState) > uint8(currentState)`.
   - Role-gated handoffs: `IN_TRANSIT` requires `LOGISTICS_ROLE`, `IN_STORAGE`/`AT_RETAIL` requires `RETAILER_ROLE`.
   - Records cumulative custody prices in paise.
   - Emits `CustodyTransferred(bytes32 indexed batchId, address indexed from, address indexed to, CustodyState newState, uint256 pricePaise)`.
-- [ ] Write unit tests in `contracts/test/CustodyTransfer.test.cjs`.
-- **DONE WHEN:** running `npx hardhat test test/CustodyTransfer.test.cjs` verifies that backward state transitions revert, unauthorized accounts cannot transfer custody, and prices are accurately recorded in event logs.
+- [x] Write unit tests in `contracts/test/CustodyTransfer.test.cjs`.
+- **DONE WHEN:** running `npx hardhat test test/CustodyTransfer.test.cjs` verifies that backward state transitions revert, unauthorized accounts cannot transfer custody, and prices are accurately recorded in event logs. (Verified: `test/CustodyTransfer.test.cjs` passed 5/5 tests confirming forward state transitions, price recording, and unauthorized/backward reverts).
 
 ### Task 8.3 — Implement `PolicyConfig.sol` & `ColdChainMonitor.sol` with Batched Writes
 - [ ] Create `contracts/contracts/PolicyConfig.sol`: on-chain threshold store (`setPolicy(string crop, int256 minTempDeciC, int256 maxTempDeciC, uint256 minHumPct, uint256 maxHumPct)`).
