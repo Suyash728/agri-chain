@@ -140,7 +140,7 @@ contract address and where the ABI file lives, since Phase 3 needs both.**
 Keep the local Hardhat node from Task 2.5 running for this entire phase.
 
 ### Task 3.1 — SQLite schema
-- [ ] Create `backend/db.py` implementing exactly the five tables from
+- [x] Create `backend/db.py` implementing exactly the five tables from
   `ARCHITECTURE.md` §6. Include a function `init_db()` that creates the
   tables if they don't exist, and seed the `policy` table with 2–3 crops
   you plan to demo (e.g. tomato: 2–8°C, 85–95% humidity — adjust to
@@ -150,7 +150,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   `sqlite3 agrichain.db ".tables"` lists all five tables.
 
 ### Task 3.2 — `chain.py` — connect to the deployed contract
-- [ ] Create `backend/chain.py`. Load the RPC URL (`http://127.0.0.1:8545`
+- [x] Create `backend/chain.py`. Load the RPC URL (`http://127.0.0.1:8545`
   for the local Hardhat node), the contract address and ABI from Task 2.5,
   and a private key from `.env` (one of the Hardhat test accounts). Expose
   three functions: `register_batch(...)`, `transfer_custody(...)`,
@@ -162,7 +162,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   that same batch is queryable back from the contract with the right data.
 
 ### Task 3.3 — `validation.py` — the rule-based AI trust layer
-- [ ] Create `backend/validation.py` with one function,
+- [x] Create `backend/validation.py` with one function,
   `validate_reading(crop_name, temp_c, humidity_pct) -> (verdict, reason)`.
   It should:
   1. Look up the policy row for `crop_name` from the `policy` table.
@@ -174,7 +174,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   returns `ANOMALOUS` with a reason string that names the actual numbers.
 
 ### Task 3.4 — `POST /telemetry`
-- [ ] In `main.py`, add the route. It must, in this exact order (per
+- [x] In `main.py`, add the route. It must, in this exact order (per
   `RULES.md` §4):
   1. Insert the raw reading into the `readings` table first, with a
      placeholder verdict.
@@ -194,7 +194,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
     `tx_hash`, and a matching row appears in `quarantine`.
 
 ### Task 3.5 — `POST /batches` and `POST /batches/{batch_id}/custody`
-- [ ] Add both routes per the table in `ARCHITECTURE.md` §7. Each should
+- [x] Add both routes per the table in `ARCHITECTURE.md` §7. Each should
   write to SQLite (`batches` or `custody_events`) **and** call the matching
   `chain.py` function, storing the returned `tx_hash`.
 - **DONE WHEN:** `curl -X POST localhost:8000/batches -d '{...}'` creates a
@@ -205,7 +205,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   SQLite and on-chain.
 
 ### Task 3.6 — `GET /farmer/kpis`, `/farmer/crops`, `/farmer/activity`
-- [ ] Add all three. Open `design/src/data/mockData.js`, find the
+- [x] Add all three. Open `design/src/data/mockData.js`, find the
   `kpiMetrics`, `cropCategories`, and `recentActivities` exports, and shape
   each response to match exactly (per `ARCHITECTURE.md` §4 and `RULES.md`
   §6). Values should be computed from real rows in SQLite (e.g. `Total
@@ -216,7 +216,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   far (not the original mock numbers).
 
 ### Task 3.7 — `GET /batches/{batch_id}/traceability`
-- [ ] Add the route. Shape it to match `traceabilityBatch` in
+- [x] Add the route. Shape it to match `traceabilityBatch` in
   `design/src/data/mockData.js`. Populate the journey from `custody_events`
   (for the who/where/when/price) and from the contract's `ConditionRecorded`
   events (for the cold-chain log) — query events via `chain.py`, add a
@@ -234,7 +234,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
 ## Phase 4 — Simulator (days 10–11)
 
 ### Task 4.1 — Basic simulator
-- [ ] Create `simulator/simulate.py`. It should accept a `--batch-id` and
+- [x] Create `simulator/simulate.py`. It should accept a `--batch-id` and
   send a series of plausible readings (temperature/humidity within a
   reasonable range for whatever crop you're demoing) to
   `POST localhost:8000/telemetry`, one every few seconds, for a
@@ -245,7 +245,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   `tx_hash` values.
 
 ### Task 4.2 — Fault injection flag
-- [ ] Add `--inject-fault temp_spike` (or similar). When set, one reading in
+- [x] Add `--inject-fault temp_spike` (or similar). When set, one reading in
   the stream should be replaced with an implausible value (e.g. temperature
   jumping to 45°C for one sample, then returning to normal) instead of a
   real one.
@@ -255,7 +255,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   temperature.
 
 ### Task 4.3 — Confirm the end-to-end pipeline in isolation
-- [ ] Run the simulator against a fresh batch (registered via `curl` per
+- [x] Run the simulator against a fresh batch (registered via `curl` per
   Task 3.5), with the fault flag on, and manually check: `readings` has
   the right count and verdicts, `quarantine` has exactly one row, and the
   contract's `ConditionRecorded` events (queryable via `chain.py` or
@@ -271,7 +271,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
 ## Phase 5 — Frontend wiring (days 12–14)
 
 ### Task 5.1 — Wire the Farmer dashboard KPIs
-- [ ] In `design/src/`, find the component(s) importing `kpiMetrics` from
+- [x] In `design/src/`, find the component(s) importing `kpiMetrics` from
   `mockData.js` for the Farmer dashboard. Replace the import with a
   `fetch('http://localhost:8000/farmer/kpis')` call inside a `useEffect`,
   storing the result in `useState`. Keep the loading UI simple (a plain
@@ -282,13 +282,13 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   `₹28,450`).
 
 ### Task 5.2 — Wire crop overview and recent activity the same way
-- [ ] Repeat the Task 5.1 pattern for `cropCategories` → `/farmer/crops`
+- [x] Repeat the Task 5.1 pattern for `cropCategories` → `/farmer/crops`
   and `recentActivities` → `/farmer/activity`.
 - **DONE WHEN:** both sections of the Farmer dashboard show real data,
   confirmed the same way as Task 5.1.
 
 ### Task 5.3 — Wire batch registration
-- [ ] Find the Farmer "register batch" / "add stock" flow in `design/src/`
+- [x] Find the Farmer "register batch" / "add stock" flow in `design/src/`
   (likely `Farmer/Modals/AddStockModal.jsx` or similar — check
   `design/src/App.jsx`'s imports for the exact name). Replace whatever
   local-state-only submit handler exists with a `POST` to
@@ -300,7 +300,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   reflect it without a page reload.
 
 ### Task 5.4 — Seed a full custody chain for the demo batch
-- [ ] For the specific batch you'll use in the final demo, manually run the
+- [x] For the specific batch you'll use in the final demo, manually run the
   `curl` custody-transfer calls from Task 3.5 to move it
   `REGISTERED → IN_TRANSIT → IN_STORAGE → AT_RETAIL → SOLD`, each with a
   realistic price in paise. This is the scripted step described in `PRD.md`
@@ -310,7 +310,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   batch shows all four transfers with their prices, in order.
 
 ### Task 5.5 — Wire the Consumer traceability/QR view
-- [ ] Find the Consumer traceability screen(s) in `design/src/Consumer/`
+- [x] Find the Consumer traceability screen(s) in `design/src/Consumer/`
   using `productJourneyTimeline` from `consumerData.js`. Replace with a
   fetch to `/batches/{batch_id}/traceability` for the demo batch from Task
   5.4, mapped to the `{title, date, location, status}` shape that export
@@ -323,7 +323,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   — not mock data.
 
 ### Task 5.5b — (Optional, do only if time allows before the demo) Display the price trail
-- [ ] This is `PRD.md` O14, not part of the essential five-step check, but
+- [x] This is `PRD.md` O14, not part of the essential five-step check, but
   worth doing here if Tasks 5.1–5.5 finished with time to spare, since price
   transparency is the project's stated differentiating feature. Find an
   existing card/text style already used elsewhere in `design/src/Consumer/`
@@ -337,7 +337,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   in the app.
 
 ### Task 5.6 — Run the full essential-tier check
-- [ ] Run the exact five-step sequence in `PRD.md` §6, in order, starting
+- [x] Run the exact five-step sequence in `PRD.md` §6, in order, starting
   from a clean database if possible (or clearly noting which existing data
   you're reusing). Watch each step actually happen — don't skip ahead
   assuming a step worked.

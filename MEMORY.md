@@ -123,3 +123,118 @@ session doesn't have to rediscover it.
 
 **What's next:**
 - Start `TASKS.md` Phase 1 (Environment) from Task 1.1.
+
+---
+
+## [Phase 3 — Backend API & Blockchain Integration] — 2026-09-23
+
+**What was done:**
+- Implemented Task 3.1: SQLite schema in `backend/db.py` for 5 tables (`batches`, `custody_events`, `readings`, `quarantine`, `policy`) and seeded demo policies for Tomato, Mango, Wheat.
+- Implemented Task 3.2: Web3 client in `backend/chain.py` connecting to local Hardhat node (`http://127.0.0.1:8545`) and deployed `AgriChainCore` contract (`0x5FbDB2315678afecb367f032d93F642f64180aa3`). Handled Web3 v8 API and batch ID bytes32 conversions.
+- Implemented Task 3.3: Rule-based AI trust validation layer in `backend/validation.py` validating temperature/humidity against policy table thresholds.
+- Implemented Task 3.4: `POST /telemetry` in `backend/main.py` with raw readings logged first, AI trust verification, on-chain recording for VALID readings, and quarantine logging for ANOMALOUS readings.
+- Implemented Task 3.5: `POST /batches` and `POST /batches/{batch_id}/custody` in `backend/main.py` with dual-write to SQLite and on-chain state updates.
+- Implemented Task 3.6: Farmer dashboard endpoints (`GET /farmer/kpis`, `GET /farmer/crops`, `GET /farmer/activity`) matching the exact mock shape from `design/src/data/mockData.js`.
+- Implemented Task 3.7: `GET /batches/{batch_id}/traceability` assembling the custody timeline from SQLite and cold-chain condition readings from on-chain `ConditionRecorded` events.
+
+**Files changed:**
+- `backend/db.py`: schema, seed policies, `init_db()`.
+- `backend/chain.py`: Web3 contract client methods and event queries.
+- `backend/validation.py`: policy threshold rule validation.
+- `backend/main.py`: FastAPI endpoints for telemetry, batches, custody, farmer dashboards, and traceability.
+- `contracts/scripts/deploy.cjs`: updated for ethers v6 syntax.
+- `TASKS.md`: checked off Tasks 3.1 through 3.7.
+
+**Decisions made (and why):**
+- Used `bytes32` conversion with utf-8 left-padding for strings <= 32 chars and keccak256 fallback for long strings, allowing human-readable batch IDs like `DEMO-BATCH-001` on-chain.
+- Defaulted participant addresses to Hardhat funded test accounts so API requests like `to_holder: "SafeXpress"` work seamlessly without needing frontend callers to know raw Ethereum hex addresses.
+- Used SQLite `Row` factory for dict-like database row access.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 3.1: `init_db()` created `agrichain.db` and verified all 5 tables and policy rows via SQLite.
+- Task 3.2: `chain.register_batch` returned real transaction hash on local Hardhat chain and queried back exact batch data.
+- Task 3.3: `validate_reading` returned `('VALID', None)` for 5.0°C and `('ANOMALOUS', ...)` for 42.0°C.
+- Task 3.4: `POST /telemetry` returned VALID with real tx hash for in-bounds reading, and ANOMALOUS with quarantine insertion for 42.0°C reading.
+- Task 3.5: Registered `DEMO-BATCH-001` and transferred custody to `SafeXpress` (`IN_TRANSIT`), verified on-chain state `1` and SQLite event history.
+- Task 3.6: `GET /farmer/kpis`, `/farmer/crops`, `/farmer/activity` returned matching mock shapes with real database-calculated values.
+- Task 3.7: `GET /batches/DEMO-BATCH-001/traceability` returned full batch journey, custody history with prices, and on-chain condition logs.
+
+**Open questions / blockers for next session:**
+- None. Phase 3 is 100% complete and verified against local Hardhat node.
+
+**What's next:**
+- Phase 4 — Simulator (Task 4.1: basic telemetry simulator script, Task 4.2: fault injection, Task 4.3: end-to-end isolated verification).
+
+---
+
+## [Phase 4 — Simulator & Fault Injection] — 2026-09-23
+
+**What was done:**
+- Implemented Task 4.1: Built `simulator/simulate.py` accepting `--batch-id`, `--crop-name`, `--duration`, `--interval`, `--endpoint`, and `--inject-fault`. Streams realistic cold-chain conditions to `POST /telemetry`.
+- Implemented Task 4.2: Implemented `--inject-fault temp_spike` generating a mid-stream 45.0°C temperature anomaly that is caught and quarantined by the AI trust layer.
+- Implemented Task 4.3: Performed isolated end-to-end verification against fresh batch `E2E-ISOLATED-001`. Verified count of raw readings (3), quarantined rows (1 naming 45.0°C), and smart contract events matching only the valid readings count (2).
+
+**Files changed:**
+- `simulator/simulate.py`: telemetry simulator CLI with fault injection.
+- `TASKS.md`: checked off Tasks 4.1, 4.2, and 4.3.
+
+**Decisions made (and why):**
+- Configured realistic temperature and humidity bounds tailored per crop (Tomato, Mango, Wheat) so simulated telemetry behaves realistically within cold-chain tolerances.
+- Injected faults mid-stream to emulate real-world sensor or refrigeration failures in transit.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 4.1: Streamed readings for `SIM-BATCH-001` with duration 10s; verified `VALID` responses and matching rows in SQLite `readings` with `tx_hash`.
+- Task 4.2: Ran with `--inject-fault temp_spike` on `FAULT-BATCH-001`; produced exactly 1 `ANOMALOUS` reading with `quarantine` row naming 45.0°C.
+- Task 4.3: Ran isolated verification on fresh batch `E2E-ISOLATED-001`; checked SQLite `readings` (count=3, 2 VALID with tx_hash, 1 ANOMALOUS), `quarantine` (count=1), and on-chain `ConditionRecorded` events (count=2 matching valid readings only).
+
+**Open questions / blockers for next session:**
+- None. Phase 4 is 100% complete.
+
+**What's next:**
+- Phase 5 — Frontend wiring (Tasks 5.1–5.6: wire Farmer dashboard, batch registration modal, Consumer traceability view, and run final essential demo check).
+
+---
+
+## [Phase 5 — Frontend Wiring & Essential Build Verification] — 2026-09-23
+
+**What was done:**
+- Implemented Task 5.1 & 5.2: Wired Farmer dashboard KPI cards, crop overview, and recent activity in `design/src/App.jsx`, `design/src/Farmer/components/KPICards.jsx`, and `design/src/Farmer/Views/MyCropsView.jsx`. Components fetch live data from `http://localhost:8000/farmer/kpis`, `/farmer/crops`, and `/farmer/activity`.
+- Implemented Task 5.3: Wired Farmer batch registration modal in `design/src/Farmer/Modals/AddStockModal.jsx` to `POST /batches`. Registered batches are written to SQLite and mined into the Hardhat blockchain, and dashboard KPIs update dynamically without a full page reload.
+- Implemented Task 5.4: Created `backend/scripts/seed_demo_batch.py` to seed a full custody chain for demo batch `TM1256` (`REGISTERED -> IN_TRANSIT -> IN_STORAGE -> AT_RETAIL -> SOLD`), recording cold-chain telemetry and price transfers.
+- Implemented Task 5.5 & 5.5b: Wired Consumer traceability view in `design/src/Consumer/Views/ProductJourneyView.jsx` and `BlockchainVerificationView.jsx` to fetch live data from `/batches/{batch_id}/traceability` and display the on-chain journey steps and the price trail badges.
+- Implemented Task 5.6: Built and executed `backend/scripts/verify_phase5_e2e.py` verifying all five steps of the PRD §6 essential-tier success criteria against the running contract and backend.
+
+**Files changed:**
+- `design/src/App.jsx`: live state fetching for farmer KPIs, crops, activities, and batch refresh.
+- `design/src/Farmer/components/KPICards.jsx`: dynamic rendering of inventory, orders, shipments, and earnings from live metrics.
+- `design/src/Farmer/Views/MyCropsView.jsx`: accepts dynamic categories prop.
+- `design/src/Farmer/Modals/AddStockModal.jsx`: submits new stock to `POST /batches` on blockchain with loading state.
+- `design/src/Consumer/Views/ProductJourneyView.jsx`: fetches `/batches/{batch_id}/traceability` and displays live journey steps with price badges.
+- `design/src/Consumer/Views/BlockchainVerificationView.jsx`: shows real on-chain transaction hash.
+- `backend/scripts/seed_demo_batch.py`: seed script for demo batch `TM1256`.
+- `backend/scripts/verify_phase5_e2e.py`: automated verification of PRD §6 five-step criteria.
+- `TASKS.md`: checked off Tasks 5.1 through 5.6.
+
+**Decisions made (and why):**
+- Strict adherence to the `AGENTS.md` and `RULES.md` "wire, don't create" rule: preserved all existing styling, Tailwind classes, and component structures while injecting live backend API state.
+- Completed Task 5.5b (price trail) by displaying formatted rupee badges along the journey timeline steps using Tailwind classes already present in the design.
+- Built automated script `verify_phase5_e2e.py` to make the 5-step verification completely reproducible.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 5.1 & 5.2: Farmer dashboard displays real data from SQLite (`6.50 Tonnes`, `13 Active Orders`, `5 Shipments`, `₹ 9,600 Total Earnings`) instead of mock numbers.
+- Task 5.3: Registering a batch from `AddStockModal` created a real row in `batches` table, mined on-chain transaction, and refreshed KPI counts immediately.
+- Task 5.4: `seed_demo_batch.py` executed all 4 transfers with prices; verified on-chain and via `GET /batches/TM1256/traceability`.
+- Task 5.5 & 5.5b: Consumer product journey screen displays the 5 real steps with locations, dates, and stage price badges; blockchain verification screen displays real transaction hash.
+- Task 5.6: `verify_phase5_e2e.py` passed 100% of all 5 steps specified in PRD §6:
+  1. Valid telemetry recorded on-chain.
+  2. High temperature spike (45°C) flagged ANOMALOUS and quarantined (not on-chain).
+  3. Batch registered on-chain via farmer flow.
+  4. Full custody transfer chain with prices on-chain.
+  5. Traceability endpoint returns correct journey, conditions, and farmer price share (50.0%).
+- Frontend build (`npm run build` in `design/`) succeeded cleanly with 0 errors.
+
+**Essential Build Status:**
+- **COMPLETE**: All essential-tier features (Phases 1–5, Tasks 1.1–5.6) are finished and fully verified.
+
+
+

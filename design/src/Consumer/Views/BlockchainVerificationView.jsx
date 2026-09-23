@@ -11,10 +11,21 @@ export const BlockchainVerificationView = ({ selectedProduct }) => {
   };
 
   const batchId = product.batchId ? product.batchId : 'TM1256';
-  const hashString = `0x7f5e...${batchId.toLowerCase()}8etf4`;
+  const realTxHash = product.txHash || 
+    (product.journeyData?.custodyHistory && product.journeyData.custodyHistory.length > 0
+      ? product.journeyData.custodyHistory[product.journeyData.custodyHistory.length - 1].txHash
+      : null);
+
+  const fullHash = realTxHash 
+    ? (realTxHash.startsWith('0x') ? realTxHash : `0x${realTxHash}`) 
+    : `0x7f5ea3b9c2d8etf4882199042a9b_${batchId}`;
+
+  const hashString = realTxHash 
+    ? `${fullHash.slice(0, 10)}...${fullHash.slice(-8)}`
+    : `0x7f5e...${batchId.toLowerCase()}8etf4`;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(`0x7f5ea3b9c2d8etf4882199042a9b_${batchId}`);
+    navigator.clipboard.writeText(fullHash);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

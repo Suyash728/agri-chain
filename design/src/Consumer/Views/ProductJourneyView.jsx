@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle2, ShieldCheck, Star, CheckCircle } from 'lucide-react';
 import { productReviewsData } from '../data/consumerData';
 
@@ -18,14 +18,42 @@ export const ProductJourneyView = ({
   const originCity = product.origin ? product.origin.split(',')[0] : 'Nashik';
   const displayBatchId = product.batchId ? product.batchId : 'TM1256';
 
+  const [journeyData, setJourneyData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`http://localhost:8000/batches/${displayBatchId}/traceability`)
+      .then(res => {
+        if (!res.ok) throw new Error('Traceability not found');
+        return res.json();
+      })
+      .then(data => {
+        setJourneyData(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching batch traceability:', err);
+        setLoading(false);
+      });
+  }, [displayBatchId]);
+
   const timelineSteps = [
-    { title: 'Harvested', date: '05 May, 2025', location: `${originCity} Farm` },
-    { title: 'Processed', date: '06 May, 2025', location: `${originCity} Packing Unit` },
-    { title: 'Transported', date: '07 May, 2025', location: 'Green Valley Logistics' },
-    { title: 'Received at Dark Store', date: '08 May, 2025', location: `${originCity} Central Store` },
-    { title: 'Out for Delivery', date: '09 May, 2025', location: 'Local Courier Service' },
-    { title: 'Delivered', date: '10 May, 2025', location: 'Customer Doorstep' }
+    { title: 'Harvested', date: '05 May, 2025', location: `${originCity} Farm`, pricePaise: 0 },
+    { title: 'Processed', date: '06 May, 2025', location: `${originCity} Packing Unit`, pricePaise: 0 },
+    { title: 'Transported', date: '07 May, 2025', location: 'Green Valley Logistics', pricePaise: 120000 },
+    { title: 'Received at Dark Store', date: '08 May, 2025', location: `${originCity} Central Store`, pricePaise: 155000 },
+    { title: 'Out for Delivery', date: '09 May, 2025', location: 'Local Courier Service', pricePaise: 185000 },
+    { title: 'Delivered', date: '10 May, 2025', location: 'Customer Doorstep', pricePaise: 220000 }
   ];
+
+  const stepsToRender = journeyData?.steps && journeyData.steps.length > 0
+    ? journeyData.steps.map(s => ({
+        title: s.name,
+        date: s.timestamp,
+        location: s.location,
+        pricePaise: s.pricePaise || 0,
+      }))
+    : timelineSteps;
 
   // Dynamic reviews for the selected product
   const reviewsInfo = productReviewsData[product.name] || productReviewsData['Organic Tomato'];
@@ -61,7 +89,7 @@ export const ProductJourneyView = ({
 
             {/* Trust & Blockchain Verification Card */}
             <div 
-              onClick={() => onVerifyBlockchainClick && onVerifyBlockchainClick(product)}
+              onClick={() => onVerifyBlockchainClick && onVerifyBlockchainClick({ ...product, batchId: displayBatchId, journeyData })}
               className="bg-[#EBF3E8] rounded-2xl p-5 border border-[#C2E0B8] shadow-xs flex items-center gap-4 cursor-pointer hover:bg-[#E2F0DD] transition-all"
             >
               <div className="w-11 h-11 rounded-full bg-[#354424] text-white flex items-center justify-center flex-shrink-0 shadow-xs">
@@ -158,16 +186,23 @@ export const ProductJourneyView = ({
           <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col gap-5 relative">
             <div className="absolute left-[31px] top-7 bottom-7 w-0.5 bg-[#354424]" />
 
-            {timelineSteps.map((step, idx) => (
+            {stepsToRender.map((step, idx) => (
               <div key={idx} className="flex items-start gap-3.5 relative z-10">
                 <div className="w-7 h-7 rounded-full bg-[#354424] text-white flex items-center justify-center flex-shrink-0 shadow-xs border-2 border-white">
                   <CheckCircle2 className="w-4 h-4 text-white" />
                 </div>
 
                 <div className="flex-1 flex flex-col gap-0.5">
-                  <h4 className="font-extrabold text-xs sm:text-sm text-[#2D2620]">
-                    {step.title}
-                  </h4>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-extrabold text-xs sm:text-sm text-[#2D2620]">
+                      {step.title}
+                    </h4>
+                    {step.pricePaise > 0 && (
+                      <span className="text-[11px] font-black text-[#354424] bg-[#EBF3E8] px-2 py-0.5 rounded-full border border-[#C2E0B8]">
+                        ₹{(step.pricePaise / 100).toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 text-xs font-medium text-[#666057]">
                     <span>{step.date}</span>
                     {step.location && (

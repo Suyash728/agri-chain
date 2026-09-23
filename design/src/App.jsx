@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Sidebar as FarmerSidebar } from './Farmer/components/Sidebar';
 import { BottomNav as FarmerBottomNav } from './Farmer/components/BottomNav';
@@ -59,6 +59,38 @@ export default function App() {
   const [farmerTab, setFarmerTab] = useState('dashboard');
   const [selectedCropCategory, setSelectedCropCategory] = useState(null);
   const [inventoryList, setInventoryList] = useState(initialInventory);
+  const [farmerKpis, setFarmerKpis] = useState([]);
+  const [farmerCrops, setFarmerCrops] = useState(cropCategories);
+  const [farmerActivities, setFarmerActivities] = useState(recentActivities);
+  const [farmerLoading, setFarmerLoading] = useState(true);
+
+  const fetchFarmerData = useCallback(async () => {
+    try {
+      const [kpiRes, cropsRes, actRes] = await Promise.allSettled([
+        fetch('http://localhost:8000/farmer/kpis').then(r => r.json()),
+        fetch('http://localhost:8000/farmer/crops').then(r => r.json()),
+        fetch('http://localhost:8000/farmer/activity').then(r => r.json())
+      ]);
+
+      if (kpiRes.status === 'fulfilled' && Array.isArray(kpiRes.value)) {
+        setFarmerKpis(kpiRes.value);
+      }
+      if (cropsRes.status === 'fulfilled' && Array.isArray(cropsRes.value)) {
+        setFarmerCrops(cropsRes.value);
+      }
+      if (actRes.status === 'fulfilled' && Array.isArray(actRes.value)) {
+        setFarmerActivities(actRes.value);
+      }
+    } catch (err) {
+      console.error('Error fetching farmer data from backend:', err);
+    } finally {
+      setFarmerLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFarmerData();
+  }, [fetchFarmerData]);
 
   // Tab state for Logistics Partner portal
   const [logisticTab, setLogisticTab] = useState('dashboard');
@@ -87,6 +119,7 @@ export default function App() {
 
   const handleAddStock = (newStock) => {
     setInventoryList([newStock, ...inventoryList]);
+    fetchFarmerData();
   };
 
   const handleLogout = () => {
@@ -215,15 +248,15 @@ export default function App() {
             {farmerTab === 'dashboard' && (
               <div className="flex flex-col gap-6 animate-fade-in">
                 <FarmerHeader onOpenNotifications={() => setIsNotificationsOpen(true)} />
-                <FarmerKPICards metrics={[]} onCardClick={(type) => handleSelectFarmerTab(type)} />
+                <FarmerKPICards metrics={farmerKpis} onCardClick={(type) => handleSelectFarmerTab(type)} />
                 
                 {/* Upper Row: Crop Overview & Recent Activity */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                   <div className="lg:col-span-7">
-                    <FarmerCropOverview categories={cropCategories} onSelectCategory={handleSelectCategory} onViewAll={() => handleSelectFarmerTab('my-crops')} />
+                    <FarmerCropOverview categories={farmerCrops} onSelectCategory={handleSelectCategory} onViewAll={() => handleSelectFarmerTab('my-crops')} />
                   </div>
                   <div className="lg:col-span-5 flex flex-col">
-                    <FarmerRecentActivity activities={recentActivities} onViewAll={() => handleSelectFarmerTab('orders')} />
+                    <FarmerRecentActivity activities={farmerActivities} onViewAll={() => handleSelectFarmerTab('orders')} />
                   </div>
                 </div>
 
@@ -443,7 +476,7 @@ export default function App() {
               </div>
             )}
 
-            {farmerTab === 'my-crops' && <MyCropsView categories={cropCategories} onSelectCategory={handleSelectCategory} />}
+            {farmerTab === 'my-crops' && <MyCropsView categories={farmerCrops} onSelectCategory={handleSelectCategory} />}
             {farmerTab === 'crop-details' && <CropDetailsView category={selectedCropCategory} onBack={() => handleSelectFarmerTab('my-crops')} />}
             {farmerTab === 'inventory' && <FarmerInventoryView items={inventoryList} onOpenAddStock={() => setIsAddStockOpen(true)} />}
             {farmerTab === 'orders' && <FarmerOrdersView />}
