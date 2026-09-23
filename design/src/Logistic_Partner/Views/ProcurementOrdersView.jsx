@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ethers } from 'ethers';
+import { useWallet } from '../../components/WalletConnect';
+import { CONTRACT_ADDRESSES, CUSTODY_TRANSFER_ABI, toBytes32 } from '../../utils/contracts';
 import { 
   ShoppingBag, 
   CheckCircle, 
@@ -17,7 +20,9 @@ import {
 } from 'lucide-react';
 
 export const ProcurementOrdersView = ({ onNavigate }) => {
+  const { account, signer } = useWallet();
   const [filter, setFilter] = useState('All');
+  const [dispatchingBatchId, setDispatchingBatchId] = useState(null);
 
   // Modal / View States
   const [activeModal, setActiveModal] = useState(null); // 'all-orders' | 'all-transactions' | 'all-activity' | null
@@ -64,6 +69,30 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
   }, [fetchOrders]);
 
   const handleDispatch = async (batchId) => {
+    setDispatchingBatchId(batchId);
+    let clientTxHash = null;
+
+    if (signer) {
+      try {
+        const custodyContract = new ethers.Contract(
+          CONTRACT_ADDRESSES.CustodyTransfer,
+          CUSTODY_TRANSFER_ABI,
+          signer
+        );
+        const b32 = toBytes32(batchId);
+        const tx = await custodyContract.transferCustody(
+          b32,
+          account || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+          1, // IN_TRANSIT
+          100000 // 100000 paise (₹1,000)
+        );
+        const receipt = await tx.wait();
+        clientTxHash = receipt.hash || tx.hash;
+      } catch (walletErr) {
+        console.warn('MetaMask custody transfer rejected or failed, falling back to backend relayer:', walletErr);
+      }
+    }
+
     try {
       const res = await fetch(`http://localhost:8000/batches/${batchId}/custody`, {
         method: 'POST',
@@ -75,11 +104,13 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
         }),
       });
       if (res.ok) {
-        alert(`Batch ${batchId} dispatched! Custody transferred to IN_TRANSIT on-chain.`);
+        alert(`Batch ${batchId} dispatched! Custody transferred to IN_TRANSIT on-chain.${clientTxHash ? `\nMetaMask Tx Hash: ${clientTxHash}` : ''}`);
         fetchOrders();
       }
     } catch (err) {
       console.error('Failed to dispatch batch:', err);
+    } finally {
+      setDispatchingBatchId(null);
     }
   };
 
@@ -159,9 +190,10 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                         {ord.isLiveBatch && ord.status === 'Ready for Pickup' ? (
                           <button
                             onClick={() => handleDispatch(ord.id)}
-                            className="px-2.5 py-1 rounded-lg bg-[#354424] text-white text-[10px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs whitespace-nowrap"
+                            disabled={dispatchingBatchId === ord.id}
+                            className="px-2.5 py-1 rounded-lg bg-[#354424] text-white text-[10px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-50"
                           >
-                            Dispatch 🚚
+                            {dispatchingBatchId === ord.id ? 'Signing...' : 'Dispatch 🚚'}
                           </button>
                         ) : (
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ord.badge}`}>

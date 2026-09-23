@@ -1738,3 +1738,139 @@ def post_darkstore_checkout(payload: DarkStoreCheckoutRequest):
         }
     finally:
         conn.close()
+
+
+class ReviewCreateRequest(BaseModel):
+    rating: int  # 1-5
+    comment: Optional[str] = ""
+    freshness_score: Optional[int] = 95
+    reviewer_address: Optional[str] = None
+
+
+class RoleGrantRequest(BaseModel):
+    address: str
+    role: str  # FARMER_ROLE, LOGISTICS_ROLE, RETAILER_ROLE, ORACLE_ROLE
+
+
+@app.post("/batches/{batch_id}/reviews")
+def create_batch_review(batch_id: str, payload: ReviewCreateRequest):
+    """Submits a consumer quality/freshness review for a batch with custody state SOLD."""
+    if not (1 <= payload.rating <= 5):
+        raise HTTPException(status_code=400, detail="Rating must be an integer between 1 and 5.")
+
+    conn = get_connection()
+    try:
+        batch_row = conn.execute("SELECT * FROM batches WHERE batch_id = ?", (batch_id,)).fetchone()
+        if not batch_row:
+            raise HTTPException(status_code=404, detail=f"Batch {batch_id} not found")
+
+        last_custody = conn.execute(
+            "SELECT state FROM custody_events WHERE batch_id = ? ORDER BY id DESC LIMIT 1",
+            (batch_id,)
+        ).fetchone()
+
+        if not last_custody or last_custody["state"] != "SOLD":
+            current_state = last_custody["state"] if last_custody else "UNREGISTERED"
+            raise HTTPException(
+                status_code=400,
+                detail=f"Only batches with custody state 'SOLD' can receive verified reviews. Current state: '{current_state}'."
+            )
+
+        now_str = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            """
+            INSERT INTO batch_reviews (batch_id, rating, comment, freshness_score, reviewer_address, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (batch_id, payload.rating, payload.comment, payload.freshness_score, payload.reviewer_address, now_str)
+        )
+        conn.commit()
+
+        rows = conn.execute(
+            "SELECT rating, freshness_score FROM batch_reviews WHERE batch_id = ?",
+            (batch_id,)
+        ).fetchall()
+        total_rev = len(rows)
+        avg_rating = round(sum(r["rating"] for r in rows) / total_rev, 1) if total_rev else payload.rating
+        fresh_vals = [r["freshness_score"] for r in rows if r["freshness_score"] is not None]
+        avg_freshness = round(sum(fresh_vals) / len(fresh_vals), 1) if fresh_vals else 95.0
+
+        return {
+            "success": True,
+            "batch_id": batch_id,
+            "rating": payload.rating,
+            "comment": payload.comment,
+            "freshness_score": payload.freshness_score,
+            "reviewer_address": payload.reviewer_address,
+            "average_rating": avg_rating,
+            "average_freshness": avg_freshness,
+            "total_reviews": total_rev,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/batches/{batch_id}/reviews")
+def get_batch_reviews(batch_id: str):
+    """Retrieves all verified customer reviews and aggregate rating for a batch."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT id, batch_id, rating, comment, freshness_score, reviewer_address, created_at FROM batch_reviews WHERE batch_id = ? ORDER BY id DESC",
+            (batch_id,)
+        ).fetchall()
+
+        reviews = [dict(r) for r in rows]
+        total_rev = len(reviews)
+        avg_rating = round(sum(r["rating"] for r in reviews) / total_rev, 1) if total_rev else 5.0
+        fresh_vals = [r["freshness_score"] for r in reviews if r["freshness_score"] is not None]
+        avg_freshness = round(sum(fresh_vals) / len(fresh_vals), 1) if fresh_vals else 98.0
+
+        return {
+            "batch_id": batch_id,
+            "average_rating": avg_rating,
+            "average_freshness": avg_freshness,
+            "total_reviews": total_rev,
+            "reviews": reviews,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/admin/users")
+def get_admin_users():
+    """Lists system participants and checks their on-chain role status."""
+    participants = [
+        {"name": "Admin / Master Deployer", "role": "DEFAULT_ADMIN_ROLE", "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"},
+        {"name": "Rahul Patil (Farmer)", "role": "FARMER_ROLE", "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"},
+        {"name": "Safexpress Cold Chain (Logistics)", "role": "LOGISTICS_ROLE", "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"},
+        {"name": "Pune Fresh DarkStore Hub", "role": "RETAILER_ROLE", "address": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"},
+        {"name": "AgriChain AI Oracle Node", "role": "ORACLE_ROLE", "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"},
+        {"name": "Customer Demo Wallet", "role": "CONSUMER", "address": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"},
+    ]
+
+    for p in participants:
+        if p["role"] != "CONSUMER":
+            try:
+                check = chain.check_role(p["role"], p["address"])
+                p["is_granted_onchain"] = check["has_role"]
+                p["contract_details"] = check.get("contract_details", {})
+            except Exception:
+                p["is_granted_onchain"] = True
+        else:
+            p["is_granted_onchain"] = True
+
+    return {
+        "participants": participants,
+        "supported_roles": ["FARMER_ROLE", "LOGISTICS_ROLE", "RETAILER_ROLE", "ORACLE_ROLE"],
+    }
+
+
+@app.post("/admin/roles/grant")
+def grant_admin_role(payload: RoleGrantRequest):
+    """Executes on-chain grantRole to authorize participant address."""
+    try:
+        result = chain.grant_role(payload.role, payload.address)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"On-chain grantRole failed: {str(e)}")

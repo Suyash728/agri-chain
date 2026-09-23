@@ -410,3 +410,90 @@ def get_batch_documents_onchain(batch_id: str) -> list:
             print(f"[chain] getBatchDocuments warning: {e}")
             return []
     return []
+
+
+ROLE_IDENTIFIERS = {
+    "DEFAULT_ADMIN_ROLE": b"\x00" * 32,
+    "FARMER_ROLE": Web3.keccak(text="FARMER_ROLE"),
+    "LOGISTICS_ROLE": Web3.keccak(text="LOGISTICS_ROLE"),
+    "RETAILER_ROLE": Web3.keccak(text="RETAILER_ROLE"),
+    "ORACLE_ROLE": Web3.keccak(text="ORACLE_ROLE"),
+}
+
+
+def grant_role(role_name: str, account_address: str) -> dict:
+    """Grants a role to an Ethereum address on relevant modular contracts."""
+    role_key = role_name.upper()
+    if not role_key.endswith("_ROLE") and role_key != "DEFAULT_ADMIN_ROLE":
+        role_key = f"{role_key}_ROLE"
+
+    role_bytes = ROLE_IDENTIFIERS.get(role_key)
+    if not role_bytes:
+        raise ValueError(f"Unknown role: {role_name}")
+
+    addr = w3.to_checksum_address(account_address)
+    tx_hashes = {}
+
+    target_contracts = []
+    if role_key in ("DEFAULT_ADMIN_ROLE", "FARMER_ROLE"):
+        if product_registry_contract:
+            target_contracts.append(("ProductRegistry", product_registry_contract))
+        if custody_transfer_contract:
+            target_contracts.append(("CustodyTransfer", custody_transfer_contract))
+    elif role_key == "LOGISTICS_ROLE":
+        if custody_transfer_contract:
+            target_contracts.append(("CustodyTransfer", custody_transfer_contract))
+    elif role_key == "RETAILER_ROLE":
+        if custody_transfer_contract:
+            target_contracts.append(("CustodyTransfer", custody_transfer_contract))
+    elif role_key == "ORACLE_ROLE":
+        if cold_chain_monitor_contract:
+            target_contracts.append(("ColdChainMonitor", cold_chain_monitor_contract))
+
+    for name, c in target_contracts:
+        tx_hash = _send_tx(c, "grantRole", role_bytes, addr)
+        tx_hashes[name] = tx_hash
+
+    return {
+        "role": role_key,
+        "address": addr,
+        "transactions": tx_hashes,
+        "success": True,
+    }
+
+
+def check_role(role_name: str, account_address: str) -> dict:
+    """Checks whether an address possesses a given role across modular contracts."""
+    role_key = role_name.upper()
+    if not role_key.endswith("_ROLE") and role_key != "DEFAULT_ADMIN_ROLE":
+        role_key = f"{role_key}_ROLE"
+
+    role_bytes = ROLE_IDENTIFIERS.get(role_key)
+    if not role_bytes:
+        raise ValueError(f"Unknown role: {role_name}")
+
+    addr = w3.to_checksum_address(account_address)
+    results = {}
+    if product_registry_contract:
+        try:
+            results["ProductRegistry"] = product_registry_contract.functions.hasRole(role_bytes, addr).call()
+        except Exception:
+            pass
+    if custody_transfer_contract:
+        try:
+            results["CustodyTransfer"] = custody_transfer_contract.functions.hasRole(role_bytes, addr).call()
+        except Exception:
+            pass
+    if cold_chain_monitor_contract:
+        try:
+            results["ColdChainMonitor"] = cold_chain_monitor_contract.functions.hasRole(role_bytes, addr).call()
+        except Exception:
+            pass
+
+    return {
+        "role": role_key,
+        "address": addr,
+        "has_role": any(results.values()) if results else False,
+        "contract_details": results,
+    }
+

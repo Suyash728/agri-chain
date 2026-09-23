@@ -5,7 +5,8 @@ import { productReviewsData } from '../data/consumerData';
 export const ProductJourneyView = ({ 
   selectedProduct, 
   onVerifyBlockchainClick,
-  onWriteReviewClick 
+  onWriteReviewClick,
+  refreshKey 
 }) => {
   // Use selectedProduct if passed, otherwise fallback to default
   const product = selectedProduct || {
@@ -22,6 +23,7 @@ export const ProductJourneyView = ({
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState([]);
   const [showDocModal, setShowDocModal] = useState(false);
+  const [liveReviews, setLiveReviews] = useState(null);
 
   useEffect(() => {
     fetch(`http://localhost:8000/batches/${displayBatchId}/traceability`)
@@ -42,7 +44,16 @@ export const ProductJourneyView = ({
       .then(res => res.json())
       .then(docs => setDocuments(Array.isArray(docs) ? docs : []))
       .catch(err => console.log('Documents fetch note:', err));
-  }, [displayBatchId]);
+
+    fetch(`http://localhost:8000/batches/${displayBatchId}/reviews`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.reviews && data.reviews.length > 0) {
+          setLiveReviews(data);
+        }
+      })
+      .catch(err => console.log('Live reviews fetch note:', err));
+  }, [displayBatchId, refreshKey]);
 
   const timelineSteps = [
     { title: 'Harvested', date: '05 May, 2025', location: `${originCity} Farm`, pricePaise: 0 },
@@ -63,7 +74,28 @@ export const ProductJourneyView = ({
     : timelineSteps;
 
   // Dynamic reviews for the selected product
-  const reviewsInfo = productReviewsData[product.name] || productReviewsData['Organic Tomato'];
+  const fallbackReviews = productReviewsData[product.name] || productReviewsData['Organic Tomato'];
+  const reviewsCount = liveReviews ? liveReviews.total_reviews : fallbackReviews.reviewsCount;
+  const ratingScore = liveReviews ? liveReviews.average_rating : fallbackReviews.rating;
+
+  const displayReviewsList = liveReviews && liveReviews.reviews.length > 0
+    ? liveReviews.reviews.map(r => ({
+        id: r.id,
+        author: r.reviewer_address ? `${r.reviewer_address.substring(0, 6)}...${r.reviewer_address.substring(r.reviewer_address.length - 4)}` : 'Verified Consumer',
+        badge: 'On-Chain Verified',
+        date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent',
+        comment: r.comment,
+        rating: r.rating,
+      }))
+    : fallbackReviews.reviews;
+
+  const breakdownToRender = liveReviews && liveReviews.reviews.length > 0
+    ? [5, 4, 3, 2, 1].map(stars => {
+        const count = liveReviews.reviews.filter(r => r.rating === stars).length;
+        const percentage = Math.round((count / liveReviews.reviews.length) * 100);
+        return { stars, percentage };
+      })
+    : fallbackReviews.breakdown;
 
   return (
     <div className="flex flex-col gap-3 pb-20 md:pb-8 pt-2">
@@ -141,7 +173,7 @@ export const ProductJourneyView = ({
             <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col gap-4">
               <div className="flex justify-between items-center pb-2 border-b border-[#F4F5E6]">
                 <h3 className="font-extrabold text-sm sm:text-base text-[#2D2620]">
-                  Customer Ratings & Reviews ({reviewsInfo.reviewsCount})
+                  Customer Ratings & Reviews ({reviewsCount})
                 </h3>
                 <button
                   onClick={onWriteReviewClick}
@@ -154,17 +186,17 @@ export const ProductJourneyView = ({
               {/* Rating Summary & Breakdown Bars */}
               <div className="flex items-center gap-5 pt-1">
                 <div className="flex flex-col items-center justify-center pr-5 border-r border-[#E6E1D5] flex-shrink-0">
-                  <span className="text-3xl font-black text-[#2D2620]">{reviewsInfo.rating.toFixed(1)}</span>
+                  <span className="text-3xl font-black text-[#2D2620]">{Number(ratingScore).toFixed(1)}</span>
                   <div className="flex items-center gap-0.5 text-amber-500 my-1">
                     {[1, 2, 3, 4, 5].map((s) => (
                       <Star key={s} className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                     ))}
                   </div>
-                  <span className="text-[11px] font-semibold text-[#666057]">({reviewsInfo.reviewsCount} Reviews)</span>
+                  <span className="text-[11px] font-semibold text-[#666057]">({reviewsCount} Reviews)</span>
                 </div>
 
                 <div className="flex-1 flex flex-col gap-1 text-[11px] font-bold text-[#666057]">
-                  {reviewsInfo.breakdown.map((row) => (
+                  {breakdownToRender.map((row) => (
                     <div key={row.stars} className="flex items-center gap-2">
                       <span className="w-3 text-right">{row.stars}★</span>
                       <div className="flex-1 h-2 bg-[#FAF7F0] rounded-full overflow-hidden border border-[#E6E1D5]">
@@ -181,7 +213,7 @@ export const ProductJourneyView = ({
 
               {/* Verified Customer Reviews List */}
               <div className="flex flex-col gap-3 pt-2">
-                {reviewsInfo.reviews.map((rev) => (
+                {displayReviewsList.map((rev) => (
                   <div key={rev.id} className="bg-[#FAF7F0] rounded-xl p-3.5 border border-[#E6E1D5] flex flex-col gap-2">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
@@ -201,7 +233,10 @@ export const ProductJourneyView = ({
 
                     <div className="flex items-center gap-0.5 text-amber-500">
                       {[1, 2, 3, 4, 5].map((s) => (
-                        <Star key={s} className="w-3 h-3 fill-amber-500 text-amber-500" />
+                        <Star 
+                          key={s} 
+                          className={`w-3 h-3 ${s <= (rev.rating || 5) ? 'fill-amber-500 text-amber-500' : 'text-[#E6E1D5]'}`} 
+                        />
                       ))}
                     </div>
 

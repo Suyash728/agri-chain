@@ -520,6 +520,66 @@ session doesn't have to rediscover it.
 **What's next:**
 - Phase 10 — Role Wallets, Reviews & Hardware IoT Demo (Tasks 10.1–10.6: MetaMask ethers.js v6 wallet connection, client-side role transaction signing, consumer rating & review loop, admin governance flow, physical ESP32 firmware prop, and capstone full-system verification).
 
+---
+
+## [Phase 10 — Role Wallets, Reviews & Hardware IoT Demo] — 2026-09-23
+
+**What was done:**
+- Implemented Task 10.1:
+  - Installed `ethers` v6 in `design/`.
+  - Created centralized contract definitions, ABIs, and `toBytes32` helper in `design/src/utils/contracts.js`.
+  - Built Web3 wallet context and hook `design/src/components/WalletConnect.jsx` supporting connection, account switching, disconnect, and role detection (`Admin / Farmer`, `Farmer`, `Logistics Partner`, `Dark Store Manager`, `Consumer`).
+  - Integrated `WalletConnect` in the floating header across all role dashboards in `design/src/App.jsx`.
+- Implemented Task 10.2:
+  - Wired `design/src/Farmer/Modals/AddStockModal.jsx` with `useWallet()` requesting direct client-side signature for `ProductRegistry.registerBatch(...)` and initializing custody on `CustodyTransfer.sol` with graceful fallback to backend relayer.
+  - Wired `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx` requesting direct client-side signature for `CustodyTransfer.transferCustody(...)`.
+  - Added Web3 connection status badges and signing state indicators.
+- Implemented Task 10.3:
+  - Added `POST /batches/{batch_id}/reviews` and `GET /batches/{batch_id}/reviews` in `backend/main.py`. Restricts review submission to batches with custody state `SOLD` (verified non-SOLD batches rejected with 400).
+  - Wired `design/src/Consumer/Views/ProductJourneyView.jsx`, `design/src/Consumer/Modals/WriteReviewModal.jsx`, and `design/src/Consumer/ConsumerApp.jsx` to fetch and render live verified consumer reviews and dynamic star breakdowns with instant submission. Tested with `backend/scripts/test_reviews.py`.
+- Implemented Task 10.4:
+  - Added `chain.grant_role` and `chain.check_role` in `backend/chain.py` supporting `FARMER_ROLE`, `LOGISTICS_ROLE`, `RETAILER_ROLE`, and `ORACLE_ROLE` across modular contracts.
+  - Implemented `GET /admin/users` and `POST /admin/roles/grant` in `backend/main.py`.
+  - Built interactive Admin Role Governance panel in `design/src/Farmer/Modals/MoreMenuSheet.jsx` enabling contract owners to grant roles to new addresses on-chain.
+- Implemented Task 10.5:
+  - Created PlatformIO project in `hardware/esp32_firmware/` with `platformio.ini` and C++ Arduino sketch `src/main.cpp` interfacing DHT22, NEO-6M GPS, WiFi HTTP client, and GPIO 4 interrupt button injecting 48.0°C thermal refrigeration failure.
+  - Created Python simulation runner `hardware/simulate_esp32.py` and `hardware/README.md`. Tested demo mode: nominal reading (4.5°C) mined on-chain, and simulated GPIO 4 button press (48.0°C) caught and quarantined off-chain by AI Trust Layer.
+- Implemented Task 10.6:
+  - Built `backend/scripts/verify_final_system.py` executing an exhaustive automated capstone validation across all 10 phases.
+  - Successfully verified all 8 core checks with 100% pass: modular access control, batched oracle writes, AI trust F1=0.9722, multi-role handoffs (Farmer -> Logistics -> Dark Store -> Consumer), ESP32 nominal telemetry, push-button thermal breach quarantine, IPFS document pinning and anchoring, and post-checkout consumer review aggregation.
+
+**Files changed:**
+- `design/src/utils/contracts.js`: centralized addresses, ABIs, and helpers.
+- `design/src/components/WalletConnect.jsx`: Web3 provider, hook, and header component.
+- `design/src/App.jsx`: integrated wallet connect bar.
+- `design/src/Farmer/Modals/AddStockModal.jsx`: client-side MetaMask signing for batch registration.
+- `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`: client-side MetaMask signing for custody transfer.
+- `design/src/Consumer/Views/ProductJourneyView.jsx`: live verified reviews and rating breakdown.
+- `design/src/Consumer/Modals/WriteReviewModal.jsx`: review submission callback.
+- `design/src/Consumer/ConsumerApp.jsx`: review submission to backend.
+- `design/src/Farmer/Modals/MoreMenuSheet.jsx`: admin role governance panel.
+- `backend/chain.py`: added `grant_role` and `check_role`.
+- `backend/main.py`: added reviews and admin governance endpoints.
+- `backend/scripts/test_reviews.py`: review verification script.
+- `hardware/esp32_firmware/platformio.ini`: PlatformIO configuration.
+- `hardware/esp32_firmware/src/main.cpp`: ESP32 C++ firmware sketch.
+- `hardware/simulate_esp32.py`: ESP32 simulation runner.
+- `hardware/README.md`: hardware wiring and guide.
+- `backend/scripts/verify_final_system.py`: capstone full-system verification suite.
+- `TASKS.md`: marked all Phase 10 tasks complete.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 10.1: Connecting MetaMask displays address and detected supply-chain role; `npm run build` passed in 3.50s with 0 errors.
+- Task 10.2: Direct client-side batch registration and custody transfer signing integrated with backend fallback.
+- Task 10.3: `test_reviews.py` passed: non-SOLD reviews rejected with 400; SOLD batch reviews accepted and aggregated into average rating 5.0★.
+- Task 10.4: `POST /admin/roles/grant` executed on-chain tx `f2b67141422b...` granting `LOGISTICS_ROLE`, and tx `e6ad38358d49...` granting `RETAILER_ROLE`.
+- Task 10.5: `simulate_esp32.py --mode demo` verified nominal reading mined on-chain (tx `4f0282d8...`) and simulated GPIO 4 button press quarantined off-chain.
+- Task 10.6: `verify_final_system.py` executed across all 8 checks with 100% pass (Exit Code 0).
+
+**Phase 10 & Project Status:**
+- **COMPLETE**: All 10 Phases of the AgriChain Major Project are 100% implemented, tested, and verified end-to-end!
+
+
 
 
 
