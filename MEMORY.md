@@ -331,7 +331,57 @@ session doesn't have to rediscover it.
 - **COMPLETE**: Tasks 6.1 through 6.7 are finished, verified, and committed.
 
 **What's next:**
-- Phase 7 — Logistics Partner & Cold-Chain Transit Telemetry (Tasks 7.1–7.4: wire transit dashboard, GPS fleet status, dynamic custody handover modal).
+- Phase 7 — Role Dashboards Wiring & Quarantine / Trust UI (Tasks 7.1–7.6).
+
+---
+
+## [Phase 7 — Role Dashboards Wiring & Quarantine / Trust UI] — 2026-09-23
+
+**What was done:**
+- Implemented Task 7.1: Created Logistics Partner backend endpoints (`GET /logistics/kpis`, `GET /logistics/shipments`, `GET /logistics/orders`) in `backend/main.py` connecting live batches, SQLite custody events, GPS corridor history, and latest reefer sensor readings. Committed in `f179d6f`.
+- Implemented Task 7.2: Wired Logistics Partner UI components (`LogisticKPICards.jsx`, `LogisticDashboardView.jsx`, `TransportationView.jsx`, `ShipmentTrackingView.jsx`, and `ProcurementOrdersView.jsx`) to live endpoints. Connected "Dispatch 🚚" button to trigger `POST /batches/{batch_id}/custody` transferring batch custody to `IN_TRANSIT` on-chain. Committed in `89ea639`.
+- Implemented Task 7.3: Implemented Dark Store / Retailer backend endpoints (`GET /darkstore/kpis`, `GET /darkstore/inbound`, `GET /darkstore/inventory`, `POST /darkstore/receive`, `POST /darkstore/checkout`) in `backend/main.py`. Validated on-chain custody transitions to `IN_STORAGE` and `SOLD` with authentic transaction hashes. Committed in `4d3ee56`.
+- Implemented Task 7.4: Wired Dark Store UI components (`DarkStoreKPICards.jsx`, `DarkStoreDashboardView.jsx`, `InboundGRNView.jsx`, and `MicroInventoryView.jsx`) to live endpoints. Enabled real-time "Receive Goods (GRN)" action to update inventory bays without page reloads. Frontend build cleanly succeeded in 2.45s. Committed in `5ada2b5`.
+- Implemented Task 7.5: Built `GET /telemetry/quarantine` in `backend/main.py` consolidating explainable anomaly records from `audit_trail` and `quarantine`. Built `design/src/Farmer/Modals/QuarantineAuditModal.jsx` and connected it to the "View Details" button in `design/src/Farmer/Views/AITrustView.jsx`. Frontend build cleanly succeeded in 2.47s. Committed in `41dccda`.
+- Implemented Task 7.6: Created automated end-to-end verification script `backend/scripts/verify_phase7_e2e.py` testing the complete 4-role lifecycle (Farmer Registration -> Logistics Pickup -> In-transit Telemetry & Fault Quarantine -> Dark Store GRN -> Consumer Checkout -> Cross-Role Traceability & Fair Price Audit). Verified all 6 validation steps with zero errors. Committed in `0c4c0ad`.
+
+**Files changed:**
+- `backend/main.py`: added Logistics, Dark Store, and Quarantine endpoints (`/logistics/*`, `/darkstore/*`, `GET /telemetry/quarantine`).
+- `design/src/Logistic_Partner/components/LogisticKPICards.jsx`: dynamic KPI metrics.
+- `design/src/Logistic_Partner/Views/LogisticDashboardView.jsx`: live shipments & orders.
+- `design/src/Logistic_Partner/Views/TransportationView.jsx`: live vehicle fleet cards.
+- `design/src/Logistic_Partner/Views/ShipmentTrackingView.jsx`: live GPS route corridor & reefer temperatures.
+- `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`: live dispatch action triggering on-chain custody transfer.
+- `design/src/Dark_Store/components/DarkStoreKPICards.jsx`: live inventory value, deliveries, and sales KPIs.
+- `design/src/Dark_Store/Views/DarkStoreDashboardView.jsx`: live incoming deliveries and store revenue.
+- `design/src/Dark_Store/Views/InboundGRNView.jsx`: live inbound deliveries with "Receive Goods (GRN)" action.
+- `design/src/Dark_Store/Views/MicroInventoryView.jsx`: live bay allocation and temperature logger inventory.
+- `design/src/Farmer/Modals/QuarantineAuditModal.jsx`: explainable audit inspection modal for intercepted sensor faults.
+- `design/src/Farmer/Views/AITrustView.jsx`: wired "View Details" button to QuarantineAuditModal.
+- `backend/scripts/verify_phase7_e2e.py`: automated 4-role lifecycle test script.
+- `TASKS.md`: marked Tasks 7.1 through 7.6 complete.
+- `MEMORY.md`: appended Phase 7 completion entry.
+
+**Decisions made (and why):**
+- Strict adherence to the `AGENTS.md` and `RULES.md` "wire, never create" rule: preserved all Tailwind styles, layouts, SVG icons, and color palettes while replacing static mock data with dynamic API hooks.
+- Dual-write custody pattern: `POST /darkstore/receive` and `POST /darkstore/checkout` update both SQLite `custody_events` and the Hardhat smart contract `transferCustody` method, keeping off-chain queries fast and on-chain state verifiable.
+- Unified quarantine aggregation: `GET /telemetry/quarantine` merges detailed records from `audit_trail` and legacy `quarantine` tables, providing full explainability (temperature, humidity, GPS, and exact reason codes like `REPLAY_DETECTED` or `TEMPERATURE_OUT_OF_POLICY`).
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 7.1: `/logistics/kpis`, `/logistics/shipments`, and `/logistics/orders` return live database records with accurate counts and GPS coordinates.
+- Task 7.2: Picking up a batch in Logistics Partner UI transfers custody to `IN_TRANSIT` on-chain (verified tx `33370e1a...`).
+- Task 7.3: `/darkstore/kpis`, `/darkstore/inbound`, `/darkstore/inventory`, `POST /darkstore/receive` (tx `905f9dbf...`), and `POST /darkstore/checkout` (tx `7cb5aa63...`) tested and verified on-chain.
+- Task 7.4: Receiving `DEMO-DS-01` in Dark Store UI moved batch into storage rack bin dynamically; `npm run build` compiled cleanly in 2.45s.
+- Task 7.5: Clicking "View Details" in `AITrustView.jsx` opens `QuarantineAuditModal` displaying live intercepted sensor violations; `npm run build` compiled cleanly in 2.47s.
+- Task 7.6: `backend/scripts/verify_phase7_e2e.py` passed all 6 steps with 0 errors, confirming full cross-role consistency, transparent price trail (₹0 -> ₹1,000 -> ₹1,400 -> ₹2,000) with 50.0% farmer share, and tamper-proof quarantine isolation.
+- Regression: `backend/scripts/verify_phase5_e2e.py` passed 100% of all 5 PRD §6 essential build criteria.
+
+**Phase 7 Status:**
+- **COMPLETE**: Tasks 7.1 through 7.6 are finished, verified, and committed.
+
+**What's next:**
+- Phase 8 — Advanced ML Anomaly Detection (LSTM-Autoencoder for gradual sensor drift) & Production Polish.
+
 
 
 
