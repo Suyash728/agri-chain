@@ -380,7 +380,32 @@ session doesn't have to rediscover it.
 - **COMPLETE**: Tasks 7.1 through 7.6 are finished, verified, and committed.
 
 **What's next:**
-- Phase 8 — Advanced ML Anomaly Detection (LSTM-Autoencoder for gradual sensor drift) & Production Polish.
+- Phase 8 — Modular Smart Contracts, Gas Benchmarking & Polygon Amoy Deployment (Tasks 8.1–8.6).
+
+---
+
+## [Phase 8–10 Planning & Documentation Architecture] — 2026-09-23
+
+**What was done:**
+- Updated all core repository markdown documents (`PLAN.md`, `TASKS.md`, `PRD.md`, `ARCHITECTURE.md`, `README.md`) to establish the complete, actionable build plan for all remaining phases through project completion:
+  - **Phase 8:** Modular Smart Contracts (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, `AccessControlRoles`), OpenZeppelin role-based access control, Oracle condition batching (`recordConditionsBatch`), gas benchmarking suite (`benchmark_gas.cjs`) for IEEE paper Section IV, and public deployment to Polygon Amoy testnet (Tasks 8.1–8.6).
+  - **Phase 9:** Off-chain storage migration from SQLite to Supabase (PostgreSQL), automated migration script (`migrate_sqlite_to_supabase.py`), decentralized document storage on IPFS with cryptographic CIDs (`ipfs://Qm...`), on-chain document CID anchoring in `ProductRegistry.sol`, and frontend certificate preview in Consumer/Farmer views (Tasks 9.1–9.5).
+  - **Phase 10:** Role-based MetaMask Web3 wallet signing via `ethers.js` v6 with backend relayer fallback, Consumer review and 5-star rating submission loop, Admin governance approval queue, physical ESP32 IoT hardware sensor firmware sketch with refrigeration breach push-button demo, and final full-system verification suite (Tasks 10.1–10.6).
+- Updated `PRD.md` §5 Optional feature table to record completion of O1, O3, O4, O11, and O14, and map O2, O5, O6, O7, O8, O9, O10, O12, O13 to Phases 8–10.
+- Updated `ARCHITECTURE.md` with §5.1 (modular contract suite & gas optimization), §6.1 (dual SQLite/Supabase PostgreSQL storage & IPFS CIDs), updated multi-role endpoint catalogue (§7), and §9 (advanced features architecture deep dives).
+- Updated `README.md` with current multi-role codebase status and full 10-phase roadmap table.
+
+**Files changed:**
+- `PLAN.md`: post-essential roadmap through Phase 10 with clear phase milestones.
+- `TASKS.md`: granular tasks 8.1–10.6 with runnable commands, exact file paths, and DONE WHEN criteria.
+- `PRD.md`: mapped all optional features to completion status and phases.
+- `ARCHITECTURE.md`: added modular contract diagrams, dual DB specs, IPFS anchoring, and gas batching architecture.
+- `README.md`: updated status and full phased roadmap table.
+- `MEMORY.md`: appended Phase 8–10 roadmap documentation entry.
+
+**What's next:**
+- Phase 8 — Modular Smart Contracts, Gas Benchmarking & Polygon Amoy Deployment (Tasks 8.1–8.6).
+
 
 
 

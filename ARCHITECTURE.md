@@ -30,21 +30,21 @@ weeks specifically:
    Every one of them is reversible — see the matching Optional item in
    `PRD.md` §5.
 
-| Original plan | Essential architecture | Reversed by |
+| Original plan | Essential architecture | Status / Target Phase |
 |---|---|---|
-| Next.js 14 frontend | Existing Vite + React app in `design/`, wired not rebuilt | N/A — this was always the better choice once `design/` existed |
-| Supabase (Postgres, cloud) | SQLite, one file, zero setup | O7 |
-| 5 smart contracts + OpenZeppelin `AccessControl` | 1 consolidated contract, simple owner check | O6 |
-| Deployed to Polygon Amoy (public testnet) | Deployed to a local Hardhat node | O5 |
-| 5 separate services (`trust-layer`, `indexer`, oracle writer, etc.) | 1 FastAPI app doing ingestion + validation + chain writes + the REST API | — (see §3) |
-| ML anomaly model (Isolation Forest / LSTM-AE) | Rule-based threshold + plausibility checks | O3 |
-| MetaMask, per-user signing | One backend-held account signs everything | O2 |
-| MQTT ingestion | Plain HTTP POST | — |
+| Next.js 14 frontend | Existing Vite + React app in `design/`, wired not rebuilt | Preserved — Vite React app fully wired across Farmer, Logistics, Dark Store, and Consumer roles |
+| Supabase (Postgres, cloud) | SQLite, one file, zero setup | Phase 9 (O7): Dual SQLite / Supabase PostgreSQL hybrid layer |
+| 5 smart contracts + OpenZeppelin `AccessControl` | 1 consolidated contract, simple owner check | Phase 8 (O6): Modular 5-contract suite + OpenZeppelin `AccessControl` |
+| Deployed to Polygon Amoy (public testnet) | Deployed to a local Hardhat node | Phase 8 (O5): Deployed to Polygon Amoy testnet (Chain ID 80002) |
+| 5 separate services (`trust-layer`, `indexer`, oracle writer, etc.) | 1 FastAPI app doing ingestion + validation + chain writes + the REST API | Hybrid: Standalone `trust-layer` integrated directly in Phase 6 |
+| ML anomaly model (Isolation Forest / LSTM-AE) | Rule-based threshold + plausibility checks | Phase 6 (O3): Dual-stage Isolation Forest & 11-D feature engineering complete |
+| MetaMask, per-user signing | One backend-held account signs everything | Phase 10 (O2): Client-side MetaMask signing with backend relayer fallback |
+| MQTT ingestion | Plain HTTP POST | Phase 10 (O12): ESP32 hardware telemetry ingestion |
 
 Nothing here is a scope cut on the *idea* — every layer of the original
 architecture (sensor → AI → chain → dashboard → consumer) still exists and
-still does its job. What's cut is complexity *within* each layer, resequenced
-into the Optional tier.
+still does its job. What was simplified for the essential build is being
+systematically expanded across Phases 6 through 10.
 
 ## 2. Repo layout
 
@@ -53,28 +53,50 @@ agri-chain/
 ├── design/              EXISTING, working React frontend. Wire, don't rebuild.
 │   ├── src/
 │   │   ├── data/mockData.js         Farmer + shared mock data — THIS IS THE API CONTRACT (see §4)
-│   │   ├── Farmer/data/…            (if present) Farmer-specific mock data
-│   │   ├── Consumer/data/consumerData.js   Consumer mock data — also a contract source
-│   │   ├── Farmer/, Logistic_Partner/, Dark_Store/, Consumer/   one folder per role
-│   │   └── App.jsx                  role switcher + top-level state
-│   └── DESIGN.md                    visual design system — do not edit
+│   │   ├── Farmer/                  Farmer dashboard, registration modal, AI trust view, quarantine modal
+│   │   ├── Logistic_Partner/        Logistics dashboard, live transit dispatch, shipment tracking
+│   │   ├── Dark_Store/              Dark Store dashboard, inbound GRN reception, micro-inventory
+│   │   ├── Consumer/                Consumer product journey, live provenance & price fairness card
+│   │   ├── components/WalletConnect.jsx   Web3 MetaMask wallet connect (Phase 10)
+│   │   └── App.jsx                  Role switcher + top-level state
+│   └── DESIGN.md                    Visual design system — do not edit
 │
-├── contracts/            NEW. Hardhat + Solidity project.
-│   ├── contracts/AgriChainCore.sol  the one essential contract (§5)
-│   ├── test/                        Hardhat tests
-│   └── hardhat.config.js
+├── contracts/            Hardhat + Solidity project.
+│   ├── contracts/
+│   │   ├── AgriChainCore.sol        Consolidated contract (Phases 2-7)
+│   │   ├── AccessControlRoles.sol   Role hierarchy & OpenZeppelin AccessControl (Phase 8)
+│   │   ├── ProductRegistry.sol      Batch registration & farmer provenance (Phase 8)
+│   │   ├── CustodyTransfer.sol      Custody state machine & price trail (Phase 8)
+│   │   ├── ColdChainMonitor.sol     Condition logging & batched oracle writes (Phase 8)
+│   │   └── PolicyConfig.sol         Crop threshold configuration (Phase 8)
+│   ├── test/                        Hardhat tests (unit & role authorization)
+│   ├── scripts/benchmark_gas.cjs    Gas benchmarking suite for IEEE research paper (Phase 8)
+│   └── hardhat.config.cjs           Local Hardhat + Polygon Amoy testnet config
 │
-├── backend/               NEW. One FastAPI app — ingestion, AI validation, chain writes, REST API.
-│   ├── main.py                     FastAPI app + all route definitions
-│   ├── db.py                       SQLite connection + schema (§6)
-│   ├── validation.py               the rule-based AI trust layer (E4 in PRD.md)
-│   ├── chain.py                    web3.py wrapper — talks to the local Hardhat node
+├── trust-layer/          AI Trust Layer (Phase 6).
+│   ├── app/
+│   │   ├── core/                    Config, logging, crop policy definitions
+│   │   ├── schemas/                 Pydantic schemas (telemetry, oracle handoff v1.0)
+│   │   ├── services/                Range check, plausibility, feature extraction, Isolation Forest, simulator
+│   │   ├── storage/                 SQLite audit trail and telemetry history repositories
+│   │   └── api/routes.py            Evaluation, telemetry, and benchmark endpoints
+│   └── tests/                       147 passing unit & integration tests
+│
+├── backend/              FastAPI service — ingestion, AI validation, chain writes, REST API.
+│   ├── main.py                      FastAPI app + multi-role routes (Farmer, Logistics, Dark Store, Consumer)
+│   ├── db.py                        Database layer: SQLite (default) and Supabase PostgreSQL (Phase 9)
+│   ├── ipfs.py                      Decentralized certificate & document pinning (Phase 9)
+│   ├── chain.py                     web3.py wrapper — talks to local Hardhat node or Polygon Amoy
+│   ├── scripts/                     Automated E2E verification suites (Phase 5, Phase 7, Phase 8-10)
 │   └── requirements.txt
 │
-├── simulator/              NEW. One Python script.
-│   └── simulate.py                emits readings for one batch, `--inject-fault` flag for the bad-reading demo
+├── simulator/            IoT telemetry simulation.
+│   └── simulate.py                  Streams GPS/temperature/humidity sequences with fault injection
 │
-├── docs/                  EXISTING. Project documentation and diagrams — see docs/proposal/ for full history.
+├── hardware/             Physical IoT hardware sketches (Phase 10).
+│   └── esp32_firmware/              ESP32 + DHT22 + GPS telemetry transmitter
+│
+├── docs/                 Project documentation, proposals, and system diagrams.
 │
 ├── AGENTS.md, PRD.md, ARCHITECTURE.md, RULES.md, PLAN.md, TASKS.md, MEMORY.md
 ```
@@ -236,6 +258,59 @@ Notes for whoever (or whatever) implements this:
   indexer at scale and completely fine at essential-build scale (a handful
   of demo batches).
 
+### 5.1 Modular smart contracts suite & Gas optimization (Phase 8)
+
+In Phase 8 (O6, O13, O5), the monolithic `AgriChainCore.sol` is modularized into 5 contracts with OpenZeppelin `AccessControl` and batched condition writes:
+
+```
+                      ┌────────────────────────┐
+                      │ AccessControlRoles.sol │
+                      │ (Admin, Farmer, Trans, │
+                      │  Retailer, Oracle)     │
+                      └───────────┬────────────┘
+                                  │ inherits / verifies
+          ┌───────────────────────┼───────────────────────┐
+          ▼                       ▼                       ▼
+┌──────────────────┐    ┌──────────────────┐    ┌────────────────────┐
+│ProductRegistry.sol│   │CustodyTransfer.sol│   │ColdChainMonitor.sol│
+│- registerBatch   │    │- transferCustody │    │- recordCondition   │
+│- docCID anchoring│    │- pricePaise trail│    │- recordBatch       │
+│[FARMER_ROLE]     │    │[LOGISTICS/RETAIL]│    │[ORACLE_ROLE]       │
+└──────────────────┘    └──────────────────┘    └─────────┬──────────┘
+                                                          │ queries
+                                                          ▼
+                                                ┌──────────────────┐
+                                                │ PolicyConfig.sol │
+                                                │ - crop thresholds│
+                                                │ [ADMIN_ROLE]     │
+                                                └──────────────────┘
+```
+
+1. **`AccessControlRoles.sol`**:
+   - Manages role assignments via OpenZeppelin `AccessControl`:
+     - `DEFAULT_ADMIN_ROLE`: Contract deployer and system governor.
+     - `FARMER_ROLE`: Permitted to register new produce batches.
+     - `LOGISTICS_ROLE`: Permitted to initiate transit handoffs.
+     - `RETAILER_ROLE`: Permitted to accept inventory into dark stores and record retail sales.
+     - `ORACLE_ROLE`: Restricted to the validated AI Trust Layer relayer account for posting telemetry.
+2. **`ProductRegistry.sol`**:
+   - Manages produce registration: `cropName`, `originFarm`, `harvestDate`, `farmerAddress`, and `documentCID` (IPFS hash for certificates).
+   - Only accounts with `FARMER_ROLE` can invoke `registerBatch`.
+3. **`CustodyTransfer.sol`**:
+   - Enforces strict monotonic forward lifecycle: `REGISTERED` → `IN_TRANSIT` → `IN_STORAGE` → `AT_RETAIL` → `SOLD`.
+   - Records the exact purchase price (`uint256 pricePaise`) paid at each handoff, emitting `CustodyTransferred`.
+4. **`ColdChainMonitor.sol`**:
+   - Ingests verified telemetry from `ORACLE_ROLE`.
+   - Implements both single write `recordCondition` and multi-reading batch write:
+     `recordConditionsBatch(bytes32[] batchIds, int256[] temps, uint256[] hums, bool[] breaches)`
+   - Queries `PolicyConfig` to ensure compliance.
+5. **`PolicyConfig.sol`**:
+   - Stores crop cold-chain parameters (min/max temperature, humidity tolerance) on-chain.
+   - Modifiable only by `DEFAULT_ADMIN_ROLE`.
+
+#### Gas Optimization Mechanism (O13)
+Each individual transaction on an EVM blockchain incurs a 21,000 gas base overhead plus execution and storage costs. For IoT sensors transmitting data at high frequencies, single-reading transactions are cost-prohibitive. `recordConditionsBatch` amortizes the base transaction cost across *N* readings, packing timestamps, signed deci-Celsius temperatures, and breach booleans into contiguous arrays. This reduces per-reading gas costs by 60–80%, providing empirical validation for Section IV of the research paper.
+
 ## 6. Data model — SQLite (essential)
 
 One file, `backend/agrichain.db`. Five tables, deliberately fewer than the
@@ -293,41 +368,83 @@ One row per crop in `policy` is enough for the essential build — seed it with
 the 2–3 crops you'll actually demo. Per-route policy variation, versioning,
 and admin-editable thresholds are Optional (rolled into O6).
 
-## 7. Backend endpoints (essential set)
+### 6.1 Dual-Storage (SQLite / PostgreSQL Supabase) & IPFS Decentralized Media (Phase 9)
 
-Build these in the order they appear in `TASKS.md`. Each response shape is
-governed by §4 — go find the matching mock export before writing the route.
+In Phase 9 (O7, O10), the storage architecture evolves to support production cloud hosting and decentralized document anchoring:
 
-| Endpoint | Method | Matches mock shape in |
-|---|---|---|
-| `/batches` | `POST` | new batch — no direct mock equivalent, this is a write |
-| `/batches/{batch_id}/custody` | `POST` | new custody transfer — write, no mock equivalent |
-| `/telemetry` | `POST` | new reading — write, no mock equivalent |
-| `/farmer/kpis` | `GET` | `kpiMetrics` in `design/src/data/mockData.js` |
-| `/farmer/crops` | `GET` | `cropCategories` in `design/src/data/mockData.js` |
-| `/farmer/activity` | `GET` | `recentActivities` in `design/src/data/mockData.js` |
-| `/batches/{batch_id}/traceability` | `GET` | `traceabilityBatch` in `design/src/data/mockData.js` |
-| `/batches/{batch_id}/price-journey` | `GET` | derive from `traceabilityBatch` + `custody_events` — check whether the mock already has a price field before adding a new shape |
+1. **Database Polymorphism (`backend/db.py`)**:
+   - The backend checks `DATABASE_URL` at startup:
+     - If empty or `sqlite:///`, it falls back to local SQLite (`backend/agrichain.db`) for lightweight offline development and local test execution.
+     - If prefixed with `postgresql://` (or `postgres://`), it connects to the cloud-hosted Supabase instance using `psycopg2` / `asyncpg` connection pooling.
+   - The database schema is unified across both engines, covering:
+     - `batches`: Produce identity, farmer, harvest date, and on-chain tx hashes.
+     - `custody_events`: Historical custody transitions and recorded sale prices in paise.
+     - `readings`: Raw IoT telemetry (written before validation for full audit integrity).
+     - `quarantine`: Anomaly reports with ordered reason codes and sensor values.
+     - `policy`: Dynamic crop thresholds.
+     - `documents`: Document metadata linking IPFS CIDs to batch IDs.
+     - `reviews`: Consumer rating (1–5 stars) and feedback text.
 
-If a mock export doesn't obviously map to a database query, that's a sign to
-re-read `PRD.md` §5 before inventing new response fields — the essential
-build only needs E1–E7.
+2. **Decentralized Media Pinning (IPFS)**:
+   - Heavy un-hashable binary assets (such as government quality inspection certificates, pesticide residue reports, or geotagged farm photos) are never stored in relational DBs or on-chain.
+   - `backend/ipfs.py` pins files to IPFS (via Pinata or web3.storage API), generating an immutable Content Identifier (`ipfs://Qm...`).
+   - The CID is anchored on-chain in `ProductRegistry.sol` and stored in the database for instant retrieval.
+   - Consumer and Farmer frontend views resolve IPFS links using dedicated gateways (`https://gateway.pinata.cloud/ipfs/...`).
+
+## 7. Backend endpoints (complete multi-role set)
+
+Each response shape is governed by §4 — matching the mock exports in `design/src/*/data/` exactly.
+
+| Endpoint | Method | Role / Phase | Purpose & Mock Source |
+|---|---|---|---|
+| `/batches` | `POST` | Farmer / Ph 3 | Register produce batch; calls `ProductRegistry` |
+| `/batches/{batch_id}/custody` | `POST` | Logistics & Dark Store / Ph 3, 7 | Advance custody state and record price; calls `CustodyTransfer` |
+| `/telemetry` | `POST` | Simulator & ESP32 / Ph 3, 6, 10 | Ingest IoT reading; evaluates AI trust layer; calls `ColdChainMonitor` if valid |
+| `/farmer/kpis` | `GET` | Farmer / Ph 5 | Matches `kpiMetrics` in `mockData.js` |
+| `/farmer/crops` | `GET` | Farmer / Ph 5 | Matches `cropCategories` in `mockData.js` |
+| `/farmer/activity` | `GET` | Farmer / Ph 5 | Matches `recentActivities` in `mockData.js` |
+| `/batches/{batch_id}/traceability` | `GET` | Consumer / Ph 5 | Matches `traceabilityBatch` in `consumerData.js` |
+| `/batches/{batch_id}/price-journey` | `GET` | Consumer / Ph 5 | Price breakdown & farmer fair price share calculations |
+| `/logistics/kpis` | `GET` | Logistics / Ph 7 | Matches `logisticsKPIData` in `mockData.js` |
+| `/logistics/shipments` | `GET` | Logistics / Ph 7 | Matches `shipmentTrackingData` in `mockData.js` |
+| `/logistics/orders` | `GET` | Logistics / Ph 7 | Matches `procurementOrders` in `mockData.js` |
+| `/darkstore/kpis` | `GET` | Dark Store / Ph 7 | Matches `darkStoreKPIData` in `mockData.js` |
+| `/darkstore/inbound` | `GET` | Dark Store / Ph 7 | Matches `inboundShipments` in `mockData.js` |
+| `/darkstore/inventory` | `GET` | Dark Store / Ph 7 | Matches `microInventory` in `mockData.js` |
+| `/darkstore/receive` | `POST` | Dark Store / Ph 7 | Inbound GRN reception (advances custody to `IN_STORAGE`) |
+| `/darkstore/checkout` | `POST` | Dark Store / Ph 7 | Consumer retail checkout (advances custody to `SOLD`) |
+| `/telemetry/quarantine` | `GET` | Farmer & Admin / Ph 7 | Quarantined telemetry audit list for `QuarantineAuditModal.jsx` |
+| `/telemetry/evaluate` | `POST` | Research & Paper / Ph 6 | Automated evaluation benchmark (F1, precision, recall) |
+| `/telemetry/history` | `GET` | AI Trust Layer / Ph 6 | Time-series telemetry history for 11-D feature engineering |
+| `/batches/{batch_id}/documents` | `POST` | Farmer & Inspector / Ph 9 | Pin certificate to IPFS and anchor CID on-chain |
+| `/batches/{batch_id}/reviews` | `GET`, `POST` | Consumer / Ph 10 | Consumer quality ratings and review submission |
+| `/admin/users` | `GET` | Admin / Ph 10 | Participant role verification and approval queue |
+| `/admin/roles/grant` | `POST` | Admin / Ph 10 | Grants `AccessControlRoles` permissions on-chain |
 
 ## 8. Tech stack reference
 
-| Layer | Essential | Optional upgrade |
-|---|---|---|
-| Frontend | Existing Vite + React 18 + Tailwind (JS) in `design/` — unchanged | — |
-| Backend | Python 3.11, FastAPI, `uvicorn` | Split into microservices, add MQTT (O-tier, unlisted individually — follow O5/O13 pattern) |
-| Database | SQLite (`sqlite3` via Python stdlib or `sqlmodel`) | Supabase/Postgres (O7) |
-| Blockchain | Solidity ^0.8.20, Hardhat, local Hardhat node | Polygon Amoy public testnet (O5), OpenZeppelin `AccessControl` + 5 contracts (O6) |
-| Chain client | `web3.py` from `backend/chain.py` — one Python library, no separate Node/ethers.js service | ethers.js v6 + MetaMask for per-user signing (O2) |
-| AI trust layer | Rule-based (essential) / `trust-layer` Isolation Forest (Phase 6) | PyTorch LSTM-autoencoder for gradual sensor drift (O3) |
-| IoT source | `simulator/simulate.py`, one script, HTTP POST | 7-fault simulator in `trust-layer` (Phase 6), Real ESP32 (O12) |
+| Layer | Essential (Phases 1–5) | Integrated (Phases 6–7) | Advanced Roadmap (Phases 8–10) |
+|---|---|---|---|
+| Frontend | React 18, Vite, Tailwind CSS (Farmer & Consumer views) | Logistics Partner, Dark Store, and Quarantine Audit modal wired | MetaMask Web3 connection (`ethers.js` v6) & Consumer review drawers |
+| Backend | Python 3.11, FastAPI, `uvicorn` | Multi-role REST endpoints + AI Trust Layer routing | IPFS pinning gateway & Supabase async connection pooling |
+| Database | SQLite (`backend/agrichain.db`) | SQLite audit trails & telemetry history repositories | Dual-mode SQLite + Supabase PostgreSQL (`psycopg2`) |
+| Blockchain | Solidity ^0.8.20, Hardhat local node | `AgriChainCore.sol` on local node | 5 modular contracts (`AccessControlRoles`, `ProductRegistry`, etc.) on Polygon Amoy |
+| Chain client | `web3.py` via backend relayer account | `web3.py` via backend relayer account | Client-side MetaMask signing with backend relayer fallback |
+| AI trust layer | Rule-based threshold check | 11-D feature extraction, Isolation Forest ML anomaly detection, SHA-256 fingerprinting | Dynamic drift calibration & multi-crop policy auto-tuning |
+| IoT source | `simulator/simulate.py` | 7-fault scenario simulator (`trust-layer/`) | Physical ESP32 + DHT22 + GPS transmitter (`hardware/esp32_firmware/`) |
 
-**Why web3.py instead of ethers.js for the essential build:** the backend is
-already Python (FastAPI). Keeping the chain client in the same language
-avoids introducing a second runtime, a second package manager, and a second
-set of conventions into a build already constrained to two weeks and a small
-local model. ethers.js is better documented for frontend wallet integration,
-which is exactly the part (O2) that's deferred.
+## 9. Advanced Features Architecture (Phases 8–10)
+
+### 9.1 Gas Optimization and Public Testnet Deployment (Phase 8)
+- **Batching Aggregation:** The AI Trust Layer buffers consecutive verified readings for active batches and invokes `ColdChainMonitor.recordConditionsBatch`. This reduces gas usage from ~45,000 gas per reading to ~12,000 gas per reading, avoiding network congestion.
+- **Polygon Amoy Testnet:** Configured in `contracts/hardhat.config.cjs` using Polygon Amoy RPC (Chain ID 80002). Contract addresses are injected into the backend via environment variables (`PRODUCT_REGISTRY_ADDRESS`, `CUSTODY_TRANSFER_ADDRESS`, `COLD_CHAIN_MONITOR_ADDRESS`, `POLICY_CONFIG_ADDRESS`, `ACCESS_CONTROL_ADDRESS`), with seamless fallback to local Hardhat addresses.
+
+### 9.2 Decentralized Document Anchoring (Phase 9)
+- **Zero-Storage Blockchain:** Blockchain state storage is expensive (~20,000 gas per 32-byte storage slot). High-resolution images and PDFs are stored on IPFS.
+- **Verification Integrity:** The on-chain `ProductRegistry` stores only the 32-byte or 46-character CID. Any tampering with the off-chain PDF changes its cryptographic hash, causing verification failure.
+
+### 9.3 Client-Side Web3 Signing & Hardware Telemetry (Phase 10)
+- **Dual Transaction Execution Flow:**
+  1. *Connected Wallet Flow:* If MetaMask is connected and the user's address holds the required role in `AccessControlRoles`, the frontend prompts the user to sign the transaction directly via `ethers.BrowserProvider`.
+  2. *Relayer Fallback Flow:* For automated scripts, IoT telemetry, or users without Web3 wallets, the FastAPI backend signs transactions using its configured private key.
+- **Physical ESP32 Device:** The ESP32 micro-controller reads from physical DHT22 (temperature/humidity) and NEO-6M (GPS) sensors, transmitting JSON payloads over WiFi directly to the FastAPI `/telemetry` endpoint. A hardware push-button triggers a deliberate temperature fault by overriding the sensor output to 35°C, providing a physical demonstration of the AI Trust Layer quarantine mechanism.
