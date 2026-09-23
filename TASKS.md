@@ -371,13 +371,13 @@ This phase integrates teammate Rutuja's standalone `trust-layer` module into the
 - **DONE WHEN:** sending a 15.0°C telemetry reading for a `Tomato` batch (max policy 8.0°C) is flagged `ANOMALOUS`, while sending 15.0°C for a `Wheat` batch (max policy 25.0°C) is evaluated as `VALID`. (Verified: 147 tests pass in `trust-layer/tests/`, including `test_policy.py`).
 
 ### Task 6.4 — Connect backend ingestion to AI Trust Pipeline & Oracle Handoff
-- [ ] Update `backend/main.py:POST /telemetry` to execute the full AI Trust pipeline:
+- [x] Update `backend/main.py:POST /telemetry` to execute the full AI Trust pipeline:
   1. Record raw reading in `readings` table first (audit integrity per `RULES.md` §4).
   2. Run range, plausibility, feature extraction, Isolation Forest, and cryptographic integrity checks.
   3. Formulate explainable Trust Verdict (`VALID`, `ANOMALOUS`, `INSUFFICIENT_EVIDENCE`) and operational disposition (`READY_FOR_ORACLE`, `QUARANTINED`, `ON_HOLD`).
   4. For `VALID` + `READY_FOR_ORACLE`, construct `OracleHandoffPayload` and call `chain.py:record_condition` on `AgriChainCore.sol`.
   5. For `ANOMALOUS` + `QUARANTINED`, insert into `quarantine` table with exact structured reason codes.
-- **DONE WHEN:** posting valid telemetry updates Hardhat blockchain condition events and SQLite audit records; posting an anomaly (temp spike, GPS jump, or replay attack) inserts a quarantine record and leaves on-chain event count unchanged.
+- **DONE WHEN:** posting valid telemetry updates Hardhat blockchain condition events and SQLite audit records; posting an anomaly (temp spike, GPS jump, or replay attack) inserts a quarantine record and leaves on-chain event count unchanged. (Verified: `backend/scripts/verify_phase6_task4.py` and `backend/scripts/verify_phase5_e2e.py` passed with all checks confirmed).
 
 ### Task 6.5 — Integrate multi-fault telemetry simulation
 - [ ] Upgrade root `simulator/simulate.py` using `trust-layer/app/services/simulator.py` to support all 7 fault types:

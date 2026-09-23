@@ -5,9 +5,30 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+import sys
+from datetime import datetime, timezone, timedelta
+import json
+
 import chain
-from db import get_connection, init_db
+from db import get_connection, init_db, DB_PATH
 from validation import validate_reading
+
+# Ensure trust-layer is importable
+TRUST_LAYER_PATH = pathlib.Path(__file__).resolve().parent.parent / "trust-layer"
+if str(TRUST_LAYER_PATH) not in sys.path:
+    sys.path.insert(0, str(TRUST_LAYER_PATH))
+
+from app.schemas.telemetry import TelemetryPayload
+from app.services.validator import run_basic_validation
+from app.services.plausibility import run_plausibility_checks
+from app.services.policy import get_crop_policy
+from app.services.features import extract_features
+from app.services.anomaly_detector import anomaly_detector
+from app.services.integrity import verify_telemetry_integrity
+from app.services.verdict import evaluate_verdict
+from app.services.audit import audit_service
+from app.services.history import history_repository
+from app.services.evaluation import evaluation_service
 
 app = FastAPI(title="AgriChain API", version="1.0.0")
 
@@ -30,9 +51,53 @@ PARTICIPANT_ADDRESSES = {
 }
 
 
+def init_baseline_anomaly_model():
+    """Train Isolation Forest on representative normal operational baselines (stationary + transit produce)."""
+    import numpy as np
+    np.random.seed(42)
+    X = []
+    for _ in range(500):
+        crop = np.random.choice(["tomato", "mango", "wheat"])
+        if crop == "tomato":
+            temp = float(np.random.uniform(2.0, 8.0))
+            hum = float(np.random.uniform(85.0, 95.0))
+        elif crop == "mango":
+            temp = float(np.random.uniform(10.0, 15.0))
+            hum = float(np.random.uniform(85.0, 90.0))
+        else:
+            temp = float(np.random.uniform(15.0, 25.0))
+            hum = float(np.random.uniform(50.0, 70.0))
+
+        is_transit = np.random.rand() > 0.4
+        elapsed = float(np.random.uniform(30.0, 120.0))
+
+        if is_transit:
+            speed = float(np.random.uniform(10.0, 75.0))
+            dist = float((speed * elapsed) / 3600.0)
+        else:
+            speed = 0.0
+            dist = 0.0
+
+        lat = float(18.5204 + np.random.uniform(-0.5, 0.5))
+        lon = float(73.8567 + np.random.uniform(-0.5, 0.5))
+
+        d_temp = float(np.random.uniform(-0.8, 0.8))
+        temp_rate = float((d_temp / elapsed) * 60.0)
+        d_hum = float(np.random.uniform(-2.0, 2.0))
+        hum_rate = float((d_hum / elapsed) * 60.0)
+
+        X.append([temp, hum, lat, lon, d_temp, temp_rate, d_hum, hum_rate, dist, speed, elapsed])
+
+    anomaly_detector.fit(X)
+
+
 @app.on_event("startup")
 def on_startup():
     init_db()
+    try:
+        init_baseline_anomaly_model()
+    except Exception as e:
+        print(f"Warning: could not fit baseline anomaly detector: {e}")
 
 
 @app.get("/health")
@@ -44,9 +109,15 @@ def health():
 
 class TelemetryRequest(BaseModel):
     batch_id: str
-    crop_name: str
-    temp_c: float
-    humidity_pct: float
+    crop_name: Optional[str] = None
+    temp_c: Optional[float] = None
+    humidity_pct: Optional[float] = None
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    device_id: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    timestamp: Optional[str] = None
 
 
 class TelemetryResponse(BaseModel):
@@ -54,28 +125,138 @@ class TelemetryResponse(BaseModel):
     reason: Optional[str] = None
     tx_hash: Optional[str] = None
     reading_id: int
+    event_hash: Optional[str] = None
+    disposition: Optional[str] = None
+    reason_codes: Optional[List[str]] = None
+    anomaly_score: Optional[float] = None
 
 
 @app.post("/telemetry", response_model=TelemetryResponse)
 def post_telemetry(payload: TelemetryRequest):
-    """Ingest a telemetry reading with AI trust validation and quarantine."""
+    """Ingest a telemetry reading with AI trust validation, anomaly detection, and quarantine."""
     conn = get_connection()
     try:
+        temp_c = payload.temp_c if payload.temp_c is not None else payload.temperature
+        humidity_pct = payload.humidity_pct if payload.humidity_pct is not None else payload.humidity
+        if temp_c is None or humidity_pct is None:
+            raise HTTPException(status_code=400, detail="Missing temperature or humidity in telemetry payload")
+
+        temp_c = float(temp_c)
+        humidity_pct = float(humidity_pct)
+        device_id = payload.device_id or f"DEV-{payload.batch_id}"
+        latitude = float(payload.latitude) if payload.latitude is not None else 18.5204
+        longitude = float(payload.longitude) if payload.longitude is not None else 73.8567
+
+        ts_raw = payload.timestamp
+        if ts_raw:
+            try:
+                ts = datetime.fromisoformat(ts_raw.replace("Z", "+00:00"))
+            except Exception:
+                ts = datetime.now(timezone.utc)
+        else:
+            prev_reading = history_repository.get_last_reading(device_id=device_id, batch_id=payload.batch_id)
+            now = datetime.now(timezone.utc)
+            if prev_reading and (now - prev_reading.timestamp).total_seconds() < 60.0:
+                ts = prev_reading.timestamp + timedelta(seconds=60.0)
+            else:
+                ts = now
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+
+        # 1. Record raw reading in readings table first with verdict='PENDING' (audit integrity per RULES.md §4)
         cur = conn.execute(
             """
             INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash)
             VALUES (?, ?, ?, 'PENDING', NULL)
             """,
-            (payload.batch_id, payload.temp_c, payload.humidity_pct),
+            (payload.batch_id, temp_c, humidity_pct),
         )
         reading_id = cur.lastrowid
         conn.commit()
 
-        verdict, reason = validate_reading(payload.crop_name, payload.temp_c, payload.humidity_pct)
+        # 2. Look up batch crop & dynamic crop policy
+        batch_row = conn.execute("SELECT crop_name FROM batches WHERE batch_id = ?", (payload.batch_id,)).fetchone()
+        crop_name = (payload.crop_name or (batch_row["crop_name"] if batch_row else "tomato")).lower()
+        policy = get_crop_policy(payload.batch_id, db_path=str(DB_PATH))
 
-        if verdict == "VALID":
-            temp_deci_c = int(round(payload.temp_c * 10))
-            humidity_pct_int = int(round(payload.humidity_pct))
+        # 3. Construct TelemetryPayload for trust pipeline
+        telemetry_obj = TelemetryPayload(
+            batch_id=payload.batch_id,
+            device_id=device_id,
+            latitude=latitude,
+            longitude=longitude,
+            temperature=temp_c,
+            humidity=humidity_pct,
+            timestamp=ts,
+        )
+
+        # 4. Range validation
+        range_res = run_basic_validation(telemetry_obj)
+        range_reasons = [f.reason_code for f in range_res.failures] if not range_res.passed else []
+
+        # 5. History lookup and Plausibility checks
+        previous = history_repository.get_last_reading(device_id=device_id, batch_id=payload.batch_id)
+        plausibility = run_plausibility_checks(current=telemetry_obj, previous=previous, policy=policy)
+
+        # 6. Feature extraction & Isolation Forest Anomaly Detection
+        features = extract_features(current=telemetry_obj, previous=previous)
+        if not anomaly_detector.is_trained():
+            try:
+                evaluation_service._fit_baseline_model(seed=42)
+            except Exception:
+                pass
+        anomaly = anomaly_detector.predict_features(features)
+
+        # 7. Cryptographic Integrity & Replay Detection
+        integrity = verify_telemetry_integrity(telemetry_obj)
+
+        # 8. Compute Verdict
+        verdict = evaluate_verdict(
+            plausibility=plausibility,
+            ml=anomaly,
+            integrity=integrity,
+            include_evidence=True,
+        )
+
+        # If range validation failed, prepend reason codes
+        all_reasons = range_reasons + [r for r in verdict.reason_codes if r not in range_reasons]
+        if range_reasons and verdict.verdict != "ANOMALOUS":
+            verdict.verdict = "ANOMALOUS"
+            verdict.reason_codes = all_reasons
+
+        # Handle initial reading semantics: if physical and integrity pass and no reasons, mark valid
+        is_initial_clean = (
+            previous is None
+            and plausibility.plausible
+            and integrity.status == "VALID"
+            and not all_reasons
+        )
+
+        if is_initial_clean or verdict.verdict == "VALID":
+            final_verdict = "VALID"
+            final_disposition = "READY_FOR_ORACLE"
+            verdict.verdict = "VALID"
+        else:
+            final_verdict = "ANOMALOUS"
+            final_disposition = "QUARANTINED"
+            verdict.verdict = "ANOMALOUS"
+
+        verdict.reason_codes = all_reasons
+
+        # 9. Record in Audit Trail and History
+        audit_record = audit_service.record_audit(
+            payload=telemetry_obj,
+            verdict=verdict,
+            integrity=integrity,
+            anomaly=anomaly,
+        )
+        if final_verdict == "VALID":
+            history_repository.add_reading(telemetry_obj)
+
+        # 10. Execute Oracle Handoff (blockchain anchor) or Quarantine
+        if final_verdict == "VALID":
+            temp_deci_c = int(round(temp_c * 10))
+            humidity_pct_int = int(round(humidity_pct))
             try:
                 tx_hash = chain.record_condition(
                     batch_id=payload.batch_id,
@@ -98,6 +279,10 @@ def post_telemetry(payload: TelemetryRequest):
                     reason=f"Blockchain recording failed: {str(e)}",
                     tx_hash=None,
                     reading_id=reading_id,
+                    event_hash=integrity.event_hash,
+                    disposition="QUARANTINED",
+                    reason_codes=["BLOCKCHAIN_RECORDING_FAILED"],
+                    anomaly_score=anomaly.anomaly_score if anomaly else None,
                 )
 
             conn.execute(
@@ -110,22 +295,31 @@ def post_telemetry(payload: TelemetryRequest):
                 reason=None,
                 tx_hash=tx_hash,
                 reading_id=reading_id,
+                event_hash=integrity.event_hash,
+                disposition="READY_FOR_ORACLE",
+                reason_codes=[],
+                anomaly_score=anomaly.anomaly_score if anomaly else None,
             )
         else:
+            reason_str = ", ".join(all_reasons) if all_reasons else "Cold-chain policy breach or anomaly"
             conn.execute(
                 "UPDATE readings SET verdict = 'ANOMALOUS' WHERE id = ?",
                 (reading_id,),
             )
             conn.execute(
                 "INSERT INTO quarantine (reading_id, reason) VALUES (?, ?)",
-                (reading_id, reason or "Violated cold-chain threshold"),
+                (reading_id, reason_str),
             )
             conn.commit()
             return TelemetryResponse(
                 verdict="ANOMALOUS",
-                reason=reason,
+                reason=reason_str,
                 tx_hash=None,
                 reading_id=reading_id,
+                event_hash=integrity.event_hash,
+                disposition="QUARANTINED",
+                reason_codes=all_reasons,
+                anomaly_score=anomaly.anomaly_score if anomaly else None,
             )
     finally:
         conn.close()
