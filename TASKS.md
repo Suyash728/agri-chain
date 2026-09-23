@@ -518,9 +518,9 @@ Goal: Modularize `AgriChainCore.sol` into 5 cohesive smart contracts with OpenZe
 Goal: Migrate off-chain state from local SQLite to cloud PostgreSQL (Supabase) and store produce documents (quality certificates, lab tests, farm photos) on decentralized IPFS, anchoring cryptographic CIDs on-chain.
 
 ### Task 9.1 — PostgreSQL / Supabase Schema Definition & Connection Layer
-- [ ] Write SQL migrations in `backend/migrations/` creating PostgreSQL tables mirroring SQLite: `batches`, `custody_events`, `readings`, `quarantine`, `policy`, `audit_trail`, `telemetry_history`.
-- [ ] Update `backend/db.py` to inspect `DATABASE_URL`: if `postgresql://` is set, connect via PostgreSQL/psycopg; else fall back to local SQLite.
-- **DONE WHEN:** setting `DATABASE_URL` and running `python -c "from db import init_db; init_db()"` successfully creates all tables in the target PostgreSQL database.
+- [x] Write SQL migrations in `backend/migrations/` creating PostgreSQL tables mirroring SQLite: `batches`, `custody_events`, `readings`, `quarantine`, `policy`, `audit_trail`, `telemetry_history`.
+- [x] Update `backend/db.py` to inspect `DATABASE_URL`: if `postgresql://` is set, connect via PostgreSQL/psycopg; else fall back to local SQLite.
+- **DONE WHEN:** setting `DATABASE_URL` and running `python -c "from db import init_db; init_db()"` successfully creates all tables in the target PostgreSQL database. (Verified: created `backend/migrations/001_initial_schema.sql` with full table schemas, foreign keys, and indexes; implemented dual-storage engine with automatic placeholder translation in `backend/db.py`; verified both SQLite and PostgreSQL initialization).
 
 ### Task 9.2 — Automated SQLite-to-PostgreSQL Data Migration Script
 - [ ] Create `backend/scripts/migrate_sqlite_to_supabase.py` reading all existing records from local `backend/agrichain.db` and upserting into the Supabase database.
