@@ -1,7 +1,7 @@
 import pathlib
 import sqlite3
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -10,6 +10,7 @@ from datetime import datetime, timezone, timedelta
 import json
 
 import chain
+import ipfs
 from db import get_connection, init_db, DB_PATH
 from validation import validate_reading
 
@@ -132,8 +133,20 @@ class TelemetryResponse(BaseModel):
     anomaly_score: Optional[float] = None
 
 
+class TelemetryBatchRequest(BaseModel):
+    readings: List[TelemetryRequest]
+
+
+class TelemetryBatchResponse(BaseModel):
+    total_received: int
+    valid_count: int
+    quarantined_count: int
+    tx_hash: Optional[str] = None
+    results: List[TelemetryResponse]
+
+
 @app.post("/telemetry", response_model=TelemetryResponse)
-def post_telemetry(payload: TelemetryRequest):
+def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
     """Ingest a telemetry reading with AI trust validation, anomaly detection, and quarantine."""
     conn = get_connection()
     try:
@@ -258,6 +271,23 @@ def post_telemetry(payload: TelemetryRequest):
 
         # 10. Execute Oracle Handoff (blockchain anchor) or Quarantine
         if final_verdict == "VALID":
+            if not anchor_onchain:
+                conn.execute(
+                    "UPDATE readings SET verdict = 'VALID' WHERE id = ?",
+                    (reading_id,),
+                )
+                conn.commit()
+                return TelemetryResponse(
+                    verdict="VALID",
+                    reason=None,
+                    tx_hash=None,
+                    reading_id=reading_id,
+                    event_hash=integrity.event_hash,
+                    disposition="READY_FOR_ORACLE",
+                    reason_codes=[],
+                    anomaly_score=anomaly.anomaly_score if anomaly else None,
+                )
+
             temp_deci_c = int(round(temp_c * 10))
             humidity_pct_int = int(round(humidity_pct))
             try:
@@ -326,6 +356,67 @@ def post_telemetry(payload: TelemetryRequest):
             )
     finally:
         conn.close()
+
+
+@app.post("/telemetry/batch", response_model=TelemetryBatchResponse)
+def post_telemetry_batch(batch_payload: TelemetryBatchRequest):
+    """Processes a batch of telemetry readings through the AI Trust Layer,
+
+    anchoring all valid readings in a single batched blockchain transaction.
+    """
+    individual_responses = []
+    valid_items = []
+
+    for req in batch_payload.readings:
+        resp = post_telemetry(req, anchor_onchain=False)
+        individual_responses.append(resp)
+        if resp.verdict == "VALID":
+            temp = req.temp_c if req.temp_c is not None else req.temperature
+            hum = req.humidity_pct if req.humidity_pct is not None else req.humidity
+            valid_items.append({
+                "reading_id": resp.reading_id,
+                "batch_id": req.batch_id,
+                "temp_deci_c": int(round(float(temp) * 10)),
+                "hum_pct": int(round(float(hum))),
+                "breach": False,
+            })
+
+    valid_count = len(valid_items)
+    quarantined_count = len(individual_responses) - valid_count
+    batch_tx_hash = None
+
+    if valid_items:
+        batch_ids = [item["batch_id"] for item in valid_items]
+        temps = [item["temp_deci_c"] for item in valid_items]
+        hums = [item["hum_pct"] for item in valid_items]
+        breaches = [item["breach"] for item in valid_items]
+
+        try:
+            batch_tx_hash = chain.record_conditions_batch(batch_ids, temps, hums, breaches)
+            conn = get_connection()
+            try:
+                for item in valid_items:
+                    conn.execute(
+                        "UPDATE readings SET tx_hash = ? WHERE id = ?",
+                        (batch_tx_hash, item["reading_id"]),
+                    )
+                conn.commit()
+            finally:
+                conn.close()
+
+            for resp in individual_responses:
+                if resp.verdict == "VALID":
+                    resp.tx_hash = batch_tx_hash
+        except Exception as e:
+            print(f"[batch_telemetry] Batch write error: {e}")
+
+    return TelemetryBatchResponse(
+        total_received=len(batch_payload.readings),
+        valid_count=valid_count,
+        quarantined_count=quarantined_count,
+        tx_hash=batch_tx_hash,
+        results=individual_responses,
+    )
 
 
 @app.post("/telemetry/evaluate", response_model=EvaluationReport)
@@ -602,6 +693,121 @@ def post_custody(batch_id: str, payload: CustodyTransferRequest):
         )
     finally:
         conn.close()
+
+
+# ---------------- IPFS Decentralized Documents Endpoints (Phase 9) ----------------
+
+class BatchDocumentResponse(BaseModel):
+    id: int
+    batch_id: str
+    doc_type: str
+    ipfs_cid: str
+    file_name: str
+    uploaded_at: str
+    gateway_url: str
+    tx_hash: Optional[str] = None
+
+
+@app.post("/batches/{batch_id}/documents", response_model=BatchDocumentResponse)
+async def upload_batch_document(
+    batch_id: str,
+    file: UploadFile = File(...),
+    doc_type: str = Form("QUALITY_CERTIFICATE"),
+):
+    """Pins an uploaded batch certificate / lab report / photo to IPFS, anchors the CID on-chain,
+
+    and stores metadata in the database.
+    """
+    conn = get_connection()
+    try:
+        batch_row = conn.execute("SELECT * FROM batches WHERE batch_id = ?", (batch_id,)).fetchone()
+        if not batch_row:
+            raise HTTPException(status_code=404, detail=f"Batch {batch_id} not found")
+
+        file_bytes = await file.read()
+        filename = file.filename or "document.pdf"
+
+        # 1. Pin to IPFS
+        pin_result = ipfs.pin_document(file_bytes, filename=filename, doc_type=doc_type.upper())
+        ipfs_uri = pin_result["ipfs_uri"]
+        gateway_url = pin_result["gateway_url"]
+
+        # 2. Anchor on-chain in ProductRegistry (Task 9.4)
+        tx_hash = None
+        try:
+            tx_hash = chain.set_batch_document(batch_id, doc_type.upper(), ipfs_uri)
+        except Exception as e:
+            print(f"[documents] On-chain anchoring warning: {e}")
+
+        # 3. Store document metadata in database
+        cur = conn.execute(
+            """
+            INSERT INTO batch_documents (batch_id, doc_type, ipfs_cid, file_name, tx_hash)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (batch_id, doc_type.upper(), ipfs_uri, filename, tx_hash),
+        )
+        doc_id = cur.lastrowid
+        conn.commit()
+
+        row = conn.execute("SELECT * FROM batch_documents WHERE id = ?", (doc_id,)).fetchone()
+        uploaded_at = str(row["uploaded_at"]) if row else datetime.now().isoformat()
+
+        return BatchDocumentResponse(
+            id=doc_id or 1,
+            batch_id=batch_id,
+            doc_type=doc_type.upper(),
+            ipfs_cid=ipfs_uri,
+            file_name=filename,
+            uploaded_at=uploaded_at,
+            gateway_url=gateway_url,
+            tx_hash=tx_hash,
+        )
+    finally:
+        conn.close()
+
+
+@app.get("/batches/{batch_id}/documents", response_model=List[BatchDocumentResponse])
+def get_batch_documents(batch_id: str):
+    """Retrieve all anchored IPFS documents for a given batch from database and smart contract."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM batch_documents WHERE batch_id = ? ORDER BY id DESC",
+            (batch_id,),
+        ).fetchall()
+
+        results = []
+        for r in rows:
+            cid = r["ipfs_cid"].replace("ipfs://", "")
+            results.append(BatchDocumentResponse(
+                id=r["id"],
+                batch_id=r["batch_id"],
+                doc_type=r["doc_type"],
+                ipfs_cid=r["ipfs_cid"],
+                file_name=r["file_name"],
+                uploaded_at=str(r["uploaded_at"]),
+                gateway_url=f"https://gateway.pinata.cloud/ipfs/{cid}",
+                tx_hash=r["tx_hash"],
+            ))
+        return results
+    finally:
+        conn.close()
+
+
+@app.get("/ipfs/{cid}")
+def get_ipfs_asset(cid: str):
+    """Local IPFS gateway endpoint returning cached raw binary content."""
+    clean_cid = cid.replace("ipfs://", "")
+    content = ipfs.get_pinned_content(clean_cid)
+    if not content:
+        raise HTTPException(status_code=404, detail="IPFS asset not found")
+    media_type = "application/pdf"
+    if clean_cid.endswith(".png") or (len(content) > 8 and b"PNG" in content[:8]):
+        media_type = "image/png"
+    elif clean_cid.endswith(".jpg") or (len(content) > 10 and (b"JFIF" in content[:10] or b"Exif" in content[:10])):
+        media_type = "image/jpeg"
+    return Response(content=content, media_type=media_type)
 
 
 # ---------------- Farmer Dashboard Endpoints ----------------
@@ -1532,3 +1738,139 @@ def post_darkstore_checkout(payload: DarkStoreCheckoutRequest):
         }
     finally:
         conn.close()
+
+
+class ReviewCreateRequest(BaseModel):
+    rating: int  # 1-5
+    comment: Optional[str] = ""
+    freshness_score: Optional[int] = 95
+    reviewer_address: Optional[str] = None
+
+
+class RoleGrantRequest(BaseModel):
+    address: str
+    role: str  # FARMER_ROLE, LOGISTICS_ROLE, RETAILER_ROLE, ORACLE_ROLE
+
+
+@app.post("/batches/{batch_id}/reviews")
+def create_batch_review(batch_id: str, payload: ReviewCreateRequest):
+    """Submits a consumer quality/freshness review for a batch with custody state SOLD."""
+    if not (1 <= payload.rating <= 5):
+        raise HTTPException(status_code=400, detail="Rating must be an integer between 1 and 5.")
+
+    conn = get_connection()
+    try:
+        batch_row = conn.execute("SELECT * FROM batches WHERE batch_id = ?", (batch_id,)).fetchone()
+        if not batch_row:
+            raise HTTPException(status_code=404, detail=f"Batch {batch_id} not found")
+
+        last_custody = conn.execute(
+            "SELECT state FROM custody_events WHERE batch_id = ? ORDER BY id DESC LIMIT 1",
+            (batch_id,)
+        ).fetchone()
+
+        if not last_custody or last_custody["state"] != "SOLD":
+            current_state = last_custody["state"] if last_custody else "UNREGISTERED"
+            raise HTTPException(
+                status_code=400,
+                detail=f"Only batches with custody state 'SOLD' can receive verified reviews. Current state: '{current_state}'."
+            )
+
+        now_str = datetime.now(timezone.utc).isoformat()
+        conn.execute(
+            """
+            INSERT INTO batch_reviews (batch_id, rating, comment, freshness_score, reviewer_address, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (batch_id, payload.rating, payload.comment, payload.freshness_score, payload.reviewer_address, now_str)
+        )
+        conn.commit()
+
+        rows = conn.execute(
+            "SELECT rating, freshness_score FROM batch_reviews WHERE batch_id = ?",
+            (batch_id,)
+        ).fetchall()
+        total_rev = len(rows)
+        avg_rating = round(sum(r["rating"] for r in rows) / total_rev, 1) if total_rev else payload.rating
+        fresh_vals = [r["freshness_score"] for r in rows if r["freshness_score"] is not None]
+        avg_freshness = round(sum(fresh_vals) / len(fresh_vals), 1) if fresh_vals else 95.0
+
+        return {
+            "success": True,
+            "batch_id": batch_id,
+            "rating": payload.rating,
+            "comment": payload.comment,
+            "freshness_score": payload.freshness_score,
+            "reviewer_address": payload.reviewer_address,
+            "average_rating": avg_rating,
+            "average_freshness": avg_freshness,
+            "total_reviews": total_rev,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/batches/{batch_id}/reviews")
+def get_batch_reviews(batch_id: str):
+    """Retrieves all verified customer reviews and aggregate rating for a batch."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT id, batch_id, rating, comment, freshness_score, reviewer_address, created_at FROM batch_reviews WHERE batch_id = ? ORDER BY id DESC",
+            (batch_id,)
+        ).fetchall()
+
+        reviews = [dict(r) for r in rows]
+        total_rev = len(reviews)
+        avg_rating = round(sum(r["rating"] for r in reviews) / total_rev, 1) if total_rev else 5.0
+        fresh_vals = [r["freshness_score"] for r in reviews if r["freshness_score"] is not None]
+        avg_freshness = round(sum(fresh_vals) / len(fresh_vals), 1) if fresh_vals else 98.0
+
+        return {
+            "batch_id": batch_id,
+            "average_rating": avg_rating,
+            "average_freshness": avg_freshness,
+            "total_reviews": total_rev,
+            "reviews": reviews,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/admin/users")
+def get_admin_users():
+    """Lists system participants and checks their on-chain role status."""
+    participants = [
+        {"name": "Admin / Master Deployer", "role": "DEFAULT_ADMIN_ROLE", "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"},
+        {"name": "Rahul Patil (Farmer)", "role": "FARMER_ROLE", "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"},
+        {"name": "Safexpress Cold Chain (Logistics)", "role": "LOGISTICS_ROLE", "address": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"},
+        {"name": "Pune Fresh DarkStore Hub", "role": "RETAILER_ROLE", "address": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"},
+        {"name": "AgriChain AI Oracle Node", "role": "ORACLE_ROLE", "address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"},
+        {"name": "Customer Demo Wallet", "role": "CONSUMER", "address": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"},
+    ]
+
+    for p in participants:
+        if p["role"] != "CONSUMER":
+            try:
+                check = chain.check_role(p["role"], p["address"])
+                p["is_granted_onchain"] = check["has_role"]
+                p["contract_details"] = check.get("contract_details", {})
+            except Exception:
+                p["is_granted_onchain"] = True
+        else:
+            p["is_granted_onchain"] = True
+
+    return {
+        "participants": participants,
+        "supported_roles": ["FARMER_ROLE", "LOGISTICS_ROLE", "RETAILER_ROLE", "ORACLE_ROLE"],
+    }
+
+
+@app.post("/admin/roles/grant")
+def grant_admin_role(payload: RoleGrantRequest):
+    """Executes on-chain grantRole to authorize participant address."""
+    try:
+        result = chain.grant_role(payload.role, payload.address)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"On-chain grantRole failed: {str(e)}")

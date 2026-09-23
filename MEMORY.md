@@ -406,6 +406,180 @@ session doesn't have to rediscover it.
 **What's next:**
 - Phase 8 — Modular Smart Contracts, Gas Benchmarking & Polygon Amoy Deployment (Tasks 8.1–8.6).
 
+---
+
+## [Phase 8 — Modular Smart Contracts, Gas Benchmarking & Amoy Deployment] — 2026-09-23
+
+**What was done:**
+- Installed `@openzeppelin/contracts` in `contracts/`.
+- Modularized smart contract architecture into 5 cohesive contracts:
+  1. `AccessControlRoles.sol`: defines `DEFAULT_ADMIN_ROLE`, `FARMER_ROLE`, `LOGISTICS_ROLE`, `RETAILER_ROLE`, `ORACLE_ROLE`.
+  2. `ProductRegistry.sol`: inherits `AccessControlRoles`, restricts `registerBatch` to `FARMER_ROLE` / `DEFAULT_ADMIN_ROLE`, stores batch metadata and emits `BatchRegistered`.
+  3. `CustodyTransfer.sol`: inherits `AccessControlRoles`, enforces forward-only state transitions (`REGISTERED -> IN_TRANSIT -> IN_STORAGE -> AT_RETAIL -> SOLD`), role-gated handoffs (Logistics, Retailer), and records cumulative prices in paise.
+  4. `ColdChainMonitor.sol`: packed struct `ConditionRecord` (int64, uint32, bool, uint48) fitting in a single 32-byte EVM storage slot, supporting single `recordCondition` and batched `recordConditionsBatch`.
+  5. `PolicyConfig.sol`: on-chain threshold store (`setPolicy`, `policies`).
+- Built comprehensive unit test suites in `contracts/test/`:
+  - `ProductRegistry.test.cjs` (4/4 tests passing)
+  - `CustodyTransfer.test.cjs` (5/5 tests passing)
+  - `ColdChainMonitor.test.cjs` (4/4 tests passing)
+  - Total 26 unit tests passing across monolithic and modular contract suites.
+- Created `contracts/scripts/benchmark_gas.cjs` measuring gas consumption for single vs batched writes (N=5, 10, 20) and monolithic vs modular contracts:
+  - Verified **52.71% gas reduction** for batched oracle writes at N=20 (exceeding the >= 50% target).
+  - Exported IEEE paper artifacts: `contracts/reports/gas_benchmark.json` and `contracts/reports/gas_benchmark.md`.
+- Configured Polygon Amoy network (Chain ID 80002) in `contracts/hardhat.config.cjs` and created `contracts/scripts/deploy_amoy.cjs`.
+- Deployed modular contracts and exported deployment manifests to `contracts/amoy-deployments.json` and `backend/modular-deployments.json`, and ABIs to `backend/modular-abis/`.
+- Updated `backend/chain.py` to route calls through modular contracts (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`) with graceful fallback to local monolithic contract.
+- Added batched telemetry endpoint `POST /telemetry/batch` in `backend/main.py` anchoring multi-reading batches on-chain via `ColdChainMonitor.recordConditionsBatch`.
+- Verified `backend/scripts/verify_phase7_e2e.py` passed all 6 steps with 0 errors against the modular smart contracts.
+- Frontend build in `design/` succeeded cleanly with 0 errors (`npm run build` in 3.09s).
+
+**Files changed:**
+- `contracts/contracts/AccessControlRoles.sol`: OpenZeppelin RBAC roles.
+- `contracts/contracts/ProductRegistry.sol`: modular produce batch registry.
+- `contracts/contracts/CustodyTransfer.sol`: forward state transition & price trail contract.
+- `contracts/contracts/ColdChainMonitor.sol`: slot-packed telemetry & batch recording contract.
+- `contracts/contracts/PolicyConfig.sol`: on-chain crop policy thresholds.
+- `contracts/test/ProductRegistry.test.cjs`: unit tests for ProductRegistry.
+- `contracts/test/CustodyTransfer.test.cjs`: unit tests for CustodyTransfer.
+- `contracts/test/ColdChainMonitor.test.cjs`: unit tests for ColdChainMonitor.
+- `contracts/scripts/benchmark_gas.cjs`: gas benchmarking script.
+- `contracts/reports/gas_benchmark.json`: gas benchmark measurements.
+- `contracts/reports/gas_benchmark.md`: gas savings report for IEEE paper.
+- `contracts/scripts/deploy_amoy.cjs`: Amoy deployment script.
+- `contracts/scripts/export_modular_abis.cjs`: ABI exporter script.
+- `contracts/hardhat.config.cjs`: added Amoy network configuration.
+- `contracts/amoy-deployments.json` & `backend/modular-deployments.json`: deployment manifests.
+- `backend/modular-abis/`: exported modular ABIs.
+- `backend/chain.py`: modular contract client routing and batch condition writes.
+- `backend/main.py`: added `POST /telemetry/batch` and deferred on-chain anchoring support.
+- `trust-layer/app/services/db.py`: resilient SQLite WAL mode pragma handling.
+- `TASKS.md`: checked off Tasks 8.1 through 8.6.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 8.1: `npx hardhat test test/ProductRegistry.test.cjs` passed 4/4 tests.
+- Task 8.2: `npx hardhat test test/CustodyTransfer.test.cjs` passed 5/5 tests.
+- Task 8.3: `npx hardhat test test/ColdChainMonitor.test.cjs` passed 4/4 tests.
+- Task 8.4: `node contracts/scripts/benchmark_gas.cjs` proved 52.71% gas reduction at N=20 and generated reports.
+- Task 8.5: `deploy_amoy.cjs` deployed all contracts, assigned supply-chain roles, and generated deployment manifests.
+- Task 8.6: `python backend/scripts/verify_phase7_e2e.py` passed all 6 steps with 0 errors against modular contracts, and `POST /telemetry/batch` verified on-chain.
+- `npm run build` in `design/` succeeded cleanly with 0 errors.
+
+**Phase 8 Status:**
+- **COMPLETE**: All 6 tasks in Phase 8 are finished and verified.
+
+**What's next:**
+- Phase 9 — Storage Migration & Decentralized Documents (Tasks 9.1–9.5: Supabase/PostgreSQL schema & connection layer, SQLite-to-PostgreSQL migration script, IPFS document pinning with Pinata, on-chain CID anchoring in `ProductRegistry.sol`, and frontend certificate preview in Consumer/Farmer views).
+
+---
+
+## [Phase 9 — Storage Migration & Decentralized Documents] — 2026-09-23
+
+**What was done:**
+- Implemented Task 9.1:
+  - Created `backend/migrations/001_initial_schema.sql` defining PostgreSQL schemas mirroring SQLite (`batches`, `custody_events`, `readings`, `quarantine`, `policy`, `telemetry_history`, `audit_trail`, `replay_events`, `replay_latest_timestamps`, `batch_documents`, `batch_reviews`) with indexes and foreign keys.
+  - Updated `backend/db.py` to support dual storage engines: connects to PostgreSQL / Supabase if `DATABASE_URL` is set (with automatic `?` to `%s` translation and `lastrowid` resolution), falling back to local SQLite.
+- Implemented Task 9.2:
+  - Built `backend/scripts/migrate_sqlite_to_supabase.py` reading all existing records in dependency order, executing ON CONFLICT upserts, synchronizing serial auto-increment sequences, and verifying zero row count discrepancies. Tested dry-run migration across all 11 tables (176 records).
+- Implemented Task 9.3:
+  - Created `backend/ipfs.py` supporting Pinata cloud IPFS pinning with deterministic Base58 SHA-256 multihash CIDv0 generation and local file caching.
+  - Implemented `POST /batches/{batch_id}/documents`, `GET /batches/{batch_id}/documents`, and local gateway endpoint `GET /ipfs/{cid}` in `backend/main.py`.
+- Implemented Task 9.4:
+  - Updated `ProductRegistry.sol` with `setBatchDocument(bytes32, string, string)` and `getBatchDocuments(bytes32)`, emitting `BatchDocumentAnchored`.
+  - Added unit tests in `contracts/test/ProductRegistry.test.cjs` (6/6 passing).
+  - Redeployed modular contracts to local node and updated ABIs and deployment manifests.
+  - Wired `backend/main.py` to anchor uploaded documents on-chain (`chain.set_batch_document`).
+- Implemented Task 9.5:
+  - Wired "Quality Certificates & Lab Reports" inspection card and interactive inspector modal in `design/src/Consumer/Views/ProductJourneyView.jsx` fetching real documents and displaying clickable IPFS gateway links.
+  - Added "✓ IPFS Anchored" badge to `design/src/Farmer/Views/CropDetailsView.jsx`.
+  - Verified `npm run build` compiled in 3.28s with 0 errors.
+
+**Files changed:**
+- `backend/migrations/001_initial_schema.sql`: PostgreSQL DDL migrations.
+- `backend/db.py`: dual storage database adapter layer.
+- `backend/scripts/migrate_sqlite_to_supabase.py`: SQLite to PostgreSQL automated migration script.
+- `backend/ipfs.py`: IPFS decentralized pinning client.
+- `backend/main.py`: added document upload, query, and IPFS gateway endpoints.
+- `backend/chain.py`: added `set_batch_document` and `get_batch_documents_onchain`.
+- `contracts/contracts/ProductRegistry.sol`: added document anchoring and view functions.
+- `contracts/test/ProductRegistry.test.cjs`: added tests for document anchoring.
+- `design/src/Consumer/Views/ProductJourneyView.jsx`: added IPFS inspection card & modal.
+- `design/src/Farmer/Views/CropDetailsView.jsx`: added IPFS Anchored badge.
+- `.gitignore`: ignored `backend/ipfs_storage/`.
+- `TASKS.md`: checked off Tasks 9.1 through 9.5.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 9.1: Verified `init_db()` and `get_connection()` in both SQLite and PostgreSQL modes with placeholder conversion (? -> %s).
+- Task 9.2: Tested `migrate_sqlite_to_supabase.py --dry-run` reading 176 records across all 11 tables with 0 discrepancies.
+- Task 9.3: Uploaded `organic_inspection_cert.pdf` via `POST /batches/BATCH-001/documents`; returned valid CID `ipfs://QmQeGWegKZ5dMbRT3mqWHDSN2L5pgjQ547WWB36coaNAkw`.
+- Task 9.4: `ProductRegistry.test.cjs` passed 6/6 tests; upload returned on-chain anchoring tx `e8f41072b78870ba...` and emitted `BatchDocumentAnchored`.
+- Task 9.5: Tested document viewer modal in `ProductJourneyView.jsx` with real IPFS links; `npm run build` compiled in 3.28s with 0 errors.
+
+**Phase 9 Status:**
+- **COMPLETE**: All 5 tasks in Phase 9 are finished and verified.
+
+**What's next:**
+- Phase 10 — Role Wallets, Reviews & Hardware IoT Demo (Tasks 10.1–10.6: MetaMask ethers.js v6 wallet connection, client-side role transaction signing, consumer rating & review loop, admin governance flow, physical ESP32 firmware prop, and capstone full-system verification).
+
+---
+
+## [Phase 10 — Role Wallets, Reviews & Hardware IoT Demo] — 2026-09-23
+
+**What was done:**
+- Implemented Task 10.1:
+  - Installed `ethers` v6 in `design/`.
+  - Created centralized contract definitions, ABIs, and `toBytes32` helper in `design/src/utils/contracts.js`.
+  - Built Web3 wallet context and hook `design/src/components/WalletConnect.jsx` supporting connection, account switching, disconnect, and role detection (`Admin / Farmer`, `Farmer`, `Logistics Partner`, `Dark Store Manager`, `Consumer`).
+  - Integrated `WalletConnect` in the floating header across all role dashboards in `design/src/App.jsx`.
+- Implemented Task 10.2:
+  - Wired `design/src/Farmer/Modals/AddStockModal.jsx` with `useWallet()` requesting direct client-side signature for `ProductRegistry.registerBatch(...)` and initializing custody on `CustodyTransfer.sol` with graceful fallback to backend relayer.
+  - Wired `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx` requesting direct client-side signature for `CustodyTransfer.transferCustody(...)`.
+  - Added Web3 connection status badges and signing state indicators.
+- Implemented Task 10.3:
+  - Added `POST /batches/{batch_id}/reviews` and `GET /batches/{batch_id}/reviews` in `backend/main.py`. Restricts review submission to batches with custody state `SOLD` (verified non-SOLD batches rejected with 400).
+  - Wired `design/src/Consumer/Views/ProductJourneyView.jsx`, `design/src/Consumer/Modals/WriteReviewModal.jsx`, and `design/src/Consumer/ConsumerApp.jsx` to fetch and render live verified consumer reviews and dynamic star breakdowns with instant submission. Tested with `backend/scripts/test_reviews.py`.
+- Implemented Task 10.4:
+  - Added `chain.grant_role` and `chain.check_role` in `backend/chain.py` supporting `FARMER_ROLE`, `LOGISTICS_ROLE`, `RETAILER_ROLE`, and `ORACLE_ROLE` across modular contracts.
+  - Implemented `GET /admin/users` and `POST /admin/roles/grant` in `backend/main.py`.
+  - Built interactive Admin Role Governance panel in `design/src/Farmer/Modals/MoreMenuSheet.jsx` enabling contract owners to grant roles to new addresses on-chain.
+- Implemented Task 10.5:
+  - Created PlatformIO project in `hardware/esp32_firmware/` with `platformio.ini` and C++ Arduino sketch `src/main.cpp` interfacing DHT22, NEO-6M GPS, WiFi HTTP client, and GPIO 4 interrupt button injecting 48.0°C thermal refrigeration failure.
+  - Created Python simulation runner `hardware/simulate_esp32.py` and `hardware/README.md`. Tested demo mode: nominal reading (4.5°C) mined on-chain, and simulated GPIO 4 button press (48.0°C) caught and quarantined off-chain by AI Trust Layer.
+- Implemented Task 10.6:
+  - Built `backend/scripts/verify_final_system.py` executing an exhaustive automated capstone validation across all 10 phases.
+  - Successfully verified all 8 core checks with 100% pass: modular access control, batched oracle writes, AI trust F1=0.9722, multi-role handoffs (Farmer -> Logistics -> Dark Store -> Consumer), ESP32 nominal telemetry, push-button thermal breach quarantine, IPFS document pinning and anchoring, and post-checkout consumer review aggregation.
+
+**Files changed:**
+- `design/src/utils/contracts.js`: centralized addresses, ABIs, and helpers.
+- `design/src/components/WalletConnect.jsx`: Web3 provider, hook, and header component.
+- `design/src/App.jsx`: integrated wallet connect bar.
+- `design/src/Farmer/Modals/AddStockModal.jsx`: client-side MetaMask signing for batch registration.
+- `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`: client-side MetaMask signing for custody transfer.
+- `design/src/Consumer/Views/ProductJourneyView.jsx`: live verified reviews and rating breakdown.
+- `design/src/Consumer/Modals/WriteReviewModal.jsx`: review submission callback.
+- `design/src/Consumer/ConsumerApp.jsx`: review submission to backend.
+- `design/src/Farmer/Modals/MoreMenuSheet.jsx`: admin role governance panel.
+- `backend/chain.py`: added `grant_role` and `check_role`.
+- `backend/main.py`: added reviews and admin governance endpoints.
+- `backend/scripts/test_reviews.py`: review verification script.
+- `hardware/esp32_firmware/platformio.ini`: PlatformIO configuration.
+- `hardware/esp32_firmware/src/main.cpp`: ESP32 C++ firmware sketch.
+- `hardware/simulate_esp32.py`: ESP32 simulation runner.
+- `hardware/README.md`: hardware wiring and guide.
+- `backend/scripts/verify_final_system.py`: capstone full-system verification suite.
+- `TASKS.md`: marked all Phase 10 tasks complete.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 10.1: Connecting MetaMask displays address and detected supply-chain role; `npm run build` passed in 3.50s with 0 errors.
+- Task 10.2: Direct client-side batch registration and custody transfer signing integrated with backend fallback.
+- Task 10.3: `test_reviews.py` passed: non-SOLD reviews rejected with 400; SOLD batch reviews accepted and aggregated into average rating 5.0★.
+- Task 10.4: `POST /admin/roles/grant` executed on-chain tx `f2b67141422b...` granting `LOGISTICS_ROLE`, and tx `e6ad38358d49...` granting `RETAILER_ROLE`.
+- Task 10.5: `simulate_esp32.py --mode demo` verified nominal reading mined on-chain (tx `4f0282d8...`) and simulated GPIO 4 button press quarantined off-chain.
+- Task 10.6: `verify_final_system.py` executed across all 8 checks with 100% pass (Exit Code 0).
+
+**Phase 10 & Project Status:**
+- **COMPLETE**: All 10 Phases of the AgriChain Major Project are 100% implemented, tested, and verified end-to-end!
+
+
 
 
 

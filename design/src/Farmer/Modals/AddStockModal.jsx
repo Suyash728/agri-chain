@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { X, Plus, Sprout, CheckCircle2 } from 'lucide-react';
+import { X, Plus, Sprout, CheckCircle2, Wallet } from 'lucide-react';
+import { ethers } from 'ethers';
+import { useWallet } from '../../components/WalletConnect';
+import { CONTRACT_ADDRESSES, PRODUCT_REGISTRY_ABI, CUSTODY_TRANSFER_ABI, toBytes32 } from '../../utils/contracts';
 
 export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
+  const { account, signer } = useWallet();
   const [cropName, setCropName] = useState('');
   const [category, setCategory] = useState('Grains');
   const [quantity, setQuantity] = useState('');
@@ -20,12 +24,52 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
     setErrorMsg(null);
 
     const batchId = `BATCH-${Date.now().toString(36).toUpperCase()}`;
+    let clientTxHash = null;
+
+    // 1. If MetaMask connected, request user signature directly on-chain
+    if (signer) {
+      try {
+        const registryContract = new ethers.Contract(
+          CONTRACT_ADDRESSES.ProductRegistry,
+          PRODUCT_REGISTRY_ABI,
+          signer
+        );
+        const b32 = toBytes32(batchId);
+        const harvestTimestamp = Math.floor(Date.now() / 1000);
+        const tx = await registryContract.registerBatch(
+          b32,
+          cropName,
+          'Nashik Organic Farm cluster 4',
+          harvestTimestamp,
+          account
+        );
+        const receipt = await tx.wait();
+        clientTxHash = receipt.hash || tx.hash;
+
+        // Initialize custody on CustodyTransfer contract directly from farmer
+        try {
+          const custodyContract = new ethers.Contract(
+            CONTRACT_ADDRESSES.CustodyTransfer,
+            CUSTODY_TRANSFER_ABI,
+            signer
+          );
+          const initTx = await custodyContract.initializeCustody(b32, account);
+          await initTx.wait();
+        } catch (initErr) {
+          console.log('Custody init on-chain note:', initErr);
+        }
+      } catch (walletErr) {
+        console.warn('MetaMask signing rejected or failed, falling back to backend relayer:', walletErr);
+      }
+    }
+
     const payload = {
       batch_id: batchId,
       crop_name: cropName,
       origin_farm: 'Nashik Organic Farm cluster 4',
       harvest_date: new Date().toISOString().split('T')[0],
-      farmer_name: 'Rahul Patil'
+      farmer_name: 'Rahul Patil',
+      farmer_address: account || undefined,
     };
 
     try {
@@ -41,6 +85,7 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
       }
 
       const registered = await res.json();
+      const finalTxHash = clientTxHash || registered.tx_hash;
 
       setSuccessMsg(true);
       setTimeout(() => {
@@ -53,7 +98,7 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
             rawKg: parseFloat(quantity) * 1000,
             value: `₹ ${price}`,
             status: "In Stock",
-            tx_hash: registered.tx_hash
+            tx_hash: finalTxHash
           });
         }
         setSuccessMsg(false);
@@ -99,6 +144,18 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
             </div>
           ) : (
             <>
+              <div className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
+                account ? 'bg-emerald-50/80 border-emerald-200 text-emerald-800' : 'bg-[#FAF7F0] border-[#E6E1D5] text-[#666057]'
+              }`}>
+                <div className="flex items-center gap-1.5 font-bold">
+                  <Wallet className="w-3.5 h-3.5" />
+                  <span>{account ? 'MetaMask Connected' : 'Relayer Signing Active'}</span>
+                </div>
+                <span className="font-mono text-[10px] font-extrabold">
+                  {account ? `${account.substring(0, 6)}...${account.substring(account.length - 4)} (Direct on-chain)` : 'Automated backend fallback'}
+                </span>
+              </div>
+
               <div>
                 <label className="text-xs font-bold text-[#3B3028] block mb-1">Crop Name</label>
                 <input 

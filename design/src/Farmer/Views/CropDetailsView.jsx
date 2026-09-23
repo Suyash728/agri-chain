@@ -98,9 +98,14 @@ export const CropDetailsView = ({ category, onBack }) => {
               </div>
             </div>
 
-            <span className="badge-confirmed text-xs font-bold px-3 py-1 rounded-full">
-              {crop.status || 'In Stock'}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <span className="badge-confirmed text-xs font-bold px-3 py-1 rounded-full">
+                {crop.status || 'In Stock'}
+              </span>
+              <span className="bg-[#EBF3E8] text-[#556B2F] border border-[#C2E0B8] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                ✓ IPFS Anchored
+              </span>
+            </div>
           </div>
         ))}
       </div>

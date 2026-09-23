@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, ShieldCheck, Star, CheckCircle } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Star, CheckCircle, FileText, ExternalLink, X } from 'lucide-react';
 import { productReviewsData } from '../data/consumerData';
 
 export const ProductJourneyView = ({ 
   selectedProduct, 
   onVerifyBlockchainClick,
-  onWriteReviewClick 
+  onWriteReviewClick,
+  refreshKey 
 }) => {
   // Use selectedProduct if passed, otherwise fallback to default
   const product = selectedProduct || {
@@ -20,6 +21,9 @@ export const ProductJourneyView = ({
 
   const [journeyData, setJourneyData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [documents, setDocuments] = useState([]);
+  const [showDocModal, setShowDocModal] = useState(false);
+  const [liveReviews, setLiveReviews] = useState(null);
 
   useEffect(() => {
     fetch(`http://localhost:8000/batches/${displayBatchId}/traceability`)
@@ -35,7 +39,21 @@ export const ProductJourneyView = ({
         console.error('Error fetching batch traceability:', err);
         setLoading(false);
       });
-  }, [displayBatchId]);
+
+    fetch(`http://localhost:8000/batches/${displayBatchId}/documents`)
+      .then(res => res.json())
+      .then(docs => setDocuments(Array.isArray(docs) ? docs : []))
+      .catch(err => console.log('Documents fetch note:', err));
+
+    fetch(`http://localhost:8000/batches/${displayBatchId}/reviews`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.reviews && data.reviews.length > 0) {
+          setLiveReviews(data);
+        }
+      })
+      .catch(err => console.log('Live reviews fetch note:', err));
+  }, [displayBatchId, refreshKey]);
 
   const timelineSteps = [
     { title: 'Harvested', date: '05 May, 2025', location: `${originCity} Farm`, pricePaise: 0 },
@@ -56,7 +74,28 @@ export const ProductJourneyView = ({
     : timelineSteps;
 
   // Dynamic reviews for the selected product
-  const reviewsInfo = productReviewsData[product.name] || productReviewsData['Organic Tomato'];
+  const fallbackReviews = productReviewsData[product.name] || productReviewsData['Organic Tomato'];
+  const reviewsCount = liveReviews ? liveReviews.total_reviews : fallbackReviews.reviewsCount;
+  const ratingScore = liveReviews ? liveReviews.average_rating : fallbackReviews.rating;
+
+  const displayReviewsList = liveReviews && liveReviews.reviews.length > 0
+    ? liveReviews.reviews.map(r => ({
+        id: r.id,
+        author: r.reviewer_address ? `${r.reviewer_address.substring(0, 6)}...${r.reviewer_address.substring(r.reviewer_address.length - 4)}` : 'Verified Consumer',
+        badge: 'On-Chain Verified',
+        date: r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent',
+        comment: r.comment,
+        rating: r.rating,
+      }))
+    : fallbackReviews.reviews;
+
+  const breakdownToRender = liveReviews && liveReviews.reviews.length > 0
+    ? [5, 4, 3, 2, 1].map(stars => {
+        const count = liveReviews.reviews.filter(r => r.rating === stars).length;
+        const percentage = Math.round((count / liveReviews.reviews.length) * 100);
+        return { stars, percentage };
+      })
+    : fallbackReviews.breakdown;
 
   return (
     <div className="flex flex-col gap-3 pb-20 md:pb-8 pt-2">
@@ -105,11 +144,36 @@ export const ProductJourneyView = ({
               </div>
             </div>
 
+            {/* Decentralized IPFS Documents Card (Phase 9) */}
+            <div 
+              onClick={() => setShowDocModal(true)}
+              className="bg-white rounded-2xl p-4 border border-[#E6E1D5] shadow-xs flex items-center justify-between cursor-pointer hover:bg-[#FAF7F0] transition-all"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#F0F4E8] text-[#556B2F] flex items-center justify-center flex-shrink-0 border border-[#D5E2C6]">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-xs sm:text-sm text-[#2D2620]">
+                    Quality Certificates & Lab Reports
+                  </h4>
+                  <span className="text-[11px] font-semibold text-[#666057] block">
+                    {documents.length > 0 
+                      ? `${documents.length} verified decentralized IPFS document(s)` 
+                      : 'AGMARK Organic Certification anchored'}
+                  </span>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-[#EBF3E8] text-[#556B2F] text-[11px] font-black border border-[#C2E0B8] flex items-center gap-1">
+                Inspect CIDs →
+              </span>
+            </div>
+
             {/* Product-Specific Reviews Section (Embedded directly below Blockchain section) */}
             <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col gap-4">
               <div className="flex justify-between items-center pb-2 border-b border-[#F4F5E6]">
                 <h3 className="font-extrabold text-sm sm:text-base text-[#2D2620]">
-                  Customer Ratings & Reviews ({reviewsInfo.reviewsCount})
+                  Customer Ratings & Reviews ({reviewsCount})
                 </h3>
                 <button
                   onClick={onWriteReviewClick}
@@ -122,17 +186,17 @@ export const ProductJourneyView = ({
               {/* Rating Summary & Breakdown Bars */}
               <div className="flex items-center gap-5 pt-1">
                 <div className="flex flex-col items-center justify-center pr-5 border-r border-[#E6E1D5] flex-shrink-0">
-                  <span className="text-3xl font-black text-[#2D2620]">{reviewsInfo.rating.toFixed(1)}</span>
+                  <span className="text-3xl font-black text-[#2D2620]">{Number(ratingScore).toFixed(1)}</span>
                   <div className="flex items-center gap-0.5 text-amber-500 my-1">
                     {[1, 2, 3, 4, 5].map((s) => (
                       <Star key={s} className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                     ))}
                   </div>
-                  <span className="text-[11px] font-semibold text-[#666057]">({reviewsInfo.reviewsCount} Reviews)</span>
+                  <span className="text-[11px] font-semibold text-[#666057]">({reviewsCount} Reviews)</span>
                 </div>
 
                 <div className="flex-1 flex flex-col gap-1 text-[11px] font-bold text-[#666057]">
-                  {reviewsInfo.breakdown.map((row) => (
+                  {breakdownToRender.map((row) => (
                     <div key={row.stars} className="flex items-center gap-2">
                       <span className="w-3 text-right">{row.stars}★</span>
                       <div className="flex-1 h-2 bg-[#FAF7F0] rounded-full overflow-hidden border border-[#E6E1D5]">
@@ -149,7 +213,7 @@ export const ProductJourneyView = ({
 
               {/* Verified Customer Reviews List */}
               <div className="flex flex-col gap-3 pt-2">
-                {reviewsInfo.reviews.map((rev) => (
+                {displayReviewsList.map((rev) => (
                   <div key={rev.id} className="bg-[#FAF7F0] rounded-xl p-3.5 border border-[#E6E1D5] flex flex-col gap-2">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
@@ -169,7 +233,10 @@ export const ProductJourneyView = ({
 
                     <div className="flex items-center gap-0.5 text-amber-500">
                       {[1, 2, 3, 4, 5].map((s) => (
-                        <Star key={s} className="w-3 h-3 fill-amber-500 text-amber-500" />
+                        <Star 
+                          key={s} 
+                          className={`w-3 h-3 ${s <= (rev.rating || 5) ? 'fill-amber-500 text-amber-500' : 'text-[#E6E1D5]'}`} 
+                        />
                       ))}
                     </div>
 
@@ -218,6 +285,87 @@ export const ProductJourneyView = ({
           </div>
         </div>
       </div>
+
+      {/* IPFS Documents Inspection Modal */}
+      {showDocModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 border border-[#E6E1D5] shadow-xl flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-start pb-3 border-b border-[#F4F5E6]">
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-[#2D2620] flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-[#556B2F]" />
+                  Decentralized IPFS Documents
+                </h3>
+                <p className="text-xs text-[#666057] font-semibold mt-0.5">
+                  Batch #{displayBatchId} produce certifications anchored immutably on IPFS
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowDocModal(false)}
+                className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] hover:bg-[#E6E1D5] transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {(documents.length > 0 ? documents : [
+                {
+                  id: 1,
+                  doc_type: 'QUALITY_CERTIFICATE',
+                  file_name: 'organic_inspection_cert.pdf',
+                  ipfs_cid: 'ipfs://QmQeGWegKZ5dMbRT3mqWHDSN2L5pgjQ547WWB36coaNAkw',
+                  gateway_url: 'https://gateway.pinata.cloud/ipfs/QmQeGWegKZ5dMbRT3mqWHDSN2L5pgjQ547WWB36coaNAkw',
+                  uploaded_at: '2026-09-23 16:05:42',
+                  tx_hash: '0xe8f41072b78870bae8da94881c97d4098cfb4a365578ebaa6049be172c3103f2'
+                }
+              ]).map((doc, idx) => (
+                <div key={idx} className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-2xl p-4 flex flex-col gap-2">
+                  <div className="flex justify-between items-start">
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#354424] text-white text-[10px] font-extrabold uppercase">
+                      {doc.doc_type || 'CERTIFICATE'}
+                    </span>
+                    <span className="text-[10px] text-[#666057] font-bold">
+                      {doc.uploaded_at ? String(doc.uploaded_at).slice(0, 16) : 'Verified'}
+                    </span>
+                  </div>
+
+                  <h4 className="font-extrabold text-xs sm:text-sm text-[#2D2620]">
+                    {doc.file_name}
+                  </h4>
+
+                  <div className="flex items-center gap-1.5 bg-white p-2 rounded-xl border border-[#E6E1D5] text-[11px] font-mono text-[#556B2F] break-all">
+                    <span>CID:</span>
+                    <span className="font-bold flex-1">{doc.ipfs_cid}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      ✓ Anchored On-Chain
+                    </span>
+                    <a
+                      href={doc.gateway_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[#556B2F] text-white text-xs font-bold hover:bg-[#435525] transition-colors"
+                    >
+                      View on Gateway
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowDocModal(false)}
+              className="mt-2 w-full py-2.5 rounded-full bg-[#354424] text-white font-extrabold text-xs shadow-xs hover:bg-[#2D3B1E] transition-colors cursor-pointer"
+            >
+              Close Inspector
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -44,6 +44,9 @@ import { DarkStoreApp } from './Dark_Store/DarkStoreApp';
 // Consumer Portal
 import { ConsumerApp } from './Consumer/ConsumerApp';
 
+// Web3 Wallet
+import { WalletProvider, WalletConnect } from './components/WalletConnect';
+
 // Data
 import { 
   cropCategories, 
@@ -127,10 +130,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F0] text-[#3B3028] font-sans antialiased flex flex-col md:flex-row select-none">
-      
-      {/* Role Switcher Floating Control Bar (Hidden on Consumer Landing Page) */}
-      {activeRole !== 'consumer' && (
+    <WalletProvider>
+      <div className="min-h-screen bg-[#FAF7F0] text-[#3B3028] font-sans antialiased flex flex-col md:flex-row select-none">
+        
+        {/* Role Switcher & Web3 Wallet Floating Control Bar */}
         <div className="fixed top-3 right-4 sm:right-6 z-50 flex items-center gap-1.5 p-1 bg-white/90 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-sm">
           <button
             onClick={() => setActiveRole('farmer')}
@@ -176,8 +179,10 @@ export default function App() {
             <span>🛒</span>
             <span>Consumer</span>
           </button>
+
+          <div className="h-5 w-px bg-[#E6E1D5] mx-1" />
+          <WalletConnect />
         </div>
-      )}
 
       {/* ========================================== */}
       {/* 1. LOGISTICS PARTNER PORTAL VIEW          */}
@@ -516,5 +521,6 @@ export default function App() {
       <ViewJourneyModal isOpen={isJourneyOpen} onClose={() => setIsJourneyOpen(false)} />
       <NotificationsModal isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
     </div>
+  </WalletProvider>
   );
 }

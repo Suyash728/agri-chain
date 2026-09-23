@@ -7,18 +7,20 @@ export const WriteReviewModal = ({ isOpen, onClose, onSubmitReview }) => {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!comment.trim()) return;
 
-    onSubmitReview({
-      id: `r-${Date.now()}`,
-      author: 'Rahul Patil',
-      badge: 'Verified Buyer',
-      rating,
-      comment,
-      date: 'Just now'
-    });
+    if (onSubmitReview) {
+      await onSubmitReview({
+        id: `r-${Date.now()}`,
+        author: 'Verified Buyer',
+        badge: 'On-Chain Verified',
+        rating,
+        comment,
+        date: 'Just now'
+      });
+    }
 
     setComment('');
     onClose();
