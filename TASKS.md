@@ -466,14 +466,14 @@ Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and
 Goal: Modularize `AgriChainCore.sol` into 5 cohesive smart contracts with OpenZeppelin `AccessControl`, implement Oracle condition batching to minimize gas consumption, benchmark gas metrics for the IEEE research publication, and deploy to Polygon Amoy public testnet.
 
 ### Task 8.1 — Implement `AccessControlRoles.sol` & `ProductRegistry.sol`
-- [ ] Install OpenZeppelin contracts in `contracts/`: `npm install @openzeppelin/contracts`.
-- [ ] Create `contracts/contracts/AccessControlRoles.sol` defining role identifiers (`DEFAULT_ADMIN_ROLE`, `FARMER_ROLE`, `LOGISTICS_ROLE`, `RETAILER_ROLE`, `ORACLE_ROLE`).
-- [ ] Create `contracts/contracts/ProductRegistry.sol` inheriting `AccessControlRoles`:
+- [x] Install OpenZeppelin contracts in `contracts/`: `npm install @openzeppelin/contracts`.
+- [x] Create `contracts/contracts/AccessControlRoles.sol` defining role identifiers (`DEFAULT_ADMIN_ROLE`, `FARMER_ROLE`, `LOGISTICS_ROLE`, `RETAILER_ROLE`, `ORACLE_ROLE`).
+- [x] Create `contracts/contracts/ProductRegistry.sol` inheriting `AccessControlRoles`:
   - `registerBatch(bytes32 batchId, string cropName, string originFarm, uint256 harvestDate, address farmer)`.
   - Restricted to callers with `FARMER_ROLE` or `DEFAULT_ADMIN_ROLE`.
   - Emits `BatchRegistered(bytes32 indexed batchId, string cropName, address indexed farmer)`.
-- [ ] Write unit tests in `contracts/test/ProductRegistry.test.cjs`.
-- **DONE WHEN:** running `npx hardhat test test/ProductRegistry.test.cjs` verifies successful batch registration by an account with `FARMER_ROLE`, and reverts with unauthorized error when called by an account without the role.
+- [x] Write unit tests in `contracts/test/ProductRegistry.test.cjs`.
+- **DONE WHEN:** running `npx hardhat test test/ProductRegistry.test.cjs` verifies successful batch registration by an account with `FARMER_ROLE`, and reverts with unauthorized error when called by an account without the role. (Verified: `test/ProductRegistry.test.cjs` passed 4/4 tests verifying admin/farmer authorization, unauthorized caller revert, and duplicate batch prevention).
 
 ### Task 8.2 — Implement `CustodyTransfer.sol` with Forward State & Price Enforcement
 - [ ] Create `contracts/contracts/CustodyTransfer.sol` inheriting `AccessControlRoles`:
