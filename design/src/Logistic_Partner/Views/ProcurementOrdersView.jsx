@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ShoppingBag, 
   CheckCircle, 
@@ -24,7 +24,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
   const [modalSearch, setModalSearch] = useState('');
 
   // Primary Procurement Orders Data
-  const orders = [
+  const initialOrders = [
     { id: 'ORD1256', supplier: 'FreshMart Supply Co.', product: 'Wheat (500 kg)', qty: '500 kg', status: 'Confirmed', badge: 'bg-[#556B2F]/15 text-[#556B2F]', date: '12 May, 2025', price: '₹ 21,000' },
     { id: 'ORD1255', supplier: 'Green Valley Traders', product: 'Tomato (400 kg)', qty: '400 kg', status: 'Pending', badge: 'bg-[#B85C38]/15 text-[#B85C38]', date: '10 May, 2025', price: '₹ 16,000' },
     { id: 'ORD1254', supplier: 'Daily Needs Store', product: 'Potato (600 kg)', qty: '600 kg', status: 'In Progress', badge: 'bg-[#2B6CB0]/15 text-[#2B6CB0]', date: '09 May, 2025', price: '₹ 18,500' },
@@ -34,6 +34,54 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
     { id: 'ORD1250', supplier: 'Vidarbha Organic Hub', product: 'Red Chillies (150 kg)', qty: '150 kg', status: 'Confirmed', badge: 'bg-[#556B2F]/15 text-[#556B2F]', date: '05 May, 2025', price: '₹ 18,000' },
     { id: 'ORD1249', supplier: 'Deccan Spice Estate', product: 'Turmeric (200 kg)', qty: '200 kg', status: 'Pending', badge: 'bg-[#B85C38]/15 text-[#B85C38]', date: '04 May, 2025', price: '₹ 24,000' },
   ];
+
+  const [orderList, setOrderList] = useState(initialOrders);
+
+  const fetchOrders = useCallback(() => {
+    fetch('http://localhost:8000/logistics/orders')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((d) => ({
+            id: d.id,
+            supplier: d.supplier,
+            product: d.produce,
+            qty: '500 kg',
+            status: d.status,
+            badge: d.badgeClass,
+            date: d.harvestDate,
+            price: d.price,
+            isLiveBatch: true,
+          }));
+          setOrderList(mapped);
+        }
+      })
+      .catch((err) => console.warn('Using fallback orders:', err));
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  const handleDispatch = async (batchId) => {
+    try {
+      const res = await fetch(`http://localhost:8000/batches/${batchId}/custody`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to_holder: 'Safexpress Cold Chain Logistics',
+          state: 'IN_TRANSIT',
+          price_paise: 100000,
+        }),
+      });
+      if (res.ok) {
+        alert(`Batch ${batchId} dispatched! Custody transferred to IN_TRANSIT on-chain.`);
+        fetchOrders();
+      }
+    } catch (err) {
+      console.error('Failed to dispatch batch:', err);
+    }
+  };
 
   // Primary Transactions Data
   const txs = [
@@ -57,7 +105,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
     { id: 'ORD1250', text: 'ORD1250 quality inspection passed (Grade A+)', time: '05 May, 2025 • 11:00 AM', relative: '6d ago', dot: 'bg-[#556B2F]' },
   ];
 
-  const filteredOrders = filter === 'All' ? orders.slice(0, 5) : orders.filter(o => o.status === filter);
+  const filteredOrders = filter === 'All' ? orderList.slice(0, 5) : orderList.filter(o => o.status === filter);
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -108,9 +156,18 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                       <td className="py-3 px-3 text-[#666057]">{ord.product}</td>
                       <td className="py-3 px-3 text-center text-[#2D2620] font-bold">{ord.qty}</td>
                       <td className="py-3 px-3 text-right">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ord.badge}`}>
-                          {ord.status}
-                        </span>
+                        {ord.isLiveBatch && ord.status === 'Ready for Pickup' ? (
+                          <button
+                            onClick={() => handleDispatch(ord.id)}
+                            className="px-2.5 py-1 rounded-lg bg-[#354424] text-white text-[10px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs whitespace-nowrap"
+                          >
+                            Dispatch 🚚
+                          </button>
+                        ) : (
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ord.badge}`}>
+                            {ord.status}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

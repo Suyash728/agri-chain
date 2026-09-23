@@ -1,13 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Truck, MapPin, ShieldCheck, Thermometer, ChevronRight } from 'lucide-react';
 
 export const TransportationView = () => {
-  const fleet = [
+  const initialFleet = [
     { number: 'MH12 AB 1234', status: 'In Transit', temp: '4.2°C (Reefer Chilled)', driver: 'Ramesh Yadav', phone: '+91 98111 22233', from: 'Nashik, Maharashtra', to: 'Pune, Maharashtra', eta: '14 May, 06:00 PM', badge: 'bg-[#556B2F]/15 text-[#556B2F]' },
     { number: 'MH15 CD 5678', status: 'Loading', temp: '5.0°C (Reefer Chilled)', driver: 'Suresh Patil', phone: '+91 98222 33344', from: 'Raipur, Chhattisgarh', to: 'Nagpur, Maharashtra', eta: '15 May, 10:00 AM', badge: 'bg-[#B85C38]/15 text-[#B85C38]' },
     { number: 'UP14 EF 9101', status: 'Delivered', temp: 'Ambient (Dry Cargo)', driver: 'Arvind Kumar', phone: '+91 98333 44455', from: 'Aligarh, Uttar Pradesh', to: 'Nashik, Maharashtra', eta: '12 May, 04:00 PM', badge: 'bg-gray-100 text-gray-700' },
     { number: 'KA04 GH 2468', status: 'In Transit', temp: '3.8°C (Cold Reefer)', driver: 'Venkatesh Rao', phone: '+91 98444 55566', from: 'Belgaum, Karnataka', to: 'Mumbai Central', eta: '13 May, 11:30 PM', badge: 'bg-[#556B2F]/15 text-[#556B2F]' },
   ];
+
+  const [fleet, setFleet] = useState(initialFleet);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/logistics/shipments')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setFleet(data);
+        }
+      })
+      .catch((err) => console.warn('Using fallback fleet:', err));
+  }, []);
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">

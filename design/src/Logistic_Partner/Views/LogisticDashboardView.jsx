@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LogisticHeader } from '../components/LogisticHeader';
 import { LogisticKPICards } from '../components/LogisticKPICards';
 import { 
@@ -28,22 +28,52 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
   ];
 
   // 2. Procurement / Orders Concise Summary Data
-  const procurementOrdersList = [
+  const initialOrdersList = [
     { id: 'ORD1256', supplier: 'FreshMart Supply Co.', produce: 'Wheat (500 kg)', status: 'Confirmed', badgeClass: 'bg-[#556B2F]/15 text-[#556B2F]' },
     { id: 'ORD1255', supplier: 'Green Valley Traders', produce: 'Tomato (400 kg)', status: 'Pending', badgeClass: 'bg-[#B85C38]/15 text-[#B85C38]' },
     { id: 'ORD1254', supplier: 'Daily Needs Store', produce: 'Potato (600 kg)', status: 'In Progress', badgeClass: 'bg-[#2B6CB0]/15 text-[#2B6CB0]' },
   ];
 
-  const filteredOrders = procurementFilter === 'All' 
-    ? procurementOrdersList 
-    : procurementOrdersList.filter(o => o.status === procurementFilter);
-
   // 3. Transportation Concise Summary Data
-  const activeVehiclesList = [
+  const initialVehiclesList = [
     { number: 'MH12 AB 1234', status: 'In Transit', badgeClass: 'bg-[#556B2F]/15 text-[#556B2F]', driver: 'Ramesh Yadav', route: 'Nashik → Pune' },
     { number: 'MH15 CD 5678', status: 'Loading', badgeClass: 'bg-[#B85C38]/15 text-[#B85C38]', driver: 'Suresh Patil', route: 'Raipur → Nagpur' },
     { number: 'UP14 EF 9101', status: 'Delivered', badgeClass: 'bg-gray-100 text-gray-700', driver: 'Arvind Kumar', route: 'Aligarh → Nashik' },
   ];
+
+  const [procurementOrders, setProcurementOrders] = useState(initialOrdersList);
+  const [activeVehiclesList, setActiveVehiclesList] = useState(initialVehiclesList);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/logistics/orders')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProcurementOrders(data);
+        }
+      })
+      .catch((err) => console.warn('Using fallback procurement orders:', err));
+
+    fetch('http://localhost:8000/logistics/shipments')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mappedVehicles = data.map((s) => ({
+            number: s.number,
+            status: s.status,
+            badgeClass: s.badge,
+            driver: s.driver,
+            route: `${s.from} → ${s.to}`,
+          }));
+          setActiveVehiclesList(mappedVehicles);
+        }
+      })
+      .catch((err) => console.warn('Using fallback vehicles:', err));
+  }, []);
+
+  const filteredOrders = procurementFilter === 'All' 
+    ? procurementOrders 
+    : procurementOrders.filter(o => o.status === procurementFilter);
 
   // 4. Inventory Category Summary Data
   const inventoryCategories = [

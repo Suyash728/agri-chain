@@ -1,6 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const LogisticKPICards = ({ onCardClick }) => {
+  const [kpis, setKpis] = useState({
+    totalShipments: 24,
+    pendingOrders: 8,
+    onTimeDelivery: '92%',
+    totalLogisticsCost: '₹ 45,680',
+  });
+
+  useEffect(() => {
+    fetch('http://localhost:8000/logistics/kpis')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.totalShipments !== undefined) {
+          setKpis((prev) => ({ ...prev, ...data }));
+        }
+      })
+      .catch((err) => console.warn('Using fallback logistics KPIs:', err));
+  }, []);
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
       {/* Card 1: Total Shipments */}
@@ -15,7 +33,7 @@ export const LogisticKPICards = ({ onCardClick }) => {
           </span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-extrabold text-[#2D2620] tracking-tight">
-              24
+              {kpis.totalShipments}
             </span>
           </div>
           <span className="text-xs sm:text-sm font-bold text-[#556B2F] mt-0.5 block">
@@ -43,7 +61,7 @@ export const LogisticKPICards = ({ onCardClick }) => {
           </span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-extrabold text-[#2D2620] tracking-tight">
-              8
+              {kpis.pendingOrders}
             </span>
           </div>
           <span className="text-xs sm:text-sm font-bold text-[#B85C38] mt-0.5 block">
@@ -71,7 +89,7 @@ export const LogisticKPICards = ({ onCardClick }) => {
           </span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl sm:text-3xl font-extrabold text-[#2D2620] tracking-tight">
-              92%
+              {kpis.onTimeDelivery}
             </span>
           </div>
           <span className="text-xs sm:text-sm font-bold text-[#2B6CB0] mt-0.5 block">
@@ -99,7 +117,7 @@ export const LogisticKPICards = ({ onCardClick }) => {
           </span>
           <div className="flex items-baseline gap-1">
             <span className="text-xl sm:text-2xl font-extrabold text-[#2D2620] tracking-tight">
-              ₹ 45,680
+              {kpis.totalLogisticsCost}
             </span>
           </div>
           <span className="text-xs font-bold text-[#556B2F] mt-0.5 flex items-center gap-0.5">

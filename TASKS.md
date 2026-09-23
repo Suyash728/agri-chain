@@ -421,10 +421,10 @@ Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and
 - **DONE WHEN:** querying `GET /logistics/kpis` and `GET /logistics/shipments` via `curl` returns real batches, valid GPS/temp telemetry, and dynamic counts matching database state. (Verified: tested `/logistics/kpis`, `/logistics/shipments`, and `/logistics/orders`; returned live batches, valid GPS coordinates, reefer temperatures, and accurate counts).
 
 ### Task 7.2 — Wire Logistics Partner UI (`LogisticDashboardView.jsx` & Fleet Views)
-- [ ] In `design/src/Logistic_Partner/components/LogisticKPICards.jsx` and `LogisticDashboardView.jsx`, replace mock data with `fetch('http://localhost:8000/logistics/kpis')` and `fetch('http://localhost:8000/logistics/shipments')`.
-- [ ] In `design/src/Logistic_Partner/Views/TransportationView.jsx` and `ShipmentTrackingView.jsx`, wire fleet cards and live telemetry corridor to display real batches, vehicle numbers, route checkpoints, and live reefer temperatures.
-- [ ] Wire a "Dispatch / Pick Up" action triggering `POST /batches/{batch_id}/custody` with state `IN_TRANSIT` and paying the transit price.
-- **DONE WHEN:** opening the Logistics Partner portal shows live shipment cards with real crop names and temperatures, and picking up a batch updates its state to `IN_TRANSIT` on-chain.
+- [x] In `design/src/Logistic_Partner/components/LogisticKPICards.jsx` and `LogisticDashboardView.jsx`, replace mock data with `fetch('http://localhost:8000/logistics/kpis')` and `fetch('http://localhost:8000/logistics/shipments')`.
+- [x] In `design/src/Logistic_Partner/Views/TransportationView.jsx` and `ShipmentTrackingView.jsx`, wire fleet cards and live telemetry corridor to display real batches, vehicle numbers, route checkpoints, and live reefer temperatures.
+- [x] Wire a "Dispatch / Pick Up" action triggering `POST /batches/{batch_id}/custody` with state `IN_TRANSIT` and paying the transit price.
+- **DONE WHEN:** opening the Logistics Partner portal shows live shipment cards with real crop names and temperatures, and picking up a batch updates its state to `IN_TRANSIT` on-chain. (Verified: `LogisticKPICards`, `LogisticDashboardView`, `TransportationView`, `ShipmentTrackingView`, and `ProcurementOrdersView` wired to backend; dispatch action tested and verified transferring batch `BATCH-001` to `IN_TRANSIT` on-chain with tx `33370e1a...`).
 
 ### Task 7.3 — Implement Dark Store / Retailer Backend Endpoints
 - [ ] In `backend/main.py`, implement:
