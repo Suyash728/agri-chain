@@ -281,7 +281,58 @@ session doesn't have to rediscover it.
 - None. All components are installed, verified, and running.
 
 **What's next:**
-- Task 6.2: Implement persistent SQLite storage for history and audit repositories in `trust-layer/app/services/` (replacing transient in-memory dictionaries).
+- Phase 6 — AI Trust Layer Integration & Evaluation (Tasks 6.1–6.7).
+
+---
+
+## [Phase 6 — AI Trust Layer Integration & Evaluation] — 2026-09-23
+
+**What was done:**
+- Implemented Task 6.1: Installed full project dependencies into virtual environment (`scikit-learn`, `scipy`, `matplotlib`, `pytest`, `fastapi`, `uvicorn`, `web3`), verified all test suites across `contracts/` (13 tests passing) and `trust-layer/` (143 tests passing). Committed in `97f6d2a`.
+- Implemented Task 6.2: Built persistent SQLite storage schema and repositories (`trust-layer/app/services/db.py`) storing `telemetry_history`, `audit_trail`, `replay_events`, and `replay_latest_timestamps`. Integrated into `history.py`, `audit.py`, and `integrity.py` with zero breaking changes to in-memory test mocks. Committed in `c98ace0`.
+- Implemented Task 6.3: Implemented dynamic crop policy binding (`trust-layer/app/services/policy.py`) linking backend `policy` table (min/max temperature and humidity) to `CropPolicy` schema. Updated plausibility checks in `plausibility.py` to evaluate dynamic crop-specific ranges. Verified via `test_policy.py` (Tomato 15°C -> QUARANTINED, Wheat 15°C -> READY_FOR_ORACLE). Committed in `84a467a`.
+- Implemented Task 6.4: Fully wired FastAPI ingestion endpoint `POST /telemetry` in `backend/main.py` through the AI Trust Layer pipeline (Basic Validation -> Plausibility Checks -> Feature Extraction -> Isolation Forest ML -> Cryptographic Integrity / Replay Detection -> Verdict Engine -> Audit Trail & History Persistence -> Oracle Handoff to smart contract). Valid readings are anchored on-chain with tx hash; anomalous readings (temperature spikes, GPS jumps, replay attacks) are quarantined off-chain with structured reason codes and 0 on-chain condition events. Verified via `verify_phase6_task4.py` and `verify_phase5_e2e.py`. Committed in `8e652d6`.
+- Implemented Task 6.5: Upgraded root telemetry simulator (`simulator/simulate.py`) using `trust-layer/app/services/simulator.py` to support all 7 fault injection categories (`temp_spike`, `humidity_spike`, `gps_jump`, `timestamp_drift`, `replay_attack`, `telemetry_gap`, `composite`). Automatically advances starting timestamp and GPS coordinates past previous batch history to ensure physically continuous simulations. Verified against batch `BATCH-001` with `replay_attack`, `gps_jump`, and `temp_spike`. Committed in `14f02b0`.
+- Implemented Task 6.6: Implemented `POST /telemetry/evaluate` in `backend/main.py` delegating to `trust-layer/app/services/evaluation.py`. Executed benchmark evaluation across 40 balanced sequence trials covering normal produce and all 7 fault categories. Achieved overall F1-score of 0.9722 (Precision: 0.9459, Recall: 1.0000, Latency: 31.80 ms) with 100% detection rate across all 7 fault types. Exported publication-ready figures (`confusion_matrix.png`, `fault_detection_rates.png`, `metrics_summary.png`, `verdict_distribution.png`) and summary tables (`benchmark_summary.md`, `benchmark_summary.json`) to `trust-layer/reports/figures/`. Committed in `ecdb697`.
+- Implemented Task 6.7: Implemented `GET /farmer/ai-trust` in `backend/main.py` providing real-time AI trust score and verification checkpoints calculated from SQLite audit trail and quarantine records (Cold Chain Integrity %, GPS Telemetry Validation status, Tamper Prevention status, and Anomaly Check count). Wired `design/src/Farmer/Views/AITrustView.jsx` to fetch live data via `useEffect` with graceful fallback. Verified frontend build succeeds cleanly with 0 errors. Committed in `9dc7a9b`.
+
+**Files changed:**
+- `trust-layer/app/services/db.py`: persistent SQLite schema and connection helpers.
+- `trust-layer/app/services/history.py`: SQLite-backed historical telemetry repository.
+- `trust-layer/app/services/audit.py`: SQLite-backed audit trail and quarantine repository.
+- `trust-layer/app/services/integrity.py`: SQLite-backed SHA-256 fingerprinting and replay repository.
+- `trust-layer/app/services/policy.py`: dynamic crop policy loader from SQLite.
+- `trust-layer/app/services/plausibility.py`: dynamic crop bounds evaluation.
+- `trust-layer/app/services/evaluation.py`: benchmark evaluation reporting, figure exports, and markdown/JSON summary generation.
+- `trust-layer/tests/test_policy.py`: unit tests for dynamic crop policy binding.
+- `backend/main.py`: end-to-end pipeline ingestion, oracle handoff, `POST /telemetry/evaluate`, and `GET /farmer/ai-trust`.
+- `simulator/simulate.py`: CLI simulator with all 7 fault types and history-aware timestamp advancement.
+- `design/src/Farmer/Views/AITrustView.jsx`: live AI trust score and checkpoints fetch.
+- `TASKS.md`: marked Tasks 6.1 through 6.7 complete.
+- `MEMORY.md`: appended Phase 6 completion entry.
+
+**Decisions made (and why):**
+- Used Unified Service architecture (FastAPI backend on port 8000 importing `trust-layer`) per user confirmation.
+- Retained strict backwards-compatibility with in-memory SQLite fixtures (`:memory:`) in unit tests so that `pytest` runs at full speed (147 tests in < 45s).
+- Trained Isolation Forest on startup across both stationary produce (farm gate / warehouse) and transit produce (10–75 km/h) to prevent stationary readings from being falsely flagged as velocity outliers.
+- Preserved exact design system and Tailwind styling in `design/src/Farmer/Views/AITrustView.jsx` while binding live data via React `useState` and `useEffect`.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Task 6.1: 147 `trust-layer` pytest tests passed with 0 failures; 13 Hardhat smart contract tests passed.
+- Task 6.2: SQLite tables `telemetry_history`, `audit_trail`, `replay_events` verified persisting across restarts.
+- Task 6.3: Tomato 15°C flagged `QUARANTINED`, Wheat 15°C accepted `READY_FOR_ORACLE`.
+- Task 6.4: `verify_phase6_task4.py` verified valid readings recorded on-chain, faults quarantined with 0 on-chain events.
+- Task 6.5: `python simulator/simulate.py --batch-id BATCH-001 --fault replay_attack` flagged `REPLAY_ATTACK_DETECTED` with disposition `QUARANTINED`.
+- Task 6.6: `POST /telemetry/evaluate` completed with F1-score 0.9722 >= 0.90; all 4 IEEE figures and markdown/JSON tables generated.
+- Task 6.7: `GET /farmer/ai-trust` returns live audit checkpoints; `npm run build` in `design/` passed cleanly in 2.40s.
+- `verify_phase5_e2e.py` passed 100% across all 5 PRD §6 essential build criteria.
+
+**Phase 6 Status:**
+- **COMPLETE**: Tasks 6.1 through 6.7 are finished, verified, and committed.
+
+**What's next:**
+- Phase 7 — Logistics Partner & Cold-Chain Transit Telemetry (Tasks 7.1–7.4: wire transit dashboard, GPS fleet status, dynamic custody handover modal).
+
 
 
 
