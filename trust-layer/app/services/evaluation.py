@@ -22,6 +22,7 @@ WHAT THIS MODULE DOES
 """
 
 from datetime import datetime, timezone
+import json
 import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
@@ -382,6 +383,62 @@ class EvaluationService:
         plt.savefig(dist_path, dpi=200)
         plt.close(fig)
         saved_paths.append(dist_path)
+
+        # 5. Export Markdown & JSON Summary Tables
+        md_lines = [
+            "# AgriChain AI Trust Layer — Benchmark Evaluation Report",
+            "",
+            "## Overall Classification Metrics",
+            "| Metric | Value |",
+            "| :--- | :--- |",
+            f"| Total Cases | {m.total_cases} |",
+            f"| True Positives (TP) | {m.tp} |",
+            f"| True Negatives (TN) | {m.tn} |",
+            f"| False Positives (FP) | {m.fp} |",
+            f"| False Negatives (FN) | {m.fn} |",
+            f"| **Precision** | **{m.precision:.4f}** ({m.precision * 100:.1f}%) |",
+            f"| **Recall** | **{m.recall:.4f}** ({m.recall * 100:.1f}%) |",
+            f"| **F1-Score** | **{m.f1_score:.4f}** ({m.f1_score * 100:.1f}%) |",
+            f"| **False Positive Rate (FPR)** | **{m.false_positive_rate:.4f}** ({m.false_positive_rate * 100:.1f}%) |",
+            f"| Mean Pipeline Latency | {m.mean_latency_ms:.2f} ms |" if m.mean_latency_ms is not None else "| Mean Pipeline Latency | N/A |",
+            "",
+            "## Fault-Wise Detection Breakdown",
+            "| Fault Category | Total Trials | Detected Anomalous | Accepted Valid | Insufficient | Detection Rate (%) |",
+            "| :--- | :--- | :--- | :--- | :--- | :--- |",
+        ]
+        for fr in report.fault_wise_results:
+            md_lines.append(
+                f"| {fr.fault_type} | {fr.total_cases} | {fr.detected_anomalous} | {fr.accepted_valid} | {fr.insufficient_evidence} | {fr.detection_rate * 100.0:.1f}% |"
+            )
+
+        md_lines.extend([
+            "",
+            "## Confusion Matrix",
+            "| | Predicted Normal | Predicted Anomalous |",
+            "| :--- | :--- | :--- |",
+            f"| **Actual Normal** | {report.confusion_matrix.tn} (TN) | {report.confusion_matrix.fp} (FP) |",
+            f"| **Actual Anomalous** | {report.confusion_matrix.fn} (FN) | {report.confusion_matrix.tp} (TP) |",
+            "",
+            "## Publication-Ready Figures",
+            "- `confusion_matrix.png`",
+            "- `fault_detection_rates.png`",
+            "- `metrics_summary.png`",
+            "- `verdict_distribution.png`",
+            "",
+            "## Scientific Notes & Evaluation Scope",
+            report.scientific_notes,
+        ])
+        md_content = "\n".join(md_lines) + "\n"
+
+        md_path = os.path.join(output_dir, "benchmark_summary.md")
+        with open(md_path, "w", encoding="utf-8") as f:
+            f.write(md_content)
+        saved_paths.append(md_path)
+
+        json_path = os.path.join(output_dir, "benchmark_summary.json")
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(report.model_dump(mode="json"), f, indent=2)
+        saved_paths.append(json_path)
 
         return saved_paths
 

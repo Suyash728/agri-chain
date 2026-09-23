@@ -391,10 +391,10 @@ This phase integrates teammate Rutuja's standalone `trust-layer` module into the
 - **DONE WHEN:** running `python simulator/simulate.py --batch-id BATCH-001 --fault replay_attack` generates a duplicate sequence and causes the AI Trust layer to output `REPLAY_ATTACK_DETECTED` with disposition `QUARANTINED`. (Verified: executed against BATCH-001 with replay_attack, gps_jump, and temp_spike all correctly flagged and quarantined while clean samples were anchored on-chain).
 
 ### Task 6.6 — Run benchmark evaluation & export IEEE paper figures
-- [ ] Execute `POST /telemetry/evaluate` using `trust-layer/app/services/evaluation.py` on a balanced dataset of clean and faulted streams.
-- [ ] Verify calculation of TP, TN, FP, FN, Precision, Recall, F1-Score, and Latency across all fault types.
-- [ ] Export confusion matrix, fault detection rates, and performance summary charts to `trust-layer/reports/figures/`.
-- **DONE WHEN:** `trust-layer/reports/figures/` contains publication-ready PNG figures and a markdown/JSON summary table showing overall F1-score >= 0.90.
+- [x] Execute `POST /telemetry/evaluate` using `trust-layer/app/services/evaluation.py` on a balanced dataset of clean and faulted streams.
+- [x] Verify calculation of TP, TN, FP, FN, Precision, Recall, F1-Score, and Latency across all fault types.
+- [x] Export confusion matrix, fault detection rates, and performance summary charts to `trust-layer/reports/figures/`.
+- **DONE WHEN:** `trust-layer/reports/figures/` contains publication-ready PNG figures and a markdown/JSON summary table showing overall F1-score >= 0.90. (Verified: `POST /telemetry/evaluate` executed with 40 trials across normal + 7 faults; F1-score=0.9722, precision=0.9459, recall=1.0000; exported all 4 PNG figures and markdown/JSON tables to `trust-layer/reports/figures/`).
 
 ### Task 6.7 — Wire Farmer AI Trust Screen (`AITrustView.jsx`) to live checkpoints
 - [ ] In `backend/main.py`, implement `GET /farmer/ai-trust` returning the live verification status matching `aiTrustData` in `mockData.js`:

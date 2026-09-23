@@ -29,6 +29,7 @@ from app.services.verdict import evaluate_verdict
 from app.services.audit import audit_service
 from app.services.history import history_repository
 from app.services.evaluation import evaluation_service
+from app.schemas.evaluation import EvaluationConfig, EvaluationReport
 
 app = FastAPI(title="AgriChain API", version="1.0.0")
 
@@ -325,6 +326,14 @@ def post_telemetry(payload: TelemetryRequest):
             )
     finally:
         conn.close()
+
+
+@app.post("/telemetry/evaluate", response_model=EvaluationReport)
+def post_telemetry_evaluate(config: Optional[EvaluationConfig] = None):
+    """Execute benchmark evaluation across normal and all 7 fault injection categories."""
+    output_dir = str(TRUST_LAYER_PATH / "reports" / "figures")
+    report = evaluation_service.run_pipeline_evaluation(config=config, output_dir=output_dir)
+    return report
 
 
 # ---------------- Batch & Custody Models & Routes ----------------
