@@ -55,54 +55,74 @@ calendar says otherwise.
 | 10–11 | Phase 4 — Simulator | Tasks 4.1–4.3 |
 | 12–14 | Phase 5 — Frontend wiring + end-to-end check | Tasks 5.1–5.6 |
 
-Day 14 ends with the exact sequence in `PRD.md` §6 run start to finish. If it
-passes, the essential build is done — full stop, regardless of what's left
-on the Optional list.
+**Status:** Phases 1 through 5 are **COMPLETE** and verified against the running Hardhat blockchain node, SQLite database, and React frontend (see `MEMORY.md`).
 
-## 3. Optional roadmap — after the essential build, unscheduled
+## 3. Post-Essential Build Phased Roadmap (Phases 6–10)
 
-Not dated, because it starts only once the essential build's five steps
-(`PRD.md` §6) all pass, and because the right order depends on what the guide
-and the team prioritize for the paper vs. the demo. Rough suggested order,
-each item cross-referenced to `PRD.md` §5:
+With the essential end-to-end loop proven, the project advances to integrate the newly contributed AI Trust Layer (`trust-layer/`), wire the remaining role dashboards, modularize smart contracts, and deploy to the public testnet.
 
-1. **O1 — wire Logistics Partner and Dark Store dashboards.** Natural next
-   step once the pattern from Phase 5 is proven twice (Farmer, Consumer);
-   the third and fourth times are mechanical repetition of the same pattern.
-2. **O6 — split into the original 5 contracts with OpenZeppelin
-   `AccessControl`.** Do this before O5, not after — testing role-gating
-   locally is much faster than testing it against a public testnet with
-   faucet delays.
-3. **O5 — deploy to Polygon Amoy.** Now that the contract shape is closer to
-   final (post O6), deploying it publicly is worth doing once rather than
-   twice.
-4. **O7 — migrate SQLite to Supabase/Postgres.** Independent of the chain
-   work above; can happen in parallel with O5/O6 once someone is free.
-5. **O3 — swap rule-based validation for Isolation Forest, then an
-   LSTM-autoencoder.** Needs O4 (better fault data) to evaluate meaningfully,
-   so consider doing O4 first or alongside.
-6. **O4 — richer simulator fault types + labelled evaluation.** This is
-   where the paper's results table comes from (precision/recall per fault
-   type) — prioritize this earlier if the paper deadline is tighter than the
-   demo deadline.
-7. **O2 — MetaMask / per-user signing.** A real UX upgrade; do this once the
-   contract shape (post O6) is stable, since changing who's allowed to call
-   what is easiest before real users depend on the current behavior.
-8. **O13 — batched oracle writes + gas measurement.** Another paper-results
-   item; do alongside O4 if the throughput numbers matter for the same
-   deadline.
-9. **O8, O9, O10, O11, O12** — reviews, admin flow, IPFS, quarantine console,
-   real ESP32 — roughly in that order of effort-to-value, but genuinely
-   flexible; none blocks any other.
+```
+Essential Loop (Phases 1–5) [COMPLETE]
+      │
+      ▼
+Phase 6: AI Trust Layer Integration & Evaluation (O3, O4)  ◄── NEXT
+      │
+      ▼
+Phase 7: Logistics & Retailer Dashboards + AI Trust UI (O1, O11)
+      │
+      ▼
+Phase 8: Parameterized Contracts & Polygon Amoy Testnet (O5, O6, O13)
+      │
+      ▼
+Phase 9: Cloud DB Migration (Supabase) & IPFS Assets (O7, O10)
+      │
+      ▼
+Phase 10: Role Wallets, Reviews & Hardware Demo (O2, O8, O9, O12)
+```
 
-## 4. What changes if the two-week estimate is wrong
+### Phase 6 — AI Trust Layer Integration & Evaluation (O3, O4)
+**Goal:** Integrate teammate Rutuja's standalone `trust-layer` module into the core pipeline and produce the research paper results.
+- **Tasks & Deliverables:**
+  1. Set up dependencies (`scikit-learn`, `pytest`, `httpx`) and verify all 132 unit/integration tests in `trust-layer/tests`.
+  2. Implement SQLite persistence for history and audit repositories in `trust-layer/` (replacing transient in-memory stores).
+  3. Bind dynamic `CropPolicy` to the registered batch crop in SQLite.
+  4. Connect `backend` ingestion to `trust-layer`: raw telemetry evaluated across range, plausibility, feature extraction, Isolation Forest, and integrity checks; approved `OracleHandoffPayload` events write to `AgriChainCore.recordCondition`; rejected readings enter the quarantine store.
+  5. Upgrade simulator to stream using the 7 fault injection types (`trust-layer/app/services/simulator.py`).
+  6. Run automated evaluation benchmark (`/telemetry/evaluate`) and export precision, recall, F1, confusion matrices, and fault-wise detection figures for the IEEE paper.
 
-If Phase 3 (the backend) is still not done by day 9, the most likely cause is
-that a task in `TASKS.md` was too large for a single session and should have
-been split — check `MEMORY.md` for repeated blockers on the same task before
-assuming the whole plan needs to slip. If it genuinely needs to slip, slip
-the whole essential build by the same number of days rather than cutting an
-essential feature (E1–E7 in `PRD.md`) to make up time — cutting scope from
-the essential tier defeats the purpose of having drawn the essential/optional
-line in the first place. If something must be cut, cut from the Optional
-roadmap's ordering in §3, never from `PRD.md` §5's Essential list.
+### Phase 7 — Role Dashboards Wiring & Quarantine / Trust UI (O1, O11)
+**Goal:** Connect Logistics Partner, Dark Store / Retailer, and the AI Trust screens in `design/` to live data.
+- **Tasks & Deliverables:**
+  1. Wire Logistics Partner dashboard (`design/src/Logistic_Partner/`) with live shipments (`/logistics/shipments`), telemetry stream monitoring, and transit state changes.
+  2. Wire Dark Store / Retailer dashboard (`design/src/Dark_Store/`) with inventory stock, expiry alerts, and consumer checkout (`SOLD`).
+  3. Wire `design/src/Farmer/Views/AITrustView.jsx` to live AI verification checkpoints (`Cold Chain Integrity`, `GPS Telemetry Validation`, `Tamper Prevention`, `Anomaly Check`) powered by `trust-layer` audit data.
+  4. Wire Quarantine inspection drawer/modal to browse quarantined telemetry events and explainable reason codes.
+
+### Phase 8 — Parameterized Smart Contracts & Polygon Amoy Deployment (O5, O6, O13)
+**Goal:** Modularize `AgriChainCore.sol` into 5 customized contracts and deploy to public Polygon Amoy testnet.
+- **Tasks & Deliverables:**
+  1. Split contract into `ProductRegistry.sol`, `CustodyTransfer.sol`, `ColdChainMonitor.sol`, `PolicyConfig.sol`, and `AccessControlRoles.sol` with OpenZeppelin `AccessControl`.
+  2. Implement batching for oracle condition writes to optimize gas consumption.
+  3. Configure Hardhat for Polygon Amoy (Chain ID 80002) with test POL faucets and update `backend/chain.py` RPC client.
+  4. Execute deployment script and verify contracts on Polygonscan Amoy.
+
+### Phase 9 — Storage Migration & Decentralized Documents (O7, O10)
+**Goal:** Migrate off-chain state to cloud PostgreSQL (Supabase) and store heavy documents on IPFS.
+- **Tasks & Deliverables:**
+  1. Provision Supabase project; migrate SQLite schemas (`batches`, `custody_events`, `readings`, `quarantine`, `policy`, `audit_trail`).
+  2. Integrate IPFS client (Pinata / web3.storage) for certificates, harvest photos, and batch invoices; anchor resulting CIDs on-chain.
+
+### Phase 10 — Role Wallets, Reviews & Hardware Demo (O2, O8, O9, O12)
+**Goal:** Per-user MetaMask transaction signing, consumer review loop, and optional ESP32 physical demo prop.
+- **Tasks & Deliverables:**
+  1. Integrate frontend Web3 wallet connection (`ethers.js` v6) for role-gated contract writes.
+  2. Consumer review submission and rating anchor tied to purchased batch ID.
+  3. Admin account approval and role granting workflow.
+  4. (Optional) Single ESP32 + DHT22 + GPS hardware tracker feeding telemetry to `POST /telemetry` over WiFi.
+
+## 4. Work Discipline & Phase Handoffs
+
+- Work one phase at a time; complete all tasks and "DONE WHEN" checks before proceeding to the next phase.
+- Always append to `MEMORY.md` at each phase boundary.
+- Adhere strictly to `RULES.md` and the frontend "wire, don't create" rule.
+

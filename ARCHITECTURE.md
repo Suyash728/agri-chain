@@ -84,38 +84,43 @@ in the essential build — `backend/` and `design/` absorb their jobs
 respectively. They can be split out later (Optional tier) if the monolith
 becomes unwieldy.
 
-## 3. Why one backend service instead of several
+## 3. Telemetry Processing & AI Trust Layer Architecture
 
-The original plan split ingestion, AI validation, the oracle writer, and the
-event indexer into separate services communicating over a queue. That's the
-right shape for a real deployment. For the essential build it's replaced with
-**one FastAPI app that does all four jobs as plain Python function calls**:
+In the essential build, a simple rule-based validation script (`backend/validation.py`) handled threshold checks. In the production architecture (Phase 6+), this is replaced by the comprehensive **AI Trust Layer** (`trust-layer/`), which serves as the gatekeeper addressing **Research Gap 5 (Oracle Trust)**:
 
 ```
-POST /telemetry  (from simulator)
-   │
-   ├─► validation.py: check reading against policy thresholds
-   │        │
-   │        ├─ VALID ──► chain.py: call AgriChainCore.recordCondition() via web3.py
-   │        │                        │
-   │        │                        └─► written to local Hardhat chain
-   │        │
-   │        └─ ANOMALOUS ──► insert into `quarantine` table, never reaches chain.py
-   │
-   └─► response: {"verdict": "VALID" | "ANOMALOUS", "reason": "..."}
+IoT Sensors / Simulator (7 Fault Types)
+              │
+              ▼
+   POST /telemetry (FastAPI)
+              │
+              ├─► SQLite `readings`: raw reading logged first (audit integrity)
+              │
+              ├─► AI Trust Layer Pipeline:
+              │     1. Schema Validation (Pydantic)
+              │     2. Range Validation (Agricultural cold-chain bounds)
+              │     3. Physical & Temporal Plausibility (Haversine GPS velocity, temp/humidity rate-of-change, sequence)
+              │     4. Time-Series Feature Engineering (11-D dynamic feature vector)
+              │     5. ML Anomaly Detection (Unsupervised Isolation Forest)
+              │     6. Cryptographic Integrity & Replay Detection (SHA-256 fingerprint, nonce/replay check)
+              │     7. Trust Verdict Engine (VALID | ANOMALOUS | INSUFFICIENT_EVIDENCE)
+              │     8. Off-chain Quarantine & Audit Trail (READY_FOR_ORACLE | QUARANTINED | ON_HOLD)
+              │
+              ├─► IF VALID & READY_FOR_ORACLE:
+              │     └─► Oracle Handoff (OracleHandoffPayload v1.0)
+              │           └─► chain.py: call AgriChainCore.recordCondition() via web3.py
+              │                 └─► ConditionRecorded event written to Hardhat / Polygon
+              │
+              └─► IF ANOMALOUS & QUARANTINED:
+                    └─► insert into SQLite `quarantine` with ordered reason codes
+                          (never touches blockchain)
 ```
 
-No message queue, no separate worker process, no network hop between
-services. This is a legitimate simplification (not a shortcut with a hidden
-cost) because the essential build has no throughput requirement — it proves
-the *logic* works, not that it scales. The queue/worker split (matching the
-original oracle-writer design) is worth reintroducing once real throughput
-matters — that's Optional tier, alongside O5 and O13.
+### Oracle Handoff Contract
+The boundary between the AI Trust Layer and the blockchain is defined by `OracleHandoffPayload` (schema v1.0 in `trust-layer/app/schemas/oracle.py`). Only events meeting strict criteria (`verdict == VALID` and `disposition == READY_FOR_ORACLE`) are approved for on-chain submission. Tampered, anomalous, or replay events are stopped cold at this boundary.
 
-**One rule that still applies exactly as in the original design:** raw
-telemetry is **always written to the database first**, before validation
-runs. This preserves the audit trail even for rejected readings — you can
-see *what was sent*, not just what was accepted.
+**Audit integrity rule:** Raw telemetry is **always written to the database first**, before validation runs. This preserves the complete historical audit trail for inspection even when a reading is quarantined.
+
 
 ## 4. The API contract is `mockData.js` — there is no separate contract document
 
@@ -317,8 +322,8 @@ build only needs E1–E7.
 | Database | SQLite (`sqlite3` via Python stdlib or `sqlmodel`) | Supabase/Postgres (O7) |
 | Blockchain | Solidity ^0.8.20, Hardhat, local Hardhat node | Polygon Amoy public testnet (O5), OpenZeppelin `AccessControl` + 5 contracts (O6) |
 | Chain client | `web3.py` from `backend/chain.py` — one Python library, no separate Node/ethers.js service | ethers.js v6 + MetaMask for per-user signing (O2) |
-| AI trust layer | Rule-based thresholds in `backend/validation.py` | scikit-learn Isolation Forest → PyTorch LSTM-autoencoder (O3) |
-| IoT source | `simulator/simulate.py`, one script, HTTP POST | Real ESP32 (O12), MQTT, multi-fault labelled dataset (O4) |
+| AI trust layer | Rule-based (essential) / `trust-layer` Isolation Forest (Phase 6) | PyTorch LSTM-autoencoder for gradual sensor drift (O3) |
+| IoT source | `simulator/simulate.py`, one script, HTTP POST | 7-fault simulator in `trust-layer` (Phase 6), Real ESP32 (O12) |
 
 **Why web3.py instead of ethers.js for the essential build:** the backend is
 already Python (FastAPI). Keeping the chain client in the same language

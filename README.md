@@ -50,17 +50,17 @@ A blockchain-based farm-to-fork traceability system for perishable agricultural 
 
 ---
 
-## Codebase
+## Codebase Status
 
-*Not yet added.* The implementation will land in these top-level folders, per the backend build guide:
+The repository contains a fully working prototype across blockchain, backend, AI validation, simulation, and frontend:
 
-| Folder | Contents |
-|--------|----------|
-| `contracts/` | Solidity smart contracts + Hardhat project (custody, batch registry, roles, pricing) |
-| `trust-layer/` | FastAPI service hosting the AI anomaly models that validate sensor readings before on-chain commits |
-| `indexer/` | Chain event indexer that materializes on-chain state for querying |
-| `web/` | Next.js dApp — the role-based UI matching the mockups in `design/mockups/` |
-| `simulator/` | IoT sensor simulator with configurable fault injection, used to generate and label test data |
+| Folder | Status | Contents |
+|--------|--------|----------|
+| `contracts/` | ✅ Active | Hardhat project with `AgriChainCore.sol` deployed and tested on local Hardhat chain. |
+| `backend/` | ✅ Active | FastAPI service with SQLite database, Web3 contract integration, and REST endpoints for dashboards and traceability. |
+| `trust-layer/` | ✅ Active | AI Trust Layer service: range checks, physical/temporal plausibility, 11-D feature extraction, Isolation Forest ML anomaly detection, SHA-256 integrity/replay checks, verdict engine, audit/quarantine logs, multi-fault simulation, and Oracle handoff interface (Schema v1.0). |
+| `simulator/` | ✅ Active | IoT telemetry generator streaming realistic GPS/temperature/humidity sequences with fault injection. |
+| `design/` | ✅ Active | React + Vite + Tailwind frontend with wired Farmer dashboard, live batch registration modal, and Consumer traceability view showing on-chain price trail. |
 
 ---
 

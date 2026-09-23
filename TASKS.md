@@ -347,13 +347,63 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   Optional roadmap in `PLAN.md` §3 rather than continuing to add to this
   file.
 
+**→ Essential build (Phases 1–5) COMPLETE. See `MEMORY.md`.**
+
 ---
 
-## After Phase 5
+## Phase 6 — AI Trust Layer Integration & Evaluation
 
-Do not add Optional-tier tasks (O1–O13 from `PRD.md`) to this file as a
-continuation. When work resumes on any Optional item, create a fresh
-`TASKS.md`-style breakdown for just that item at the time it's actually
-started — planning O-tier tasks now, before the essential build is even
-proven, risks the same everything-at-once sprawl the essential/optional
-split exists to avoid.
+This phase integrates teammate Rutuja's standalone `trust-layer` module into the core application, connects the Oracle handoff interface to the smart contract, adds persistence and dynamic crop policy binding, and generates the evaluation metrics for the IEEE research paper.
+
+### Task 6.1 — Install & verify dependencies for AI Trust Layer
+- [ ] Set up the Python environment with required ML and testing dependencies: `scikit-learn>=1.5.0`, `pytest>=8.0.0`, `httpx>=0.27.0`.
+- [ ] Run the complete test suite in `trust-layer/tests/`.
+- **DONE WHEN:** running `pytest trust-layer/tests/ -v` passes all 132 tests (30 range + 13 plausibility + 11 features + 11 anomaly + 12 integrity + 14 verdict + 12 audit + 17 simulator + 12 oracle handoff) with 0 failures.
+
+### Task 6.2 — Implement persistent SQLite storage for history & audit
+- [ ] Currently `trust-layer/app/services/history.py` and `audit.py` use in-memory Python dictionaries (`_store`). Update or wrap them to persist records into SQLite (`backend/agrichain.db`) across process restarts.
+- [ ] Maintain the same repository interface (`get_last_reading`, `add_reading`, `record_audit`, `get_by_event_hash`, `get_quarantined_records`).
+- **DONE WHEN:** adding telemetry readings, restarting the application process, and calling `GET /telemetry/audit/{event_hash}` returns the persisted records without data loss.
+
+### Task 6.3 — Bind dynamic crop policies to AI trust validation
+- [ ] Connect `trust-layer/app/services/validator.py` and `plausibility.py` to `CropPolicy` loaded dynamically from SQLite `policy` table based on the batch's registered crop (`Tomato`, `Mango`, `Wheat`).
+- [ ] If no crop policy exists, gracefully fall back to default cold-chain thresholds in `app/config.py`.
+- **DONE WHEN:** sending a 15.0°C telemetry reading for a `Tomato` batch (max policy 10.0°C) is flagged `ANOMALOUS`, while sending 15.0°C for a `Wheat` batch (max policy 25.0°C) is evaluated as `VALID`.
+
+### Task 6.4 — Connect backend ingestion to AI Trust Pipeline & Oracle Handoff
+- [ ] Update `backend/main.py:POST /telemetry` to execute the full AI Trust pipeline:
+  1. Record raw reading in `readings` table first (audit integrity per `RULES.md` §4).
+  2. Run range, plausibility, feature extraction, Isolation Forest, and cryptographic integrity checks.
+  3. Formulate explainable Trust Verdict (`VALID`, `ANOMALOUS`, `INSUFFICIENT_EVIDENCE`) and operational disposition (`READY_FOR_ORACLE`, `QUARANTINED`, `ON_HOLD`).
+  4. For `VALID` + `READY_FOR_ORACLE`, construct `OracleHandoffPayload` and call `chain.py:record_condition` on `AgriChainCore.sol`.
+  5. For `ANOMALOUS` + `QUARANTINED`, insert into `quarantine` table with exact structured reason codes.
+- **DONE WHEN:** posting valid telemetry updates Hardhat blockchain condition events and SQLite audit records; posting an anomaly (temp spike, GPS jump, or replay attack) inserts a quarantine record and leaves on-chain event count unchanged.
+
+### Task 6.5 — Integrate multi-fault telemetry simulation
+- [ ] Upgrade root `simulator/simulate.py` using `trust-layer/app/services/simulator.py` to support all 7 fault types:
+  - `--fault temp_spike`
+  - `--fault humidity_spike`
+  - `--fault gps_jump`
+  - `--fault timestamp_drift`
+  - `--fault replay_attack`
+  - `--fault telemetry_gap`
+  - `--fault composite`
+- **DONE WHEN:** running `python simulator/simulate.py --batch-id BATCH-001 --fault replay_attack` generates a duplicate sequence and causes the AI Trust layer to output `REPLAY_ATTACK_DETECTED` with disposition `QUARANTINED`.
+
+### Task 6.6 — Run benchmark evaluation & export IEEE paper figures
+- [ ] Execute `POST /telemetry/evaluate` using `trust-layer/app/services/evaluation.py` on a balanced dataset of clean and faulted streams.
+- [ ] Verify calculation of TP, TN, FP, FN, Precision, Recall, F1-Score, and Latency across all fault types.
+- [ ] Export confusion matrix, fault detection rates, and performance summary charts to `trust-layer/reports/figures/`.
+- **DONE WHEN:** `trust-layer/reports/figures/` contains publication-ready PNG figures and a markdown/JSON summary table showing overall F1-score >= 0.90.
+
+### Task 6.7 — Wire Farmer AI Trust Screen (`AITrustView.jsx`) to live checkpoints
+- [ ] In `backend/main.py`, implement `GET /farmer/ai-trust` returning the live verification status matching `aiTrustData` in `mockData.js`:
+  - Cold Chain Integrity (percentage compliant from recent audit logs)
+  - GPS Telemetry Validation (route velocity continuity check)
+  - Tamper Prevention (cryptographic seal & replay status)
+  - Anomaly Check (number of deviations flagged)
+- [ ] In `design/src/Farmer/Views/AITrustView.jsx`, replace mock `aiTrustData` with a `fetch('http://localhost:8000/farmer/ai-trust')` call inside `useEffect`.
+- **DONE WHEN:** opening the AI Trust Score view in the running Farmer UI displays live checkpoint status derived from real processed telemetry.
+
+**→ End of Phase 6. Append a `MEMORY.md` entry.**
+

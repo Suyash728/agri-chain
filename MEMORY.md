@@ -236,5 +236,47 @@ session doesn't have to rediscover it.
 **Essential Build Status:**
 - **COMPLETE**: All essential-tier features (Phases 1–5, Tasks 1.1–5.6) are finished and fully verified.
 
+---
+
+## [Phase 6 — Planning & AI Trust Layer Audit] — 2026-09-23
+
+**What was done:**
+- Read and audited all project context in `docs/` (`proposal/`, `diagrams/`, `plan/`, `research/`), root markdown files (`PRD.md`, `ARCHITECTURE.md`, `RULES.md`, `PLAN.md`, `TASKS.md`, `MEMORY.md`), and teammate Rutuja's `trust-layer/` contribution (commit `6ef98cf`).
+- Verified that the 2-week Essential Build (Phases 1–5, Tasks 1.1–5.6) is 100% complete, tested, and verified on-chain.
+- Thoroughly audited `trust-layer/` implementation:
+  - 10 full modules covering schema validation, basic range limits, physical/temporal plausibility (Haversine GPS velocity, temperature/humidity rate-of-change, timestamp sequence consistency), 11-D time-series feature engineering, unsupervised Isolation Forest ML anomaly detection, SHA-256 fingerprinting with nonce/replay detection, deterministic verdict engine, off-chain quarantine & audit trail with operational dispositions (`READY_FOR_ORACLE`, `QUARANTINED`, `ON_HOLD`), synthetic telemetry simulation with 7 fault types, Oracle handoff contract (v1.0 schema), and publication-ready evaluation reporting (confusion matrix, precision/recall/F1 metrics).
+  - Identified key integration points with `backend/` and `contracts/`: replacing simple threshold checks in `backend/validation.py` with the full AI trust pipeline, feeding approved `OracleHandoffPayload` events into `AgriChainCore.sol:recordCondition`, and binding `CropPolicy` to real crop policies.
+  - Identified key enhancements needed for the AI Trust Layer to fulfill capstone and IEEE publication goals:
+    1. Persistent SQLite storage for telemetry history and audit logs (replacing transient in-memory dictionaries).
+    2. Dynamic binding between `CropPolicy` and database batch crop parameters.
+    3. Potential v2 temporal model (LSTM-Autoencoder) for gradual sensor drift.
+    4. Wiring `design/src/Farmer/Views/AITrustView.jsx` to live AI verification checkpoints and quarantine statistics.
+- Formulated the next phased roadmap (Phases 6–10) in `PLAN.md` and actionable tasks for Phase 6 in `TASKS.md`.
+- Formulated key architectural questions for the user regarding service topology (unified vs dual microservice) and immediate next development priorities.
+
+**Files changed:**
+- `MEMORY.md`: appended audit, findings, and Phase 6 planning entry.
+- `PLAN.md`: updated with post-essential roadmap (Phases 6–10).
+- `TASKS.md`: added Phase 6 tasks with runnable commands and "DONE WHEN" checks.
+- `ARCHITECTURE.md`: updated to document AI Trust Layer pipeline and Oracle handoff integration.
+- `README.md`: updated repository overview with current status and newly integrated modules.
+
+**Decisions made (and why):**
+- Structured `trust-layer` integration as Phase 6 because it fulfills core research Gap 5 from the guide's foundational survey, provides the necessary evaluation metrics for the IEEE publication, and cleanly bridges IoT ingestion to the smart contract.
+- Mapped the 4 verification checkpoints in `design/src/Farmer/Views/AITrustView.jsx` (Cold Chain Integrity, GPS Telemetry Validation, Tamper Prevention, Anomaly Check) directly to the corresponding stages of `trust-layer` (Range/Plausibility, Haversine Speed, Cryptographic Integrity, Isolation Forest ML).
+- **User Architecture Decision (Confirmed)**: Single Unified Service — import `trust-layer` directly into the FastAPI backend on port 8000, keeping local development simple with zero inter-service network overhead.
+- **User Priority Decision (Confirmed)**: Execute Phase 6 (AI Trust Layer Integration & Evaluation) first.
+- **User Enhancement Decision (Confirmed)**: Prioritize Dynamic Crop Policy Binding and Persistent SQLite Audit Storage for `trust-layer`.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Full repository audit completed; documentation consistency verified across `docs/` and root `.md` files (`MEMORY.md`, `PLAN.md`, `TASKS.md`, `ARCHITECTURE.md`, `README.md`).
+
+**Open questions / blockers for next session:**
+- None. Requirements, integration architecture, and phase priority are aligned and locked in.
+
+**What's next:**
+- Execute Task 6.1: Install & verify dependencies for AI Trust Layer (`scikit-learn`, `pytest`, `httpx`) and run all 132 tests in `trust-layer/tests`.
+
+
 
 
