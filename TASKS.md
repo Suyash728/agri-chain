@@ -436,10 +436,10 @@ Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and
 - **DONE WHEN:** calling `GET /darkstore/kpis` returns accurate counts from SQLite, and calling `POST /darkstore/receive` followed by `POST /darkstore/checkout` records valid blockchain state transitions. (Verified: tested `/darkstore/kpis`, `/darkstore/inbound`, `/darkstore/inventory`, `POST /darkstore/receive` [tx `905f9dbf...`], and `POST /darkstore/checkout` [tx `7cb5aa63...`]; full 4-stage lifecycle verified).
 
 ### Task 7.4 — Wire Dark Store UI (`DarkStoreApp.jsx` & Inbound / Inventory Views)
-- [ ] In `design/src/Dark_Store/Views/DarkStoreDashboardView.jsx` and `DarkStoreKPICards.jsx`, replace mock KPIs with live `fetch('http://localhost:8000/darkstore/kpis')`.
-- [ ] In `design/src/Dark_Store/Views/InboundGRNView.jsx`, wire inbound deliveries list to `GET /darkstore/inbound` and wire the "Receive Goods / Complete GRN" action to `POST /darkstore/receive`.
-- [ ] In `design/src/Dark_Store/Views/MicroInventoryView.jsx`, wire inventory stock table to `GET /darkstore/inventory`.
-- **DONE WHEN:** opening the Dark Store portal displays live incoming deliveries, receiving an inbound batch updates inventory in real time, and the UI builds cleanly without layout or style regressions.
+- [x] In `design/src/Dark_Store/Views/DarkStoreDashboardView.jsx` and `DarkStoreKPICards.jsx`, replace mock KPIs with live `fetch('http://localhost:8000/darkstore/kpis')`.
+- [x] In `design/src/Dark_Store/Views/InboundGRNView.jsx`, wire inbound deliveries list to `GET /darkstore/inbound` and wire the "Receive Goods / Complete GRN" action to `POST /darkstore/receive`.
+- [x] In `design/src/Dark_Store/Views/MicroInventoryView.jsx`, wire inventory stock table to `GET /darkstore/inventory`.
+- **DONE WHEN:** opening the Dark Store portal displays live incoming deliveries, receiving an inbound batch updates inventory in real time, and the UI builds cleanly without layout or style regressions. (Verified: `DarkStoreKPICards`, `DarkStoreDashboardView`, `InboundGRNView`, and `MicroInventoryView` wired to backend; tested receiving test batch `DEMO-DS-01` into `IN_STORAGE` and verified instant reflection in storage bins; `npm run build` compiled cleanly in 2.45s).
 
 ### Task 7.5 — Implement & Wire Quarantine Inspection UI
 - [ ] In `backend/main.py`, implement `GET /telemetry/quarantine` returning detailed quarantined records from SQLite `quarantine`, `audit_trail`, and `readings`:

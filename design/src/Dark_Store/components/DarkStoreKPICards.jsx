@@ -1,6 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-export const DarkStoreKPICards = ({ onCardClick }) => {
+export const DarkStoreKPICards = ({ onCardClick, kpis: externalKpis }) => {
+  const [internalKpis, setInternalKpis] = useState(null);
+
+  useEffect(() => {
+    if (externalKpis) return;
+    fetch('http://localhost:8000/darkstore/kpis')
+      .then((res) => res.json())
+      .then((data) => setInternalKpis(data))
+      .catch((err) => console.error('Error fetching DarkStore KPIs:', err));
+  }, [externalKpis]);
+
+  const kpis = externalKpis || internalKpis || {
+    inventoryValue: '₹ 18,75,600',
+    incomingToday: 12,
+    totalProducts: 186,
+    todaySales: '₹ 2,45,780',
+    expiryAlerts: 7,
+    revenueThisMonth: '₹ 11,28,450',
+  };
+
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5 w-full">
       
@@ -17,7 +36,7 @@ export const DarkStoreKPICards = ({ onCardClick }) => {
 
         <div className="flex items-center justify-between gap-1 my-auto">
           <span className="text-lg sm:text-xl font-black text-[#1A1A1A] group-hover:text-[#354424] transition-colors tracking-tight">
-            ₹ 18,75,600
+            {kpis.inventoryValue}
           </span>
 
           {/* Green Rupee Money Bag Icon */}
@@ -50,7 +69,7 @@ export const DarkStoreKPICards = ({ onCardClick }) => {
 
         <div className="flex items-center justify-between gap-1 my-auto">
           <span className="text-lg sm:text-xl font-black text-[#1A1A1A] group-hover:text-[#B85C38] transition-colors tracking-tight">
-            12
+            {kpis.incomingToday}
           </span>
 
           {/* Orange Delivery Truck Icon */}
@@ -86,7 +105,7 @@ export const DarkStoreKPICards = ({ onCardClick }) => {
 
         <div className="flex items-center justify-between gap-1 my-auto">
           <span className="text-lg sm:text-xl font-black text-[#1A1A1A] group-hover:text-[#2563EB] transition-colors tracking-tight">
-            186
+            {kpis.totalProducts}
           </span>
 
           {/* Blue 3D Shopping Bag Icon */}
@@ -118,7 +137,7 @@ export const DarkStoreKPICards = ({ onCardClick }) => {
 
         <div className="flex items-center justify-between gap-1 my-auto">
           <span className="text-lg sm:text-xl font-black text-[#1A1A1A] group-hover:text-[#9333EA] transition-colors tracking-tight">
-            ₹ 2,45,780
+            {kpis.todaySales}
           </span>
 
           {/* 3D Bar Chart Icon */}
@@ -153,7 +172,7 @@ export const DarkStoreKPICards = ({ onCardClick }) => {
 
         <div className="flex items-center justify-between gap-1 my-auto">
           <span className="text-lg sm:text-xl font-black text-[#1A1A1A] group-hover:text-[#D97706] transition-colors tracking-tight">
-            7
+            {kpis.expiryAlerts}
           </span>
 
           {/* Warning Triangle Icon */}
@@ -184,7 +203,7 @@ export const DarkStoreKPICards = ({ onCardClick }) => {
 
         <div className="flex items-center justify-between gap-1 my-auto">
           <span className="text-lg sm:text-xl font-black text-[#1A1A1A] group-hover:text-[#354424] transition-colors tracking-tight">
-            ₹ 11,28,450
+            {kpis.revenueThisMonth}
           </span>
 
           {/* Green Upward Growth Graph Icon */}

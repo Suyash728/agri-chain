@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DarkStoreHeader } from '../components/DarkStoreHeader';
 import { DarkStoreKPICards } from '../components/DarkStoreKPICards';
 import { 
@@ -14,9 +14,10 @@ import {
 export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications }) => {
   const [topProductsFilter, setTopProductsFilter] = useState('This Month');
   const [revenueFilter, setRevenueFilter] = useState('This Month');
+  const [kpis, setKpis] = useState(null);
 
   // Middle Card 2: Recent Incoming Deliveries Data
-  const recentDeliveries = [
+  const defaultDeliveries = [
     {
       id: 'DLY #DLY7894',
       supplier: 'Fresh Veg Traders',
@@ -55,6 +56,33 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications }) => 
     },
   ];
 
+  const [recentDeliveries, setRecentDeliveries] = useState(defaultDeliveries);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/darkstore/kpis')
+      .then((res) => res.json())
+      .then((data) => setKpis(data))
+      .catch((err) => console.error('Error fetching DarkStore KPIs:', err));
+
+    fetch('http://localhost:8000/darkstore/inbound')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.length > 0) {
+          const mapped = data.slice(0, 4).map((d) => ({
+            id: d.id,
+            supplier: d.supplier,
+            details: `${d.productCategory} • ${d.quantity} • ${d.location}`,
+            status: d.status,
+            badgeStyle: d.badgeClass || 'bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30',
+            dateTime: d.expectedDate || 'Today, 05:00 PM',
+            image: d.image,
+          }));
+          setRecentDeliveries(mapped);
+        }
+      })
+      .catch((err) => console.error('Error fetching inbound deliveries:', err));
+  }, []);
+
   // Middle Card 3: Top Selling Products Data
   const topSellingProducts = [
     { name: 'Mango (Alphonso)', sold: '520 kg', revenue: '₹ 1,25,000', image: '/images/mango_only.png' },
@@ -84,7 +112,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications }) => 
       <DarkStoreHeader onOpenNotifications={onOpenNotifications} />
 
       {/* 6 Top KPI Summary Cards (All Clickable) */}
-      <DarkStoreKPICards onCardClick={(tab) => onSelectTab(tab)} />
+      <DarkStoreKPICards onCardClick={(tab) => onSelectTab(tab)} kpis={kpis} />
 
       {/* ========================================== */}
       {/* MIDDLE DASHBOARD ROW (3 CARDS SIDE-BY-SIDE)*/}
@@ -127,7 +155,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications }) => 
                 {/* Inner Center Circle with Text */}
                 <div className="absolute w-[82px] h-[82px] rounded-full bg-white flex flex-col items-center justify-center text-center leading-tight shadow-2xs border border-[#E6E1D5]/40">
                   <span className="text-[10px] font-bold text-[#666057]">Total</span>
-                  <span className="text-xl font-black text-[#1A1A1A]">186</span>
+                  <span className="text-xl font-black text-[#1A1A1A]">{kpis ? kpis.totalProducts : 186}</span>
                   <span className="text-[10px] font-bold text-[#666057]">Products</span>
                 </div>
               </div>
@@ -440,7 +468,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications }) => 
               className="mb-2 cursor-pointer group"
             >
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-[#2D2620] group-hover:text-[#354424] transition-colors">₹ 11,28,450</span>
+                <span className="text-2xl font-extrabold text-[#2D2620] group-hover:text-[#354424] transition-colors">{kpis ? kpis.revenueThisMonth : "₹ 11,28,450"}</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-[#666057] font-semibold">Total Revenue</span>

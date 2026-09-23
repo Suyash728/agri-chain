@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Truck, 
   Search, 
@@ -40,7 +40,7 @@ export const InboundGRNView = ({ onOpenNotifications }) => {
   const [selectedDelivery, setSelectedDelivery] = useState(null);
 
   // 12 Complete Deliveries Dataset for full 2-page pagination & date filtering
-  const allDeliveries = [
+  const defaultDeliveries = [
     // Page 1 Items (1 to 6)
     {
       id: 'DLY #DLY7894',
@@ -274,12 +274,56 @@ export const InboundGRNView = ({ onOpenNotifications }) => {
     },
   ];
 
+  const [deliveries, setDeliveries] = useState(defaultDeliveries);
+  const [receiving, setReceiving] = useState(false);
+
+  const fetchInbound = () => {
+    fetch('http://localhost:8000/darkstore/inbound')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.length > 0) {
+          const liveIds = new Set(data.map((d) => d.id));
+          const filteredDefaults = defaultDeliveries.filter((d) => !liveIds.has(d.id));
+          setDeliveries([...data, ...filteredDefaults]);
+        }
+      })
+      .catch((err) => console.error('Error fetching inbound deliveries:', err));
+  };
+
+  useEffect(() => {
+    fetchInbound();
+  }, []);
+
+  const handleReceive = async (delivery) => {
+    setReceiving(true);
+    try {
+      const batchId = delivery.batchId || delivery.id.replace('DLY #', '');
+      const res = await fetch('http://localhost:8000/darkstore/receive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batch_id: batchId, price_paise: 140000 }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Batch ${batchId} received! Custody state transferred to IN_STORAGE on-chain (tx: ${data.tx_hash.slice(0, 10)}...).`);
+        setSelectedDelivery(null);
+        fetchInbound();
+      } else {
+        alert(`Failed to receive batch: ${data.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      alert(`Network error receiving batch: ${err.message}`);
+    } finally {
+      setReceiving(false);
+    }
+  };
+
   // Dynamic calculations for KPI Cards
-  const totalCount = allDeliveries.length;
-  const receivedCount = allDeliveries.filter(d => d.status === 'Received').length;
-  const inTransitCount = allDeliveries.filter(d => d.status === 'In Transit').length;
-  const processingCount = allDeliveries.filter(d => d.status === 'Processing').length;
-  const pendingCount = allDeliveries.filter(d => d.status === 'Pending').length;
+  const totalCount = deliveries.length;
+  const receivedCount = deliveries.filter(d => d.status === 'Received').length;
+  const inTransitCount = deliveries.filter(d => d.status === 'In Transit').length;
+  const processingCount = deliveries.filter(d => d.status === 'Processing').length;
+  const pendingCount = deliveries.filter(d => d.status === 'Pending').length;
 
   const kpiData = [
     {
@@ -325,7 +369,7 @@ export const InboundGRNView = ({ onOpenNotifications }) => {
   ];
 
   // Filtering Logic across all controls
-  const filteredDeliveries = allDeliveries.filter((item) => {
+  const filteredDeliveries = deliveries.filter((item) => {
     // 1. Search Query filter
     const matchesSearch = 
       item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -762,15 +806,28 @@ export const InboundGRNView = ({ onOpenNotifications }) => {
                       </span>
                     </td>
 
-                    {/* Actions Eye Button */}
+                    {/* Actions Eye Button & GRN Button */}
                     <td className="py-4 px-5 text-center">
-                      <button 
-                        onClick={() => setSelectedDelivery(row)}
-                        className="w-9 h-9 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] hover:bg-[#E6E1D5] text-[#666057] hover:text-[#2D2620] inline-flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
-                        title="View Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        {row.status === 'In Transit' && (
+                          <button
+                            onClick={() => handleReceive(row)}
+                            disabled={receiving}
+                            className="px-2.5 py-1.5 rounded-xl bg-[#556B2F] text-white hover:bg-[#435525] font-extrabold text-[11px] inline-flex items-center gap-1 transition-colors cursor-pointer shadow-2xs disabled:opacity-50"
+                            title="Receive Inbound Goods (GRN)"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>GRN</span>
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => setSelectedDelivery(row)}
+                          className="w-9 h-9 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] hover:bg-[#E6E1D5] text-[#666057] hover:text-[#2D2620] inline-flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -907,6 +964,15 @@ export const InboundGRNView = ({ onOpenNotifications }) => {
             </div>
 
             <div className="pt-2 flex gap-3">
+              {selectedDelivery.status === 'In Transit' && (
+                <button 
+                  onClick={() => handleReceive(selectedDelivery)}
+                  disabled={receiving}
+                  className="w-full py-3 rounded-2xl bg-[#556B2F] text-white font-extrabold text-xs sm:text-sm hover:bg-[#435525] transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                >
+                  {receiving ? 'Recording on Blockchain...' : '✓ Receive Goods (GRN)'}
+                </button>
+              )}
               <button 
                 onClick={() => setSelectedDelivery(null)}
                 className="w-full py-3 rounded-2xl bg-[#354424] text-white font-extrabold text-xs sm:text-sm hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, ThermometerSnowflake, QrCode, Search, CheckCircle2, ShoppingBag, Clock, Bike, ArrowRight } from 'lucide-react';
 import { FulfillmentOrdersView } from './FulfillmentOrdersView';
 
@@ -6,7 +6,7 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
   const [activeStepTab, setActiveStepTab] = useState(initialSubTab); // 1 = Micro-Inventory, 2 = Products
   const [selectedBay, setSelectedBay] = useState('All');
 
-  const bins = [
+  const defaultBins = [
     { binId: 'Bin A-01', bay: 'Bay A (Cold)', item: 'Fresh Farm Tomatoes', category: 'Vegetables', stock: '240 kg', capacity: '300 kg', temp: '3.1°C', humidity: '84%', quality: 'Grade A', expiry: '6 Days' },
     { binId: 'Bin A-04', bay: 'Bay A (Cold)', item: 'Organic Tomatoes', category: 'Vegetables', stock: '180 kg', capacity: '250 kg', temp: '2.8°C', humidity: '85%', quality: 'Grade A+', expiry: '8 Days' },
     { binId: 'Bin B-01', bay: 'Bay B (Ambient)', item: 'Nashik Red Onions', category: 'Grains & Roots', stock: '500 kg', capacity: '600 kg', temp: '18.5°C', humidity: '55%', quality: 'Grade A', expiry: '20 Days' },
@@ -14,6 +14,19 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
     { binId: 'Bin C-02', bay: 'Bay C (Cold)', item: 'Green Gram / Moong Dal', category: 'Pulses', stock: '310 kg', capacity: '400 kg', temp: '2.2°C', humidity: '78%', quality: 'Grade A+', expiry: '30 Days' },
     { binId: 'Bin C-08', bay: 'Bay C (Cold)', item: 'Turmeric Bales', category: 'Spices', stock: '150 kg', capacity: '200 kg', temp: '2.0°C', humidity: '80%', quality: 'Grade A', expiry: '45 Days' },
   ];
+
+  const [bins, setBins] = useState(defaultBins);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/darkstore/inventory')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.length > 0) {
+          setBins(data);
+        }
+      })
+      .catch((err) => console.error('Error fetching darkstore inventory:', err));
+  }, []);
 
   const filteredBins = bins.filter(bin => {
     if (selectedBay === 'All') return true;
