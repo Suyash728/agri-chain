@@ -356,9 +356,9 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
 This phase integrates teammate Rutuja's standalone `trust-layer` module into the core application, connects the Oracle handoff interface to the smart contract, adds persistence and dynamic crop policy binding, and generates the evaluation metrics for the IEEE research paper.
 
 ### Task 6.1 — Install & verify dependencies for AI Trust Layer
-- [ ] Set up the Python environment with required ML and testing dependencies: `scikit-learn>=1.5.0`, `pytest>=8.0.0`, `httpx>=0.27.0`.
-- [ ] Run the complete test suite in `trust-layer/tests/`.
-- **DONE WHEN:** running `pytest trust-layer/tests/ -v` passes all 132 tests (30 range + 13 plausibility + 11 features + 11 anomaly + 12 integrity + 14 verdict + 12 audit + 17 simulator + 12 oracle handoff) with 0 failures.
+- [x] Set up the Python environment with required ML and testing dependencies: `scikit-learn>=1.5.0`, `pytest>=8.0.0`, `httpx>=0.27.0`, `matplotlib>=3.8.0`.
+- [x] Run the complete test suite in `trust-layer/tests/`.
+- **DONE WHEN:** running `pytest trust-layer/tests/ -v` passes all 132 tests (30 range + 13 plausibility + 11 features + 11 anomaly + 12 integrity + 14 verdict + 12 audit + 17 simulator + 12 oracle handoff) with 0 failures. (Verified: 143 passed in 11.03s).
 
 ### Task 6.2 — Implement persistent SQLite storage for history & audit
 - [ ] Currently `trust-layer/app/services/history.py` and `audit.py` use in-memory Python dictionaries (`_store`). Update or wrap them to persist records into SQLite (`backend/agrichain.db`) across process restarts.

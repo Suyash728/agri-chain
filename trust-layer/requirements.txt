@@ -33,7 +33,8 @@ scikit-learn>=1.5.0
 # pytest: Test runner.
 pytest>=8.0.0
 
-# httpx: HTTP client used by FastAPI's TestClient to send test requests.
-# Required by starlette's TestClient (which FastAPI uses under the hood).
 httpx>=0.27.0
+
+# matplotlib: Generation of evaluation benchmark charts and confusion matrices.
+matplotlib>=3.8.0
 

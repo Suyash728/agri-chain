@@ -270,12 +270,19 @@ session doesn't have to rediscover it.
 
 **Verified (DONE WHEN checks that actually passed):**
 - Full repository audit completed; documentation consistency verified across `docs/` and root `.md` files (`MEMORY.md`, `PLAN.md`, `TASKS.md`, `ARCHITECTURE.md`, `README.md`).
+- **Task 6.1 Verified across all components**:
+  - `contracts/`: `npx hardhat test` passed all 13 tests (578ms).
+  - `design/`: `npm run build` compiled cleanly with 0 errors (2.50s).
+  - `trust-layer/`: Installed all dependencies (`scikit-learn`, `scipy`, `numpy`, `pytest`, `httpx`, `matplotlib`); `pytest tests -v` passed all 143 tests with 0 failures (11.03s).
+  - `backend/` + contracts + database: Started local Hardhat node (`0x5FbDB2315678afecb367f032d93F642f64180aa3`) and FastAPI backend (`http://127.0.0.1:8000`); executed `verify_phase5_e2e.py` with 100% pass across all 5 PRD §6 criteria.
+  - `simulator/`: Registered `SIM-BATCH-001` and streamed telemetry with `--inject-fault temp_spike`; confirmed 2 VALID readings recorded on-chain and 1 ANOMALOUS reading quarantined.
 
 **Open questions / blockers for next session:**
-- None. Requirements, integration architecture, and phase priority are aligned and locked in.
+- None. All components are installed, verified, and running.
 
 **What's next:**
-- Execute Task 6.1: Install & verify dependencies for AI Trust Layer (`scikit-learn`, `pytest`, `httpx`) and run all 132 tests in `trust-layer/tests`.
+- Task 6.2: Implement persistent SQLite storage for history and audit repositories in `trust-layer/app/services/` (replacing transient in-memory dictionaries).
+
 
 
 
