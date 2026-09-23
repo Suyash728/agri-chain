@@ -407,3 +407,56 @@ This phase integrates teammate Rutuja's standalone `trust-layer` module into the
 
 **→ End of Phase 6. Append a `MEMORY.md` entry.**
 
+---
+
+## Phase 7 — Role Dashboards Wiring & Quarantine / Trust UI (Week 3)
+
+Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and the Quarantine Inspection UI in `design/` to live backend API endpoints and on-chain state, enabling full cross-role multi-stakeholder lifecycle management.
+
+### Task 7.1 — Implement Logistics Partner Backend Endpoints
+- [ ] In `backend/main.py`, implement:
+  - `GET /logistics/kpis`: returns live KPIs (`totalShipments` in transit, `pendingOrders` ready for pickup, `onTimeDelivery` percentage, `totalLogisticsCost` formatted/paise).
+  - `GET /logistics/shipments`: returns active shipments derived from SQLite `batches`, `custody_events`, and latest `readings` (including latest temp, humidity, GPS coordinates, origin farm, current holder, destination).
+  - `GET /logistics/orders`: returns pending batches with status `REGISTERED` ready for procurement pickup.
+- **DONE WHEN:** querying `GET /logistics/kpis` and `GET /logistics/shipments` via `curl` returns real batches, valid GPS/temp telemetry, and dynamic counts matching database state.
+
+### Task 7.2 — Wire Logistics Partner UI (`LogisticDashboardView.jsx` & Fleet Views)
+- [ ] In `design/src/Logistic_Partner/components/LogisticKPICards.jsx` and `LogisticDashboardView.jsx`, replace mock data with `fetch('http://localhost:8000/logistics/kpis')` and `fetch('http://localhost:8000/logistics/shipments')`.
+- [ ] In `design/src/Logistic_Partner/Views/TransportationView.jsx` and `ShipmentTrackingView.jsx`, wire fleet cards and live telemetry corridor to display real batches, vehicle numbers, route checkpoints, and live reefer temperatures.
+- [ ] Wire a "Dispatch / Pick Up" action triggering `POST /batches/{batch_id}/custody` with state `IN_TRANSIT` and paying the transit price.
+- **DONE WHEN:** opening the Logistics Partner portal shows live shipment cards with real crop names and temperatures, and picking up a batch updates its state to `IN_TRANSIT` on-chain.
+
+### Task 7.3 — Implement Dark Store / Retailer Backend Endpoints
+- [ ] In `backend/main.py`, implement:
+  - `GET /darkstore/kpis`: returns active inventory count (`IN_STORAGE`), inbound deliveries (`IN_TRANSIT`), sales count (`SOLD`), and total revenue.
+  - `GET /darkstore/inbound`: returns shipments currently `IN_TRANSIT` destined for or arriving at the dark store hub.
+  - `GET /darkstore/inventory`: returns batches currently held in storage (`IN_STORAGE` / `AT_RETAIL`) with batch ID, crop name, quantity, shelf life, and condition summary.
+  - `POST /darkstore/receive`: receives inbound delivery, transferring custody state to `IN_STORAGE` on-chain.
+  - `POST /darkstore/checkout`: completes consumer purchase, transferring custody state to `SOLD` at retail price on-chain.
+- **DONE WHEN:** calling `GET /darkstore/kpis` returns accurate counts from SQLite, and calling `POST /darkstore/receive` followed by `POST /darkstore/checkout` records valid blockchain state transitions.
+
+### Task 7.4 — Wire Dark Store UI (`DarkStoreApp.jsx` & Inbound / Inventory Views)
+- [ ] In `design/src/Dark_Store/Views/DarkStoreDashboardView.jsx` and `DarkStoreKPICards.jsx`, replace mock KPIs with live `fetch('http://localhost:8000/darkstore/kpis')`.
+- [ ] In `design/src/Dark_Store/Views/InboundGRNView.jsx`, wire inbound deliveries list to `GET /darkstore/inbound` and wire the "Receive Goods / Complete GRN" action to `POST /darkstore/receive`.
+- [ ] In `design/src/Dark_Store/Views/MicroInventoryView.jsx`, wire inventory stock table to `GET /darkstore/inventory`.
+- **DONE WHEN:** opening the Dark Store portal displays live incoming deliveries, receiving an inbound batch updates inventory in real time, and the UI builds cleanly without layout or style regressions.
+
+### Task 7.5 — Implement & Wire Quarantine Inspection UI
+- [ ] In `backend/main.py`, implement `GET /telemetry/quarantine` returning detailed quarantined records from SQLite `quarantine`, `audit_trail`, and `readings`:
+  - `reading_id`, `batch_id`, `crop_name`, `temp_c`, `humidity_pct`, `latitude`, `longitude`, `reasons` (list of human-readable fault descriptions), `anomaly_score`, `quarantined_at`.
+- [ ] In `design/src/Farmer/Views/AITrustView.jsx` (and `Farmer/Modals/`), connect the "View Details" button to a Quarantine Audit Inspection sheet/modal listing real intercepted sensor violations with explainable reason codes.
+- **DONE WHEN:** clicking "View Details" in the AI Trust view opens a modal displaying live quarantined incidents (e.g. simulated temperature spikes, GPS jumps, replay attacks) with their exact detection timestamps and reason codes.
+
+### Task 7.6 — End-to-End Multi-Role Workflow Verification
+- [ ] Create `backend/scripts/verify_phase7_e2e.py` testing the complete 4-role lifecycle:
+  1. Farmer registers batch `P7-DEMO-001`.
+  2. Logistics Partner picks up batch (`IN_TRANSIT`), streams valid telemetry, and injects 1 deliberate fault.
+  3. AI Trust Layer quarantines the fault; verified via `GET /telemetry/quarantine`.
+  4. Dark Store receives batch via Inbound GRN (`IN_STORAGE`).
+  5. Consumer checks out batch (`SOLD`).
+  6. Verify all 4 role portals (Farmer, Logistics, Dark Store, Consumer) reflect consistent on-chain and off-chain state.
+- **DONE WHEN:** running `python backend/scripts/verify_phase7_e2e.py` passes all 6 validation steps with zero errors.
+
+**→ End of Phase 7. Append a `MEMORY.md` entry.**
+
+
