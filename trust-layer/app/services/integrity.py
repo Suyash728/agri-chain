@@ -67,47 +67,88 @@ def compute_event_hash(payload: TelemetryPayload) -> str:
     return hashlib.sha256(canonical_str.encode("utf-8")).hexdigest()
 
 
+from app.services.db import get_connection, init_trust_db
+
+
 class ReplayRepository:
     """
-    In-memory storage for tracking processed event hashes and timestamp sequences per device/batch.
+    SQLite-backed storage for tracking processed event hashes and timestamp sequences per device/batch.
     """
 
-    def __init__(self) -> None:
-        # Key: (device_id, batch_id) -> Value: Set of processed event_hashes
-        self._seen_hashes: Dict[Tuple[str, str], Set[str]] = {}
-        # Key: (device_id, batch_id) -> Value: Most recent processed timestamp
-        self._latest_timestamps: Dict[Tuple[str, str], datetime] = {}
+    def __init__(self, db_path: Optional[str] = None) -> None:
+        self.db_path = db_path
+        init_trust_db(self.db_path)
 
     def is_replay(self, device_id: str, batch_id: str, event_hash: str) -> bool:
         """Check whether the exact event hash has already been registered for (device_id, batch_id)."""
-        key = (device_id, batch_id)
-        return event_hash in self._seen_hashes.get(key, set())
+        with get_connection(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT 1 FROM replay_events WHERE device_id = ? AND batch_id = ? AND event_hash = ?",
+                (device_id, batch_id, event_hash),
+            ).fetchone()
+            return row is not None
 
     def is_out_of_sequence(self, device_id: str, batch_id: str, timestamp: datetime) -> bool:
         """Check if incoming timestamp is older than the latest accepted timestamp for (device_id, batch_id)."""
-        key = (device_id, batch_id)
-        latest = self._latest_timestamps.get(key)
-        if latest is None:
-            return False
-        return timestamp < latest
+        with get_connection(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT latest_timestamp FROM replay_latest_timestamps WHERE device_id = ? AND batch_id = ?",
+                (device_id, batch_id),
+            ).fetchone()
+            if not row:
+                return False
+
+            raw_latest = row["latest_timestamp"]
+            latest = datetime.fromisoformat(raw_latest)
+
+            ts_cmp = timestamp if timestamp.tzinfo is not None else timestamp.replace(tzinfo=timezone.utc)
+            lat_cmp = latest if latest.tzinfo is not None else latest.replace(tzinfo=timezone.utc)
+
+            return ts_cmp < lat_cmp
 
     def register_event(
         self, device_id: str, batch_id: str, event_hash: str, timestamp: datetime
     ) -> None:
         """Register a valid, novel event in history."""
-        key = (device_id, batch_id)
-        if key not in self._seen_hashes:
-            self._seen_hashes[key] = set()
-        self._seen_hashes[key].add(event_hash)
+        ts_utc = timestamp if timestamp.tzinfo is not None else timestamp.replace(tzinfo=timezone.utc)
+        ts_str = ts_utc.isoformat()
 
-        latest = self._latest_timestamps.get(key)
-        if latest is None or timestamp > latest:
-            self._latest_timestamps[key] = timestamp
+        with get_connection(self.db_path) as conn:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO replay_events (device_id, batch_id, event_hash, timestamp)
+                VALUES (?, ?, ?, ?)
+                """,
+                (device_id, batch_id, event_hash, ts_str),
+            )
+
+            row = conn.execute(
+                "SELECT latest_timestamp FROM replay_latest_timestamps WHERE device_id = ? AND batch_id = ?",
+                (device_id, batch_id),
+            ).fetchone()
+
+            if not row:
+                conn.execute(
+                    "INSERT INTO replay_latest_timestamps (device_id, batch_id, latest_timestamp) VALUES (?, ?, ?)",
+                    (device_id, batch_id, ts_str),
+                )
+            else:
+                curr_latest = datetime.fromisoformat(row["latest_timestamp"])
+                lat_cmp = curr_latest if curr_latest.tzinfo is not None else curr_latest.replace(tzinfo=timezone.utc)
+                if ts_utc > lat_cmp:
+                    conn.execute(
+                        "UPDATE replay_latest_timestamps SET latest_timestamp = ? WHERE device_id = ? AND batch_id = ?",
+                        (ts_str, device_id, batch_id),
+                    )
+            conn.commit()
 
     def clear(self) -> None:
         """Clear replay history (for test isolation)."""
-        self._seen_hashes.clear()
-        self._latest_timestamps.clear()
+        with get_connection(self.db_path) as conn:
+            conn.execute("DELETE FROM replay_events")
+            conn.execute("DELETE FROM replay_latest_timestamps")
+            conn.commit()
+
 
 
 class DeviceAuthenticator(Protocol):

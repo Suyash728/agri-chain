@@ -21,6 +21,8 @@ DESIGN DECISIONS
 - Modular Repository: In-memory store for development; easily replaceable with persistent DB later.
 """
 
+import json
+import sqlite3
 from datetime import datetime, timezone
 from typing import List, Optional
 import uuid
@@ -30,6 +32,7 @@ from app.schemas.audit import AuditRecord
 from app.schemas.integrity import IntegrityResult
 from app.schemas.telemetry import TelemetryPayload
 from app.schemas.verdict import VerdictResult
+from app.services.db import get_connection, init_trust_db
 
 VERDICT_TO_DISPOSITION = {
     "VALID": "READY_FOR_ORACLE",
@@ -40,11 +43,12 @@ VERDICT_TO_DISPOSITION = {
 
 class AuditService:
     """
-    Append-only repository and service for telemetry audit records and quarantine management.
+    SQLite-backed append-only repository and service for telemetry audit records and quarantine management.
     """
 
-    def __init__(self) -> None:
-        self._records: List[AuditRecord] = []
+    def __init__(self, db_path: Optional[str] = None) -> None:
+        self.db_path = db_path
+        init_trust_db(self.db_path)
 
     def record_audit(
         self,
@@ -55,22 +59,6 @@ class AuditService:
     ) -> AuditRecord:
         """
         Create and append an immutable audit record for a processed telemetry event.
-
-        Parameters
-        ----------
-        payload : TelemetryPayload
-            The incoming telemetry payload.
-        verdict : VerdictResult
-            The Phase 7 Trust Verdict.
-        integrity : IntegrityResult
-            The Phase 6 cryptographic integrity result.
-        anomaly : Optional[AnomalyResult]
-            The Phase 5 ML anomaly detection result.
-
-        Returns
-        -------
-        AuditRecord
-            The stored audit record.
         """
         disposition = VERDICT_TO_DISPOSITION.get(verdict.verdict, "ON_HOLD")
         anomaly_score = anomaly.anomaly_score if anomaly else None
@@ -82,11 +70,17 @@ class AuditService:
         else:
             details = "Telemetry placed on hold pending complete ML baseline evidence."
 
+        ts = payload.timestamp
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+
+        processed_at = datetime.now(timezone.utc)
+
         record = AuditRecord(
             audit_id=str(uuid.uuid4()),
             batch_id=payload.batch_id,
             device_id=payload.device_id,
-            timestamp=payload.timestamp,
+            timestamp=ts,
             latitude=payload.latitude,
             longitude=payload.longitude,
             temperature=payload.temperature,
@@ -96,16 +90,81 @@ class AuditService:
             disposition=disposition,
             reason_codes=verdict.reason_codes,
             anomaly_score=anomaly_score,
-            processed_at=datetime.now(timezone.utc),
+            processed_at=processed_at,
             details=details,
         )
 
-        self._records.append(record)
+        with get_connection(self.db_path) as conn:
+            conn.execute(
+                """
+                INSERT INTO audit_trail (
+                    audit_id, batch_id, device_id, timestamp, latitude, longitude,
+                    temperature, humidity, event_hash, verdict, disposition,
+                    reason_codes, anomaly_score, processed_at, details
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    record.audit_id,
+                    record.batch_id,
+                    record.device_id,
+                    record.timestamp.isoformat(),
+                    float(record.latitude) if record.latitude is not None else None,
+                    float(record.longitude) if record.longitude is not None else None,
+                    float(record.temperature) if record.temperature is not None else None,
+                    float(record.humidity) if record.humidity is not None else None,
+                    record.event_hash,
+                    record.verdict,
+                    record.disposition,
+                    json.dumps(record.reason_codes),
+                    record.anomaly_score,
+                    record.processed_at.isoformat(),
+                    record.details,
+                ),
+            )
+            conn.commit()
+
         return record
+
+    def _row_to_record(self, row: sqlite3.Row) -> AuditRecord:
+        raw_ts = row["timestamp"]
+        ts = datetime.fromisoformat(raw_ts)
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+
+        raw_proc = row["processed_at"]
+        proc_ts = datetime.fromisoformat(raw_proc)
+        if proc_ts.tzinfo is None:
+            proc_ts = proc_ts.replace(tzinfo=timezone.utc)
+
+        raw_reasons = row["reason_codes"]
+        reasons = json.loads(raw_reasons) if raw_reasons else []
+
+        return AuditRecord(
+            audit_id=row["audit_id"],
+            batch_id=row["batch_id"],
+            device_id=row["device_id"],
+            timestamp=ts,
+            latitude=float(row["latitude"]) if row["latitude"] is not None else None,
+            longitude=float(row["longitude"]) if row["longitude"] is not None else None,
+            temperature=float(row["temperature"]) if row["temperature"] is not None else None,
+            humidity=float(row["humidity"]) if row["humidity"] is not None else None,
+            event_hash=row["event_hash"],
+            verdict=row["verdict"],
+            disposition=row["disposition"],
+            reason_codes=reasons,
+            anomaly_score=float(row["anomaly_score"]) if row["anomaly_score"] is not None else None,
+            processed_at=proc_ts,
+            details=row["details"],
+        )
 
     def get_by_event_hash(self, event_hash: str) -> List[AuditRecord]:
         """Retrieve all audit records associated with a specific SHA-256 event hash."""
-        return [r for r in self._records if r.event_hash == event_hash]
+        with get_connection(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT * FROM audit_trail WHERE event_hash = ? ORDER BY processed_at ASC",
+                (event_hash,),
+            ).fetchall()
+            return [self._row_to_record(r) for r in rows]
 
     def get_quarantined_records(
         self,
@@ -115,16 +174,28 @@ class AuditService:
         """
         Retrieve all quarantined telemetry records, with optional device and batch filtering.
         """
-        results = [r for r in self._records if r.disposition == "QUARANTINED"]
+        query = "SELECT * FROM audit_trail WHERE disposition = 'QUARANTINED'"
+        params = []
         if device_id:
-            results = [r for r in results if r.device_id == device_id]
+            query += " AND device_id = ?"
+            params.append(device_id)
         if batch_id:
-            results = [r for r in results if r.batch_id == batch_id]
-        return results
+            query += " AND batch_id = ?"
+            params.append(batch_id)
+        query += " ORDER BY processed_at DESC"
+
+        with get_connection(self.db_path) as conn:
+            rows = conn.execute(query, params).fetchall()
+            return [self._row_to_record(r) for r in rows]
 
     def get_records_by_disposition(self, disposition: str) -> List[AuditRecord]:
         """Retrieve all audit records with a specific disposition."""
-        return [r for r in self._records if r.disposition == disposition]
+        with get_connection(self.db_path) as conn:
+            rows = conn.execute(
+                "SELECT * FROM audit_trail WHERE disposition = ? ORDER BY processed_at DESC",
+                (disposition,),
+            ).fetchall()
+            return [self._row_to_record(r) for r in rows]
 
     def get_by_device_and_batch(
         self,
@@ -132,19 +203,30 @@ class AuditService:
         batch_id: Optional[str] = None,
     ) -> List[AuditRecord]:
         """Retrieve all audit records for a device (and optional batch)."""
-        results = [r for r in self._records if r.device_id == device_id]
+        query = "SELECT * FROM audit_trail WHERE device_id = ?"
+        params = [device_id]
         if batch_id:
-            results = [r for r in results if r.batch_id == batch_id]
-        return results
+            query += " AND batch_id = ?"
+            params.append(batch_id)
+        query += " ORDER BY processed_at DESC"
+
+        with get_connection(self.db_path) as conn:
+            rows = conn.execute(query, params).fetchall()
+            return [self._row_to_record(r) for r in rows]
 
     def get_all_records(self) -> List[AuditRecord]:
         """Retrieve all stored audit records."""
-        return list(self._records)
+        with get_connection(self.db_path) as conn:
+            rows = conn.execute("SELECT * FROM audit_trail ORDER BY processed_at ASC").fetchall()
+            return [self._row_to_record(r) for r in rows]
 
     def clear(self) -> None:
         """Clear all stored audit records (for test isolation)."""
-        self._records.clear()
+        with get_connection(self.db_path) as conn:
+            conn.execute("DELETE FROM audit_trail")
+            conn.commit()
 
 
 # Shared singleton service instance
 audit_service = AuditService()
+

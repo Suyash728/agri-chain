@@ -48,6 +48,52 @@ CREATE TABLE IF NOT EXISTS policy (
     min_humidity  REAL NOT NULL,
     max_humidity  REAL NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS telemetry_history (
+    device_id TEXT NOT NULL,
+    batch_id TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    temperature REAL NOT NULL,
+    humidity REAL NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (device_id, batch_id)
+);
+
+CREATE TABLE IF NOT EXISTS audit_trail (
+    audit_id TEXT PRIMARY KEY,
+    batch_id TEXT NOT NULL,
+    device_id TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
+    temperature REAL NOT NULL,
+    humidity REAL NOT NULL,
+    event_hash TEXT NOT NULL,
+    verdict TEXT NOT NULL,
+    disposition TEXT NOT NULL,
+    reason_codes TEXT NOT NULL,
+    anomaly_score REAL,
+    processed_at TEXT NOT NULL,
+    details TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS replay_events (
+    device_id TEXT NOT NULL,
+    batch_id TEXT NOT NULL,
+    event_hash TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (device_id, batch_id, event_hash)
+);
+
+CREATE TABLE IF NOT EXISTS replay_latest_timestamps (
+    device_id TEXT NOT NULL,
+    batch_id TEXT NOT NULL,
+    latest_timestamp TEXT NOT NULL,
+    PRIMARY KEY (device_id, batch_id)
+);
 """
 
 DEFAULT_POLICIES = [

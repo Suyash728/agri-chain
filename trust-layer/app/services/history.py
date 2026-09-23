@@ -17,69 +17,106 @@ DESIGN DECISIONS
    or different batches are never cross-compared.
 3. In-Memory Storage: Simple, fast, and light for Phase 3 without introducing
    heavy database dependencies. Can easily be swapped with a persistent store
-   (e.g., Redis, PostgreSQL, TimescaleDB) in future phases.
+    Persistent SQLite storage in backend/agrichain.db (Phase 6).
 """
 
-from typing import Dict, Optional, Tuple
+from datetime import datetime, timezone
+from typing import Optional
 from app.schemas.telemetry import TelemetryPayload
+from app.services.db import get_connection, init_trust_db
 
 
 class TelemetryHistoryRepository:
     """
-    In-memory storage for recent telemetry readings per device/batch.
+    SQLite-backed storage for recent telemetry readings per device/batch.
     """
 
-    def __init__(self) -> None:
-        # Key: (device_id, batch_id) -> Value: TelemetryPayload (latest reading)
-        self._store: Dict[Tuple[str, str], TelemetryPayload] = {}
+    def __init__(self, db_path: Optional[str] = None) -> None:
+        self.db_path = db_path
+        init_trust_db(self.db_path)
 
     def get_last_reading(
         self, device_id: str, batch_id: Optional[str] = None
     ) -> Optional[TelemetryPayload]:
         """
         Retrieve the most recent telemetry payload for a device (and batch).
-
-        Parameters
-        ----------
-        device_id : str
-            The device identifier.
-        batch_id : Optional[str]
-            The batch identifier. If provided, ensures batch isolation.
-
-        Returns
-        -------
-        Optional[TelemetryPayload]
-            The previous reading if found, else None.
         """
         if not device_id:
             return None
 
-        if batch_id is not None:
-            return self._store.get((device_id, batch_id))
+        with get_connection(self.db_path) as conn:
+            if batch_id is not None:
+                row = conn.execute(
+                    "SELECT * FROM telemetry_history WHERE device_id = ? AND batch_id = ?",
+                    (device_id, batch_id),
+                ).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT * FROM telemetry_history WHERE device_id = ? ORDER BY recorded_at DESC LIMIT 1",
+                    (device_id,),
+                ).fetchone()
 
-        # Fallback: search for any key matching device_id if batch_id is omitted
-        for (d_id, _), payload in self._store.items():
-            if d_id == device_id:
-                return payload
-        return None
+            if not row:
+                return None
+
+            raw_ts = row["timestamp"]
+            ts = datetime.fromisoformat(raw_ts)
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+
+            return TelemetryPayload(
+                device_id=row["device_id"],
+                batch_id=row["batch_id"],
+                timestamp=ts,
+                temperature=float(row["temperature"]),
+                humidity=float(row["humidity"]),
+                latitude=float(row["latitude"]),
+                longitude=float(row["longitude"]),
+            )
 
     def add_reading(self, payload: TelemetryPayload) -> None:
         """
-        Store a new telemetry reading in history for (device_id, batch_id).
-
-        Parameters
-        ----------
-        payload : TelemetryPayload
-            The validated telemetry payload to record.
+        Store or update a telemetry reading in history for (device_id, batch_id).
         """
         if payload and payload.device_id and payload.batch_id:
-            key = (payload.device_id, payload.batch_id)
-            self._store[key] = payload
+            ts = payload.timestamp
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            ts_str = ts.isoformat()
+
+            with get_connection(self.db_path) as conn:
+                conn.execute(
+                    """
+                    INSERT INTO telemetry_history (
+                        device_id, batch_id, timestamp, temperature, humidity, latitude, longitude, recorded_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                    ON CONFLICT(device_id, batch_id) DO UPDATE SET
+                        timestamp = excluded.timestamp,
+                        temperature = excluded.temperature,
+                        humidity = excluded.humidity,
+                        latitude = excluded.latitude,
+                        longitude = excluded.longitude,
+                        recorded_at = datetime('now')
+                    """,
+                    (
+                        payload.device_id,
+                        payload.batch_id,
+                        ts_str,
+                        float(payload.temperature),
+                        float(payload.humidity),
+                        float(payload.latitude),
+                        float(payload.longitude),
+                    ),
+                )
+                conn.commit()
 
     def clear(self) -> None:
         """Clear all stored telemetry history (useful for testing)."""
-        self._store.clear()
+        with get_connection(self.db_path) as conn:
+            conn.execute("DELETE FROM telemetry_history")
+            conn.commit()
 
 
 # Shared singleton repository instance for the application runtime.
 history_repository = TelemetryHistoryRepository()
+

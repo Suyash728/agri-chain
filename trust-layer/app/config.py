@@ -95,4 +95,13 @@ IFOREST_N_ESTIMATORS: int = 100
 IFOREST_CONTAMINATION: float = 0.05
 IFOREST_RANDOM_STATE: int = 42
 
+# ---------------------------------------------------------------------------
+# Phase 6 & 8 — Persistent SQLite Storage Path
+# ---------------------------------------------------------------------------
+import os
+import pathlib
+
+_REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
+SQLITE_DB_PATH: str = os.getenv("SQLITE_DB_PATH", str(_REPO_ROOT / "backend" / "agrichain.db"))
+
 
