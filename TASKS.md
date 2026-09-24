@@ -592,3 +592,71 @@ Goal: Enable client-side MetaMask wallet connection per supply chain role, build
 
 
 
+
+---
+
+## Phase 11 — Frontend interaction depth (modals, dialogs, real actions)
+
+Page-level views already fetch real data (Phases 5, 7). This phase wires
+the *interactive* layer — modals and dialogs that currently show static or
+mock content — to real endpoints, and builds the two roles that have no
+interactive components at all. Per `RULES.md` §2: wire existing markup,
+don't redesign it; only add a genuinely new element where a role has none.
+
+### Task 11.1 — Consumer: `QRScannerModal` real lookup
+- [x] Wire the scan action to `GET /batches/{batch_id}/traceability`
+  (already exists, built in Phase 3/5). On scan, navigate to the real
+  journey view for that batch instead of a mock one.
+- **DONE WHEN:** scanning a real demo batch's QR in the running app opens
+  its real journey, not placeholder data.
+
+### Task 11.2 — Consumer: `WriteReviewModal`
+- [x] Needs a backend route first if one doesn't exist —
+  `POST /batches/{batch_id}/reviews` (check `backend/main.py` before
+  assuming it's missing). Wire the modal's submit to it.
+- **DONE WHEN:** submitting a review from the modal creates a real row
+  (check via `sqlite3`/Postgres per whichever storage phase 9 landed) and
+  the modal shows a real success state.
+
+### Task 11.3 — Consumer: remaining 4 modals (`AddressModal`,
+  `CouponModal`, `NotificationsModal`, `OrderSuccessModal`)
+- [x] Lower priority than 11.1/11.2 — not core to the traceability/AI-trust
+  thesis. Wire only if time remains after 11.1–11.6. Note in `MEMORY.md`
+  if skipped rather than silently leaving unchecked.
+
+### Task 11.4 — Farmer: `ViewJourneyModal` and `NotificationsModal`
+- [x] Same pattern as 11.1 — `ViewJourneyModal` should fetch the same
+  traceability endpoint as the Consumer journey view; `NotificationsModal`
+  needs a real source (check whether alerts/breach flags from the AI trust
+  layer — `GET /farmer/ai-trust` or the quarantine table — should feed it
+  before inventing a new endpoint).
+- **DONE WHEN:** both modals show real, current data for the logged-in
+  farmer's batches.
+
+### Task 11.5 — Logistic_Partner: build custody-action modals (none exist)
+- [x] This role has zero modals. Before adding any, check whether custody
+  accept/handoff (`POST /batches/{id}/custody`, built Phase 3) is
+  triggered from anywhere in the Logistic_Partner UI today — likely not,
+  since there's nowhere for it to live. Add one modal for "Accept
+  shipment" and one for "Hand off to Retailer," each calling that
+  existing endpoint with a price field (per `PRD.md` E2/E8 — price must be
+  captured here, this is the project's core differentiator).
+- **DONE WHEN:** a custody transfer can be completed from the
+  Logistic_Partner UI end-to-end, price included, and it's visible in the
+  Consumer journey view afterward.
+
+### Task 11.6 — Dark_Store: build GRN/inventory-action modals (none exist)
+- [x] Same shape as 11.5 for this role: a "Confirm receipt / GRN" modal
+  and a "Record sale to consumer" modal (final custody state, final
+  price), both calling the existing custody endpoint.
+- **DONE WHEN:** a batch can be moved through
+  `AT_RETAIL → SOLD` from the Dark_Store UI, with price, and the full
+  farm-to-fork price trail (Farmer → Logistics → Retailer → Consumer) is
+  now completable entirely from the UI, not scripted calls — this closes
+  `PRD.md` O1.
+
+**Priority order if credits/time are tight:** 11.1, 11.5, 11.6 first (these
+close the actual traceability + price-transparency loop end-to-end through
+real UI). 11.2 next. 11.3–11.4 only if time remains.
+
+**→ Append a `MEMORY.md` entry after this phase, same format as before.**

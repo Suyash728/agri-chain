@@ -16,13 +16,22 @@ import {
   Users, 
   X, 
   Search, 
-  Filter 
+  Filter,
+  Store,
+  Plus
 } from 'lucide-react';
+import { AcceptShipmentModal } from '../Modals/AcceptShipmentModal';
+import { HandoffRetailerModal } from '../Modals/HandoffRetailerModal';
 
 export const ProcurementOrdersView = ({ onNavigate }) => {
   const { account, signer } = useWallet();
   const [filter, setFilter] = useState('All');
   const [dispatchingBatchId, setDispatchingBatchId] = useState(null);
+
+  // Custody Modals States
+  const [isAcceptShipmentOpen, setIsAcceptShipmentOpen] = useState(false);
+  const [isHandoffOpen, setIsHandoffOpen] = useState(false);
+  const [activeCustodyBatchId, setActiveCustodyBatchId] = useState('BATCH-PO-2026-001');
 
   // Modal / View States
   const [activeModal, setActiveModal] = useState(null); // 'all-orders' | 'all-transactions' | 'all-activity' | null
@@ -147,9 +156,35 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
         {/* Left Side: Procurement & Orders Hub */}
         <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col justify-between space-y-4">
           <div className="space-y-4">
-            <div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-[#2D2620]">Procurement & Orders Hub 📦</h2>
-              <p className="text-xs text-[#666057]">Track purchase orders, supplier confirmations & dispatch schedules</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h2 className="text-lg sm:text-xl font-extrabold text-[#2D2620]">Procurement & Orders Hub 📦</h2>
+                <p className="text-xs text-[#666057]">Track purchase orders, supplier confirmations & dispatch schedules</p>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCustodyBatchId('BATCH-PO-2026-001');
+                    setIsAcceptShipmentOpen(true);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-[#354424] text-white text-[11px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Accept Shipment</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCustodyBatchId('BATCH-PO-2026-001');
+                    setIsHandoffOpen(true);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] text-[11px] font-bold hover:bg-[#E6E1D5] transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                >
+                  <Store className="w-3.5 h-3.5 text-[#556B2F]" />
+                  <span>Hand Off to Retailer</span>
+                </button>
+              </div>
             </div>
 
             {/* Filter Tabs */}
@@ -187,13 +222,25 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                       <td className="py-3 px-3 text-[#666057]">{ord.product}</td>
                       <td className="py-3 px-3 text-center text-[#2D2620] font-bold">{ord.qty}</td>
                       <td className="py-3 px-3 text-right">
-                        {ord.isLiveBatch && ord.status === 'Ready for Pickup' ? (
+                        {ord.status === 'Ready for Pickup' || ord.status === 'Confirmed' ? (
                           <button
-                            onClick={() => handleDispatch(ord.id)}
-                            disabled={dispatchingBatchId === ord.id}
-                            className="px-2.5 py-1 rounded-lg bg-[#354424] text-white text-[10px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-50"
+                            onClick={() => {
+                              setActiveCustodyBatchId(ord.id);
+                              setIsAcceptShipmentOpen(true);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-[#354424] text-white text-[10px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs whitespace-nowrap"
                           >
-                            {dispatchingBatchId === ord.id ? 'Signing...' : 'Dispatch 🚚'}
+                            Accept 🚚
+                          </button>
+                        ) : ord.status === 'In Transit' ? (
+                          <button
+                            onClick={() => {
+                              setActiveCustodyBatchId(ord.id);
+                              setIsHandoffOpen(true);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] text-[10px] font-bold hover:bg-[#E6E1D5] transition-colors cursor-pointer shadow-xs whitespace-nowrap"
+                          >
+                            Handoff 🏬
                           </button>
                         ) : (
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ord.badge}`}>
@@ -628,6 +675,21 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
           </div>
         </div>
       )}
+
+      {/* Custody Modals */}
+      <AcceptShipmentModal
+        isOpen={isAcceptShipmentOpen}
+        onClose={() => setIsAcceptShipmentOpen(false)}
+        defaultBatchId={activeCustodyBatchId}
+        onSuccess={() => fetchOrders()}
+      />
+
+      <HandoffRetailerModal
+        isOpen={isHandoffOpen}
+        onClose={() => setIsHandoffOpen(false)}
+        defaultBatchId={activeCustodyBatchId}
+        onSuccess={() => fetchOrders()}
+      />
 
     </div>
   );

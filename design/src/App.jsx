@@ -125,6 +125,17 @@ export default function App() {
 
   const handleAddStock = (newStock) => {
     setInventoryList((prev) => [newStock, ...prev]);
+    const bId = newStock.batchId || newStock.batch_id || 'NEW-BATCH';
+    const newAct = {
+      id: `act-${Date.now()}`,
+      type: "order",
+      title: `Batch Registered #${bId}`,
+      status: "Confirmed",
+      statusType: "confirmed",
+      date: "Just now",
+      amount: `${newStock.name || 'Crop'} Added`,
+    };
+    setFarmerActivities((prev) => [newAct, ...prev]);
     fetchFarmerData();
     if (selectedCropCategory) {
       setSelectedCropCategory((prev) => {

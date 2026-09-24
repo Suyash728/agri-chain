@@ -11,7 +11,7 @@ import {
   BookOpen 
 } from 'lucide-react';
 
-export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications }) => {
+export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpenGRN, onOpenRecordSale }) => {
   const [topProductsFilter, setTopProductsFilter] = useState('This Month');
   const [revenueFilter, setRevenueFilter] = useState('This Month');
   const [kpis, setKpis] = useState(null);
@@ -113,6 +113,30 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications }) => 
 
       {/* 6 Top KPI Summary Cards (All Clickable) */}
       <DarkStoreKPICards onCardClick={(tab) => onSelectTab(tab)} kpis={kpis} />
+
+      {/* On-Chain Custody Action Bar (Phase 11) */}
+      <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div>
+          <span className="text-xs font-extrabold text-[#2D2620] block">On-Chain Custody Actions</span>
+          <span className="text-[11px] text-[#666057]">Transition incoming batches to AT_RETAIL (GRN) or complete sale to consumer (SOLD)</span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => onOpenGRN && onOpenGRN('BATCH-PO-2026-001')}
+            className="px-3.5 py-1.5 rounded-xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+          >
+            <span>📋 Confirm Inbound GRN</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenRecordSale && onOpenRecordSale('BATCH-PO-2026-001')}
+            className="px-3.5 py-1.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] text-xs font-bold hover:bg-[#FAF7F0] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+          >
+            <span>🛒 Record Sale to Consumer</span>
+          </button>
+        </div>
+      </div>
 
       {/* ========================================== */}
       {/* MIDDLE DASHBOARD ROW (3 CARDS SIDE-BY-SIDE)*/}

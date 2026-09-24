@@ -20,7 +20,7 @@ export const RecentActivity = ({ activities, onViewAll }) => {
 
         {/* Vertical Activity Timeline List */}
         <div className="flex flex-col gap-3 relative before:absolute before:left-4 before:top-4 before:bottom-4 before:w-0.5 before:bg-[#E6E1D5]">
-          {activities.map((item) => {
+          {(activities || []).slice(0, 5).map((item) => {
             let Icon = ShoppingBag;
             let iconBg = "bg-[#FAF7F0] text-[#556B2F]";
             let badgeClass = "badge-confirmed";

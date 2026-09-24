@@ -21,7 +21,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 
-export const InboundGRNView = ({ onOpenNotifications }) => {
+export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
   // State for controls
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
@@ -437,7 +437,16 @@ export const InboundGRNView = ({ onOpenNotifications }) => {
         </div>
 
         {/* Top Right Controls */}
-        <div className="flex items-center gap-3 self-end md:self-auto">
+        <div className="flex items-center gap-3 self-end md:self-auto flex-wrap">
+          {/* Confirm Inbound GRN Action Button */}
+          <button 
+            type="button"
+            onClick={() => onOpenGRN && onOpenGRN('BATCH-PO-2026-001')}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
+          >
+            <span>📋 Confirm Inbound GRN</span>
+          </button>
+
           {/* Notification Bell with Badge */}
           <button 
             onClick={onOpenNotifications}

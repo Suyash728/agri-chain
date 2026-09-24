@@ -16,6 +16,10 @@ import { DarkStoreTraceabilityView } from './Views/DarkStoreTraceabilityView';
 import { DarkStoreBlockchainView } from './Views/DarkStoreBlockchainView';
 import { DarkStoreRevenueView } from './Views/DarkStoreRevenueView';
 
+// Custody Action Modals
+import { ConfirmGRNModal } from './Modals/ConfirmGRNModal';
+import { RecordSaleModal } from './Modals/RecordSaleModal';
+
 // Shared Modals
 import { NotificationsModal } from '../Farmer/Modals/NotificationsModal';
 import { MoreMenuSheet } from '../Farmer/Modals/MoreMenuSheet';
@@ -24,6 +28,21 @@ export const DarkStoreApp = () => {
   const [darkStoreTab, setDarkStoreTab] = useState('dashboard');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
+
+  // Custody Action Modals State
+  const [isGRNOpen, setIsGRNOpen] = useState(false);
+  const [isRecordSaleOpen, setIsRecordSaleOpen] = useState(false);
+  const [activeBatchId, setActiveBatchId] = useState('BATCH-PO-2026-001');
+
+  const handleOpenGRN = (bId) => {
+    setActiveBatchId(bId || 'BATCH-PO-2026-001');
+    setIsGRNOpen(true);
+  };
+
+  const handleOpenRecordSale = (bId) => {
+    setActiveBatchId(bId || 'BATCH-PO-2026-001');
+    setIsRecordSaleOpen(true);
+  };
 
   const handleSelectTab = (tabId) => {
     setDarkStoreTab(tabId);
@@ -46,7 +65,9 @@ export const DarkStoreApp = () => {
         {darkStoreTab === 'dashboard' && (
           <DarkStoreDashboardView 
             onSelectTab={handleSelectTab} 
-            onOpenNotifications={() => setIsNotificationsOpen(true)} 
+            onOpenNotifications={() => setIsNotificationsOpen(true)}
+            onOpenGRN={handleOpenGRN}
+            onOpenRecordSale={handleOpenRecordSale}
           />
         )}
         
@@ -54,6 +75,7 @@ export const DarkStoreApp = () => {
           <InboundGRNView 
             onBack={() => handleSelectTab('dashboard')} 
             onOpenNotifications={() => setIsNotificationsOpen(true)}
+            onOpenGRN={handleOpenGRN}
           />
         )}
 
@@ -110,6 +132,19 @@ export const DarkStoreApp = () => {
       <MoreMenuSheet 
         isOpen={isMoreOpen} 
         onClose={() => setIsMoreOpen(false)} 
+      />
+
+      {/* Custody Action Modals */}
+      <ConfirmGRNModal
+        isOpen={isGRNOpen}
+        onClose={() => setIsGRNOpen(false)}
+        defaultBatchId={activeBatchId}
+      />
+
+      <RecordSaleModal
+        isOpen={isRecordSaleOpen}
+        onClose={() => setIsRecordSaleOpen(false)}
+        defaultBatchId={activeBatchId}
       />
     </>
   );
