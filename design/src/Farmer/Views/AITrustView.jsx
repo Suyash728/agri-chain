@@ -57,13 +57,13 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
       setTemperature(4.5);
       setHumidity(88.0);
       setCropName('tomato');
-    } else if (type === 'thermal_breach') {
-      setTemperature(48.0);
-      setHumidity(32.0);
+    } else if (type === 'genuine_breach') {
+      setTemperature(14.5);
+      setHumidity(88.0);
       setCropName('tomato');
     } else if (type === 'rate_spike') {
-      setTemperature(26.5);
-      setHumidity(55.0);
+      setTemperature(48.0);
+      setHumidity(32.0);
       setCropName('tomato');
     }
   };
@@ -223,17 +223,17 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
             </button>
             <button
               type="button"
-              onClick={() => handleApplyPreset('thermal_breach')}
-              className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-red-100 text-red-800 border border-red-300 hover:bg-red-200 transition-colors cursor-pointer"
+              onClick={() => handleApplyPreset('genuine_breach')}
+              className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200 transition-colors cursor-pointer"
             >
-              🔴 Spike (48.0°C)
+              🟠 Breach (14.5°C)
             </button>
             <button
               type="button"
               onClick={() => handleApplyPreset('rate_spike')}
-              className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200 transition-colors cursor-pointer"
+              className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-red-100 text-red-800 border border-red-300 hover:bg-red-200 transition-colors cursor-pointer"
             >
-              ⚡ Jump (26.5°C)
+              🔴 Spike (48.0°C)
             </button>
           </div>
         </div>
@@ -406,16 +406,26 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
               <div className={`p-4 rounded-2xl border flex flex-col gap-2.5 ${
                 evalResult.verdict === 'VALID' 
                   ? 'bg-emerald-50/70 border-emerald-300' 
+                  : evalResult.verdict === 'BREACH'
+                  ? 'bg-amber-50/70 border-amber-300'
                   : 'bg-red-50/70 border-red-300'
               }`}>
                 <div className="flex items-center justify-between pb-1 border-b border-black/5">
                   <div className="flex items-center gap-2">
-                    <Cpu className={`w-4 h-4 ${evalResult.verdict === 'VALID' ? 'text-emerald-700' : 'text-red-700'}`} />
+                    <Cpu className={`w-4 h-4 ${
+                      evalResult.verdict === 'VALID' 
+                        ? 'text-emerald-700' 
+                        : evalResult.verdict === 'BREACH'
+                        ? 'text-amber-700'
+                        : 'text-red-700'
+                    }`} />
                     <span className="text-xs font-extrabold text-[#2D2620]">AI Trust Layer</span>
                   </div>
                   <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
                     evalResult.verdict === 'VALID' 
                       ? 'bg-emerald-200 text-emerald-900 border border-emerald-400' 
+                      : evalResult.verdict === 'BREACH'
+                      ? 'bg-amber-200 text-amber-900 border border-amber-400'
                       : 'bg-red-200 text-red-900 border border-red-400'
                   }`}>
                     {evalResult.verdict}
@@ -442,8 +452,14 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
                 </div>
 
                 {evalResult.reason_codes && evalResult.reason_codes.length > 0 && (
-                  <div className="mt-1 pt-1.5 border-t border-red-200 text-xs text-red-800">
-                    <span className="font-bold text-[11px] block mb-0.5">Explainable Anomaly Reasons:</span>
+                  <div className={`mt-1 pt-1.5 border-t text-xs ${
+                    evalResult.verdict === 'BREACH' 
+                      ? 'border-amber-200 text-amber-900' 
+                      : 'border-red-200 text-red-800'
+                  }`}>
+                    <span className="font-bold text-[11px] block mb-0.5">
+                      {evalResult.verdict === 'BREACH' ? 'Cold-Chain Policy Breach Attribution:' : 'Explainable Anomaly Reasons:'}
+                    </span>
                     <ul className="list-disc list-inside space-y-0.5 text-[11px] font-semibold">
                       {evalResult.reason_codes.map((code, idx) => (
                         <li key={idx}>{code}</li>
@@ -456,20 +472,28 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
               {/* Card 2: Blockchain Layer Disposition */}
               <div className={`p-4 rounded-2xl border flex flex-col gap-2.5 ${
                 evalResult.tx_hash 
-                  ? 'bg-[#F2F6ED] border-[#C3D4B6]' 
-                  : 'bg-amber-50/70 border-amber-300'
+                  ? (evalResult.verdict === 'BREACH' ? 'bg-amber-50/60 border-amber-300' : 'bg-[#F2F6ED] border-[#C3D4B6]')
+                  : 'bg-red-50/70 border-red-300'
               }`}>
                 <div className="flex items-center justify-between pb-1 border-b border-black/5">
                   <div className="flex items-center gap-2">
-                    <Database className={`w-4 h-4 ${evalResult.tx_hash ? 'text-[#3D5220]' : 'text-amber-700'}`} />
+                    <Database className={`w-4 h-4 ${
+                      evalResult.tx_hash 
+                        ? (evalResult.verdict === 'BREACH' ? 'text-amber-800' : 'text-[#3D5220]')
+                        : 'text-red-700'
+                    }`} />
                     <span className="text-xs font-extrabold text-[#2D2620]">Blockchain Layer</span>
                   </div>
                   <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
                     evalResult.tx_hash 
-                      ? 'bg-emerald-200 text-emerald-900 border border-emerald-400' 
-                      : 'bg-amber-200 text-amber-900 border border-amber-400'
+                      ? (evalResult.verdict === 'BREACH'
+                          ? 'bg-amber-200 text-amber-900 border border-amber-400'
+                          : 'bg-emerald-200 text-emerald-900 border border-emerald-400')
+                      : 'bg-red-200 text-red-900 border border-red-400'
                   }`}>
-                    {evalResult.tx_hash ? 'MINED ON-CHAIN' : 'WRITE BLOCKED'}
+                    {evalResult.tx_hash 
+                      ? (evalResult.verdict === 'BREACH' ? 'BREACH MINED ON-CHAIN' : 'MINED ON-CHAIN') 
+                      : 'WRITE BLOCKED'}
                   </span>
                 </div>
 
@@ -481,7 +505,11 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
                   <div className="flex justify-between">
                     <span className="text-[#666057]">EVM Status:</span>
                     <span className="font-bold text-[#2D2620]">
-                      {evalResult.tx_hash ? 'Slot-packed condition stored' : 'Rejected by AI Gatekeeper'}
+                      {evalResult.tx_hash 
+                        ? (evalResult.verdict === 'BREACH' 
+                            ? 'Condition logged on-chain with breach=true' 
+                            : 'Slot-packed condition stored')
+                        : 'Rejected by AI Gatekeeper'}
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5">

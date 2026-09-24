@@ -145,6 +145,44 @@ class TelemetryBatchResponse(BaseModel):
     results: List[TelemetryResponse]
 
 
+# Disjoint failure code taxonomy: distinguishes sensor corruption / attacks from genuine physical cold-chain breaches
+SENSOR_CORRUPTION_CODES = {
+    # Cryptographic & Replay tampering
+    "REPLAY_DETECTED",
+    "REPLAY_ATTACK_DETECTED",
+    "SIGNATURE_INVALID",
+    "UNAUTHENTICATED_DEVICE",
+    "HASH_MISMATCH",
+    "PAYLOAD_HASH_MISMATCH",
+    # Temporal & Chronology corruption
+    "TIMESTAMP_OUT_OF_ORDER",
+    "TIMESTAMP_OUT_OF_SEQUENCE",
+    "DUPLICATE_TIMESTAMP",
+    "TELEMETRY_GAP_EXCEEDED",
+    # Impossible physical jumps (spoofing / hardware sensor failure)
+    "GPS_SPEED_EXCEEDED",
+    "TEMPERATURE_RATE_EXCEEDED",
+    "HUMIDITY_RATE_EXCEEDED",
+    # ML statistical anomaly (multivariate sensor malfunction)
+    "ML_ANOMALY",
+    "ISOLATION_FOREST_OUTLIER",
+    # Out-of-bounds sensor limits (sensor hardware failure)
+    "TEMPERATURE_OUT_OF_RANGE",
+    "HUMIDITY_OUT_OF_RANGE",
+    "LATITUDE_OUT_OF_RANGE",
+    "LONGITUDE_OUT_OF_RANGE",
+    "BATCH_ID_OUT_OF_RANGE",
+    "DEVICE_ID_OUT_OF_RANGE",
+    "TIMESTAMP_OUT_OF_RANGE",
+    "BLOCKCHAIN_RECORDING_FAILED",
+}
+
+COLD_CHAIN_POLICY_BREACH_CODES = {
+    "TEMPERATURE_OUT_OF_POLICY",
+    "HUMIDITY_OUT_OF_POLICY",
+}
+
+
 @app.post("/telemetry", response_model=TelemetryResponse)
 def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
     """Ingest a telemetry reading with AI trust validation, anomaly detection, and quarantine."""
@@ -206,7 +244,11 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
 
         # 4. Range validation
         range_res = run_basic_validation(telemetry_obj)
-        range_reasons = [f.reason_code for f in range_res.failures] if not range_res.passed else []
+        range_reasons = (
+            [getattr(f, "reason_code", f"{f.field.upper()}_OUT_OF_RANGE") for f in range_res.failures]
+            if not range_res.passed
+            else []
+        )
 
         # 5. History lookup and Plausibility checks
         previous = history_repository.get_last_reading(device_id=device_id, batch_id=payload.batch_id)
@@ -248,10 +290,22 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
             and not all_reasons
         )
 
-        if is_initial_clean or verdict.verdict == "VALID":
+        # Fault classification: distinguish sensor corruption / cyberattack from genuine cold-chain policy breach
+        has_sensor_corruption = (
+            not range_res.passed
+            or integrity.status != "VALID"
+            or any(r in SENSOR_CORRUPTION_CODES for r in all_reasons)
+        )
+        has_policy_breach = any(r in COLD_CHAIN_POLICY_BREACH_CODES for r in all_reasons)
+
+        if is_initial_clean or (verdict.verdict == "VALID" and not all_reasons):
             final_verdict = "VALID"
             final_disposition = "READY_FOR_ORACLE"
             verdict.verdict = "VALID"
+        elif not has_sensor_corruption and has_policy_breach:
+            final_verdict = "BREACH"
+            final_disposition = "RECORDED_ON_CHAIN_BREACH"
+            verdict.verdict = "BREACH"
         else:
             final_verdict = "ANOMALOUS"
             final_disposition = "QUARANTINED"
@@ -266,7 +320,7 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
             integrity=integrity,
             anomaly=anomaly,
         )
-        if final_verdict == "VALID":
+        if final_verdict in ("VALID", "BREACH"):
             history_repository.add_reading(telemetry_obj)
 
         # 10. Execute Oracle Handoff (blockchain anchor) or Quarantine
@@ -333,6 +387,100 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
                 reason_codes=[],
                 anomaly_score=anomaly.anomaly_score if anomaly else None,
             )
+
+        elif final_verdict == "BREACH":
+            # Genuine Cold-Chain Policy Breach: Query current custodian for attribution
+            custody_row = conn.execute(
+                """
+                SELECT to_holder, from_holder, state 
+                FROM custody_events 
+                WHERE batch_id = ? 
+                ORDER BY id DESC LIMIT 1
+                """,
+                (payload.batch_id,),
+            ).fetchone()
+
+            if custody_row and custody_row["to_holder"]:
+                current_custodian = custody_row["to_holder"]
+                custody_state = custody_row["state"]
+            else:
+                batch_info = conn.execute(
+                    "SELECT farmer_address, origin_farm FROM batches WHERE batch_id = ?",
+                    (payload.batch_id,),
+                ).fetchone()
+                current_custodian = (
+                    batch_info["farmer_address"] if batch_info and batch_info["farmer_address"]
+                    else (batch_info["origin_farm"] if batch_info else "FARMER")
+                )
+                custody_state = "REGISTERED"
+
+            role_str = {
+                "REGISTERED": "Farmer",
+                "IN_TRANSIT": "Logistics Partner",
+                "IN_STORAGE": "Dark Store Storage",
+                "AT_RETAIL": "Retail Partner",
+                "SOLD": "Consumer",
+            }.get(custody_state, "Active Custodian")
+            custodian_attribution = f"{current_custodian} ({role_str}, State: {custody_state})"
+
+            reason_str = (
+                f"Cold-chain policy breach: {', '.join(all_reasons)}. "
+                f"Attributed Custodian: {custodian_attribution}"
+            )
+
+            tx_hash = None
+            if anchor_onchain:
+                temp_deci_c = int(round(temp_c * 10))
+                humidity_pct_int = int(round(humidity_pct))
+                try:
+                    tx_hash = chain.record_condition(
+                        batch_id=payload.batch_id,
+                        temp_deci_c=temp_deci_c,
+                        humidity_pct=humidity_pct_int,
+                        breach=True,
+                    )
+                except Exception as e:
+                    conn.execute(
+                        "UPDATE readings SET verdict = 'ANOMALOUS' WHERE id = ?",
+                        (reading_id,),
+                    )
+                    conn.execute(
+                        "INSERT INTO quarantine (reading_id, reason) VALUES (?, ?)",
+                        (reading_id, f"Blockchain breach recording failed: {str(e)}"),
+                    )
+                    conn.commit()
+                    return TelemetryResponse(
+                        verdict="ANOMALOUS",
+                        reason=f"Blockchain breach recording failed: {str(e)}",
+                        tx_hash=None,
+                        reading_id=reading_id,
+                        event_hash=integrity.event_hash,
+                        disposition="QUARANTINED",
+                        reason_codes=["BLOCKCHAIN_RECORDING_FAILED"],
+                        anomaly_score=anomaly.anomaly_score if anomaly else None,
+                    )
+
+            conn.execute(
+                "UPDATE readings SET verdict = 'BREACH', tx_hash = ? WHERE id = ?",
+                (tx_hash, reading_id),
+            )
+            conn.execute(
+                "INSERT INTO quarantine (reading_id, reason) VALUES (?, ?)",
+                (reading_id, f"{reason_str} | tx: {tx_hash or 'PENDING_BATCH'}"),
+            )
+            conn.commit()
+
+            return TelemetryResponse(
+                verdict="BREACH",
+                reason=reason_str,
+                tx_hash=tx_hash,
+                reading_id=reading_id,
+                event_hash=integrity.event_hash,
+                disposition="RECORDED_ON_CHAIN_BREACH",
+                reason_codes=all_reasons,
+                anomaly_score=anomaly.anomaly_score if anomaly else None,
+            )
+
         else:
             reason_str = ", ".join(all_reasons) if all_reasons else "Cold-chain policy breach or anomaly"
             conn.execute(
@@ -362,7 +510,7 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
 def post_telemetry_batch(batch_payload: TelemetryBatchRequest):
     """Processes a batch of telemetry readings through the AI Trust Layer,
 
-    anchoring all valid readings in a single batched blockchain transaction.
+    anchoring all valid readings (both normal and genuine breaches) in a single batched blockchain transaction.
     """
     individual_responses = []
     valid_items = []
@@ -370,7 +518,7 @@ def post_telemetry_batch(batch_payload: TelemetryBatchRequest):
     for req in batch_payload.readings:
         resp = post_telemetry(req, anchor_onchain=False)
         individual_responses.append(resp)
-        if resp.verdict == "VALID":
+        if resp.verdict in ("VALID", "BREACH"):
             temp = req.temp_c if req.temp_c is not None else req.temperature
             hum = req.humidity_pct if req.humidity_pct is not None else req.humidity
             valid_items.append({
@@ -378,7 +526,7 @@ def post_telemetry_batch(batch_payload: TelemetryBatchRequest):
                 "batch_id": req.batch_id,
                 "temp_deci_c": int(round(float(temp) * 10)),
                 "hum_pct": int(round(float(hum))),
-                "breach": False,
+                "breach": (resp.verdict == "BREACH"),
             })
 
     valid_count = len(valid_items)
@@ -405,7 +553,7 @@ def post_telemetry_batch(batch_payload: TelemetryBatchRequest):
                 conn.close()
 
             for resp in individual_responses:
-                if resp.verdict == "VALID":
+                if resp.verdict in ("VALID", "BREACH"):
                     resp.tx_hash = batch_tx_hash
         except Exception as e:
             print(f"[batch_telemetry] Batch write error: {e}")
@@ -434,9 +582,15 @@ REASON_CODE_LABELS = {
     "PHYSICAL_RATE_OF_CHANGE": "Physical rate of change violation (thermal shock)",
     "GPS_JUMP": "Infeasible GPS teleportation / velocity outlier",
     "REPLAY_DETECTED": "Cryptographic replay attack detected (duplicate timestamp/hash)",
+    "REPLAY_ATTACK_DETECTED": "Cryptographic replay attack detected (duplicate timestamp/hash)",
     "DUPLICATE_TIMESTAMP": "Stale or repeated sensor timestamp sequence",
     "ISOLATION_FOREST_OUTLIER": "Unsupervised Isolation Forest anomaly pattern",
     "HASH_MISMATCH": "Cryptographic payload tamper / hash mismatch",
+    "TEMPERATURE_OUT_OF_POLICY": "Physical cold-chain policy violation: temperature exceeded crop threshold",
+    "HUMIDITY_OUT_OF_POLICY": "Physical cold-chain policy violation: humidity exceeded crop threshold",
+    "TEMPERATURE_RATE_EXCEEDED": "Physical rate of change violation (sensor thermal spike)",
+    "HUMIDITY_RATE_EXCEEDED": "Physical rate of change violation (sensor humidity spike)",
+    "GPS_SPEED_EXCEEDED": "Infeasible GPS velocity / teleportation outlier",
 }
 
 
@@ -1200,14 +1354,14 @@ def get_batch_traceability(batch_id: str):
                 })
         except Exception:
             readings = conn.execute(
-                "SELECT * FROM readings WHERE batch_id = ? AND verdict = 'VALID' ORDER BY id ASC",
+                "SELECT * FROM readings WHERE batch_id = ? AND verdict IN ('VALID', 'BREACH') ORDER BY id ASC",
                 (batch_id,),
             ).fetchall()
             for r in readings:
                 condition_log.append({
                     "tempC": r["temp_c"],
                     "humidityPct": r["humidity_pct"],
-                    "breach": False,
+                    "breach": (r["verdict"] == "BREACH"),
                 })
 
         custody_history = []

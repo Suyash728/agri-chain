@@ -167,6 +167,39 @@ def main():
     print(f"  [PASS] Quarantine Log: Incident recorded with full audit evidence and reason codes")
 
     # =========================================================================
+    # CHECK 4B: Genuine Cold-Chain Breach Mined On-Chain (Gap 3 Solution)
+    # =========================================================================
+    print("\n--- [CHECK 4B] Genuine Cold-Chain Policy Breach Mined On-Chain with Custody Attribution ---")
+    genuine_breach_payload = {
+        "batch_id": batch_id,
+        "crop_name": "tomato",
+        "device_id": "ESP32-COLDCHAIN-REFRIG-01",
+        "latitude": 19.9975,
+        "longitude": 73.7898,
+        "temperature": 14.5,
+        "humidity": 88.0,
+        "timestamp": "2026-09-23T16:35:00Z"
+    }
+    gb_resp = post_json("/telemetry", genuine_breach_payload)
+    assert gb_resp.get("verdict") == "BREACH", f"Expected BREACH but got {gb_resp.get('verdict')}"
+    assert gb_resp.get("disposition") == "RECORDED_ON_CHAIN_BREACH", f"Expected RECORDED_ON_CHAIN_BREACH but got {gb_resp.get('disposition')}"
+    assert gb_resp.get("tx_hash") is not None, "Genuine cold-chain breach MUST be mined on-chain!"
+    assert "Safexpress Cold Chain Logistics" in gb_resp.get("reason", "") or "IN_TRANSIT" in gb_resp.get("reason", ""), "Breach must be attributed to active custodian"
+    print(f"  [PASS] Genuine Breach Ingested: 14.5°C flagged as BREACH, mined on-chain (tx={gb_resp['tx_hash'][:18]}...), attributed to custodian")
+
+    # Verify on-chain condition record has breach == True
+    onchain_records = chain.get_condition_records(batch_id)
+    breach_records = [r for r in onchain_records if r.get("breach") is True]
+    assert len(breach_records) > 0, "No on-chain condition record has breach == True!"
+    print(f"  [PASS] ColdChainMonitor.sol verified: {len(breach_records)} on-chain condition record(s) flagged with breach=true")
+
+    # Verify consumer traceability endpoint exposes the breach
+    trace_data = get_json(f"/batches/{batch_id}/traceability")
+    cond_log = trace_data.get("conditionLog", [])
+    assert any(c.get("breach") is True for c in cond_log), "Consumer traceability missing breach=True condition"
+    print("  [PASS] Consumer Traceability API: Confirmed breach=true visible in public produce journey")
+
+    # =========================================================================
     # CHECK 5: Decentralized IPFS Document Anchoring
     # =========================================================================
     print("\n--- [CHECK 5] IPFS Document Pinning & On-Chain Anchoring ---")

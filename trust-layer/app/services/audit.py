@@ -37,6 +37,7 @@ from app.services.db import get_connection, init_trust_db
 VERDICT_TO_DISPOSITION = {
     "VALID": "READY_FOR_ORACLE",
     "ANOMALOUS": "QUARANTINED",
+    "BREACH": "RECORDED_ON_CHAIN_BREACH",
     "INSUFFICIENT_EVIDENCE": "ON_HOLD",
 }
 
@@ -65,6 +66,8 @@ class AuditService:
 
         if disposition == "QUARANTINED":
             details = f"Telemetry quarantined due to {len(verdict.reason_codes)} reason(s): {', '.join(verdict.reason_codes)}."
+        elif disposition == "RECORDED_ON_CHAIN_BREACH":
+            details = f"Genuine physical cold-chain breach certified by AI Trust Layer and recorded on-chain: {', '.join(verdict.reason_codes)}."
         elif disposition == "READY_FOR_ORACLE":
             details = "Telemetry verified across all trust layers and ready for blockchain Oracle transmission."
         else:

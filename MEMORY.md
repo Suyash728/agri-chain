@@ -750,3 +750,46 @@ still static UI with no data flow. Specifically:
   4. Dark Store recorded final consumer sale (`SOLD`, price ₹2,200, tx `2b8ae1ef13`)
   5. Farm-to-fork traceability endpoint confirmed all 4 stages with exact prices and holders.
 
+---
+
+## [Trust Layer / Blockchain Fix — Gap 3 & Gap 5 Cold-Chain Breach vs Sensor Corruption] — 2026-09-24
+
+**Problem Addressed:**
+- Survey paper Gap 3 & Gap 5: previously, `breach=True` was never set anywhere in `backend/main.py` or `trust-layer/`. Every failure (whether genuine temperature excursion indicating real produce spoilage, or fabricated/implausible data such as fake GPS jumps, replay attacks, or rate spikes) was lumped together as `ANOMALOUS`, quarantined off-chain, and never reached the blockchain (`tx_hash = None`).
+- Smart contract `ColdChainMonitor.sol` had a `breach: bool` parameter in `recordCondition` and `recordConditionsBatch` that was never reached with `True`. Genuine cold-chain spoilage events were being discarded instead of creating immutable on-chain accountability.
+
+**What was done:**
+1. **Disjoint Fault Taxonomy Established:**
+   - `SENSOR_CORRUPTION_CODES`: Cryptographic and replay attacks (`REPLAY_DETECTED`, `REPLAY_ATTACK_DETECTED`, `HASH_MISMATCH`, `SIGNATURE_INVALID`), temporal sequence corruptions (`TIMESTAMP_OUT_OF_ORDER`, `DUPLICATE_TIMESTAMP`), physically impossible sensor jumps (`GPS_SPEED_EXCEEDED`, `TEMPERATURE_RATE_EXCEEDED`, `HUMIDITY_RATE_EXCEEDED`), ML statistical anomalies (`ML_ANOMALY`, `ISOLATION_FOREST_OUTLIER`), and impossible hardware ranges (`TEMPERATURE_OUT_OF_RANGE`, etc.).
+   - `COLD_CHAIN_POLICY_BREACH_CODES`: Environmental policy violations (`TEMPERATURE_OUT_OF_POLICY`, `HUMIDITY_OUT_OF_POLICY`).
+2. **Three-Way Verdict & Disposition Branching:**
+   - **`VALID` (`READY_FOR_ORACLE`)**: Cryptographic integrity, plausibility, and policy limits satisfied. Anchored on-chain via `ColdChainMonitor.recordCondition(batchId, tempDeciC, humPct, breach=false)`.
+   - **`BREACH` (`RECORDED_ON_CHAIN_BREACH`)**: Physically authentic & genuine reading with valid integrity and plausible rate of change, but violating the crop's biological safety bounds (e.g. 14.5°C for tomato with max 8.0°C). Active custodian dynamically queried from `custody_events` (or `batches`) and attributed (`current_custodian (role, state)`). Mined on-chain with `breach=True` on `ColdChainMonitor.sol`. Off-chain audit logged with custodian attribution and transaction hash.
+   - **`ANOMALOUS` (`QUARANTINED`)**: Inauthentic, corrupted, spoofed, or replayed data. Blocked from blockchain ledger (`tx_hash = None`) and quarantined off-chain in SQLite/Supabase `quarantine` and `audit_trail` tables.
+3. **Batch Telemetry Support (`POST /telemetry/batch`):**
+   - Batched oracle writes include both `VALID` and `BREACH` items with corresponding boolean `breach` flags passed to `chain.record_conditions_batch(batch_ids, temps, hums, breaches)`.
+4. **Consumer Traceability Exposure (`GET /batches/{batch_id}/traceability`):**
+   - Traceability endpoint reads on-chain `ConditionRecord` logs directly exposing `breach: true/false`, with fallback SQLite query selecting `verdict IN ('VALID', 'BREACH')`.
+5. **Frontend AI Trust Demo Sandbox (`AITrustView.jsx`):**
+   - Presets updated for Faculty Review:
+     - 🟢 Safe (4.5°C) -> Nominal on-chain write (`breach=false`).
+     - 🟠 Breach (14.5°C) -> Genuine cold-chain failure mined on-chain (`breach=true` + Custodian Attribution badge).
+     - 🔴 Spike (48.0°C) -> Sensor spike / impossible rate of change (`ANOMALOUS` -> Quarantined off-chain, write blocked).
+   - Render cards styled with amber alert and explainable attribution for `BREACH`.
+6. **Automated Verification Suite:**
+   - Added `CHECK 4B` to `backend/scripts/verify_final_system.py`, validating end-to-end ingestion of a 14.5°C breach, on-chain mining on `ColdChainMonitor.sol` with `breach=true`, active custodian attribution to Safexpress Cold Chain Logistics (`IN_TRANSIT`), and reflection in `/batches/{batch_id}/traceability`.
+
+**Files Changed:**
+- `trust-layer/app/services/audit.py`
+- `backend/main.py`
+- `backend/scripts/verify_final_system.py`
+- `design/src/Farmer/Views/AITrustView.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Full capstone verification suite passed (`python backend/scripts/verify_final_system.py`):
+  - Check 4: GPIO 48°C rate spike quarantined off-chain (`verdict=ANOMALOUS`, `disposition=QUARANTINED`, `tx=None`).
+  - Check 4B: Genuine 14.5°C breach mined on-chain (`verdict=BREACH`, `disposition=RECORDED_ON_CHAIN_BREACH`, `tx=0fc2a5df37...`), 1 on-chain condition record confirmed with `breach=true` in `ColdChainMonitor.sol`, and verified in consumer traceability API.
+- All 147 unit/integration tests in `trust-layer/tests` passed with 0 failures (`pytest trust-layer/tests`).
+- Frontend production build succeeded (`npm run build` in `design/`) in 3.31s with 0 errors.
+
