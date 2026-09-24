@@ -174,3 +174,11 @@ Phase 10: Role Wallets, Reviews & Hardware IoT Demo (O2, O8, O9, O12)
 - Adhere strictly to `RULES.md` and the frontend "wire, don't create" rule.
 
 
+
+## 5. Phase 11 (added) — Frontend interaction depth
+
+Backend wiring so far covers page-level display (dashboards, journey views).
+It does not cover per-component *interactions* — modals, dialogs, confirm
+actions — with real data. See `MEMORY.md`'s "Audit — frontend interaction
+depth" entry for the exact gap. This phase closes it, role by role, cheapest
+and highest-value first. Full tasks: `TASKS.md` Phase 11.
