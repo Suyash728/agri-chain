@@ -7,7 +7,8 @@ import {
   FruitsIllustration 
 } from '../components/CropIllustrations';
 
-export const InventoryView = ({ onBack, onAddItem, onSelectItem }) => {
+export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem, items }) => {
+  const displayItems = items && items.length > 0 ? items : inventoryItems;
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Header Bar */}
@@ -63,18 +64,18 @@ export const InventoryView = ({ onBack, onAddItem, onSelectItem }) => {
           Inventory List
         </h2>
         <span className="text-xs font-bold text-[#786E65]">
-          {inventoryItems.length} Items Recorded
+          {displayItems.length} Items Recorded
         </span>
       </div>
 
       {/* Inventory Items Stack with Warm Cream Card Backgrounds */}
       <div className="flex flex-col gap-3.5 w-full">
-        {inventoryItems.map((item) => {
-          const Illustration = individualCropIllustrationsMap[item.name] || cropIllustrationsMap[item.categoryId] || FruitsIllustration;
+        {displayItems.map((item) => {
+          const Illustration = individualCropIllustrationsMap[item.name] || (item.categoryId && cropIllustrationsMap[item.categoryId]) || FruitsIllustration;
           return (
             <div
               key={item.id}
-              onClick={() => onSelectItem(item)}
+              onClick={() => onSelectItem && onSelectItem(item)}
               style={{ backgroundColor: '#FAF7F0' }}
               className="border border-[#E8E2D5] rounded-2xl p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-[#7A8B52] transition-all duration-200 group w-full"
             >
@@ -90,6 +91,11 @@ export const InventoryView = ({ onBack, onAddItem, onSelectItem }) => {
                   <span className="text-xs sm:text-sm font-bold text-[#786E65] mt-0.5 block">
                     {item.quantity}
                   </span>
+                  {item.status && (
+                    <span className="text-[10px] font-bold text-[#556B2F] bg-[#EBF3E8] px-2 py-0.5 rounded-full inline-block mt-1">
+                      {item.status}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -107,8 +113,8 @@ export const InventoryView = ({ onBack, onAddItem, onSelectItem }) => {
 
       {/* Add New Stock Action Button */}
       <button 
-        onClick={onAddItem}
-        className="w-full py-4 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99] mt-2"
+        onClick={onAddItem || onOpenAddStock}
+        className="w-full py-4 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99] mt-2 cursor-pointer"
       >
         <Plus className="w-5 h-5" />
         Add New Stock

@@ -2,7 +2,7 @@ import React from 'react';
 import { Bell, Calendar } from 'lucide-react';
 import { farmerProfile } from '../../data/mockData';
 
-export const Header = ({ onOpenNotifications, unreadCount = 3 }) => {
+export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount = 3 }) => {
   return (
     <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pt-1">
       {/* Greeting Title */}
@@ -18,8 +18,17 @@ export const Header = ({ onOpenNotifications, unreadCount = 3 }) => {
         </p>
       </div>
 
-      {/* Header Actions (Notification Bell & Date Selector) */}
+      {/* Header Actions (Add Stock, Notification Bell & Date Selector) */}
       <div className="flex items-center gap-3 self-start sm:self-auto">
+        {onOpenAddStock && (
+          <button
+            onClick={onOpenAddStock}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#3D4E2A] text-white hover:bg-[#2A371B] transition-all text-xs font-bold shadow-xs cursor-pointer"
+          >
+            <span>+</span>
+            <span>Add Stock</span>
+          </button>
+        )}
         {/* Notification Bell */}
         <button 
           onClick={onOpenNotifications}

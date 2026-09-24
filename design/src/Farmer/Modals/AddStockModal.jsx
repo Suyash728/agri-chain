@@ -70,6 +70,9 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
       harvest_date: new Date().toISOString().split('T')[0],
       farmer_name: 'Rahul Patil',
       farmer_address: account || undefined,
+      category: category,
+      quantity_tonnes: parseFloat(quantity) || 0.5,
+      price_inr: parseFloat(price) || 2500,
     };
 
     try {
@@ -96,7 +99,7 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
             category: category,
             quantity: `${quantity} Tonnes`,
             rawKg: parseFloat(quantity) * 1000,
-            value: `₹ ${price}`,
+            value: `₹ ${Number(price).toLocaleString('en-IN')}`,
             status: "In Stock",
             tx_hash: finalTxHash
           });
@@ -107,7 +110,7 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
         setPrice('');
         setLoading(false);
         onClose();
-      }, 1000);
+      }, 600);
     } catch (err) {
       console.error('Error adding stock batch:', err);
       setErrorMsg(err.message);

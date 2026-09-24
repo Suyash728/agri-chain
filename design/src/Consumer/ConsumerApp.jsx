@@ -58,7 +58,7 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
   };
 
   const handleReviewSubmit = async (review) => {
-    const batchId = selectedJourneyProduct?.batchId || 'BATCH-SOLD-TEST';
+    const batchId = selectedJourneyProduct?.batchId || 'TM1256';
     try {
       const res = await fetch(`http://localhost:8000/batches/${batchId}/reviews`, {
         method: 'POST',
@@ -115,7 +115,20 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
     showToast(`Item removed from cart`);
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    try {
+      await fetch('http://localhost:8000/darkstore/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          batch_id: selectedJourneyProduct?.batchId || 'TM1256',
+          consumer_name: `Customer Home Delivery (${deliveryAddress})`,
+          price_paise: 220000,
+        }),
+      }).catch((e) => console.warn('Checkout background sync note:', e));
+    } catch (err) {
+      console.warn('Checkout note:', err);
+    }
     setIsOrderSuccessOpen(true);
     setCartItems([]);
   };
@@ -251,7 +264,15 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
         {activeView === 'scan' && (
           <ScanProductView
             onBack={() => setActiveView('home')}
-            onScanSuccess={() => setActiveView('journey')}
+            onScanSuccess={() => {
+              setSelectedJourneyProduct({
+                name: 'Organic Tomato',
+                batchId: 'TM1256',
+                origin: 'Nashik, Maharashtra',
+                image: '/images/vegetables_ref.png'
+              });
+              setActiveView('journey');
+            }}
             onEnterCodeClick={() => setIsQRModalOpen(true)}
           />
         )}

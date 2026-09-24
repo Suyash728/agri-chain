@@ -124,8 +124,29 @@ export default function App() {
   };
 
   const handleAddStock = (newStock) => {
-    setInventoryList([newStock, ...inventoryList]);
+    setInventoryList((prev) => [newStock, ...prev]);
     fetchFarmerData();
+    if (selectedCropCategory) {
+      setSelectedCropCategory((prev) => {
+        if (!prev) return prev;
+        const matches = 
+          prev.name.toLowerCase() === (newStock.category || '').toLowerCase() ||
+          prev.id.toLowerCase() === (newStock.category || '').toLowerCase();
+        if (matches) {
+          return {
+            ...prev,
+            crops: [{
+              name: newStock.name,
+              quantity: newStock.quantity,
+              value: newStock.value,
+              status: newStock.status || "In Stock",
+              quality: `Fresh Organic ${newStock.name}`
+            }, ...(prev.crops || [])]
+          };
+        }
+        return prev;
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -258,7 +279,10 @@ export default function App() {
           <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-14 md:pt-16">
             {farmerTab === 'dashboard' && (
               <div className="flex flex-col gap-6 animate-fade-in">
-                <FarmerHeader onOpenNotifications={() => setIsNotificationsOpen(true)} />
+                <FarmerHeader 
+                  onOpenNotifications={() => setIsNotificationsOpen(true)} 
+                  onOpenAddStock={() => setIsAddStockOpen(true)} 
+                />
                 <FarmerKPICards metrics={farmerKpis} onCardClick={(type) => handleSelectFarmerTab(type)} />
                 
                 {/* Upper Row: Crop Overview & Recent Activity */}
@@ -487,15 +511,61 @@ export default function App() {
               </div>
             )}
 
-            {farmerTab === 'my-crops' && <MyCropsView categories={farmerCrops} onSelectCategory={handleSelectCategory} />}
-            {farmerTab === 'crop-details' && <CropDetailsView category={selectedCropCategory} onBack={() => handleSelectFarmerTab('my-crops')} />}
-            {farmerTab === 'inventory' && <FarmerInventoryView items={inventoryList} onOpenAddStock={() => setIsAddStockOpen(true)} />}
-            {farmerTab === 'orders' && <FarmerOrdersView />}
-            {farmerTab === 'shipments' && <FarmerShipmentsView onViewJourney={() => setIsJourneyOpen(true)} />}
-            {farmerTab === 'traceability' && <FarmerTraceabilityView onViewJourney={() => setIsJourneyOpen(true)} />}
-            {farmerTab === 'ai-trust' && <AITrustView />}
-            {farmerTab === 'earnings' && <EarningsView />}
-            {farmerTab === 'profile' && <FarmerProfileView />}
+            {farmerTab === 'my-crops' && (
+              <MyCropsView 
+                categories={farmerCrops} 
+                onSelectCategory={handleSelectCategory} 
+                onBack={() => handleSelectFarmerTab('dashboard')} 
+              />
+            )}
+            {farmerTab === 'crop-details' && (
+              <CropDetailsView 
+                category={selectedCropCategory} 
+                onBack={() => handleSelectFarmerTab('my-crops')} 
+              />
+            )}
+            {farmerTab === 'inventory' && (
+              <FarmerInventoryView 
+                items={inventoryList} 
+                onBack={() => handleSelectFarmerTab('dashboard')} 
+                onAddItem={() => setIsAddStockOpen(true)} 
+                onOpenAddStock={() => setIsAddStockOpen(true)} 
+              />
+            )}
+            {farmerTab === 'orders' && (
+              <FarmerOrdersView 
+                onBack={() => handleSelectFarmerTab('dashboard')} 
+              />
+            )}
+            {farmerTab === 'shipments' && (
+              <FarmerShipmentsView 
+                onBack={() => handleSelectFarmerTab('dashboard')} 
+                onViewJourney={() => setIsJourneyOpen(true)} 
+              />
+            )}
+            {farmerTab === 'traceability' && (
+              <FarmerTraceabilityView 
+                onBack={() => handleSelectFarmerTab('dashboard')} 
+                onOpenFullJourney={() => setIsJourneyOpen(true)} 
+                onViewJourney={() => setIsJourneyOpen(true)} 
+              />
+            )}
+            {farmerTab === 'ai-trust' && (
+              <AITrustView 
+                onBack={() => handleSelectFarmerTab('dashboard')} 
+              />
+            )}
+            {farmerTab === 'earnings' && (
+              <EarningsView 
+                onBack={() => handleSelectFarmerTab('dashboard')} 
+              />
+            )}
+            {farmerTab === 'profile' && (
+              <FarmerProfileView 
+                onBack={() => handleSelectFarmerTab('dashboard')} 
+                onLogout={handleLogout} 
+              />
+            )}
           </main>
 
           <FarmerBottomNav currentTab={farmerTab} onSelectTab={handleSelectFarmerTab} onOpenMore={() => setIsMoreOpen(true)} />
