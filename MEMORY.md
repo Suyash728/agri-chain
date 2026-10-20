@@ -1125,3 +1125,26 @@ still static UI with no data flow. Specifically:
 - `pytest tests/`: 7/7 passed in 7.75s.
 - `python backend/scripts/verify_final_system.py`: 10/10 checks passed with complete capstone verification.
 
+---
+
+## [UI Consistency Across User Modes] — 2026-10-20
+
+**What was done:**
+- Fixed structural layout, navigation, and identity inconsistencies when switching between the 5 user roles (`farmer`, `logistics`, `darkstore`, `consumer`, `admin`):
+  1. **Admin Desktop Shell & Mobile Navigation**: Added `AdminSidebar.jsx` (256px fixed desktop navigation) and `AdminBottomNav.jsx` (fixed mobile navigation) matching the structure and theme of `FarmerSidebar`, `LogisticSidebar`, and `DarkStoreSidebar`.
+  2. **Eliminated Desktop Layout Jumps**: Wrapped `AdminPortalView` in `min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] max-w-7xl pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16` so that switching between Farmer, Logistics, Dark Store, and Admin maintains a rock-solid 256px left sidebar with zero content shift.
+  3. **Removed Fake iOS Status Bar in Consumer**: Removed mock "9:41" status bar from `MobileContainer.jsx` that collided with the floating role switcher and caused visual discord on mobile devices.
+  4. **Harmonized Floating Switcher Color Palette**: Updated Dark Store's button from mismatched slate-navy (`#1E293B`) to cohesive forest green (`#3D4E2A`).
+  5. **Web3 Wallet Role Identity**: Added `admin` persona identity to `ROLE_IDENTITIES` in `WalletConnect.jsx` so switching to Admin correctly displays Root Authority / System Administrator instead of falling back to Farmer.
+  6. **Dynamic Persona Logout Feedback**: Updated `handleLogout` to dynamically display the active user identity (`Rahul Patil (Farmer)`, `Safexpress Logistics`, `Pune Fresh DarkStore Hub`, `Priya Sharma`, `System Administrator`).
+
+**Verified (DONE WHEN checks that actually passed):**
+- Layout audit verified across all 5 roles on Desktop (`1280x800`) and Mobile (`375x667`): 0px overflow across all modes.
+- Desktop sidebar presence: `True` across Farmer, Logistics, Dark Store, and Admin (content uniformly at `x=256, w=1024`).
+- Mobile bottom navigation: `True` across all 5 roles.
+- `design/test_comprehensive_responsive.py`: 55/55 passed across 11 viewports and all 5 roles.
+- `npm run build`: Built cleanly in 2.87s with 0 errors.
+- `pytest tests/`: 7/7 passed.
+- `backend/scripts/verify_final_system.py`: 10/10 checks passed.
+
+

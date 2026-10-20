@@ -62,6 +62,14 @@ export const ROLE_IDENTITIES = {
     upi: 'priya.sharma@okaxis',
     badge: 'bg-amber-100 text-amber-800 border-amber-300',
   },
+  admin: {
+    name: 'Smart Contract Admin',
+    roleTitle: 'DEFAULT_ADMIN_ROLE',
+    id: 'ADMIN-SYS-001',
+    org: 'AgriChain Governance Multisig',
+    upi: 'admin.governance@eth',
+    badge: 'bg-purple-100 text-purple-800 border-purple-300',
+  },
 };
 
 export const WalletProvider = ({ children }) => {

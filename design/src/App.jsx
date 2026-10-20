@@ -46,6 +46,8 @@ import { ConsumerApp } from './Consumer/ConsumerApp';
 
 // Admin Portal
 import { AdminPortalView } from './components/AdminPortalView';
+import { AdminSidebar } from './components/AdminSidebar';
+import { AdminBottomNav } from './components/AdminBottomNav';
 
 // Web3 Wallet
 import { WalletProvider, WalletConnect } from './components/WalletConnect';
@@ -60,6 +62,7 @@ import {
 export default function App() {
   // Role Portal State: 'consumer' (default launch role), 'farmer', 'logistics', or 'darkstore'
   const [activeRole, setActiveRole] = useState('consumer');
+  const [adminTab, setAdminTab] = useState('all');
 
   // Tab state for Farmer portal
   const [farmerTab, setFarmerTab] = useState('dashboard');
@@ -163,8 +166,16 @@ export default function App() {
     }
   };
 
+  const ROLE_NAMES = {
+    farmer: 'Rahul Patil (Farmer)',
+    logistics: 'Safexpress Logistics',
+    darkstore: 'Pune Fresh DarkStore Hub',
+    consumer: 'Priya Sharma',
+    admin: 'System Administrator',
+  };
+
   const handleLogout = () => {
-    alert(`Logged out of Rahul Patil's AgriChain ${activeRole} Account.`);
+    alert(`Logged out of ${ROLE_NAMES[activeRole] || activeRole}'s AgriChain Account.`);
   };
 
   return (
@@ -199,7 +210,7 @@ export default function App() {
             onClick={() => setActiveRole('darkstore')}
             className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeRole === 'darkstore' 
-                ? 'bg-[#1E293B] text-white shadow-xs' 
+                ? 'bg-[#3D4E2A] text-white shadow-xs' 
                 : 'text-[#666057] hover:text-[#2D2620]'
             }`}
           >
@@ -624,9 +635,18 @@ export default function App() {
       {/* 5. MASTER ADMIN GOVERNANCE PORTAL VIEW     */}
       {/* ========================================== */}
       {activeRole === 'admin' && (
-        <div className="w-full min-h-screen flex-1 bg-[#FAF7F0]">
-          <AdminPortalView />
-        </div>
+        <>
+          <AdminSidebar 
+            currentTab={adminTab}
+            onSelectTab={setAdminTab}
+            onLogout={handleLogout}
+          />
+          <AdminPortalView currentTab={adminTab} />
+          <AdminBottomNav 
+            currentTab={adminTab}
+            onSelectTab={setAdminTab}
+          />
+        </>
       )}
 
       {/* Shared Modals */}

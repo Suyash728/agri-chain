@@ -17,7 +17,7 @@ import {
   FileCheck2
 } from 'lucide-react';
 
-export const AdminPortalView = () => {
+export const AdminPortalView = ({ currentTab = 'all' }) => {
   const [participants, setParticipants] = useState([]);
   const [contractStatus, setContractStatus] = useState({});
   const [quarantineReport, setQuarantineReport] = useState(null);
@@ -158,7 +158,7 @@ export const AdminPortalView = () => {
   };
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16">
+    <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] p-4 sm:p-6 lg:p-8 max-w-7xl pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16">
       {/* Header Banner */}
       <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-3xl p-6 sm:p-8 mb-8 relative overflow-hidden shadow-xs">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
@@ -198,185 +198,191 @@ export const AdminPortalView = () => {
       )}
 
       {/* Section 1: Smart Contract Circuit Breakers */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Layers className="w-5 h-5 text-[#5B21B6]" />
-          <h2 className="text-lg font-black text-[#2D2620]">Smart Contract Circuit Breakers (Pausable)</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {['ProductRegistry', 'CustodyTransfer', 'ColdChainMonitor'].map((name) => {
-            const isPaused = Boolean(contractStatus[name]);
-            return (
-              <div key={name} className="bg-white rounded-2xl border border-[#E6E1D5] p-5 shadow-xs flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-black text-[#2D2620]">{name}.sol</span>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black border ${
-                      isPaused ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    }`}>
-                      {isPaused ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                      {isPaused ? 'PAUSED' : 'OPERATIONAL'}
-                    </span>
+      {(currentTab === 'all' || currentTab === 'circuit-breakers') && (
+        <div className="mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Layers className="w-5 h-5 text-[#5B21B6]" />
+            <h2 className="text-lg font-black text-[#2D2620]">Smart Contract Circuit Breakers (Pausable)</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {['ProductRegistry', 'CustodyTransfer', 'ColdChainMonitor'].map((name) => {
+              const isPaused = Boolean(contractStatus[name]);
+              return (
+                <div key={name} className="bg-white rounded-2xl border border-[#E6E1D5] p-5 shadow-xs flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-black text-[#2D2620]">{name}.sol</span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black border ${
+                        isPaused ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      }`}>
+                        {isPaused ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                        {isPaused ? 'PAUSED' : 'OPERATIONAL'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#666057] mb-4">
+                      {name === 'ProductRegistry' && 'Batch identity, harvest date & IPFS certificate anchors.'}
+                      {name === 'CustodyTransfer' && 'Custody handoffs, price trail & forward state transitions.'}
+                      {name === 'ColdChainMonitor' && 'IoT condition recordings, batched conditions & breach flags.'}
+                    </p>
                   </div>
-                  <p className="text-xs text-[#666057] mb-4">
-                    {name === 'ProductRegistry' && 'Batch identity, harvest date & IPFS certificate anchors.'}
-                    {name === 'CustodyTransfer' && 'Custody handoffs, price trail & forward state transitions.'}
-                    {name === 'ColdChainMonitor' && 'IoT condition recordings, batched conditions & breach flags.'}
-                  </p>
+                  <button
+                    onClick={() => handleToggleContractPause(name, isPaused)}
+                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all border ${
+                      isPaused 
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600' 
+                        : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                    }`}
+                  >
+                    {isPaused ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
+                    {isPaused ? 'Unpause Operations' : 'Emergency Pause'}
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleToggleContractPause(name, isPaused)}
-                  className={`w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all border ${
-                    isPaused 
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600' 
-                      : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
-                  }`}
-                >
-                  {isPaused ? <PlayCircle className="w-4 h-4" /> : <PauseCircle className="w-4 h-4" />}
-                  {isPaused ? 'Unpause Operations' : 'Emergency Pause'}
-                </button>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Section 2: Quarantine Hash-Chain Audit Verifier */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Database className="w-5 h-5 text-[#5B21B6]" />
-          <h2 className="text-lg font-black text-[#2D2620]">Tamper-Evident Quarantine Hash Chain (IsoLog)</h2>
-        </div>
-        <div className="bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E6E1D5] mb-5">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <FileCheck2 className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm font-black text-[#2D2620]">Cryptographic Audit Log Integrity</span>
-              </div>
-              <p className="text-xs text-[#666057]">
-                Continuous SHA-256 hash linking prevents tampering or deletion of off-chain anomalous telemetry.
-              </p>
-            </div>
-            {quarantineReport && (
-              <div className={`px-3 py-1.5 rounded-xl border text-xs font-black inline-flex items-center gap-2 ${
-                quarantineReport.tampered 
-                  ? 'bg-rose-50 text-rose-800 border-rose-200' 
-                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              }`}>
-                {quarantineReport.tampered ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                <span>{quarantineReport.tampered ? 'TAMPERING DETECTED' : 'UNBROKEN HASH CHAIN (VALID)'}</span>
-                <span className="opacity-75">({quarantineReport.verified_records || 0} verified records)</span>
-              </div>
-            )}
-          </div>
-
-          {/* Quarantine Incident List Preview */}
-          <div className="space-y-3">
-            <span className="text-xs font-bold text-[#666057] uppercase tracking-wider block">Latest Chained Incident Records</span>
-            {quarantineLogs.map((item) => (
-              <div key={item.id} className="p-3 bg-[#FAF7F0] rounded-xl border border-[#E6E1D5] text-xs flex flex-col md:flex-row md:items-center justify-between gap-2">
-                <div>
-                  <div className="font-bold text-[#2D2620] flex items-center gap-2">
-                    <span className="text-rose-600 font-black">[{item.id}]</span>
-                    <span>Batch #{item.batchId} ({item.cropName})</span>
-                    <span className="text-[#666057] font-normal">• {item.quarantinedAt}</span>
-                  </div>
-                  <p className="text-[11px] text-[#666057] mt-0.5">{item.details}</p>
-                </div>
-                {item.entryHash && (
-                  <div className="text-right">
-                    <span className="text-[10px] text-[#666057] font-mono block">hash: {item.entryHash.slice(0, 16)}...</span>
-                    <span className="text-[9px] text-[#8C827A] font-mono block">prev: {item.prevHash ? item.prevHash.slice(0, 12) : '0000'}...</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Section 3: Participant Role Governance */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Role List */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs">
+      {(currentTab === 'all' || currentTab === 'quarantine') && (
+        <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
-            <UserCheck className="w-5 h-5 text-[#5B21B6]" />
-            <h2 className="text-lg font-black text-[#2D2620]">Authorized System Participants</h2>
+            <Database className="w-5 h-5 text-[#5B21B6]" />
+            <h2 className="text-lg font-black text-[#2D2620]">Tamper-Evident Quarantine Hash Chain (IsoLog)</h2>
           </div>
-          <div className="divide-y divide-[#E6E1D5]">
-            {participants.map((p, idx) => (
-              <div key={idx} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-extrabold text-[#2D2620]">{p.name}</span>
-                    <span className="px-2 py-0.5 rounded-md bg-[#FAF7F0] border border-[#E6E1D5] text-[10px] font-mono font-bold text-[#666057]">
-                      {p.role}
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-mono text-[#8C827A] block mt-0.5 break-all">{p.address}</span>
+          <div className="bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#E6E1D5] mb-5">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <FileCheck2 className="w-4 h-4 text-emerald-600" />
+                  <span className="text-sm font-black text-[#2D2620]">Cryptographic Audit Log Integrity</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
-                    p.is_granted_onchain ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-                  }`}>
-                    {p.is_granted_onchain ? 'ON-CHAIN' : 'OFF-CHAIN'}
-                  </span>
-                  {p.role !== 'DEFAULT_ADMIN_ROLE' && p.role !== 'CONSUMER' && p.is_granted_onchain && (
-                    <button
-                      onClick={() => handleRevokeRole(p.address, p.role)}
-                      className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 cursor-pointer transition-all"
-                    >
-                      Revoke
-                    </button>
+                <p className="text-xs text-[#666057]">
+                  Continuous SHA-256 hash linking prevents tampering or deletion of off-chain anomalous telemetry.
+                </p>
+              </div>
+              {quarantineReport && (
+                <div className={`px-3 py-1.5 rounded-xl border text-xs font-black inline-flex items-center gap-2 ${
+                  quarantineReport.tampered 
+                    ? 'bg-rose-50 text-rose-800 border-rose-200' 
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                }`}>
+                  {quarantineReport.tampered ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                  <span>{quarantineReport.tampered ? 'TAMPERING DETECTED' : 'UNBROKEN HASH CHAIN (VALID)'}</span>
+                  <span className="opacity-75">({quarantineReport.verified_records || 0} verified records)</span>
+                </div>
+              )}
+            </div>
+
+            {/* Quarantine Incident List Preview */}
+            <div className="space-y-3">
+              <span className="text-xs font-bold text-[#666057] uppercase tracking-wider block">Latest Chained Incident Records</span>
+              {quarantineLogs.map((item) => (
+                <div key={item.id} className="p-3 bg-[#FAF7F0] rounded-xl border border-[#E6E1D5] text-xs flex flex-col md:flex-row md:items-center justify-between gap-2">
+                  <div>
+                    <div className="font-bold text-[#2D2620] flex items-center gap-2">
+                      <span className="text-rose-600 font-black">[{item.id}]</span>
+                      <span>Batch #{item.batchId} ({item.cropName})</span>
+                      <span className="text-[#666057] font-normal">• {item.quarantinedAt}</span>
+                    </div>
+                    <p className="text-[11px] text-[#666057] mt-0.5">{item.details}</p>
+                  </div>
+                  {item.entryHash && (
+                    <div className="text-right">
+                      <span className="text-[10px] text-[#666057] font-mono block">hash: {item.entryHash.slice(0, 16)}...</span>
+                      <span className="text-[9px] text-[#8C827A] font-mono block">prev: {item.prevHash ? item.prevHash.slice(0, 12) : '0000'}...</span>
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Right: Grant Role Form */}
-        <div className="bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs h-fit">
-          <div className="flex items-center gap-2 mb-4">
-            <KeyRound className="w-5 h-5 text-[#5B21B6]" />
-            <h2 className="text-lg font-black text-[#2D2620]">Grant On-Chain Role</h2>
+      {/* Section 3: Participant Role Governance */}
+      {(currentTab === 'all' || currentTab === 'roles') && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: Role List */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs">
+            <div className="flex items-center gap-2 mb-4">
+              <UserCheck className="w-5 h-5 text-[#5B21B6]" />
+              <h2 className="text-lg font-black text-[#2D2620]">Authorized System Participants</h2>
+            </div>
+            <div className="divide-y divide-[#E6E1D5]">
+              {participants.map((p, idx) => (
+                <div key={idx} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-extrabold text-[#2D2620]">{p.name}</span>
+                      <span className="px-2 py-0.5 rounded-md bg-[#FAF7F0] border border-[#E6E1D5] text-[10px] font-mono font-bold text-[#666057]">
+                        {p.role}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-mono text-[#8C827A] block mt-0.5 break-all">{p.address}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
+                      p.is_granted_onchain ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                    }`}>
+                      {p.is_granted_onchain ? 'ON-CHAIN' : 'OFF-CHAIN'}
+                    </span>
+                    {p.role !== 'DEFAULT_ADMIN_ROLE' && p.role !== 'CONSUMER' && p.is_granted_onchain && (
+                      <button
+                        onClick={() => handleRevokeRole(p.address, p.role)}
+                        className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 cursor-pointer transition-all"
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <form onSubmit={handleGrantRole} className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-[#666057] block mb-1">Target Ethereum Address</label>
-              <input
-                type="text"
-                placeholder="0x..."
-                value={targetAddress}
-                onChange={(e) => setTargetAddress(e.target.value)}
-                className="w-full text-xs font-mono p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
-                required
-              />
+
+          {/* Right: Grant Role Form */}
+          <div className="bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs h-fit">
+            <div className="flex items-center gap-2 mb-4">
+              <KeyRound className="w-5 h-5 text-[#5B21B6]" />
+              <h2 className="text-lg font-black text-[#2D2620]">Grant On-Chain Role</h2>
             </div>
-            <div>
-              <label className="text-xs font-bold text-[#666057] block mb-1">Assign Role</label>
-              <select
-                value={targetRole}
-                onChange={(e) => setTargetRole(e.target.value)}
-                className="w-full text-xs font-bold p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+            <form onSubmit={handleGrantRole} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-[#666057] block mb-1">Target Ethereum Address</label>
+                <input
+                  type="text"
+                  placeholder="0x..."
+                  value={targetAddress}
+                  onChange={(e) => setTargetAddress(e.target.value)}
+                  className="w-full text-xs font-mono p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-[#666057] block mb-1">Assign Role</label>
+                <select
+                  value={targetRole}
+                  onChange={(e) => setTargetRole(e.target.value)}
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                >
+                  <option value="FARMER_ROLE">FARMER_ROLE (ProductRegistry)</option>
+                  <option value="LOGISTICS_ROLE">LOGISTICS_ROLE (CustodyTransfer)</option>
+                  <option value="RETAILER_ROLE">RETAILER_ROLE (CustodyTransfer)</option>
+                  <option value="ORACLE_ROLE">ORACLE_ROLE (ColdChainMonitor)</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                disabled={granting}
+                className="w-full bg-[#5B21B6] hover:bg-[#4C1D95] text-white py-2.5 rounded-xl text-xs font-black shadow-xs cursor-pointer transition-all disabled:opacity-50"
               >
-                <option value="FARMER_ROLE">FARMER_ROLE (ProductRegistry)</option>
-                <option value="LOGISTICS_ROLE">LOGISTICS_ROLE (CustodyTransfer)</option>
-                <option value="RETAILER_ROLE">RETAILER_ROLE (CustodyTransfer)</option>
-                <option value="ORACLE_ROLE">ORACLE_ROLE (ColdChainMonitor)</option>
-              </select>
-            </div>
-            <button
-              type="submit"
-              disabled={granting}
-              className="w-full bg-[#5B21B6] hover:bg-[#4C1D95] text-white py-2.5 rounded-xl text-xs font-black shadow-xs cursor-pointer transition-all disabled:opacity-50"
-            >
-              {granting ? 'Executing on Hardhat...' : 'Execute On-Chain Grant'}
-            </button>
-          </form>
+                {granting ? 'Executing on Hardhat...' : 'Execute On-Chain Grant'}
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </main>
   );
 };
