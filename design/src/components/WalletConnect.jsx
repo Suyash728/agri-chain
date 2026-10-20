@@ -40,7 +40,7 @@ export const ROLE_IDENTITIES = {
   },
   logistics: {
     name: 'Safexpress Logistics',
-    roleTitle: 'Logistics Partner',
+    roleTitle: 'Logistics',
     id: 'TRANS-DL-804',
     org: 'Safexpress Cold Fleet North-West',
     upi: 'safexpress.fleet@icici',
@@ -48,7 +48,7 @@ export const ROLE_IDENTITIES = {
   },
   darkstore: {
     name: 'Pune Fresh Hub',
-    roleTitle: 'Dark Store Manager',
+    roleTitle: 'Dark Store',
     id: 'STORE-PUN-09',
     org: 'Blinkit / Dark Store Network Bin A-04',
     upi: 'punefresh.billing@yesbank',
@@ -63,8 +63,8 @@ export const ROLE_IDENTITIES = {
     badge: 'bg-amber-100 text-amber-800 border-amber-300',
   },
   admin: {
-    name: 'Smart Contract Admin',
-    roleTitle: 'DEFAULT_ADMIN_ROLE',
+    name: 'AgriChain Admin',
+    roleTitle: 'Admin',
     id: 'ADMIN-SYS-001',
     org: 'AgriChain Governance Multisig',
     upi: 'admin.governance@eth',
@@ -201,19 +201,21 @@ export const WalletConnect = ({ activeRole = 'farmer' }) => {
   // 1. Auditor / MetaMask connected view
   if (account) {
     return (
-      <div className="relative">
+      <div className="relative flex-shrink-0">
         <button
           onClick={() => setShowDropdown(!showDropdown)}
-          className="px-2.5 py-1.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center gap-2 hover:bg-[#FAF7F0] transition-colors cursor-pointer"
+          className="w-[210px] sm:w-[220px] h-[34px] px-2.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center justify-between gap-1.5 hover:bg-[#FAF7F0] transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
         >
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="font-mono font-bold text-[#2D2620]">
-            {shortenAddress(account)}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+            <span className="font-mono font-bold text-[#2D2620] truncate text-xs">
+              {shortenAddress(account)}
+            </span>
+          </div>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold border bg-emerald-50 text-emerald-800 border-emerald-300 flex-shrink-0">
+            Auditor
           </span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold border bg-emerald-50 text-emerald-800 border-emerald-300">
-            Auditor Mode
-          </span>
-          <ChevronDown className="w-3.5 h-3.5 text-[#666057]" />
+          <ChevronDown className="w-3.5 h-3.5 text-[#666057] flex-shrink-0" />
         </button>
 
         {showDropdown && (
@@ -258,21 +260,23 @@ export const WalletConnect = ({ activeRole = 'farmer' }) => {
 
   // 2. Default: Native Indian Rupee / Kisan Digital ID
   return (
-    <div className="relative">
+    <div className="relative flex-shrink-0">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
-        className="px-2.5 py-1.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center gap-2 hover:bg-[#FAF7F0] transition-colors cursor-pointer"
+        className="w-[210px] sm:w-[220px] h-[34px] px-2.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center justify-between gap-1.5 hover:bg-[#FAF7F0] transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
         title="Verified Indian Rupee Digital Identity"
       >
-        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="font-extrabold text-[#2D2620] flex items-center gap-0.5">
-          <span className="text-emerald-700 font-black">₹</span>
-          <span>{currentIdentity.name}</span>
-        </span>
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${currentIdentity.badge}`}>
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+          <span className="text-emerald-700 font-black flex-shrink-0">₹</span>
+          <span className="font-extrabold text-[#2D2620] truncate text-xs text-left">
+            {currentIdentity.name}
+          </span>
+        </div>
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border flex-shrink-0 ml-1.5 ${currentIdentity.badge}`}>
           {currentIdentity.roleTitle}
         </span>
-        <ChevronDown className="w-3.5 h-3.5 text-[#666057]" />
+        <ChevronDown className="w-3.5 h-3.5 text-[#666057] flex-shrink-0 ml-1" />
       </button>
 
       {showDropdown && (

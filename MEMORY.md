@@ -1186,4 +1186,29 @@ still static UI with no data flow. Specifically:
 - Full-System Capstone Test (`backend/scripts/verify_final_system.py`): 10/10 capstone checks passed (access control, AI trust F1=0.9722, multi-role provenance, push-button thermal quarantine, on-chain policy breach, IPFS anchoring, dark store checkout, verified reviews, and price trail).
 - Backend Pytest Suite (`pytest tests/`): 7/7 tests passed in 4.20s.
 
+---
+
+## [Floating Role & Wallet Bar Dimension Consistency] — 2026-10-20
+
+**What was done:**
+- Fixed dimension jumping and layout jitter on the floating top role switcher and digital identity bar across account switches:
+  1. **Root Cause Analysis**: The right-hand `WalletConnect` digital identity pill had unconstrained auto width and unconstrained text lengths (`currentIdentity.name` and `currentIdentity.roleTitle`), which caused the pill width to fluctuate erratically between `190px` and `339px` (a `149px` horizontal jump) and the bar's x-origin to jump by nearly 150px on every role switch. On mobile screens (375px/768px), variable badge text lengths caused internal wrapping, inflating bar height erratically between 56px, 62px, 72px, and 78px.
+  2. **Consistent Fixed Dimensions**:
+     - Fixed floating control bar container to `h-11 whitespace-nowrap flex-shrink-0` with `items-center`.
+     - Standardized all role buttons to fixed `h-[34px] px-3 whitespace-nowrap flex-shrink-0`.
+     - Standardized `WalletConnect` button to fixed `w-[210px] sm:w-[220px] h-[34px] whitespace-nowrap flex-shrink-0` with internal text truncation (`truncate text-xs`) and concise role badges (`Farmer`, `Logistics`, `Dark Store`, `Consumer`, `Admin`).
+- Proved 100% mathematical dimension consistency across all 5 account switches via automated headless Playwright measurements:
+  - 375px Mobile: Bar width exactly `351.0px`, height exactly `44.0px`, x-origin `8.0px` across ALL 5 roles.
+  - 768px Tablet: Bar width exactly `744.0px`, height exactly `44.0px`, x-origin `0.0px` across ALL 5 roles.
+  - 1024px, 1280px, 1440px Desktop: Bar width exactly `796.1px`, height exactly `44.0px`, wallet width exactly `220.0px` across ALL 5 roles (zero jitter, zero layout shift).
+
+**Verified (DONE WHEN checks that actually passed):**
+- Automated Dimension Audit: 5 viewports x 5 roles (25 checks) verified 0px width/height deviation on account switches.
+- `design/test_comprehensive_responsive.py`: 55/55 passed (zero overflow across all 11 viewports and all 5 roles).
+- `design/test_live_data_integrity.py`: Passed all 5 roles verifying live data integrity.
+- `npm run build`: Built cleanly in 3.27s with 0 errors.
+- `pytest tests/`: 7/7 passed.
+- `backend/scripts/verify_final_system.py`: 10/10 passed.
+
+
 

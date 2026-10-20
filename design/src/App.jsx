@@ -187,10 +187,10 @@ export default function App() {
       <div className="min-h-screen bg-[#FAF7F0] text-[#3B3028] font-sans antialiased flex flex-col md:flex-row select-none">
         
         {/* Role Switcher & Web3 Wallet Floating Control Bar */}
-        <div className="fixed top-3 right-4 sm:right-6 z-50 flex items-center gap-1.5 p-1 bg-white/90 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-sm max-w-[calc(100vw-1.5rem)] overflow-x-auto no-scrollbar">
+        <div className="fixed top-3 right-4 sm:right-6 z-50 h-11 flex items-center gap-1.5 p-1 bg-white/90 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-sm max-w-[calc(100vw-1.5rem)] overflow-x-auto no-scrollbar whitespace-nowrap flex-shrink-0">
           <button
             onClick={() => setActiveRole('farmer')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 h-[34px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
               activeRole === 'farmer' 
                 ? 'bg-[#3D4E2A] text-white shadow-xs' 
                 : 'text-[#666057] hover:text-[#2D2620]'
@@ -201,7 +201,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveRole('logistics')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 h-[34px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
               activeRole === 'logistics' 
                 ? 'bg-[#354424] text-white shadow-xs' 
                 : 'text-[#666057] hover:text-[#2D2620]'
@@ -212,7 +212,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveRole('darkstore')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 h-[34px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
               activeRole === 'darkstore' 
                 ? 'bg-[#3D4E2A] text-white shadow-xs' 
                 : 'text-[#666057] hover:text-[#2D2620]'
@@ -226,7 +226,7 @@ export default function App() {
               setActiveRole('consumer');
               if (consumerTab === 'onboarding') setConsumerTab('home');
             }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 h-[34px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
               activeRole === 'consumer' 
                 ? 'bg-[#354424] text-white shadow-xs' 
                 : 'text-[#666057] hover:text-[#2D2620]'
@@ -237,7 +237,7 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveRole('admin')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-3 h-[34px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
               activeRole === 'admin' 
                 ? 'bg-[#5B21B6] text-white shadow-xs' 
                 : 'text-[#666057] hover:text-[#2D2620]'
@@ -247,7 +247,7 @@ export default function App() {
             <span>Admin</span>
           </button>
 
-          <div className="h-5 w-px bg-[#E6E1D5] mx-1" />
+          <div className="h-5 w-px bg-[#E6E1D5] mx-1 flex-shrink-0" />
           <WalletConnect activeRole={activeRole} />
         </div>
 
