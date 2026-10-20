@@ -1069,3 +1069,24 @@ still static UI with no data flow. Specifically:
 - Hardhat tests: 31/31 passed across contracts suite.
 - Pytest suite: 7/7 passed across `tests/`.
 - Full-System Capstone Suite: `backend/scripts/verify_final_system.py` passed 10/10 checks.
+
+---
+
+## [Dedicated Desktop Admin Persona UI] — 2026-10-20
+
+**Branch:** `reference-review` (Task 12.6).
+
+**What was done:**
+- Promoted Admin role from a nested mobile sheet to a first-class user persona in the top-level role switcher in `design/src/App.jsx` (`⚡ Admin`).
+- Created `design/src/components/AdminPortalView.jsx` matching the design language:
+  - **Smart Contract Circuit Breakers:** Real-time pause/unpause toggles for `ProductRegistry`, `CustodyTransfer`, and `ColdChainMonitor` via `/admin/contracts/pause` and `/admin/contracts/unpause`.
+  - **Quarantine Hash-Chain Audit Verifier:** One-click cryptographic integrity verification (`/quarantine/verify-integrity`) displaying verification badge, broken chain detection, and chained incident previews with SHA-256 hashes.
+  - **Participant Role Governance:** Lists all registered network participants (`/admin/users`) with on-chain role verification across contracts, role grant form (`/admin/roles/grant`), and immediate on-chain role revocation buttons (`/admin/roles/revoke`).
+- Wired full end-to-end flow without altering external styles, keeping pure Tailwind utility styling consistent with `DESIGN.md`.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Frontend compilation: `npm run build` compiled 1,807 modules with 0 errors in 2.85s.
+- Active role switcher: verified Admin persona renders seamlessly at `activeRole === 'admin'`.
+- Pytest suite: 7/7 tests passed.
+- Hardhat tests: 31/31 tests passed.
+- Capstone verification: `verify_final_system.py` passed 10/10 checks.

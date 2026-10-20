@@ -44,6 +44,9 @@ import { DarkStoreApp } from './Dark_Store/DarkStoreApp';
 // Consumer Portal
 import { ConsumerApp } from './Consumer/ConsumerApp';
 
+// Admin Portal
+import { AdminPortalView } from './components/AdminPortalView';
+
 // Web3 Wallet
 import { WalletProvider, WalletConnect } from './components/WalletConnect';
 
@@ -216,6 +219,17 @@ export default function App() {
           >
             <span>🛒</span>
             <span>Consumer</span>
+          </button>
+          <button
+            onClick={() => setActiveRole('admin')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeRole === 'admin' 
+                ? 'bg-[#5B21B6] text-white shadow-xs' 
+                : 'text-[#666057] hover:text-[#2D2620]'
+            }`}
+          >
+            <span>⚡</span>
+            <span>Admin</span>
           </button>
 
           <div className="h-5 w-px bg-[#E6E1D5] mx-1" />
@@ -603,6 +617,15 @@ export default function App() {
               else handleLogout();
             }} 
           />
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* 5. MASTER ADMIN GOVERNANCE PORTAL VIEW     */}
+      {/* ========================================== */}
+      {activeRole === 'admin' && (
+        <div className="w-full min-h-screen flex-1 bg-[#FAF7F0]">
+          <AdminPortalView />
         </div>
       )}
 

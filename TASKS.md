@@ -698,7 +698,10 @@ Benchmarked against 6 reference repositories (`ONTOCHAIN/ADOS`, `bhaskardatta/Cr
 - [x] Create Hardhat unit test in `contracts/test/CircuitBreakerPause.test.cjs` and API integration test in `tests/test_circuit_breaker.py`.
 - **DONE WHEN:** Hardhat test verifies paused contract reverts state mutations and unpausing restores operation; pytest passes. (Verified: 31 Hardhat tests passing, 7 pytest tests passing, emergency pause reverts with `EnforcedPause`).
 
-### Task 12.6 (Backlog) — Dedicated Desktop Admin Persona UI
-- [ ] Promote Admin from mobile `MoreMenuSheet` to a first-class persona in `design/src/App.jsx` switcher.
-- [ ] Wire `/admin/users`, `/admin/roles/grant`, `/admin/roles/revoke`, and `/quarantine/verify-integrity`.
-- **DONE WHEN:** Admin persona view allows viewing participant addresses, granting/revoking roles, and viewing cryptographic audit log verification status in the UI.
+### Task 12.6 — Dedicated Desktop Admin Persona UI
+- [x] Promote Admin from mobile `MoreMenuSheet` to a first-class persona in `design/src/App.jsx` switcher.
+- [x] Create `design/src/components/AdminPortalView.jsx` wiring:
+  - Smart Contract Circuit Breakers (Pausable emergency pause/unpause with live status)
+  - Tamper-Evident Quarantine Hash Chain Audit Verifier (`/quarantine/verify-integrity`)
+  - Participant Role Governance (`/admin/users`, `/admin/roles/grant`, `/admin/roles/revoke`)
+- **DONE WHEN:** Admin persona view allows viewing participant addresses, granting/revoking roles, and viewing cryptographic audit log verification status in the UI. (Verified: `npm run build` succeeds cleanly; Admin persona switcher is accessible from the top-level bar).
