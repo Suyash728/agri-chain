@@ -135,8 +135,14 @@ DEFAULT_POLICIES = [
 ]
 
 
+_POSTGRES_AVAILABLE: Optional[bool] = None
+
+
 def is_postgres() -> bool:
     """Return True if DATABASE_URL is set and points to PostgreSQL."""
+    global _POSTGRES_AVAILABLE
+    if _POSTGRES_AVAILABLE is False:
+        return False
     db_url = os.getenv("DATABASE_URL", "").strip()
     return db_url.startswith("postgresql://") or db_url.startswith("postgres://")
 
@@ -226,16 +232,22 @@ class PostgresConnectionWrapper:
 
 def get_connection(db_path: str | pathlib.Path = DB_PATH):
     """Return a unified connection: PostgreSQL if DATABASE_URL is set, else local SQLite with Row factory."""
+    global _POSTGRES_AVAILABLE
     if is_postgres():
-        import psycopg
-        from psycopg.rows import dict_row
-        db_url = os.getenv("DATABASE_URL")
-        raw_conn = psycopg.connect(db_url, row_factory=dict_row)
-        return PostgresConnectionWrapper(raw_conn)
-    else:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            import psycopg
+            from psycopg.rows import dict_row
+            db_url = os.getenv("DATABASE_URL")
+            raw_conn = psycopg.connect(db_url, row_factory=dict_row)
+            _POSTGRES_AVAILABLE = True
+            return PostgresConnectionWrapper(raw_conn)
+        except Exception as e:
+            _POSTGRES_AVAILABLE = False
+            print(f"[db] Warning: Failed to connect to PostgreSQL ({e}). Falling back to local SQLite.")
+
+    conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
 def init_db(db_path: str | pathlib.Path = DB_PATH) -> pathlib.Path | str:
@@ -245,36 +257,40 @@ def init_db(db_path: str | pathlib.Path = DB_PATH) -> pathlib.Path | str:
     """
     if is_postgres():
         db_url = os.getenv("DATABASE_URL")
-        with get_connection() as conn:
-            # Read and execute PostgreSQL DDL
-            if MIGRATION_PATH.exists():
-                with open(MIGRATION_PATH, "r", encoding="utf-8") as f:
-                    migration_sql = f.read()
-                conn.executescript(migration_sql)
-            # Seed default policies
-            for crop_name, min_temp, max_temp, min_hum, max_hum in DEFAULT_POLICIES:
-                conn.execute(
-                    """
-                    INSERT INTO policy (crop_name, min_temp_c, max_temp_c, min_humidity, max_humidity)
-                    VALUES (%s, %s, %s, %s, %s)
-                    ON CONFLICT (crop_name) DO NOTHING
-                    """,
-                    (crop_name, min_temp, max_temp, min_hum, max_hum),
-                )
-            conn.commit()
-        return db_url
-    else:
-        path = pathlib.Path(db_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(path) as conn:
-            conn.executescript(SQLITE_SCHEMA)
-            for crop_name, min_temp, max_temp, min_hum, max_hum in DEFAULT_POLICIES:
-                conn.execute(
-                    """
-                    INSERT OR IGNORE INTO policy (crop_name, min_temp_c, max_temp_c, min_humidity, max_humidity)
-                    VALUES (?, ?, ?, ?, ?)
-                    """,
-                    (crop_name, min_temp, max_temp, min_hum, max_hum),
-                )
-            conn.commit()
-        return path
+        try:
+            with get_connection() as conn:
+                if isinstance(conn, PostgresConnectionWrapper):
+                    # Read and execute PostgreSQL DDL
+                    if MIGRATION_PATH.exists():
+                        with open(MIGRATION_PATH, "r", encoding="utf-8") as f:
+                            migration_sql = f.read()
+                        conn.executescript(migration_sql)
+                    # Seed default policies
+                    for crop_name, min_temp, max_temp, min_hum, max_hum in DEFAULT_POLICIES:
+                        conn.execute(
+                            """
+                            INSERT INTO policy (crop_name, min_temp_c, max_temp_c, min_humidity, max_humidity)
+                            VALUES (%s, %s, %s, %s, %s)
+                            ON CONFLICT (crop_name) DO NOTHING
+                            """,
+                            (crop_name, min_temp, max_temp, min_hum, max_hum),
+                        )
+                    conn.commit()
+                    return db_url
+        except Exception as e:
+            print(f"[db] Warning: Failed to initialize PostgreSQL ({e}). Falling back to local SQLite.")
+
+    path = pathlib.Path(db_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(path) as conn:
+        conn.executescript(SQLITE_SCHEMA)
+        for crop_name, min_temp, max_temp, min_hum, max_hum in DEFAULT_POLICIES:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO policy (crop_name, min_temp_c, max_temp_c, min_humidity, max_humidity)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (crop_name, min_temp, max_temp, min_hum, max_hum),
+            )
+        conn.commit()
+    return path

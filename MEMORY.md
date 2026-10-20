@@ -793,3 +793,40 @@ still static UI with no data flow. Specifically:
 - All 147 unit/integration tests in `trust-layer/tests` passed with 0 failures (`pytest trust-layer/tests`).
 - Frontend production build succeeded (`npm run build` in `design/`) in 3.31s with 0 errors.
 
+
+---
+
+## [System Launch & Database Resilience] — 2026-10-20
+
+**What was done:**
+- Initialized and launched the full AgriChain stack:
+  1. Local Hardhat node on `http://127.0.0.1:8545`.
+  2. Deployed all 5 modular smart contracts (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, `AccessControlRoles`) and seeded crop policies.
+  3. FastAPI backend on `http://0.0.0.0:8000` with Web3 integration, AI Trust Layer ML anomaly pipeline, and dual-storage adapter.
+  4. Vite React frontend on `http://localhost:3000`.
+- Hardened database connection layer in `backend/db.py`:
+  - Added robust exception handling with cached fallback to local SQLite (`backend/agrichain.db`) when remote cloud PostgreSQL (Supabase) is paused or unreachable, avoiding repeated connection latency penalties.
+- Synchronized `CONTRACT_ADDRESSES` in `design/src/utils/contracts.js` with active modular deployment manifests.
+- Verified entire system through `backend/scripts/verify_final_system.py`, validating all 8 checks with 100% pass rate.
+
+**Files changed:**
+- `backend/db.py`: added graceful fallback and cached connection state for SQLite fallback.
+- `design/src/utils/contracts.js`: synced localhost modular contract addresses.
+- `contracts/amoy-deployments.json` & `backend/modular-deployments.json`: redeployed to local node.
+- `MEMORY.md`: appended session record.
+
+**Decisions made (and why):**
+- When remote Supabase instance is unreachable, caching `_POSTGRES_AVAILABLE = False` prevents a 2-3 second TCP timeout on every incoming API request and provides instant responses from local SQLite (`backend/agrichain.db`), which contains the complete 11-table dataset.
+
+**Verified (DONE WHEN checks that actually passed):**
+- `contracts/`: `npx hardhat test` passed 28/28 tests.
+- `contracts/`: Deployed modular contracts and verified roles and initial policies.
+- `backend/`: `GET http://127.0.0.1:8000/farmer/kpis` returned live data.
+- `design/`: `npm run build` compiled 1,807 modules cleanly with 0 errors.
+- `design/`: Vite dev server active and serving on `http://localhost:3000/`.
+- Full capstone suite (`python backend/scripts/verify_final_system.py`) passed all 8 checks with 100% success.
+
+**Status:**
+- Hardhat node running on port 8545.
+- FastAPI backend running on port 8000.
+- Vite frontend running on port 3000.
