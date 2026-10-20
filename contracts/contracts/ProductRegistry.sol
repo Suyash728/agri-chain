@@ -2,8 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "./AccessControlRoles.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract ProductRegistry is AccessControlRoles {
+contract ProductRegistry is AccessControlRoles, Pausable {
     struct Batch {
         string cropName;
         string originFarm;
@@ -38,7 +39,7 @@ contract ProductRegistry is AccessControlRoles {
         string calldata originFarm,
         uint256 harvestDate,
         address farmer
-    ) external onlyFarmerOrAdmin {
+    ) external onlyFarmerOrAdmin whenNotPaused {
         require(!batches[batchId].exists, "ProductRegistry: batch already exists");
         batches[batchId] = Batch(cropName, originFarm, harvestDate, farmer, true);
         emit BatchRegistered(batchId, cropName, farmer);
@@ -48,10 +49,18 @@ contract ProductRegistry is AccessControlRoles {
         bytes32 batchId,
         string calldata docType,
         string calldata ipfsCid
-    ) external onlyFarmerOrAdmin {
+    ) external onlyFarmerOrAdmin whenNotPaused {
         require(batches[batchId].exists, "ProductRegistry: batch does not exist");
         _batchDocuments[batchId].push(DocumentRecord(docType, ipfsCid, block.timestamp));
         emit BatchDocumentAnchored(batchId, docType, ipfsCid);
+    }
+
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
     }
 
     function getBatchDocuments(bytes32 batchId) external view returns (DocumentRecord[] memory) {

@@ -2,8 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "./AccessControlRoles.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract CustodyTransfer is AccessControlRoles {
+contract CustodyTransfer is AccessControlRoles, Pausable {
     enum CustodyState { REGISTERED, IN_TRANSIT, IN_STORAGE, AT_RETAIL, SOLD }
 
     struct CustodyRecord {
@@ -23,7 +24,7 @@ contract CustodyTransfer is AccessControlRoles {
         uint256 pricePaise
     );
 
-    function initializeCustody(bytes32 batchId, address initialHolder) external {
+    function initializeCustody(bytes32 batchId, address initialHolder) external whenNotPaused {
         require(
             hasRole(FARMER_ROLE, msg.sender) || hasRole(DEFAULT_ADMIN_ROLE, msg.sender),
             "CustodyTransfer: caller is not authorized as farmer or admin"
@@ -37,7 +38,7 @@ contract CustodyTransfer is AccessControlRoles {
         address to,
         CustodyState newState,
         uint256 pricePaise
-    ) external {
+    ) external whenNotPaused {
         CustodyRecord storage c = custody[batchId];
         require(c.exists, "CustodyTransfer: unknown batch");
         require(uint8(newState) > uint8(c.state), "CustodyTransfer: no backward or identical transitions");
@@ -64,6 +65,14 @@ contract CustodyTransfer is AccessControlRoles {
         c.cumulativePricePaise = pricePaise;
 
         emit CustodyTransferred(batchId, from, to, newState, pricePaise);
+    }
+
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
     }
 
     function getCustody(bytes32 batchId) external view returns (

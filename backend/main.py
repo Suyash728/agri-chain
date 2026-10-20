@@ -2544,4 +2544,35 @@ def revoke_admin_role(payload: RoleGrantRequest):
         result = chain.revoke_role(payload.role, payload.address)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"On-chain revokeRole failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"On-chain revokeRole failed: {str(e)}")
+
+
+class ContractPauseRequest(BaseModel):
+    contract: str  # "ProductRegistry" | "CustodyTransfer" | "ColdChainMonitor"
+
+
+@app.get("/admin/contracts/status")
+def get_admin_contracts_status():
+    """Returns emergency circuit-breaker paused status across all modular smart contracts."""
+    try:
+        return chain.get_contracts_pause_status()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to check contract pause status: {str(e)}")
+
+
+@app.post("/admin/contracts/pause")
+def pause_admin_contract(payload: ContractPauseRequest):
+    """Executes emergency circuit-breaker pause on a contract (DEFAULT_ADMIN_ROLE)."""
+    try:
+        return chain.pause_contract(payload.contract)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to pause contract: {str(e)}")
+
+
+@app.post("/admin/contracts/unpause")
+def unpause_admin_contract(payload: ContractPauseRequest):
+    """Restores operations on a paused contract (DEFAULT_ADMIN_ROLE)."""
+    try:
+        return chain.unpause_contract(payload.contract)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to unpause contract: {str(e)}")

@@ -538,3 +538,60 @@ def check_role(role_name: str, account_address: str) -> dict:
         "contract_details": results,
     }
 
+
+def pause_contract(contract_name: str) -> dict:
+    """Executes emergency pause() on the specified modular contract."""
+    contract_map = {
+        "ProductRegistry": product_registry_contract,
+        "CustodyTransfer": custody_transfer_contract,
+        "ColdChainMonitor": cold_chain_monitor_contract,
+    }
+    c = contract_map.get(contract_name)
+    if not c:
+        raise ValueError(f"Unknown contract: {contract_name}")
+    tx_hash = _send_tx(c, "pause")
+    return {
+        "contract": contract_name,
+        "tx_hash": tx_hash,
+        "paused": True,
+        "success": True,
+    }
+
+
+def unpause_contract(contract_name: str) -> dict:
+    """Executes unpause() on the specified modular contract to restore operations."""
+    contract_map = {
+        "ProductRegistry": product_registry_contract,
+        "CustodyTransfer": custody_transfer_contract,
+        "ColdChainMonitor": cold_chain_monitor_contract,
+    }
+    c = contract_map.get(contract_name)
+    if not c:
+        raise ValueError(f"Unknown contract: {contract_name}")
+    tx_hash = _send_tx(c, "unpause")
+    return {
+        "contract": contract_name,
+        "tx_hash": tx_hash,
+        "paused": False,
+        "success": True,
+    }
+
+
+def get_contracts_pause_status() -> dict:
+    """Checks emergency paused status across all modular contracts."""
+    status = {}
+    contract_map = {
+        "ProductRegistry": product_registry_contract,
+        "CustodyTransfer": custody_transfer_contract,
+        "ColdChainMonitor": cold_chain_monitor_contract,
+    }
+    for name, c in contract_map.items():
+        if c:
+            try:
+                status[name] = c.functions.paused().call()
+            except Exception:
+                status[name] = False
+        else:
+            status[name] = False
+    return status
+

@@ -691,10 +691,12 @@ Benchmarked against 6 reference repositories (`ONTOCHAIN/ADOS`, `bhaskardatta/Cr
 - [x] Create `tests/test_admin_roles.py`.
 - **DONE WHEN:** `pytest tests/test_admin_roles.py` passes. (Verified: role grant and revoke cycle tested on-chain with OpenZeppelin `AccessControl`).
 
-### Task 12.5 (Backlog) — Smart Contract Circuit-Breaker Emergency Pause Pattern
-- [ ] Add OpenZeppelin `Pausable` to `ProductRegistry` and `ColdChainMonitor`.
-- [ ] Add emergency pause/unpause methods restricted to `DEFAULT_ADMIN_ROLE`.
-- **DONE WHEN:** Hardhat test verifies paused contract reverts state mutations and unpausing restores operation.
+### Task 12.5 — Smart Contract Circuit-Breaker Emergency Pause Pattern (Pausable)
+- [x] Add OpenZeppelin `Pausable` to `ProductRegistry`, `CustodyTransfer`, and `ColdChainMonitor`.
+- [x] Add emergency pause/unpause methods restricted to `DEFAULT_ADMIN_ROLE`.
+- [x] Expose `GET /admin/contracts/status`, `POST /admin/contracts/pause`, and `POST /admin/contracts/unpause` in backend API.
+- [x] Create Hardhat unit test in `contracts/test/CircuitBreakerPause.test.cjs` and API integration test in `tests/test_circuit_breaker.py`.
+- **DONE WHEN:** Hardhat test verifies paused contract reverts state mutations and unpausing restores operation; pytest passes. (Verified: 31 Hardhat tests passing, 7 pytest tests passing, emergency pause reverts with `EnforcedPause`).
 
 ### Task 12.6 (Backlog) — Dedicated Desktop Admin Persona UI
 - [ ] Promote Admin from mobile `MoreMenuSheet` to a first-class persona in `design/src/App.jsx` switcher.

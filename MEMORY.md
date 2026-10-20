@@ -1044,3 +1044,28 @@ still static UI with no data flow. Specifically:
 - `backend/scripts/verify_final_system.py` passed 10/10 checks with 100% capstone validation.
 - Local AI setup (`/home/suyash/AI`, `gpt-oss:20b`) successfully loaded, benchmarked, and unloaded (GPU memory freed to 722 MiB).
 - `git status` confirmed `_reference/` remains strictly outside the repository.
+
+---
+
+## [Smart Contract Circuit Breaker (Pausable Pattern)] — 2026-10-20
+
+**Branch:** `reference-review` (Task 12.5).
+
+**What was done:**
+- Implemented OpenZeppelin `Pausable` circuit-breaker pattern across all three core modular contracts (`ProductRegistry.sol`, `CustodyTransfer.sol`, and `ColdChainMonitor.sol`).
+- State mutations (`registerBatch`, `setBatchDocument`, `initializeCustody`, `transferCustody`, `recordCondition`, and `recordConditionsBatch`) are guarded by `whenNotPaused`.
+- Added administrative `pause()` and `unpause()` functions gated strictly by `onlyRole(DEFAULT_ADMIN_ROLE)`.
+- Recompiled contracts and redeployed to running Hardhat node via `contracts/scripts/deploy_amoy.cjs --network localhost`.
+- Updated `backend/modular-abis/` and `backend/modular-deployments.json`.
+- Implemented backend management endpoints in `backend/chain.py` and `backend/main.py`:
+  - `GET /admin/contracts/status` (returns paused state per contract)
+  - `POST /admin/contracts/pause` (triggers emergency pause)
+  - `POST /admin/contracts/unpause` (restores normal operations)
+- Added tests:
+  - Hardhat unit test `contracts/test/CircuitBreakerPause.test.cjs` (3 tests verifying admin pause/unpause, unauthorized reverts, and `EnforcedPause` custom error).
+  - Integration test `tests/test_circuit_breaker.py` (verifies API endpoints and registration failure while paused).
+
+**Verified (DONE WHEN checks that actually passed):**
+- Hardhat tests: 31/31 passed across contracts suite.
+- Pytest suite: 7/7 passed across `tests/`.
+- Full-System Capstone Suite: `backend/scripts/verify_final_system.py` passed 10/10 checks.

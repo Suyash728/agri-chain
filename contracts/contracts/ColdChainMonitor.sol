@@ -2,8 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "./AccessControlRoles.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
-contract ColdChainMonitor is AccessControlRoles {
+contract ColdChainMonitor is AccessControlRoles, Pausable {
     struct ConditionRecord {
         int64 tempDeciC;
         uint32 humidityPct;
@@ -29,7 +30,7 @@ contract ColdChainMonitor is AccessControlRoles {
         int256 tempDeciC,
         uint256 humidityPct,
         bool breach
-    ) external onlyOracle {
+    ) external onlyOracle whenNotPaused {
         _conditionLogs[batchId].push(ConditionRecord(int64(tempDeciC), uint32(humidityPct), breach, uint48(block.timestamp)));
         emit ConditionRecorded(batchId, tempDeciC, humidityPct, breach);
     }
@@ -39,7 +40,7 @@ contract ColdChainMonitor is AccessControlRoles {
         int256[] calldata tempsDeciC,
         uint256[] calldata humsPct,
         bool[] calldata breaches
-    ) external onlyOracle {
+    ) external onlyOracle whenNotPaused {
         uint256 len = batchIds.length;
         require(len == tempsDeciC.length && len == humsPct.length && len == breaches.length, "ColdChainMonitor: length mismatch");
 
@@ -50,6 +51,14 @@ contract ColdChainMonitor is AccessControlRoles {
         }
 
         emit ConditionsBatchRecorded(len);
+    }
+
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
     }
 
     function getConditionCount(bytes32 batchId) external view returns (uint256) {
