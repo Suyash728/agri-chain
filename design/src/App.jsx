@@ -219,7 +219,7 @@ export default function App() {
           </button>
 
           <div className="h-5 w-px bg-[#E6E1D5] mx-1" />
-          <WalletConnect />
+          <WalletConnect activeRole={activeRole} />
         </div>
 
       {/* ========================================== */}

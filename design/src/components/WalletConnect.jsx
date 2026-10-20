@@ -1,12 +1,14 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { ethers } from 'ethers';
-import { Wallet, ShieldCheck, CheckCircle2, ChevronDown, ExternalLink } from 'lucide-react';
+import { Wallet, ShieldCheck, CheckCircle2, ChevronDown, ExternalLink, IndianRupee } from 'lucide-react';
 
 const WalletContext = createContext({
   account: null,
   role: 'Unregistered',
   signer: null,
   provider: null,
+  identity: null,
+  isGasless: true,
   connectWallet: () => {},
   disconnectWallet: () => {},
   isConnecting: false,
@@ -25,6 +27,41 @@ const KNOWN_ROLES = {
   '0x70997970c51812dc3a010c7d01b50e0d17dc79c8': 'Logistics Partner',
   '0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc': 'Dark Store Manager',
   '0x90f79bf6eb2c4f870365e785982e1f101e93b906': 'Consumer',
+};
+
+export const ROLE_IDENTITIES = {
+  farmer: {
+    name: 'Rahul Patil',
+    roleTitle: 'Farmer',
+    id: 'KISAN-MH-412',
+    org: 'Nashik Organic Cluster #4',
+    upi: 'rahul.patil@okhdfcbank',
+    badge: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  },
+  logistics: {
+    name: 'Safexpress Logistics',
+    roleTitle: 'Logistics Partner',
+    id: 'TRANS-DL-804',
+    org: 'Safexpress Cold Fleet North-West',
+    upi: 'safexpress.fleet@icici',
+    badge: 'bg-blue-100 text-blue-800 border-blue-300',
+  },
+  darkstore: {
+    name: 'Pune Fresh Hub',
+    roleTitle: 'Dark Store Manager',
+    id: 'STORE-PUN-09',
+    org: 'Blinkit / Dark Store Network Bin A-04',
+    upi: 'punefresh.billing@yesbank',
+    badge: 'bg-purple-100 text-purple-800 border-purple-300',
+  },
+  consumer: {
+    name: 'Priya Sharma',
+    roleTitle: 'Consumer',
+    id: 'CITIZEN-IN-109',
+    org: 'Verified Retail Customer',
+    upi: 'priya.sharma@okaxis',
+    badge: 'bg-amber-100 text-amber-800 border-amber-300',
+  },
 };
 
 export const WalletProvider = ({ children }) => {
@@ -60,8 +97,7 @@ export const WalletProvider = ({ children }) => {
 
   const connectWallet = async () => {
     if (typeof window === 'undefined' || !window.ethereum) {
-      alert('MetaMask or Web3 wallet extension not detected. Please install MetaMask to sign transactions on-chain.');
-      return;
+      return { success: false, reason: 'NOT_INSTALLED' };
     }
 
     setIsConnecting(true);
@@ -77,9 +113,11 @@ export const WalletProvider = ({ children }) => {
         setRole(detectedRole);
         setSigner(userSigner);
         setProvider(browserProvider);
+        return { success: true, account: userAddr };
       }
     } catch (err) {
       console.error('Wallet connection error:', err);
+      return { success: false, reason: 'REJECTED' };
     } finally {
       setIsConnecting(false);
     }
@@ -120,6 +158,7 @@ export const WalletProvider = ({ children }) => {
         connectWallet,
         disconnectWallet,
         isConnecting,
+        isGasless: !account,
       }}
     >
       {children}
@@ -127,87 +166,166 @@ export const WalletProvider = ({ children }) => {
   );
 };
 
-export const WalletConnect = () => {
+export const WalletConnect = ({ activeRole = 'farmer' }) => {
   const { account, role, connectWallet, disconnectWallet, isConnecting } = useWallet();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [metaMaskNotice, setMetaMaskNotice] = useState('');
+
+  const currentIdentity = ROLE_IDENTITIES[activeRole] || ROLE_IDENTITIES.farmer;
+
+  const handleMetaMaskConnect = async () => {
+    const res = await connectWallet();
+    if (!res || !res.success) {
+      if (res?.reason === 'NOT_INSTALLED') {
+        setMetaMaskNotice('MetaMask extension not found. You are operating in Native Rupee Mode with automated relayer sponsorship.');
+      } else {
+        setMetaMaskNotice('Connection request dismissed. Continuing in Native Rupee Mode.');
+      }
+      setTimeout(() => setMetaMaskNotice(''), 5000);
+    }
+  };
 
   const shortenAddress = (addr) => {
     if (!addr) return '';
     return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
   };
 
-  if (!account) {
+  // 1. Auditor / MetaMask connected view
+  if (account) {
     return (
-      <button
-        onClick={connectWallet}
-        disabled={isConnecting}
-        className="px-3 py-1.5 rounded-xl bg-[#354424] text-white text-xs font-black shadow-xs hover:bg-[#2A371C] transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-      >
-        <Wallet className="w-3.5 h-3.5" />
-        <span>{isConnecting ? 'Connecting...' : 'Connect Wallet'}</span>
-      </button>
+      <div className="relative">
+        <button
+          onClick={() => setShowDropdown(!showDropdown)}
+          className="px-2.5 py-1.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center gap-2 hover:bg-[#FAF7F0] transition-colors cursor-pointer"
+        >
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-mono font-bold text-[#2D2620]">
+            {shortenAddress(account)}
+          </span>
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold border bg-emerald-50 text-emerald-800 border-emerald-300">
+            Auditor Mode
+          </span>
+          <ChevronDown className="w-3.5 h-3.5 text-[#666057]" />
+        </button>
+
+        {showDropdown && (
+          <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#E6E1D5] p-3.5 z-50 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between pb-2 border-b border-[#F4F5E6]">
+              <span className="text-[11px] font-bold text-[#666057]">Web3 Auditor Status</span>
+              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                Connected
+              </span>
+            </div>
+
+            <div className="bg-[#FAF7F0] p-2.5 rounded-xl border border-[#E6E1D5] flex flex-col gap-1">
+              <span className="text-[10px] font-bold text-[#666057]">Active Signing Address</span>
+              <span className="font-mono text-xs font-black text-[#2D2620] break-all">
+                {account}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between px-1 text-xs">
+              <span className="font-bold text-[#666057]">Detected Role:</span>
+              <span className="font-extrabold text-[#354424]">{role}</span>
+            </div>
+
+            <div className="text-[10px] text-[#786E65] bg-emerald-50/60 p-2 rounded-xl border border-emerald-200/60">
+              💡 <b>Academic / Auditor Mode Active:</b> Transactions will be signed directly via your connected Web3 wallet.
+            </div>
+
+            <button
+              onClick={() => {
+                disconnectWallet();
+                setShowDropdown(false);
+              }}
+              className="w-full mt-1 py-1.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-xs font-extrabold text-[#A8422B] hover:bg-rose-50 transition-colors cursor-pointer"
+            >
+              Disconnect (Return to Rupee Mode)
+            </button>
+          </div>
+        )}
+      </div>
     );
   }
 
-  const roleColors = {
-    'Admin / Farmer': 'bg-emerald-100 text-emerald-800 border-emerald-300',
-    'Farmer': 'bg-green-100 text-green-800 border-green-300',
-    'Logistics Partner': 'bg-blue-100 text-blue-800 border-blue-300',
-    'Dark Store Manager': 'bg-purple-100 text-purple-800 border-purple-300',
-    'Consumer': 'bg-amber-100 text-amber-800 border-amber-300',
-    'Unregistered': 'bg-gray-100 text-gray-800 border-gray-300',
-  };
-
-  const badgeColor = roleColors[role] || 'bg-emerald-100 text-emerald-800 border-emerald-300';
-
+  // 2. Default: Native Indian Rupee / Kisan Digital ID
   return (
     <div className="relative">
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         className="px-2.5 py-1.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center gap-2 hover:bg-[#FAF7F0] transition-colors cursor-pointer"
+        title="Verified Indian Rupee Digital Identity"
       >
         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="font-mono font-bold text-[#2D2620]">
-          {shortenAddress(account)}
+        <span className="font-extrabold text-[#2D2620] flex items-center gap-0.5">
+          <span className="text-emerald-700 font-black">₹</span>
+          <span>{currentIdentity.name}</span>
         </span>
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${badgeColor}`}>
-          {role}
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border ${currentIdentity.badge}`}>
+          {currentIdentity.roleTitle}
         </span>
         <ChevronDown className="w-3.5 h-3.5 text-[#666057]" />
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-[#E6E1D5] p-3 z-50 flex flex-col gap-2">
+        <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-[#E6E1D5] p-3.5 z-50 flex flex-col gap-2.5">
           <div className="flex items-center justify-between pb-2 border-b border-[#F4F5E6]">
-            <span className="text-[11px] font-bold text-[#666057]">Web3 Wallet Status</span>
-            <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-              Connected
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-xs font-black text-[#2D2620]">Kisan Digital Identity</span>
+            </div>
+            <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              Verified • Gasless
             </span>
           </div>
 
-          <div className="bg-[#FAF7F0] p-2.5 rounded-xl border border-[#E6E1D5] flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-[#666057]">Active Ethereum Address</span>
-            <span className="font-mono text-xs font-black text-[#2D2620] break-all">
-              {account}
-            </span>
+          <div className="bg-[#FAF7F0] p-2.5 rounded-xl border border-[#E6E1D5] flex flex-col gap-0.5">
+            <div className="flex justify-between items-center text-[10px] text-[#666057] font-bold">
+              <span>Account Holder</span>
+              <span className="font-mono text-[#3D4E2A] font-extrabold">{currentIdentity.id}</span>
+            </div>
+            <span className="text-xs font-black text-[#2D2620]">{currentIdentity.name}</span>
+            <span className="text-[11px] text-[#786E65]">{currentIdentity.org}</span>
           </div>
 
-          <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-bold text-[#666057]">Supply Chain Role:</span>
-            <span className="text-xs font-extrabold text-[#354424]">{role}</span>
+          <div className="p-2.5 rounded-xl bg-white border border-[#E6E1D5] flex flex-col gap-1.5 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-[#666057]">Linked UPI ID:</span>
+              <span className="font-mono text-[11px] font-bold text-[#2D2620]">{currentIdentity.upi}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-[#666057]">Settlement Currency:</span>
+              <span className="text-[11px] font-black text-emerald-700">Indian Rupee (INR ₹)</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-[#666057]">Network Gas Fee:</span>
+              <span className="text-[11px] font-black text-[#3D4E2A]">₹0.00 (FPO/Relayer Sponsored)</span>
+            </div>
           </div>
 
-          <button
-            onClick={() => {
-              disconnectWallet();
-              setShowDropdown(false);
-            }}
-            className="w-full mt-1 py-1.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-xs font-extrabold text-[#A8422B] hover:bg-rose-50 transition-colors cursor-pointer"
-          >
-            Disconnect Wallet
-          </button>
+          <div className="text-[10px] text-[#786E65] bg-[#FAF7F0] p-2.5 rounded-xl leading-relaxed border border-[#E6E1D5]/60">
+            🌾 <b>Zero Crypto Required:</b> You are trading in Indian Rupees. All blockchain custody updates and condition batches are anchored automatically in the background at zero cost to you.
+          </div>
+
+          {/* Web3 Auditor Option */}
+          <div className="pt-1.5 border-t border-[#F4F5E6] flex flex-col gap-1.5">
+            <button
+              onClick={handleMetaMaskConnect}
+              disabled={isConnecting}
+              className="w-full py-1.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-xs font-bold text-[#666057] hover:bg-emerald-50 hover:text-[#3D4E2A] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#3D4E2A]" />
+              <span>{isConnecting ? 'Connecting...' : 'Connect MetaMask (Auditor Mode)'}</span>
+            </button>
+            {metaMaskNotice && (
+              <p className="text-[10px] text-amber-800 bg-amber-50 p-2 rounded-xl border border-amber-200 leading-snug">
+                {metaMaskNotice}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 };
+

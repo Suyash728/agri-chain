@@ -113,7 +113,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
         }),
       });
       if (res.ok) {
-        alert(`Batch ${batchId} dispatched! Custody transferred to IN_TRANSIT on-chain.${clientTxHash ? `\nMetaMask Tx Hash: ${clientTxHash}` : ''}`);
+        alert(`Batch ${batchId} dispatched! Custody transferred to IN_TRANSIT on-chain.${clientTxHash ? `\nAudit Tx Hash: ${clientTxHash}` : ''}`);
         fetchOrders();
       }
     } catch (err) {

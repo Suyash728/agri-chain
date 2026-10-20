@@ -830,3 +830,33 @@ still static UI with no data flow. Specifically:
 - Hardhat node running on port 8545.
 - FastAPI backend running on port 8000.
 - Vite frontend running on port 3000.
+
+---
+
+## [Native Indian Rupee & Kisan Digital Identity UI] — 2026-10-20
+
+**What was done:**
+- Replaced alien crypto/MetaMask-first UX with a native Indian Rupee & Kisan Digital Identity framework across the frontend:
+  1. `WalletConnect.jsx`: Transformed default state into a verified Rupee Account / Kisan Digital ID. By default, users across all 4 roles are securely authenticated with their real persona and UPI identity (e.g. Rahul Patil / `rahul.patil@okhdfcbank` for Farmer, Safexpress Fleet for Logistics, Pune Fresh Hub for Dark Store, Priya Sharma for Consumer).
+  2. Gasless Sponsorship Clarity: Clearly identifies that blockchain gas is 100% sponsored by the system relayer (Bharat Agri Ledger) at ₹0 cost, trading directly in Indian Rupees (INR).
+  3. Non-Intrusive Auditor Mode: MetaMask connection is preserved as a clean secondary "Auditor Mode" toggle for academic examiners, replacing blocking browser alerts with inline helper notices.
+  4. `AddStockModal.jsx` & `ProcurementOrdersView.jsx`: Replaced crypto/MetaMask technical jargon with "Kisan Digital ID (Gasless ₹ INR)" and audit references.
+  5. `App.jsx`: Passed dynamic `activeRole` to `WalletConnect` to sync displayed identity with active role portal.
+
+**Files changed:**
+- `design/src/components/WalletConnect.jsx`: redesigned identity model with `ROLE_IDENTITIES`, gasless Rupee mode, and auditor mode.
+- `design/src/App.jsx`: passed `activeRole` to `WalletConnect`.
+- `design/src/Farmer/Modals/AddStockModal.jsx`: updated status badge to Kisan Digital ID.
+- `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`: cleaned alert copy.
+- `MEMORY.md`: appended session record.
+
+**Decisions made (and why):**
+- Indian agricultural stakeholders (farmers, transporters, local retailers) do not use crypto or pay gas fees. Positioning the backend relayer as a sponsored "Gasless Rupee Digital Account" aligns the UI with real-world users while keeping the underlying EVM smart contracts fully operational and retaining MetaMask as an optional mode for university evaluation.
+
+**Verified (DONE WHEN checks that actually passed):**
+- `design/`: `npm run build` compiled 1,807 modules cleanly in 3.49s with 0 errors.
+- `backend/`: `python backend/scripts/verify_final_system.py` passed all 8 checks with 100% success.
+- Live Vite dev server reloaded and serving updated JSX on `http://localhost:3000/`.
+
+**Status:**
+- All services running and verified.

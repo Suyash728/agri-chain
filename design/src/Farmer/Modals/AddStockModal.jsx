@@ -148,14 +148,14 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
           ) : (
             <>
               <div className={`p-2.5 rounded-xl border text-xs flex items-center justify-between ${
-                account ? 'bg-emerald-50/80 border-emerald-200 text-emerald-800' : 'bg-[#FAF7F0] border-[#E6E1D5] text-[#666057]'
+                account ? 'bg-emerald-50/80 border-emerald-200 text-emerald-800' : 'bg-[#FAF7F0] border-[#E6E1D5] text-[#3D4E2A]'
               }`}>
                 <div className="flex items-center gap-1.5 font-bold">
-                  <Wallet className="w-3.5 h-3.5" />
-                  <span>{account ? 'MetaMask Connected' : 'Relayer Signing Active'}</span>
+                  <span className="font-extrabold text-sm">₹</span>
+                  <span>{account ? 'MetaMask Auditor Mode' : 'Kisan Digital ID (Gasless ₹ INR)'}</span>
                 </div>
-                <span className="font-mono text-[10px] font-extrabold">
-                  {account ? `${account.substring(0, 6)}...${account.substring(account.length - 4)} (Direct on-chain)` : 'Automated backend fallback'}
+                <span className="text-[10px] font-extrabold text-[#786E65]">
+                  {account ? `${account.substring(0, 6)}...${account.substring(account.length - 4)}` : 'Sponsored by Bharat Agri Ledger'}
                 </span>
               </div>
 
