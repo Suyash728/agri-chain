@@ -52,10 +52,15 @@ import { AdminBottomNav } from './components/AdminBottomNav';
 // Web3 Wallet
 import { WalletProvider, WalletConnect } from './components/WalletConnect';
 
+// Showcase & Demo Lab
+import { ShowcaseDrawer } from './components/ShowcaseDrawer';
+import { PresenterWalkthroughBanner } from './components/PresenterWalkthroughBanner';
+
 export default function App() {
   // Role Portal State: 'consumer' (default launch role), 'farmer', 'logistics', or 'darkstore'
   const [activeRole, setActiveRole] = useState('consumer');
   const [adminTab, setAdminTab] = useState('all');
+  const [isShowcaseDrawerOpen, setIsShowcaseDrawerOpen] = useState(false);
 
   // Tab state for Farmer portal
   const [farmerTab, setFarmerTab] = useState('dashboard');
@@ -118,6 +123,20 @@ export default function App() {
 
   const handleSelectLogisticTab = (tabId) => {
     setLogisticTab(tabId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateRoleAndTab = (role, tab) => {
+    setActiveRole(role);
+    if (role === 'farmer') {
+      setFarmerTab(tab || 'dashboard');
+    } else if (role === 'logistics') {
+      setLogisticTab(tab || 'dashboard');
+    } else if (role === 'consumer') {
+      setConsumerTab(tab || 'home');
+    } else if (role === 'admin') {
+      setAdminTab(tab || 'all');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -243,6 +262,13 @@ export default function App() {
           <div className="h-5 w-px bg-[#E6E1D5] mx-1 flex-shrink-0" />
           <WalletConnect activeRole={activeRole} />
         </div>
+
+        {/* Presenter Guided Walkthrough Banner */}
+        <PresenterWalkthroughBanner 
+          currentRole={activeRole} 
+          onNavigateRoleAndTab={handleNavigateRoleAndTab}
+          onOpenShowcaseLab={() => setIsShowcaseDrawerOpen(true)}
+        />
 
       {/* ========================================== */}
       {/* 1. LOGISTICS PARTNER PORTAL VIEW          */}
@@ -651,6 +677,13 @@ export default function App() {
       <AddStockModal isOpen={isAddStockOpen} onClose={() => setIsAddStockOpen(false)} onAddStock={handleAddStock} />
       <ViewJourneyModal isOpen={isJourneyOpen} onClose={() => setIsJourneyOpen(false)} />
       <NotificationsModal isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} role={activeRole} />
+
+      {/* Showcase & Demo Drawer */}
+      <ShowcaseDrawer 
+        isOpenExternal={isShowcaseDrawerOpen}
+        setIsOpenExternal={setIsShowcaseDrawerOpen}
+        onNavigateRoleAndTab={handleNavigateRoleAndTab}
+      />
     </div>
   </WalletProvider>
   );

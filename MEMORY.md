@@ -1218,5 +1218,47 @@ still static UI with no data flow. Specifically:
 - Automated Responsive QA: 55/55 viewports and roles passed with 0px horizontal scroll overflow (`design/test_comprehensive_responsive.py`).
 - Full-System Capstone: 10/10 checks passed with complete end-to-end verification (`backend/scripts/verify_final_system.py`).
 
+---
+
+## [Interactive Showcase Drawer & Presenter Walkthrough Mode] — 2026-10-20
+
+**What was done:**
+- Implemented professional demonstration tools for live evaluator and judge showcases:
+  1. **Floating Showcase & Demo Lab Drawer (`design/src/components/ShowcaseDrawer.jsx`)**:
+     - Accessible from any view via floating button or presenter guide banner.
+     - **Tab 1: 1-Click Production Scenarios**:
+       - *The Golden Harvest*: 100% compliant Ratnagiri Alphonso Mangoes journey to Mumbai doorstep with on-chain price build-up and 5★ consumer review.
+       - *In-Transit Degradation & Spoilage (User Scenario)*: 1,000 kg vine tomatoes encounter a 26.5°C transit thermal breach. Cascading multi-role impact: Safexpress penalized ₹16,000 for SLA breach; Farmer protected with ₹20,000 guaranteed settlement; Dark Store receives 600 kg salvage lot at ₹18/kg; Consumer gets ₹22/kg clearance listing with on-chain warning banner.
+       - *Catastrophic Highway Breakdown*: 48°C compressor failure. AI Trust Layer catches breach off-chain, commits tamper-evident entry to SQLite/SHA-256 IsoLog quarantine hash chain, and engages circuit breaker to block dark store intake.
+       - *Sensor Replay & Spoofing Attack*: Duplicate 3.5°C packet rejected off-chain by SHA-256 telemetry fingerprint engine before oracle mining.
+       - *FEFO Dynamic Markdown*: Shelf-life AI detects 2-day strawberry expiry, triggering dynamic -40% clearance markdown (₹80 → ₹48) preventing food waste.
+     - **Tab 2: Interactive IoT Sliders**:
+       - Real-time sliders for temperature (-5°C to 50°C), relative humidity (10% to 100%), and GPS vehicle speed (0 to 120 km/h).
+       - Fast presets for Normal, Heat Spike, Highway Spoil, and Replay Fraud.
+       - Transmits to backend `/demo/iot/inject`, returning live EVM on-chain tx hash or IsoLog quarantine hash.
+     - **Tab 3: Fast Produce Creator**:
+       - Quick-onboard form creating produce lots and anchoring them directly on `ProductRegistry.sol` on-chain.
+     - **Tab 4: Custody Progression Stepper**:
+       - Step produce through `REGISTERED -> IN_TRANSIT -> IN_STORAGE -> SOLD` with automatic state transfers and financial ledger updates.
+  2. **Presenter Guided Walkthrough Banner (`design/src/components/PresenterWalkthroughBanner.jsx`)**:
+     - Sticky top presenter guidance bar highlighting current stage, role-specific value props, and 1-click step advancement across all 4 roles (Farmer → Logistics → Dark Store → Consumer).
+  3. **Backend Showcase Endpoints (`backend/main.py`)**:
+     - Implemented `GET /demo/batches`, `POST /demo/produce/create`, `POST /demo/iot/inject`, `POST /demo/custody/advance`, and `POST /demo/scenarios/{scenario_id}` supporting all scenario flows and returning multi-role breakdown models.
+  4. **Frontend Integration (`design/src/App.jsx`)**:
+     - Cleanly integrated `ShowcaseDrawer` and `PresenterWalkthroughBanner` with cross-role tab navigation callbacks.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Headless Browser Verification (`scratch/test_showcase_flow.py`):
+  - Advanced through Presenter Banner steps 1 & 2.
+  - Opened Showcase Drawer and executed Scenario 2 (In-Transit Spoilage): verified Multi-Role Impact breakdown (Farmer payout, Carrier penalty, Dark Store salvage, Consumer price) with 0 errors.
+  - Executed Scenario 1 (Golden Harvest): verified complete on-chain journey summary.
+  - Transmitted IoT slider telemetry and confirmed oracle/AI verdict.
+  - Onboarded new produce lot and verified on-chain batch creation.
+  - Advanced custody state on-chain via Stepper.
+  - Result: 0 page errors, 0 console errors.
+- Pytest Suite: 154/154 unit & integration tests passed in 29.99s (`.venv/bin/pytest tests/ trust-layer/tests/`).
+- Full-System Capstone: 8/8 end-to-end checks passed (`backend/scripts/verify_final_system.py`).
+- Frontend Production Build: 1,809 modules transformed cleanly in 2.93s with 0 errors (`npm run build`).
+
 
 
