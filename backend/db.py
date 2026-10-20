@@ -47,6 +47,8 @@ CREATE TABLE IF NOT EXISTS quarantine (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     reading_id    INTEGER NOT NULL REFERENCES readings(id),
     reason        TEXT NOT NULL,
+    prev_hash     TEXT,
+    entry_hash    TEXT,
     created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -309,25 +311,28 @@ def init_db(db_path: str | pathlib.Path = DB_PATH) -> pathlib.Path | str:
     if is_postgres():
         db_url = os.getenv("DATABASE_URL")
         try:
-            with get_connection() as conn:
-                if isinstance(conn, PostgresConnectionWrapper):
-                    # Read and execute PostgreSQL DDL
-                    if MIGRATION_PATH.exists():
-                        with open(MIGRATION_PATH, "r", encoding="utf-8") as f:
-                            migration_sql = f.read()
-                        conn.executescript(migration_sql)
-                    # Seed default policies
-                    for crop_name, min_temp, max_temp, min_hum, max_hum in DEFAULT_POLICIES:
-                        conn.execute(
-                            """
-                            INSERT INTO policy (crop_name, min_temp_c, max_temp_c, min_humidity, max_humidity)
-                            VALUES (%s, %s, %s, %s, %s)
-                            ON CONFLICT (crop_name) DO NOTHING
-                            """,
-                            (crop_name, min_temp, max_temp, min_hum, max_hum),
-                        )
-                    conn.commit()
-                    return db_url
+            conn = get_connection()
+            if isinstance(conn, PostgresConnectionWrapper):
+                # Read and execute PostgreSQL DDL
+                if MIGRATION_PATH.exists():
+                    with open(MIGRATION_PATH, "r", encoding="utf-8") as f:
+                        migration_sql = f.read()
+                    conn.executescript(migration_sql)
+                # Seed default policies
+                for crop_name, min_temp, max_temp, min_hum, max_hum in DEFAULT_POLICIES:
+                    conn.execute(
+                        """
+                        INSERT INTO policy (crop_name, min_temp_c, max_temp_c, min_humidity, max_humidity)
+                        VALUES (%s, %s, %s, %s, %s)
+                        ON CONFLICT (crop_name) DO NOTHING
+                        """,
+                        (crop_name, min_temp, max_temp, min_hum, max_hum),
+                    )
+                conn.commit()
+                conn.close()
+                return db_url
+            else:
+                conn.close()
         except Exception as e:
             print(f"[db] Warning: Failed to initialize PostgreSQL ({e}). Falling back to local SQLite.")
 
@@ -335,6 +340,27 @@ def init_db(db_path: str | pathlib.Path = DB_PATH) -> pathlib.Path | str:
     path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(path) as conn:
         conn.executescript(SQLITE_SCHEMA)
+
+        # Migration: Ensure quarantine table has hash-chain columns (prev_hash, entry_hash)
+        cursor = conn.execute("PRAGMA table_info(quarantine)")
+        cols = [r[1] for r in cursor.fetchall()]
+        if "prev_hash" not in cols:
+            conn.execute("ALTER TABLE quarantine ADD COLUMN prev_hash TEXT")
+        if "entry_hash" not in cols:
+            conn.execute("ALTER TABLE quarantine ADD COLUMN entry_hash TEXT")
+
+        # Backfill any legacy unhashed quarantine rows into an unbroken SHA-256 chain
+        unhashed = conn.execute("SELECT id, reading_id, reason, created_at FROM quarantine WHERE entry_hash IS NULL ORDER BY id ASC").fetchall()
+        if unhashed:
+            import hashlib
+            last_entry = conn.execute("SELECT entry_hash FROM quarantine WHERE entry_hash IS NOT NULL ORDER BY id DESC LIMIT 1").fetchone()
+            curr_prev = last_entry[0] if last_entry and last_entry[0] else ("0" * 64)
+            for r_id, rd_id, r_reason, r_created in unhashed:
+                p_load = f"{curr_prev}:{rd_id}:{r_reason}:{r_created}"
+                e_hash = hashlib.sha256(p_load.encode("utf-8")).hexdigest()
+                conn.execute("UPDATE quarantine SET prev_hash = ?, entry_hash = ? WHERE id = ?", (curr_prev, e_hash, r_id))
+                curr_prev = e_hash
+
         for crop_name, min_temp, max_temp, min_hum, max_hum in DEFAULT_POLICIES:
             conn.execute(
                 """

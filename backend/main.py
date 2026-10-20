@@ -9,6 +9,7 @@ from pydantic import BaseModel
 import sys
 from datetime import datetime, timezone, timedelta
 import json
+import hashlib
 
 import chain
 import ipfs
@@ -184,6 +185,31 @@ COLD_CHAIN_POLICY_BREACH_CODES = {
 }
 
 
+def insert_quarantine_entry(conn, reading_id: int, reason: str) -> tuple[str, str]:
+    """
+    Inserts an immutable, hash-chained quarantine log entry.
+    Inspired by IsoLog tamper-evident audit logs:
+    entry_hash = SHA256(prev_hash:reading_id:reason:created_at)
+    """
+    latest = conn.execute(
+        "SELECT entry_hash FROM quarantine WHERE entry_hash IS NOT NULL ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    prev_hash = latest["entry_hash"] if (latest and latest["entry_hash"]) else ("0" * 64)
+
+    ts_str = datetime.now(timezone.utc).isoformat()
+    payload = f"{prev_hash}:{reading_id}:{reason}:{ts_str}"
+    entry_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    conn.execute(
+        """
+        INSERT INTO quarantine (reading_id, reason, prev_hash, entry_hash, created_at)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (reading_id, reason, prev_hash, entry_hash, ts_str),
+    )
+    return prev_hash, entry_hash
+
+
 @app.post("/telemetry", response_model=TelemetryResponse)
 def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
     """Ingest a telemetry reading with AI trust validation, anomaly detection, and quarantine."""
@@ -357,10 +383,7 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
                     "UPDATE readings SET verdict = 'ANOMALOUS' WHERE id = ?",
                     (reading_id,),
                 )
-                conn.execute(
-                    "INSERT INTO quarantine (reading_id, reason) VALUES (?, ?)",
-                    (reading_id, f"Blockchain recording failed: {str(e)}"),
-                )
+                insert_quarantine_entry(conn, reading_id, f"Blockchain recording failed: {str(e)}")
                 conn.commit()
                 return TelemetryResponse(
                     verdict="ANOMALOUS",
@@ -445,10 +468,7 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
                         "UPDATE readings SET verdict = 'ANOMALOUS' WHERE id = ?",
                         (reading_id,),
                     )
-                    conn.execute(
-                        "INSERT INTO quarantine (reading_id, reason) VALUES (?, ?)",
-                        (reading_id, f"Blockchain breach recording failed: {str(e)}"),
-                    )
+                    insert_quarantine_entry(conn, reading_id, f"Blockchain breach recording failed: {str(e)}")
                     conn.commit()
                     return TelemetryResponse(
                         verdict="ANOMALOUS",
@@ -465,10 +485,7 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
                 "UPDATE readings SET verdict = 'BREACH', tx_hash = ? WHERE id = ?",
                 (tx_hash, reading_id),
             )
-            conn.execute(
-                "INSERT INTO quarantine (reading_id, reason) VALUES (?, ?)",
-                (reading_id, f"{reason_str} | tx: {tx_hash or 'PENDING_BATCH'}"),
-            )
+            insert_quarantine_entry(conn, reading_id, f"{reason_str} | tx: {tx_hash or 'PENDING_BATCH'}")
 
             # Automatically record supply chain failure / spoilage incident with goods and financial loss
             try:
@@ -543,10 +560,7 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
                 "UPDATE readings SET verdict = 'ANOMALOUS' WHERE id = ?",
                 (reading_id,),
             )
-            conn.execute(
-                "INSERT INTO quarantine (reading_id, reason) VALUES (?, ?)",
-                (reading_id, reason_str),
-            )
+            insert_quarantine_entry(conn, reading_id, reason_str)
             conn.commit()
             return TelemetryResponse(
                 verdict="ANOMALOUS",
@@ -706,7 +720,7 @@ def get_telemetry_quarantine():
 
         q_rows = conn.execute(
             """
-            SELECT q.id, q.reading_id, q.reason, q.created_at,
+            SELECT q.id, q.reading_id, q.reason, q.prev_hash, q.entry_hash, q.created_at,
                    r.batch_id, r.temp_c, r.humidity_pct, r.verdict,
                    b.crop_name
             FROM quarantine q
@@ -733,6 +747,8 @@ def get_telemetry_quarantine():
                 "verdict": q["verdict"] or "ANOMALOUS",
                 "disposition": "QUARANTINED",
                 "quarantinedAt": str(q["created_at"])[:19],
+                "prevHash": q["prev_hash"],
+                "entryHash": q["entry_hash"],
                 "details": q["reason"],
             })
 
@@ -756,6 +772,69 @@ def get_telemetry_quarantine():
             }]
 
         return incidents
+    finally:
+        conn.close()
+
+
+@app.get("/quarantine/verify-integrity")
+def verify_quarantine_integrity():
+    """
+    Traverses all quarantine records chronologically to cryptographically verify hash-chain integrity.
+    Inspired by IsoLog tamper-evident audit logs:
+    Returns whether the off-chain quarantine audit log is intact or has been modified/deleted.
+    """
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT id, reading_id, reason, prev_hash, entry_hash, created_at 
+            FROM quarantine 
+            ORDER BY id ASC
+            """
+        ).fetchall()
+
+        if not rows:
+            return {
+                "status": "VALID",
+                "total_records": 0,
+                "verified_records": 0,
+                "tampered": False,
+                "message": "Quarantine audit log is empty.",
+            }
+
+        expected_prev = "0" * 64
+        for row in rows:
+            # Check link to previous hash
+            if row["prev_hash"] != expected_prev:
+                return {
+                    "status": "TAMPERED",
+                    "tampered": True,
+                    "broken_at_id": row["id"],
+                    "reason": f"Broken chain link at id {row['id']}: expected prev_hash {expected_prev}, found {row['prev_hash']}",
+                }
+
+            # Recompute SHA-256 hash
+            payload = f"{row['prev_hash']}:{row['reading_id']}:{row['reason']}:{row['created_at']}"
+            calc_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+            if row["entry_hash"] != calc_hash:
+                return {
+                    "status": "TAMPERED",
+                    "tampered": True,
+                    "broken_at_id": row["id"],
+                    "reason": f"Content tampering detected at id {row['id']}: expected hash {calc_hash}, found {row['entry_hash']}",
+                }
+
+            expected_prev = row["entry_hash"]
+
+        return {
+            "status": "VALID",
+            "total_records": len(rows),
+            "verified_records": len(rows),
+            "latest_hash": expected_prev,
+            "tampered": False,
+            "message": "Cryptographic verification successful: all quarantine records form an unbroken SHA-256 hash chain.",
+        }
     finally:
         conn.close()
 
@@ -1668,6 +1747,26 @@ def get_batch_traceability(batch_id: str):
                 "occurredAt": ev["occurred_at"],
             })
 
+        # Compute dynamic Quality & Freshness score (inspired by ADOS consensus & telemetry health)
+        breach_count = sum(1 for c in condition_log if c.get("breach", False))
+        total_conditions = len(condition_log)
+        if total_conditions == 0:
+            quality_score = 98.0
+            freshness_pct = 98
+            quality_grade = "A+"
+        else:
+            breach_penalty = min(60.0, (breach_count / total_conditions) * 100.0)
+            quality_score = max(35.0, round(99.0 - breach_penalty, 1))
+            freshness_pct = int(quality_score)
+            if quality_score >= 90:
+                quality_grade = "A+"
+            elif quality_score >= 80:
+                quality_grade = "A"
+            elif quality_score >= 65:
+                quality_grade = "B"
+            else:
+                quality_grade = "C (Degraded)"
+
         return {
             "batchId": batch_row["batch_id"],
             "product": batch_row["crop_name"],
@@ -1678,6 +1777,9 @@ def get_batch_traceability(batch_id: str):
             "steps": steps,
             "conditionLog": condition_log,
             "custodyHistory": custody_history,
+            "qualityScore": quality_score,
+            "freshnessPct": freshness_pct,
+            "qualityGrade": quality_grade,
         }
     finally:
         conn.close()
@@ -2432,4 +2534,14 @@ def grant_admin_role(payload: RoleGrantRequest):
         result = chain.grant_role(payload.role, payload.address)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"On-chain grantRole failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"On-chain grantRole failed: {str(e)}")
+
+
+@app.post("/admin/roles/revoke")
+def revoke_admin_role(payload: RoleGrantRequest):
+    """Executes on-chain revokeRole to deauthorize participant address."""
+    try:
+        result = chain.revoke_role(payload.role, payload.address)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"On-chain revokeRole failed: {str(e)}")

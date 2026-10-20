@@ -462,6 +462,47 @@ def grant_role(role_name: str, account_address: str) -> dict:
     }
 
 
+def revoke_role(role_name: str, account_address: str) -> dict:
+    """Revokes a role from an Ethereum address on relevant modular contracts."""
+    role_key = role_name.upper()
+    if not role_key.endswith("_ROLE") and role_key != "DEFAULT_ADMIN_ROLE":
+        role_key = f"{role_key}_ROLE"
+
+    role_bytes = ROLE_IDENTIFIERS.get(role_key)
+    if not role_bytes:
+        raise ValueError(f"Unknown role: {role_name}")
+
+    addr = w3.to_checksum_address(account_address)
+    tx_hashes = {}
+
+    target_contracts = []
+    if role_key in ("DEFAULT_ADMIN_ROLE", "FARMER_ROLE"):
+        if product_registry_contract:
+            target_contracts.append(("ProductRegistry", product_registry_contract))
+        if custody_transfer_contract:
+            target_contracts.append(("CustodyTransfer", custody_transfer_contract))
+    elif role_key == "LOGISTICS_ROLE":
+        if custody_transfer_contract:
+            target_contracts.append(("CustodyTransfer", custody_transfer_contract))
+    elif role_key == "RETAILER_ROLE":
+        if custody_transfer_contract:
+            target_contracts.append(("CustodyTransfer", custody_transfer_contract))
+    elif role_key == "ORACLE_ROLE":
+        if cold_chain_monitor_contract:
+            target_contracts.append(("ColdChainMonitor", cold_chain_monitor_contract))
+
+    for name, c in target_contracts:
+        tx_hash = _send_tx(c, "revokeRole", role_bytes, addr)
+        tx_hashes[name] = tx_hash
+
+    return {
+        "role": role_key,
+        "address": addr,
+        "transactions": tx_hashes,
+        "success": True,
+    }
+
+
 def check_role(role_name: str, account_address: str) -> dict:
     """Checks whether an address possesses a given role across modular contracts."""
     role_key = role_name.upper()

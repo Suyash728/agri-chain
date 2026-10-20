@@ -352,6 +352,8 @@ CREATE TABLE quarantine (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     reading_id    INTEGER NOT NULL REFERENCES readings(id),
     reason        TEXT NOT NULL,          -- e.g. "temperature above policy max: 42.0 > 8.0"
+    prev_hash     TEXT,                   -- SHA-256 hash of preceding quarantine record (IsoLog pattern)
+    entry_hash    TEXT,                   -- SHA-256(prev_hash:reading_id:reason:created_at)
     created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -413,12 +415,15 @@ Each response shape is governed by §4 — matching the mock exports in `design/
 | `/darkstore/inventory` | `GET` | Dark Store / Ph 7 | Matches `microInventory` in `mockData.js` |
 | `/darkstore/receive` | `POST` | Dark Store / Ph 7 | Inbound GRN reception (advances custody to `IN_STORAGE`) |
 | `/darkstore/checkout` | `POST` | Dark Store / Ph 7 | Consumer retail checkout (advances custody to `SOLD`) |
-| `/telemetry/quarantine` | `GET` | Farmer & Admin / Ph 7 | Quarantined telemetry audit list for `QuarantineAuditModal.jsx` |
+| `/telemetry/quarantine` | `GET` | Farmer & Admin / Ph 7 | Quarantined telemetry audit list for `QuarantineAuditModal.jsx` (includes `prevHash`, `entryHash`) |
+| `/quarantine/verify-integrity` | `GET` | Admin & Auditor / Ref-Rev | Cryptographically verifies unbroken SHA-256 hash-chain of all quarantine audit logs |
 | `/telemetry/evaluate` | `POST` | Research & Paper / Ph 6 | Automated evaluation benchmark (F1, precision, recall) |
 | `/telemetry/history` | `GET` | AI Trust Layer / Ph 6 | Time-series telemetry history for 11-D feature engineering |
 | `/batches/{batch_id}/documents` | `POST` | Farmer & Inspector / Ph 9 | Pin certificate to IPFS and anchor CID on-chain |
 | `/batches/{batch_id}/reviews` | `GET`, `POST` | Consumer / Ph 10 | Consumer quality ratings and review submission |
 | `/admin/users` | `GET` | Admin / Ph 10 | Participant role verification and approval queue |
+| `/admin/roles/grant` | `POST` | Admin / Ph 10 | Grant on-chain OpenZeppelin role |
+| `/admin/roles/revoke` | `POST` | Admin / Ref-Rev | Revoke on-chain OpenZeppelin role |
 | `/admin/roles/grant` | `POST` | Admin / Ph 10 | Grants `AccessControlRoles` permissions on-chain |
 
 ## 8. Tech stack reference
@@ -447,4 +452,4 @@ Each response shape is governed by §4 — matching the mock exports in `design/
 - **Dual Transaction Execution Flow:**
   1. *Connected Wallet Flow:* If MetaMask is connected and the user's address holds the required role in `AccessControlRoles`, the frontend prompts the user to sign the transaction directly via `ethers.BrowserProvider`.
   2. *Relayer Fallback Flow:* For automated scripts, IoT telemetry, or users without Web3 wallets, the FastAPI backend signs transactions using its configured private key.
-- **Physical ESP32 Device:** The ESP32 micro-controller reads from physical DHT22 (temperature/humidity) and NEO-6M (GPS) sensors, transmitting JSON payloads over WiFi directly to the FastAPI `/telemetry` endpoint. A hardware push-button triggers a deliberate temperature fault by overriding the sensor output to 35°C, providing a physical demonstration of the AI Trust Layer quarantine mechanism.
+- **IoT Telemetry Source:** As of the reference review milestone, physical IoT hardware inputs have been officially transitioned to comprehensive simulated telemetry with realistic multi-fault modes (`simulator/`), removing physical microcontroller flakiness while preserving complete 11-D feature engineering, attack simulation, and quarantine evaluation. The ESP32 hardware sketches remain archived in `firmware/` for standalone bench reference.

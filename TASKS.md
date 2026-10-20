@@ -660,3 +660,43 @@ close the actual traceability + price-transparency loop end-to-end through
 real UI). 11.2 next. 11.3–11.4 only if time remains.
 
 **→ Append a `MEMORY.md` entry after this phase, same format as before.**
+
+---
+
+## Phase 12 — Reference Review Benchmarking & Hardening (Completed & Backlog)
+
+Benchmarked against 6 reference repositories (`ONTOCHAIN/ADOS`, `bhaskardatta/CryptaNet`, `Nitya-003/CropChain`, `devagarwal07/SIH`, `ParimalMuley/Project`, `SushanthKS06/isolog`).
+
+### Task 12.1 — Formal Pytest Suite for Genuine Breach vs Anomaly Quarantine
+- [x] Create `tests/test_breach_vs_anomaly.py` verifying two distinct execution paths:
+  1. Plausible cold-chain policy breach -> accepted, mined on EVM with `breach=True`, attributed to custodian, spoilage incident logged.
+  2. Corrupted sensor spike -> rejected, quarantined off-chain, `tx_hash=None`.
+- **DONE WHEN:** `pytest tests/test_breach_vs_anomaly.py` passes 2/2 tests with 100% assertions. (Verified: both test cases passing on Hardhat PoA node and SQLite/Postgres DB).
+
+### Task 12.2 — Tamper-Evident SHA-256 Hash Chain for Quarantine Audit Logs (IsoLog)
+- [x] Update `quarantine` table schema with `prev_hash` and `entry_hash`.
+- [x] Implement `insert_quarantine_entry` helper computing cryptographic SHA-256 chain.
+- [x] Implement `GET /quarantine/verify-integrity` traversing the entire audit log.
+- [x] Create `tests/test_quarantine_hash_chain.py` testing normal unbroken chaining and detecting simulated malicious database alteration.
+- **DONE WHEN:** `pytest tests/test_quarantine_hash_chain.py` passes and `GET /quarantine/verify-integrity` reports `status: VALID, tampered: false`. (Verified: 2/2 tests pass; verified all 77 historical + new records in unbroken chain).
+
+### Task 12.3 — Dynamic Quality & Freshness Scoring in Traceability API (ADOS)
+- [x] Calculate `qualityScore` (0-100), `freshnessPct`, and `qualityGrade` (A+, A, B, C) in `GET /batches/{id}/traceability` dynamically derived from condition log.
+- [x] Create `tests/test_traceability_quality.py`.
+- **DONE WHEN:** `pytest tests/test_traceability_quality.py` passes. (Verified: tested dynamically across nominal and breached batches).
+
+### Task 12.4 — Complete On-Chain Admin Role Revocation (CropChain)
+- [x] Add `revoke_role(role_name, account)` to `backend/chain.py`.
+- [x] Add `POST /admin/roles/revoke` to `backend/main.py`.
+- [x] Create `tests/test_admin_roles.py`.
+- **DONE WHEN:** `pytest tests/test_admin_roles.py` passes. (Verified: role grant and revoke cycle tested on-chain with OpenZeppelin `AccessControl`).
+
+### Task 12.5 (Backlog) — Smart Contract Circuit-Breaker Emergency Pause Pattern
+- [ ] Add OpenZeppelin `Pausable` to `ProductRegistry` and `ColdChainMonitor`.
+- [ ] Add emergency pause/unpause methods restricted to `DEFAULT_ADMIN_ROLE`.
+- **DONE WHEN:** Hardhat test verifies paused contract reverts state mutations and unpausing restores operation.
+
+### Task 12.6 (Backlog) — Dedicated Desktop Admin Persona UI
+- [ ] Promote Admin from mobile `MoreMenuSheet` to a first-class persona in `design/src/App.jsx` switcher.
+- [ ] Wire `/admin/users`, `/admin/roles/grant`, `/admin/roles/revoke`, and `/quarantine/verify-integrity`.
+- **DONE WHEN:** Admin persona view allows viewing participant addresses, granting/revoking roles, and viewing cryptographic audit log verification status in the UI.

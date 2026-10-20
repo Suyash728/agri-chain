@@ -986,3 +986,61 @@ still static UI with no data flow. Specifically:
 - Full capstone verification: `backend/scripts/verify_final_system.py` passed 10/10 checks (100% success), confirming automatic generation of `INC-SPOIL-...` on genuine breach.
 - Deterministic static check: `run_linter.sh design` PASSED with 0 errors.
 - Production build: `npm run build` compiled 1,806 modules cleanly in 2.90s.
+
+---
+
+## [Reference Review Benchmarking & System Hardening] — 2026-10-20
+
+**Branch:** `reference-review` (Main remained untouched).
+
+**What was verified against actual code (Part A):**
+- Genuine cold-chain breach vs anomaly quarantine: CONFIRMED FIXED SINCE. `chain.record_condition(..., breach=True)` mines on Hardhat EVM for plausible policy violations; corrupted/fake data is quarantined off-chain as ANOMALOUS with `tx_hash=None`.
+- Admin role existence: PARTIAL. Backend has `/admin/users` and `/admin/roles/grant`; frontend only has mobile `MoreMenuSheet` link to `AdminRolesView.jsx`; no first-class desktop role switcher option.
+- Custody-transfer modals with price: CONFIRMED FIXED SINCE. `AcceptShipmentModal`, `HandoffRetailerModal`, `ConfirmGRNModal`, `RecordSaleModal` all submit `price_paise` and sync dynamic batch IDs.
+- Multi-stakeholder breach notifications: CONFIRMED FIXED SINCE. `GET /notifications/all-users` generates customized failure & loss notices for all 4 roles.
+- Telemetry source abstraction: CONFIRMED STILL BROKEN. User explicitly decided to discontinue physical IoT hardware ingestion in favor of 100% simulated telemetry.
+- `review-2/` status: CONFIRMED PARTIALLY STALE. Presentation package from September 24; accurately describes 5-tier architecture but lacks today's updates.
+
+**Reference Benchmarking (Part B):**
+- Cloned 6 repositories shallowly (`--depth 1`) outside the repo into `/home/suyash/Projects/_reference/`:
+  1. `ONTOCHAIN/ADOS` (MIT): Studied consensus quality scoring and GDN oracle layer. Extracted quality score concept; rejected iExec/TEE dependency.
+  2. `bhaskardatta/CryptaNet` (No license - idea only): Studied SHAP explainability and Hyperledger Fabric. Rejected heavy Fabric containers and slow KernelExplainer in favor of AgriChain's fast rule-based evidence and EVM.
+  3. `Nitya-003/CropChain` (Apache 2.0): Studied OpenZeppelin role lifecycle and emergency pause circuit breakers. Extracted role revocation endpoint (`/admin/roles/revoke`).
+  4. `devagarwal07/SIH` (No license - idea only): Studied QR provenance and tracking. Discovered consumer QR endpoint was anti-pattern locked behind bearer auth. Retained AgriChain's public permissionless QR endpoint.
+  5. `ParimalMuley/Project` (No license - idea only): Studied attack simulation and Isolation Forest. Identified flawed 1D model and invalid `confusion_matrix(pred_test, pred_outlier)` evaluation. Verified AgriChain's 11-D feature pipeline is vastly superior.
+  6. `SushanthKS06/isolog` (MIT): Studied Merkle/hash-chain tamper-evident logging. Adopted idea for AgriChain's off-chain SQLite `quarantine` table.
+
+**What was changed (Part C):**
+- **Tamper-Evident SHA-256 Quarantine Hash Chain (`backend/db.py`, `backend/main.py`)**:
+  - Added `prev_hash` and `entry_hash` columns to `quarantine` table.
+  - Implemented `insert_quarantine_entry` helper computing continuous SHA-256 links: `entry_hash = SHA256(prev_hash:reading_id:reason:timestamp)`.
+  - Added migration and backfill logic in `init_db` ensuring all existing quarantine records form an unbroken chain starting from genesis hash.
+  - Added `GET /quarantine/verify-integrity` traversing the entire audit log and reporting whether the off-chain table has been tampered with or modified.
+- **Dynamic Quality & Freshness Scoring (`backend/main.py`)**:
+  - Added dynamic `qualityScore` (0.0 to 100.0), `freshnessPct`, and `qualityGrade` (A+, A, B, C) to `GET /batches/{id}/traceability` derived from condition log breach ratios.
+- **Admin Role Revocation Endpoint (`backend/chain.py`, `backend/main.py`)**:
+  - Implemented `revoke_role(role_name, account)` calling OpenZeppelin `revokeRole` on target contracts.
+  - Added `POST /admin/roles/revoke` to FastAPI backend.
+- **Automated Test Suites (`tests/`)**:
+  - Created `tests/test_breach_vs_anomaly.py` verifying genuine breach on-chain vs anomaly off-chain quarantine.
+  - Created `tests/test_quarantine_hash_chain.py` verifying hash-chain integrity and tamper detection.
+  - Created `tests/test_admin_roles.py` verifying grant and revoke lifecycle.
+  - Created `tests/test_traceability_quality.py` verifying dynamic quality score calculations.
+- **Documentation**:
+  - Authored `docs/reference/comparison.md` and `docs/reference/recommendations.md`.
+  - Updated `ARCHITECTURE.md` and `TASKS.md` (Phase 12).
+
+**What was rejected and why:**
+- Rejected iExec / Scone SGX TEE from ADOS: adds vendor lock-in, high latency, and cloud dependency for zero benefit over local Python ML.
+- Rejected SHAP KernelExplainer from CryptaNet: slow (hundreds of model passes per sample) and adds heavy dependencies compared to instant rule-based reason codes.
+- Rejected Hyperledger Fabric: too complex, brittle container orchestrations compared to standard EVM.
+- Rejected ParimalMuley evaluation: mathematically invalid confusion matrix calculation.
+- Rejected locking consumer QR scanner behind authentication (SIH anti-pattern): public consumer traceability must remain permissionless.
+
+**Verified (DONE WHEN checks that actually passed):**
+- `pytest tests/` passed 6/6 tests (100% success) across `test_breach_vs_anomaly`, `test_quarantine_hash_chain`, `test_admin_roles`, and `test_traceability_quality`.
+- `GET /quarantine/verify-integrity` tested live against backend: verified 77 historical + new records, `tampered: false`.
+- Deliberate SQLite modification test: verified `verify_quarantine_integrity` immediately flagged `status: TAMPERED` and pinpointed exact `broken_at_id`.
+- `backend/scripts/verify_final_system.py` passed 10/10 checks with 100% capstone validation.
+- Local AI setup (`/home/suyash/AI`, `gpt-oss:20b`) successfully loaded, benchmarked, and unloaded (GPU memory freed to 722 MiB).
+- `git status` confirmed `_reference/` remains strictly outside the repository.
