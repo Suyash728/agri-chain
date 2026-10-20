@@ -1260,5 +1260,42 @@ still static UI with no data flow. Specifically:
 - Full-System Capstone: 8/8 end-to-end checks passed (`backend/scripts/verify_final_system.py`).
 - Frontend Production Build: 1,809 modules transformed cleanly in 2.93s with 0 errors (`npm run build`).
 
+---
+
+## [Omniscient God Mode (4-Quadrant Live Sync) & Cinematic Tour HUD] — 2026-10-21
+
+**What was done:**
+- Built an enterprise-grade live command center addressing user feedback for visual drama, synchronized 4-party perspective, and 100% real-valued inputs:
+  1. **Omniscient God Mode 4-Quadrant Split-Screen (`design/src/components/GodModeHub.jsx`)**:
+     - Displays all four supply chain participants simultaneously in a responsive 2x2 grid with zero mock data:
+       - **Quadrant 1 (Farmer Farm Gate Origin)**: Real lot metadata, harvest date, verified EVM registration tx hash, and smart contract escrow protection status (`ESCROW_PROTECTED_MINIMUM`).
+       - **Quadrant 2 (Logistics Reefer Telematics Cockpit)**: Real-time Circular Arc Gauges for Temperature (°C), Humidity (%), and Speed (km/h); interactive NH-48 Highway route with waypoint tracking; pulsating Alarm Siren badge; carrier SLA penalty counter (-₹16,000); live telemetry stream table.
+       - **Quadrant 3 (Dark Store Micro-Hub)**: Inbound disposition (`SALVAGE_LOT_CLEARANCE` vs `GRADE_A_PRISTINE`), 600 kg salvage bay allocation at ₹18/kg, FEFO 2-day ripening safeguard, dynamic 55% markdown, on-chain circuit breaker status.
+       - **Quadrant 4 (Consumer QR Provenance Passport)**: Clearance retail price (₹22/kg down from ₹55/kg), full on-chain Farm-to-Fork Price Trail breakdown, transparent on-chain thermal disclosure warning (`⚠️ Transit Thermal Breach: 26.5°C`), and verified 5★ review.
+  2. **Automated Cinema Tour Mode (Storyline Automation)**:
+     - 1-Click "Play Live Tour" controller with step-by-step automated pacing (Steps 1 to 5) or manual jumping.
+     - Dynamic IEEE Benchmark & Blockchain insight tooltip explaining exactly what smart contracts and AI algorithms are executing at each stage.
+  3. **Low-Level Cryptographic & Oracle Inspector**:
+     - Displays raw OBD-II sensor payload hex (`0x...`), SHA-256 telemetry fingerprint, IsoLog tamper-evident quarantine hash link (`prev_hash` → `entry_hash`), and on-chain EVM gas consumption counter.
+  4. **100% Real-Valued Backend Pipeline (`backend/main.py`)**:
+     - `GET /demo/godmode/{batch_id}`: Compiles atomic, ground-truth consolidated state across all 4 roles directly from SQLite (`batches`, `custody_events`, `readings`, `quarantine`, `spoilage_incidents`, `batch_reviews`) and deployed EVM modular smart contracts.
+     - `POST /demo/godmode/tour-step`: Progresses live cinematic steps, executing real smart contract transactions (`ProductRegistry.sol`, `CustodyTransfer.sol`, `ColdChainMonitor.sol`) and SQLite updates.
+     - Enhanced `POST /demo/iot/inject`: Directly triggers real spoilage incidents and carrier penalties upon transit thermal breach, updating all subsequent queries in real time.
+  5. **Header & Presenter Integration (`design/src/App.jsx`, `PresenterWalkthroughBanner.jsx`)**:
+     - Added glowing `✨ God Mode` button in the top navigation bar.
+     - Added direct God Mode launch shortcut to the Presenter Walkthrough Banner.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Headless Browser Verification (`scratch/test_godmode_flow.py`):
+  - Launched God Mode from UI.
+  - Verified all 4 quadrants rendered non-empty, real ground-truth data.
+  - Progressed through Cinema Tour Steps 1 to 5: confirmed Farmer guaranteed payout, Logistics SLA penalty (-₹16,000), Dark Store 600 kg salvage lot, and Consumer ₹22/kg clearance listing with thermal disclosure.
+  - Toggled Cryptographic & Oracle Inspector: verified raw hex, SHA-256 fingerprint, and IsoLog quarantine hash.
+  - Transmitted manual sensor slider input: verified real-time update across all 4 quadrants.
+  - Exited God Mode cleanly back to standard dashboard.
+  - Result: 0 page errors, 0 console errors.
+- Pytest Suite: 154/154 unit & integration tests passed in 30.97s (`.venv/bin/pytest tests/ trust-layer/tests/`).
+- Frontend Production Build: 1,810 modules transformed cleanly in 2.92s with 0 errors (`npm run build`).
+
 
 

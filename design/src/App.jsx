@@ -55,12 +55,14 @@ import { WalletProvider, WalletConnect } from './components/WalletConnect';
 // Showcase & Demo Lab
 import { ShowcaseDrawer } from './components/ShowcaseDrawer';
 import { PresenterWalkthroughBanner } from './components/PresenterWalkthroughBanner';
+import { GodModeHub } from './components/GodModeHub';
 
 export default function App() {
   // Role Portal State: 'consumer' (default launch role), 'farmer', 'logistics', or 'darkstore'
   const [activeRole, setActiveRole] = useState('consumer');
   const [adminTab, setAdminTab] = useState('all');
   const [isShowcaseDrawerOpen, setIsShowcaseDrawerOpen] = useState(false);
+  const [isGodMode, setIsGodMode] = useState(false);
 
   // Tab state for Farmer portal
   const [farmerTab, setFarmerTab] = useState('dashboard');
@@ -259,6 +261,19 @@ export default function App() {
             <span>Admin</span>
           </button>
 
+          <button
+            onClick={() => setIsGodMode(!isGodMode)}
+            className={`px-3 h-[34px] rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+              isGodMode 
+                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md ring-2 ring-amber-300' 
+                : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'
+            }`}
+            title="Omniscient 4-Party Real-Time Synchronized View"
+          >
+            <span className="text-amber-500">✨</span>
+            <span>God Mode</span>
+          </button>
+
           <div className="h-5 w-px bg-[#E6E1D5] mx-1 flex-shrink-0" />
           <WalletConnect activeRole={activeRole} />
         </div>
@@ -268,6 +283,7 @@ export default function App() {
           currentRole={activeRole} 
           onNavigateRoleAndTab={handleNavigateRoleAndTab}
           onOpenShowcaseLab={() => setIsShowcaseDrawerOpen(true)}
+          onOpenGodMode={() => setIsGodMode(true)}
         />
 
       {/* ========================================== */}
@@ -684,6 +700,17 @@ export default function App() {
         setIsOpenExternal={setIsShowcaseDrawerOpen}
         onNavigateRoleAndTab={handleNavigateRoleAndTab}
       />
+
+      {/* Omniscient God Mode (4-Quadrant Live Hub) */}
+      {isGodMode && (
+        <GodModeHub
+          onExit={() => setIsGodMode(false)}
+          onNavigateRoleAndTab={(role, tab) => {
+            setIsGodMode(false);
+            handleNavigateRoleAndTab(role, tab);
+          }}
+        />
+      )}
     </div>
   </WalletProvider>
   );

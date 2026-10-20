@@ -61,7 +61,8 @@ const WALKTHROUGH_STEPS = [
 export const PresenterWalkthroughBanner = ({ 
   currentRole, 
   onNavigateRoleAndTab,
-  onOpenShowcaseLab 
+  onOpenShowcaseLab,
+  onOpenGodMode
 }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -113,6 +114,15 @@ export const PresenterWalkthroughBanner = ({
 
         {/* Center / Right: Interactive Action Buttons */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button
+            onClick={onOpenGodMode}
+            className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all shadow-xs hover:brightness-110"
+            title="Launch 4-Quadrant Omniscient God Mode"
+          >
+            <Sparkles className="w-3 h-3 fill-white" />
+            <span className="hidden sm:inline">God Mode</span>
+          </button>
+
           <button
             onClick={onOpenShowcaseLab}
             className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-all"
