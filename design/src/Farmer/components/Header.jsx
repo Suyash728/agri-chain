@@ -1,8 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Calendar } from 'lucide-react';
 import { farmerProfile } from '../../data/mockData';
 
 export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount = 3 }) => {
+  const [profile, setProfile] = useState(farmerProfile);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/farmer/profile')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.name) {
+          setProfile(data);
+        }
+      })
+      .catch((err) => console.warn('Using fallback farmer profile:', err));
+  }, []);
+
   return (
     <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pt-1">
       {/* Greeting Title */}
@@ -11,7 +24,7 @@ export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount = 3 })
           Good morning,
         </span>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-[#3B3028] tracking-tight flex items-center gap-2">
-          {farmerProfile.name} <span className="text-xl sm:text-2xl">{farmerProfile.emoji}</span>
+          {profile.name} <span className="text-xl sm:text-2xl">{profile.emoji || '🌿'}</span>
         </h1>
         <p className="text-xs sm:text-sm text-[#786E65] mt-1 font-medium">
           Here's what's happening on your farm today.

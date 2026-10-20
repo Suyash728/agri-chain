@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Package, 
   ShieldCheck, 
@@ -16,7 +16,7 @@ export const InventoryView = ({ initialStep = 'available-produce' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
 
-  const produceItems = [
+  const defaultProduceItems = [
     { id: 1, name: 'Premium Basmati Wheat', category: 'Grains', qty: '500 Tonnes', price: '₹2,100 / Quintal', farm: 'Patil Organic Farm, Nashik', status: 'In Stock', icon: '/images/wheat_only.png' },
     { id: 2, name: 'Basmati Long Grain Rice', category: 'Grains', qty: '300 Tonnes', price: '₹2,800 / Quintal', farm: 'Godavari Delta Fields', status: 'In Stock', icon: '/images/rice_only.png' },
     { id: 3, name: 'Fresh Organic Tomatoes', category: 'Vegetables', qty: '200 Tonnes', price: '₹1,200 / Quintal', farm: 'Sahyadri Agri Hub, Pune', status: 'Limited', icon: '/images/tomato_only.png' },
@@ -28,12 +28,45 @@ export const InventoryView = ({ initialStep = 'available-produce' }) => {
   ];
 
   // Storage & Warehouse Infrastructure Data
-  const warehouses = [
+  const defaultWarehouses = [
     { name: 'Nashik Warehouse Hub', capacity: '3,000 Tonnes', utilized: '2,400 Tonnes', pct: 80, temp: '18°C (Ambient Grain Silo)', location: 'MIDC Ambad, Nashik' },
     { name: 'Pune Cold Storage Facility', capacity: '2,500 Tonnes', utilized: '1,500 Tonnes', pct: 60, temp: '4°C (Cold-Chain Reefer)', location: 'Chakan Industrial Area, Pune' },
     { name: 'Nagpur Warehouse Hub', capacity: '2,000 Tonnes', utilized: '1,500 Tonnes', pct: 75, temp: '20°C (Dry Storage)', location: 'Kalamna Market, Nagpur' },
     { name: 'Raipur Central Warehouse', capacity: '2,500 Tonnes', utilized: '1,000 Tonnes', pct: 40, temp: '16°C (Controlled Humidity)', location: 'Tatibandh, Raipur' },
   ];
+
+  const [produceItems, setProduceItems] = useState(defaultProduceItems);
+  const [warehouses, setWarehouses] = useState(defaultWarehouses);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/logistics/available-produce')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((d, i) => ({
+            id: d.id || i,
+            name: d.name || d.crop,
+            category: d.category || 'Produce',
+            qty: d.quantity || '500 kg',
+            price: d.price || '₹ 2,000 / Quintal',
+            farm: d.farm || 'Verified Organic Farm',
+            status: 'In Stock',
+            icon: d.icon || '/images/tomato_only.png',
+          }));
+          setProduceItems(mapped);
+        }
+      })
+      .catch((err) => console.warn('Using default inventory produce:', err));
+
+    fetch('http://localhost:8000/logistics/storage')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setWarehouses(data);
+        }
+      })
+      .catch((err) => console.warn('Using default storage hubs:', err));
+  }, []);
 
   // Logistics Central Inventory Category Allocations Data (Step 3)
   const categoryAllocations = [

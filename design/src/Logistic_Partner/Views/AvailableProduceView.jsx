@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Sprout, ArrowRight } from 'lucide-react';
 
 export const AvailableProduceView = ({ onProcure }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [liveProduce, setLiveProduce] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/logistics/available-produce')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) setLiveProduce(data);
+      })
+      .catch(err => console.error('Error fetching available produce:', err));
+  }, []);
 
   const produceItems = [
     { id: 1, name: 'Premium Basmati Wheat', category: 'Grains', qty: '500 Tonnes', price: '₹ 2,100 / Quintal', farm: 'Patil Organic Farm, Nashik', status: 'In Stock', icon: '/images/wheat_only.png' },
@@ -16,7 +26,9 @@ export const AvailableProduceView = ({ onProcure }) => {
     { id: 8, name: 'Guntur Red Chillies', category: 'Spices', qty: '80 Tonnes', price: '₹ 12,000 / Quintal', farm: 'Deccan Spice Estate', status: 'In Stock', icon: '/images/chilli_only.png' },
   ];
 
-  const filtered = produceItems.filter(p => {
+  const items = liveProduce.length > 0 ? liveProduce : produceItems;
+
+  const filtered = items.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.farm.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
     return matchesSearch && matchesCategory;

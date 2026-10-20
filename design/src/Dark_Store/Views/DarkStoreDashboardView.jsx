@@ -58,6 +58,21 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
 
   const [recentDeliveries, setRecentDeliveries] = useState(defaultDeliveries);
 
+  const defaultExpiryAlerts = [
+    { name: 'Spinach (200 g)', sub: 'Expires in 2 days • 15 May, 2025', qty: '15 kg', risk: 'High', badge: 'bg-[#FEE2E2] text-[#991B1B]', image: '/images/greengram_only.png' },
+    { name: 'Strawberry (Pack)', sub: 'Expires in 3 days • 16 May, 2025', qty: '8 Packs', risk: 'Medium', badge: 'bg-[#FEF3C7] text-[#D97706]', image: '/images/fruits_ref.png' },
+    { name: 'Paneer (200 g)', sub: 'Expires in 1 day • 14 May, 2025', qty: '6 Packs', risk: 'High', badge: 'bg-[#FEE2E2] text-[#991B1B]', image: '/images/chickpea_only.png' },
+  ];
+
+  const defaultBlockchainCerts = [
+    { batchId: 'WH-120525-01', crop: 'Wheat', origin: 'Verified • Nashik Farm', date: 'Verified on 10 May, 2025' },
+    { batchId: 'MN-120525-02', crop: 'Mango', origin: 'Verified • Pune Farm', date: 'Verified on 10 May, 2025' },
+    { batchId: 'TM-120525-03', crop: 'Tomato', origin: 'Verified • Chhattisgarh Farm', date: 'Verified on 11 May, 2025' },
+  ];
+
+  const [expiryAlerts, setExpiryAlerts] = useState(defaultExpiryAlerts);
+  const [blockchainCerts, setBlockchainCerts] = useState(defaultBlockchainCerts);
+
   useEffect(() => {
     fetch('http://localhost:8000/darkstore/kpis')
       .then((res) => res.json())
@@ -81,6 +96,38 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
         }
       })
       .catch((err) => console.error('Error fetching inbound deliveries:', err));
+
+    fetch('http://localhost:8000/incidents/spoilage')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.incidents && data.incidents.length > 0) {
+          const mapped = data.incidents.slice(0, 3).map((inc) => ({
+            name: `${inc.crop_name} (${inc.batch_id.slice(0, 8)})`,
+            sub: `${inc.failure_type.replace('_', ' ')} • Fault: ${inc.custodian_at_fault}`,
+            qty: `${inc.loss_goods_kg} kg`,
+            risk: inc.severity === 'HIGH' ? 'Critical' : 'Medium',
+            badge: inc.severity === 'HIGH' ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#FEF3C7] text-[#D97706]',
+            image: inc.crop_name.toLowerCase().includes('tomato') ? '/images/tomato_only.png' : '/images/vegetables_ref.png',
+          }));
+          setExpiryAlerts(mapped);
+        }
+      })
+      .catch((err) => console.warn('Using default expiry alerts:', err));
+
+    fetch('http://localhost:8000/farmer/inventory')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.items) && data.items.length > 0) {
+          const mapped = data.items.slice(0, 3).map((it) => ({
+            batchId: it.batch_id || it.id,
+            crop: it.name || it.crop,
+            origin: `Verified • ${it.origin ? it.origin.split('||')[0].trim() : 'Farm Gate'}`,
+            date: `Verified on ${it.harvestDate || '20 Oct, 2026'}`,
+          }));
+          setBlockchainCerts(mapped);
+        }
+      })
+      .catch((err) => console.warn('Using default certs:', err));
   }, []);
 
   // Middle Card 3: Top Selling Products Data
@@ -90,20 +137,6 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
     { name: 'Potato', sold: '600 kg', revenue: '₹ 66,000', image: '/images/potato_only.png' },
     { name: 'Wheat (Premium)', sold: '350 kg', revenue: '₹ 63,000', image: '/images/wheat_only.png' },
     { name: 'Banana', sold: '310 kg', revenue: '₹ 48,500', image: '/images/banana_only.png' },
-  ];
-
-  // Lower Card 1: Expiry / Spoilage Alerts Data
-  const expiryAlerts = [
-    { name: 'Spinach (200 g)', sub: 'Expires in 2 days • 15 May, 2025', qty: '15 kg', risk: 'High', badge: 'bg-[#FEE2E2] text-[#991B1B]', image: '/images/greengram_only.png' },
-    { name: 'Strawberry (Pack)', sub: 'Expires in 3 days • 16 May, 2025', qty: '8 Packs', risk: 'Medium', badge: 'bg-[#FEF3C7] text-[#D97706]', image: '/images/fruits_ref.png' },
-    { name: 'Paneer (200 g)', sub: 'Expires in 1 day • 14 May, 2025', qty: '6 Packs', risk: 'High', badge: 'bg-[#FEE2E2] text-[#991B1B]', image: '/images/chickpea_only.png' },
-  ];
-
-  // Lower Card 2: Blockchain Verification Data
-  const blockchainCerts = [
-    { batchId: 'WH-120525-01', crop: 'Wheat', origin: 'Verified • Nashik Farm', date: 'Verified on 10 May, 2025' },
-    { batchId: 'MN-120525-02', crop: 'Mango', origin: 'Verified • Pune Farm', date: 'Verified on 10 May, 2025' },
-    { batchId: 'TM-120525-03', crop: 'Tomato', origin: 'Verified • Chhattisgarh Farm', date: 'Verified on 11 May, 2025' },
   ];
 
   return (

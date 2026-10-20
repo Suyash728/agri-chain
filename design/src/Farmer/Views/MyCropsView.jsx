@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, ChevronRight } from 'lucide-react';
 import { cropCategories } from '../../data/mockData';
 import { cropIllustrationsMap, FruitsIllustration } from '../components/CropIllustrations';
 
 export const MyCropsView = ({ categories, onBack, onSelectCategory, onSearchClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [fetchedCategories, setFetchedCategories] = useState(null);
 
-  const list = categories && categories.length > 0 ? categories : cropCategories;
+  useEffect(() => {
+    if (!categories || categories.length === 0) {
+      fetch('http://localhost:8000/farmer/crops')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) setFetchedCategories(data);
+        })
+        .catch(err => console.error('Error fetching farmer crops:', err));
+    }
+  }, [categories]);
+
+  const list = categories && categories.length > 0 ? categories : (fetchedCategories || cropCategories);
   const filteredCategories = list.filter(cat => 
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );

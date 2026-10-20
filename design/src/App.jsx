@@ -75,10 +75,11 @@ export default function App() {
 
   const fetchFarmerData = useCallback(async () => {
     try {
-      const [kpiRes, cropsRes, actRes] = await Promise.allSettled([
+      const [kpiRes, cropsRes, actRes, invRes] = await Promise.allSettled([
         fetch('http://localhost:8000/farmer/kpis').then(r => r.json()),
         fetch('http://localhost:8000/farmer/crops').then(r => r.json()),
-        fetch('http://localhost:8000/farmer/activity').then(r => r.json())
+        fetch('http://localhost:8000/farmer/activity').then(r => r.json()),
+        fetch('http://localhost:8000/farmer/inventory').then(r => r.json())
       ]);
 
       if (kpiRes.status === 'fulfilled' && Array.isArray(kpiRes.value)) {
@@ -89,6 +90,9 @@ export default function App() {
       }
       if (actRes.status === 'fulfilled' && Array.isArray(actRes.value)) {
         setFarmerActivities(actRes.value);
+      }
+      if (invRes.status === 'fulfilled' && invRes.value && Array.isArray(invRes.value.items)) {
+        setInventoryList(invRes.value.items);
       }
     } catch (err) {
       console.error('Error fetching farmer data from backend:', err);

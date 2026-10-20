@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, Plus } from 'lucide-react';
 import { consumerProducts } from '../data/consumerData';
 
 export const FavoritesView = ({ onAddToCart, onToggleFavorite, onProductClick }) => {
-  const favoriteItems = consumerProducts.filter(p => p.isFavorite);
+  const [products, setProducts] = useState(consumerProducts);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/consumer/products')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data);
+        }
+      })
+      .catch((err) => console.warn('Using default consumer favorites:', err));
+  }, []);
+
+  const favoriteItems = products.filter(p => p.isFavorite);
 
   return (
     <div className="flex flex-col gap-3 pb-20 md:pb-8 pt-2">

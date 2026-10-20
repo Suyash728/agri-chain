@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { initialOrders } from '../data/consumerData';
 
 export const OrdersView = ({ onViewOrderDetails }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
+  const [orders, setOrders] = useState(initialOrders);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/consumer/orders')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setOrders(data);
+        }
+      })
+      .catch((err) => console.warn('Using default consumer orders:', err));
+  }, []);
 
   const filterTabs = ['All', 'Delivered', 'In Transit', 'Cancelled'];
 
-  const filteredOrders = initialOrders.filter(order => {
+  const filteredOrders = orders.filter(order => {
     if (selectedFilter === 'All') return true;
     return order.status.toLowerCase() === selectedFilter.toLowerCase();
   });
@@ -57,14 +69,14 @@ export const OrdersView = ({ onViewOrderDetails }) => {
 
               {/* Thumbnails Row */}
               <div className="flex items-center gap-2 my-1">
-                {order.thumbnails.map((img, idx) => (
+                {(order.thumbnails || []).map((img, idx) => (
                   <div key={idx} className="w-12 h-12 rounded-xl bg-[#F8F5EE] p-1.5 flex items-center justify-center border border-[#E6E1D5] overflow-hidden">
                     <img src={img} alt="item" className="max-h-full max-w-full object-contain mix-blend-multiply" />
                   </div>
                 ))}
-                {order.itemsCount > order.thumbnails.length && (
+                {(order.itemsCount || 1) > (order.thumbnails?.length || 0) && (
                   <div className="w-12 h-12 rounded-xl bg-[#FAF7F0] flex items-center justify-center text-xs font-extrabold text-[#666057] border border-[#E6E1D5]">
-                    +{order.itemsCount - order.thumbnails.length}
+                    +{(order.itemsCount || 1) - (order.thumbnails?.length || 0)}
                   </div>
                 )}
               </div>

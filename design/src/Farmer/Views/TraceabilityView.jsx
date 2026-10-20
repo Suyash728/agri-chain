@@ -1,8 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Sprout, Wheat, Factory, Truck, Store } from 'lucide-react';
 import { traceabilityBatch } from '../../data/mockData';
 
 export const TraceabilityView = ({ onBack, onOpenFullJourney }) => {
+  const [liveBatch, setLiveBatch] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/farmer/inventory')
+      .then(r => r.json())
+      .then(inv => {
+        const firstId = inv?.items?.[0]?.batchId;
+        if (firstId) {
+          fetch(`http://localhost:8000/batches/${firstId}/traceability`)
+            .then(r => r.json())
+            .then(data => {
+              if (data && data.batch_id) {
+                setLiveBatch({
+                  batchId: data.batch_id,
+                  product: data.crop_name || 'Produce',
+                  quantity: '500 kg',
+                  harvestDate: data.timeline?.[0]?.date || 'Today',
+                  currentLocation: data.current_holder || 'In Transit',
+                  farmDetails: data.origin_farm || 'Nashik Organic Cluster #4',
+                });
+              }
+            })
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const batchInfo = liveBatch || traceabilityBatch;
+
   return (
     <div className="bg-white border border-[#E6E1D5] rounded-2xl p-4 sm:p-6 shadow-xs max-w-xl mx-auto w-full">
       {/* Header */}
@@ -87,15 +117,15 @@ export const TraceabilityView = ({ onBack, onOpenFullJourney }) => {
       >
         <div className="flex justify-between items-center">
           <span className="font-bold text-[#3B3028]">Product</span>
-          <span className="font-extrabold text-[#3B3028]">{traceabilityBatch.product}</span>
+          <span className="font-extrabold text-[#3B3028]">{batchInfo.product}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="font-bold text-[#3B3028]">Batch ID</span>
-          <span className="font-extrabold text-[#3B3028]">{traceabilityBatch.batchId}</span>
+          <span className="font-extrabold text-[#3B3028]">{batchInfo.batchId}</span>
         </div>
         <div className="flex justify-between items-center">
           <span className="font-bold text-[#3B3028]">Current Location</span>
-          <span className="font-extrabold text-[#3B3028]">{traceabilityBatch.currentLocation}</span>
+          <span className="font-extrabold text-[#3B3028]">{batchInfo.currentLocation}</span>
         </div>
       </div>
 

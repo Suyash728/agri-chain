@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { inventoryItems, inventorySummary } from '../../data/mockData';
 import { 
@@ -8,7 +8,20 @@ import {
 } from '../components/CropIllustrations';
 
 export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem, items }) => {
-  const displayItems = items && items.length > 0 ? items : inventoryItems;
+  const [liveInventory, setLiveInventory] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/farmer/inventory')
+      .then(res => res.json())
+      .then(data => setLiveInventory(data))
+      .catch(err => console.error('Error fetching farmer inventory:', err));
+  }, []);
+
+  const summary = liveInventory?.summary || inventorySummary;
+  const displayItems = (liveInventory?.items && liveInventory.items.length > 0)
+    ? liveInventory.items
+    : (items && items.length > 0 ? items : inventoryItems);
+
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Header Bar */}
@@ -38,10 +51,10 @@ export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem,
           </span>
           <div className="flex items-baseline gap-1.5 mt-1">
             <span className="text-2xl sm:text-3xl font-extrabold text-white">
-              {inventorySummary.totalVolume}
+              {summary.totalVolume}
             </span>
             <span className="text-xs font-bold text-[#C2CBAD]">
-              {inventorySummary.volumeUnit}
+              {summary.volumeUnit}
             </span>
           </div>
         </div>
@@ -53,7 +66,7 @@ export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem,
             Total Value
           </span>
           <span className="text-2xl sm:text-3xl font-extrabold text-white mt-1 block">
-            {inventorySummary.totalValue}
+            {summary.totalValue}
           </span>
         </div>
       </div>

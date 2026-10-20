@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
 import { ordersList as defaultOrders } from '../../data/mockData';
 
 export const OrdersView = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('All');
-  const [orders] = useState(defaultOrders);
+  const [orders, setOrders] = useState(defaultOrders);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/farmer/orders')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) setOrders(data);
+      })
+      .catch(err => console.error('Error fetching farmer orders:', err));
+  }, []);
 
   const filteredOrders = orders.filter(order => {
     if (activeTab === 'All') return true;

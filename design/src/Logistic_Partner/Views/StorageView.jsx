@@ -1,13 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2, Thermometer, ShieldCheck } from 'lucide-react';
 
 export const StorageView = () => {
-  const warehouses = [
+  const [liveWarehouses, setLiveWarehouses] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/logistics/storage')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) setLiveWarehouses(data);
+      })
+      .catch(err => console.error('Error fetching logistics storage:', err));
+  }, []);
+
+  const defaultWarehouses = [
     { name: 'Nashik Warehouse Hub', capacity: '3,000 Tonnes', utilized: '2,400 Tonnes', pct: 80, temp: '18°C (Ambient Grain Silo)', location: 'MIDC Ambad, Nashik' },
     { name: 'Pune Cold Storage Facility', capacity: '2,500 Tonnes', utilized: '1,500 Tonnes', pct: 60, temp: '4°C (Cold-Chain Reefer)', location: 'Chakan Industrial Area, Pune' },
     { name: 'Nagpur Warehouse Hub', capacity: '2,000 Tonnes', utilized: '1,500 Tonnes', pct: 75, temp: '20°C (Dry Storage)', location: 'Kalamna Market, Nagpur' },
     { name: 'Raipur Central Warehouse', capacity: '2,500 Tonnes', utilized: '1,000 Tonnes', pct: 40, temp: '16°C (Controlled Humidity)', location: 'Tatibandh, Raipur' },
   ];
+
+  const warehouses = liveWarehouses.length > 0 ? liveWarehouses : defaultWarehouses;
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">

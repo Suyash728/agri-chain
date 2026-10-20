@@ -41,10 +41,28 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
     { number: 'UP14 EF 9101', status: 'Delivered', badgeClass: 'bg-gray-100 text-gray-700', driver: 'Arvind Kumar', route: 'Aligarh → Nashik' },
   ];
 
+  const [availableProduce, setAvailableProduce] = useState(availableProduceList);
   const [procurementOrders, setProcurementOrders] = useState(initialOrdersList);
   const [activeVehiclesList, setActiveVehiclesList] = useState(initialVehiclesList);
 
   useEffect(() => {
+    fetch('http://localhost:8000/logistics/available-produce')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.slice(0, 4).map((p) => ({
+            name: p.crop || p.name,
+            icon: p.icon || '/images/tomato_only.png',
+            qty: p.quantity || '500 kg',
+            price: p.price || '₹ 2,000',
+            status: 'In Stock',
+            badge: 'bg-[#556B2F]/15 text-[#556B2F]',
+          }));
+          setAvailableProduce(mapped);
+        }
+      })
+      .catch((err) => console.warn('Using fallback available produce:', err));
+
     fetch('http://localhost:8000/logistics/orders')
       .then((res) => res.json())
       .then((data) => {
@@ -117,7 +135,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
             <p className="text-xs text-[#666057] mb-3">Verified farm-gate produce ready for procurement</p>
 
             <div className="space-y-2.5">
-              {availableProduceList.map((item, idx) => (
+              {availableProduce.map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF7F0]/60 border border-[#E6E1D5]/60">
                   <div className="flex items-center gap-2.5">
                     <img src={item.icon} alt={item.name} className="w-6 h-6 object-contain" />

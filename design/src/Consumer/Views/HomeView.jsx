@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProductCard } from '../components/ProductCard';
 import { consumerCategories, consumerProducts } from '../data/consumerData';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
@@ -8,7 +8,20 @@ export const HomeView = ({
   onAddToCart, 
   onProductClick 
 }) => {
-  const bestSellers = consumerProducts.filter(p => p.isBestSeller);
+  const [products, setProducts] = useState(consumerProducts);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/consumer/products')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data);
+        }
+      })
+      .catch((err) => console.warn('Using default consumer products:', err));
+  }, []);
+
+  const bestSellers = products.filter(p => p.isBestSeller);
   const activeCategories = consumerCategories.filter(c => c.id !== 'dairy').slice(0, 6);
 
   const productSections = [
@@ -117,7 +130,10 @@ export const HomeView = ({
 
         {/* 4 - 9. Category-Wise Product Sections (Exactly 2 Product Cards per Category) */}
         {productSections.map((sec) => {
-          const secProducts = consumerProducts.filter(p => p.category === sec.id);
+          let secProducts = products.filter(p => p.category === sec.id);
+          if (secProducts.length === 0) {
+            secProducts = consumerProducts.filter(p => p.category === sec.id);
+          }
           if (secProducts.length === 0) return null;
 
           return (

@@ -1147,4 +1147,43 @@ still static UI with no data flow. Specifically:
 - `pytest tests/`: 7/7 passed.
 - `backend/scripts/verify_final_system.py`: 10/10 checks passed.
 
+---
+
+## [Live End-to-End Data Wiring Across All Roles & Components] — 2026-10-20
+
+**What was done:**
+- Replaced static template values and mock data across all 5 user roles (`Farmer`, `Logistics Partner`, `Dark Store`, `Consumer`, `Admin`) with dynamic live data fetched from FastAPI backend (`:8000`), derived in real-time from SQLite (`backend/agrichain.db`), on-chain smart contracts, and simulated IoT sensor inputs:
+  1. **Farmer Views & Dashboard**:
+     - `InventoryView.jsx`: Wired to `GET /farmer/inventory` computing real batch stock from 58 SQLite batches (Total Volume: `33.50 Tonnes`, Total Value: `₹159,000`).
+     - `OrdersView.jsx`: Wired to `GET /farmer/orders` showing 57 real on-chain custody handoff events and transactions.
+     - `ShipmentsView.jsx`: Wired to `GET /farmer/shipments` pulling real active shipments with live temperature (`readings` table) and highway GPS coordinates.
+     - `EarningsView.jsx`: Wired to `GET /farmer/earnings` computing real financial breakdown from on-chain price settlements.
+     - `MyCropsView.jsx`: Wired to `GET /farmer/crops` with real crop lot breakdowns.
+     - `TraceabilityView.jsx`: Wired to `GET /batches/{id}/traceability` rendering verified on-chain lifecycle steps and IoT checkpoints.
+     - `ProfileView.jsx` & `Header.jsx`: Wired to `GET /farmer/profile` with live farmer identity (`Rahul Patil`, verified Ethereum address).
+  2. **Logistics Partner Views**:
+     - `AvailableProduceView.jsx` & `InventoryView.jsx`: Wired to `GET /logistics/available-produce` displaying 37 real registered lots available for transport.
+     - `StorageView.jsx` & `InventoryView.jsx`: Wired to `GET /logistics/storage` displaying live capacity utilization and climate-controlled reefer telemetry.
+     - `TransactionsView.jsx`: Wired to `GET /logistics/transactions` displaying real on-chain financial settlement transfers.
+     - `LogisticDashboardView.jsx`: Wired available produce summary to live database records.
+  3. **Dark Store Views**:
+     - `DarkStoreSalesView.jsx`: Wired to `GET /darkstore/sales` displaying real sales (`₹ 48,600`), completed orders (`20`), and recent customer deliveries.
+     - `DarkStoreRevenueView.jsx`: Wired to `GET /darkstore/kpis` with live revenue metrics.
+     - `DarkStoreDashboardView.jsx`: Wired live incoming deliveries, real expiry/spoilage incidents (`/incidents/spoilage`), and on-chain verification certificates. Fixed missing `topSellingProducts` reference bug.
+  4. **Consumer Views**:
+     - `HomeView.jsx` & `ProductsView.jsx`: Wired to `GET /consumer/products` catalog of 30 products dynamically mapped to real on-chain batches (`FINAL-DEMO-1792508658`, `TM1256`, etc.) with live ratings and reviews.
+     - `OrdersView.jsx`: Wired to `GET /consumer/orders` with real consumer purchase history.
+     - `FavoritesView.jsx`: Wired to `GET /consumer/products` with real batch references.
+     - `ProductJourneyView.jsx`: Verified end-to-end integration rendering on-chain steps, push-button thermal breach flags, and verified review submissions.
+  5. **Admin Governance**:
+     - `AdminPortalView.jsx`: Confirmed live wiring to `/admin/users`, `/admin/contracts/status`, `/quarantine/verify-integrity`, and `/telemetry/quarantine`.
+- Created comprehensive automated integration test suite: `design/test_live_data_integrity.py`.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Automated Live Data Integrity Audit (`design/test_live_data_integrity.py`): Passed all 5 roles verifying live on-screen numbers match ground-truth API records without errors.
+- Responsive Audit (`design/test_comprehensive_responsive.py`): 55/55 viewports and roles passed with 0px horizontal scroll overflow.
+- Frontend Production Build (`npm run build` in `design/`): 1,809 modules transformed cleanly in 2.46s with 0 errors.
+- Full-System Capstone Test (`backend/scripts/verify_final_system.py`): 10/10 capstone checks passed (access control, AI trust F1=0.9722, multi-role provenance, push-button thermal quarantine, on-chain policy breach, IPFS anchoring, dark store checkout, verified reviews, and price trail).
+- Backend Pytest Suite (`pytest tests/`): 7/7 tests passed in 4.20s.
+
 

@@ -3,21 +3,39 @@ import { FileText, Download, AlertTriangle } from 'lucide-react';
 
 export const TransactionsView = () => {
   const [spoilageData, setSpoilageData] = useState(null);
+  const [liveTransactions, setLiveTransactions] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:8000/incidents/spoilage')
       .then((res) => res.json())
       .then((data) => setSpoilageData(data))
       .catch((err) => console.log('Logistics transactions spoilage fetch note:', err));
+
+    fetch('http://localhost:8000/logistics/transactions')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped = data.map(d => ({
+            desc: `${d.type} (${d.crop} - Batch #${d.batchId.slice(0, 10)})`,
+            amount: d.amount,
+            date: d.date ? d.date.split('T')[0] : 'Today',
+            status: d.status,
+          }));
+          setLiveTransactions(mapped);
+        }
+      })
+      .catch((err) => console.log('Logistics transactions fetch note:', err));
   }, []);
 
-  const txs = [
+  const defaultTxs = [
     { desc: 'Payment to Supplier (ORD1256)', amount: '₹ 21,000', date: '12 May, 2025', status: 'Completed' },
     { desc: 'Freight Charges (SHP5678)', amount: '₹ 8,500', date: '12 May, 2025', status: 'Completed' },
     { desc: 'Storage Charges (Nashik Warehouse)', amount: '₹ 5,200', date: '11 May, 2025', status: 'Completed' },
     { desc: 'Advance from Buyer (Green Valley Traders)', amount: '₹ 50,000', date: '10 May, 2025', status: 'Completed' },
     { desc: 'Payment to Supplier (ORD1255)', amount: '₹ 16,000', date: '10 May, 2025', status: 'Completed' },
   ];
+
+  const txList = liveTransactions.length > 0 ? liveTransactions : defaultTxs;
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -82,7 +100,7 @@ export const TransactionsView = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E6E1D5]/50">
-              {txs.map((t, i) => (
+              {txList.map((t, i) => (
                 <tr key={i} className="hover:bg-[#FAF7F0]/50 transition-colors">
                   <td className="p-4 font-bold text-[#2D2620]">{t.desc}</td>
                   <td className="p-4 text-center text-[#8C8275]">{t.date}</td>

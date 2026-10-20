@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   TrendingUp, 
@@ -20,6 +20,16 @@ export const DarkStoreRevenueView = ({ onBack }) => {
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [activeStore, setActiveStore] = useState('Nashik Central Store');
   const [currentPage, setCurrentPage] = useState(1);
+  const [liveKpis, setLiveKpis] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/darkstore/kpis')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setLiveKpis(data);
+      })
+      .catch((err) => console.warn('Using default dark store revenue KPIs:', err));
+  }, []);
 
   // Revenue Summary Table Dataset (12 Days for pagination)
   const revenueTableData = [
@@ -145,7 +155,7 @@ export const DarkStoreRevenueView = ({ onBack }) => {
 
           <div className="my-auto">
             <div className="text-2xl sm:text-[26px] font-extrabold text-[#1A1A1A] tracking-tight">
-              ₹2,48,750
+              {liveKpis?.revenueThisMonth || '₹2,48,750'}
             </div>
           </div>
 
@@ -285,7 +295,7 @@ export const DarkStoreRevenueView = ({ onBack }) => {
 
           <div className="pt-2 border-t border-[#E6E1D5]/60 text-xs font-semibold text-[#666057] flex justify-between">
             <span>Total</span>
-            <span className="font-extrabold text-[#2D2620]">₹2,48,750</span>
+            <span className="font-extrabold text-[#2D2620]">{liveKpis?.revenueThisMonth || '₹2,48,750'}</span>
           </div>
         </div>
 
@@ -382,7 +392,7 @@ export const DarkStoreRevenueView = ({ onBack }) => {
 
           <div className="pt-2 border-t border-[#E6E1D5]/60 text-xs font-semibold text-[#666057] flex justify-between">
             <span>Total</span>
-            <span className="font-extrabold text-[#2D2620]">₹2,48,750</span>
+            <span className="font-extrabold text-[#2D2620]">{liveKpis?.revenueThisMonth || '₹2,48,750'}</span>
           </div>
         </div>
 

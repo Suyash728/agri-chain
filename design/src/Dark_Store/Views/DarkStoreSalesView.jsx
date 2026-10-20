@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -17,13 +17,27 @@ export const DarkStoreSalesView = ({ onBack }) => {
   const [dateRange, setDateRange] = useState('May 01 – May 11, 2025');
   const [chartMetric, setChartMetric] = useState('Amount (₹)');
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [liveSales, setLiveSales] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/darkstore/sales')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setLiveSales(data);
+      })
+      .catch((err) => console.warn('Using default dark store sales:', err));
+  }, []);
+
+  const totalSalesVal = liveSales?.totalSales || '₹ 11,28,450';
+  const ordersCompletedVal = liveSales?.ordersCompleted || '243';
+  const quantitySoldVal = liveSales?.quantitySold || '4,250 kg';
 
   // 6 Top Colored KPI Cards
   const kpis = [
     {
       id: 'total-sales',
       title: 'Total Sales',
-      value: '₹ 11,28,450',
+      value: totalSalesVal,
       subtext: '↑ 15% from last month',
       isPositive: true,
       bg: 'bg-[#EFF4E9]',
@@ -33,7 +47,7 @@ export const DarkStoreSalesView = ({ onBack }) => {
     {
       id: 'orders-completed',
       title: 'Orders Completed',
-      value: '243',
+      value: ordersCompletedVal,
       subtext: '↑ 12% from last month',
       isPositive: true,
       bg: 'bg-[#FFF4EC]',
@@ -43,7 +57,7 @@ export const DarkStoreSalesView = ({ onBack }) => {
     {
       id: 'total-qty',
       title: 'Total Quantity Sold',
-      value: '4,250 kg',
+      value: quantitySoldVal,
       subtext: '↑ 10% from last month',
       isPositive: true,
       bg: 'bg-[#EEF4FB]',
@@ -53,7 +67,9 @@ export const DarkStoreSalesView = ({ onBack }) => {
     {
       id: 'avg-order-val',
       title: 'Average Order Value',
-      value: '₹ 4,642',
+      value: liveSales?.ordersCompleted && parseInt(liveSales.ordersCompleted) > 0 
+        ? `₹ ${(parseInt(liveSales.totalSales.replace(/[^0-9]/g, '')) / parseInt(liveSales.ordersCompleted)).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` 
+        : '₹ 4,642',
       subtext: '↑ 8% from last month',
       isPositive: true,
       bg: 'bg-[#F5EEF9]',
@@ -92,7 +108,7 @@ export const DarkStoreSalesView = ({ onBack }) => {
   ];
 
   // Recent Orders Data
-  const recentOrders = [
+  const defaultRecentOrders = [
     {
       id: 'ORD-78941',
       buyer: 'Fresh Mart Retailers',
@@ -144,6 +160,19 @@ export const DarkStoreSalesView = ({ onBack }) => {
       badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
     },
   ];
+
+  const recentOrders = (liveSales?.recentOrders && liveSales.recentOrders.length > 0)
+    ? liveSales.recentOrders.map((o) => ({
+        id: o.id,
+        buyer: o.customer || 'Verified Consumer Delivery',
+        items: o.product || 'Fresh Produce',
+        quantity: o.quantity || '25 kg',
+        amount: o.amount,
+        orderDate: o.date ? o.date.slice(0, 16) : 'Today',
+        status: o.status || 'Delivered',
+        badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
+      }))
+    : defaultRecentOrders;
 
   return (
     <div className="flex flex-col gap-5 animate-fade-in w-full">

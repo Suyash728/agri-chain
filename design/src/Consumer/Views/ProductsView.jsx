@@ -1,10 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SlidersHorizontal, Plus, Star } from 'lucide-react';
 import { consumerProducts } from '../data/consumerData';
 
 export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'all' }) => {
   const [selectedFilter, setSelectedFilter] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState('');
+  const [products, setProducts] = useState(consumerProducts);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/consumer/products')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data);
+        }
+      })
+      .catch((err) => console.warn('Using default consumer products:', err));
+  }, []);
 
   const filterTabs = [
     { id: 'all', label: 'All' },
@@ -22,7 +34,10 @@ export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'a
       const categories = ['fruits', 'vegetables', 'grains', 'pulses', 'dairy', 'spices', 'dryfruits'];
       let all12 = [];
       categories.forEach(catId => {
-        const catProducts = consumerProducts.filter(p => p.category === catId).slice(0, 2);
+        let catProducts = products.filter(p => p.category === catId).slice(0, 2);
+        if (catProducts.length === 0) {
+          catProducts = consumerProducts.filter(p => p.category === catId).slice(0, 2);
+        }
         all12 = [...all12, ...catProducts];
       });
       if (searchQuery) {
@@ -30,7 +45,10 @@ export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'a
       }
       return all12;
     } else {
-      const catProducts = consumerProducts.filter(p => p.category === selectedFilter).slice(0, 2);
+      let catProducts = products.filter(p => p.category === selectedFilter);
+      if (catProducts.length === 0) {
+        catProducts = consumerProducts.filter(p => p.category === selectedFilter);
+      }
       if (searchQuery) {
         return catProducts.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
       }

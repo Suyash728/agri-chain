@@ -4,13 +4,21 @@ import { earningsSummary } from '../../data/mockData';
 
 export const EarningsView = ({ onBack, onOpenReport }) => {
   const [spoilageData, setSpoilageData] = useState(null);
+  const [liveEarnings, setLiveEarnings] = useState(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/incidents/spoilage')
       .then((res) => res.json())
       .then((data) => setSpoilageData(data))
       .catch((err) => console.log('Farmer earnings spoilage fetch note:', err));
+
+    fetch('http://localhost:8000/farmer/earnings')
+      .then((res) => res.json())
+      .then((data) => setLiveEarnings(data))
+      .catch((err) => console.log('Farmer earnings fetch note:', err));
   }, []);
+
+  const summary = liveEarnings || earningsSummary;
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -37,10 +45,10 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
           </span>
           <div className="flex items-baseline gap-1.5 mt-1">
             <span className="text-2xl sm:text-3xl font-extrabold text-white">
-              {earningsSummary.totalThisMonth}
+              {summary.totalThisMonth}
             </span>
             <span className="text-xs font-bold text-[#A5C282] ml-2">
-              {earningsSummary.growthPercentage} {earningsSummary.growthPeriod}
+              {summary.growthPercentage} {summary.growthPeriod}
             </span>
           </div>
         </div>
@@ -52,7 +60,7 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
             Pending Payouts
           </span>
           <span className="text-2xl sm:text-3xl font-extrabold text-white mt-1 block">
-            {earningsSummary.pendingPayouts}
+            {summary.pendingPayouts}
           </span>
         </div>
       </div>
@@ -108,12 +116,12 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
             Category Revenue Breakdown
           </h2>
           <span className="text-xs font-bold text-[#7A8B52]">
-            {earningsSummary.completedTxns} Completed Transactions
+            {summary.completedTxns} Completed Transactions
           </span>
         </div>
 
         <div className="flex flex-col gap-3.5 pt-1">
-          {earningsSummary.breakdown.map((item, idx) => (
+          {summary.breakdown.map((item, idx) => (
             <div key={idx} className="flex flex-col gap-1.5 bg-white p-3.5 rounded-xl border border-[#E6E1D5]">
               <div className="flex justify-between items-center text-xs sm:text-sm font-bold text-[#3B3028]">
                 <span>{item.category}</span>

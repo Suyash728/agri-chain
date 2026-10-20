@@ -1,8 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, MapPin, Award, Phone, Mail, Settings, LogOut, CheckCircle2 } from 'lucide-react';
 import { farmerProfile } from '../../data/mockData';
 
 export const ProfileView = ({ onBack, onLogout }) => {
+  const [profile, setProfile] = useState(farmerProfile);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/farmer/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.name) setProfile(data);
+      })
+      .catch(err => console.error('Error fetching farmer profile:', err));
+  }, []);
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
@@ -29,10 +39,10 @@ export const ProfileView = ({ onBack, onLogout }) => {
           </div>
           <div>
             <h2 className="text-xl font-extrabold text-[#3B3028] flex items-center gap-1.5">
-              {farmerProfile.name} <span className="text-base">{farmerProfile.emoji}</span>
+              {profile.name} <span className="text-base">{profile.emoji || '🌾'}</span>
             </h2>
             <span className="text-xs font-semibold text-[#556B2F] bg-[#E3EBD3] px-2.5 py-0.5 rounded-full inline-block mt-0.5">
-              Verified {farmerProfile.role}
+              Verified {profile.role || 'Farmer'}
             </span>
           </div>
         </div>
@@ -47,20 +57,20 @@ export const ProfileView = ({ onBack, onLogout }) => {
               <span className="font-semibold text-[#786E65] flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-[#7A8B52]" /> Location
               </span>
-              <span className="font-bold text-[#3B3028]">{farmerProfile.location}</span>
+              <span className="font-bold text-[#3B3028]">{profile.location}</span>
             </div>
             <div className="flex justify-between items-center border-t border-[#E6E1D5] pt-2">
               <span className="font-semibold text-[#786E65] flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-[#7A8B52]" /> Farm Size
+                <User className="w-3.5 h-3.5 text-[#7A8B52]" /> Farm Name
               </span>
-              <span className="font-bold text-[#3B3028]">{farmerProfile.farmSize}</span>
+              <span className="font-bold text-[#3B3028]">{profile.farmName || profile.farmSize}</span>
             </div>
             <div className="flex justify-between items-center border-t border-[#E6E1D5] pt-2">
               <span className="font-semibold text-[#786E65] flex items-center gap-1.5">
                 <Award className="w-3.5 h-3.5 text-[#7A8B52]" /> Certification
               </span>
               <span className="font-bold text-[#3D5220] flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> {farmerProfile.certification}
+                <CheckCircle2 className="w-3.5 h-3.5" /> {profile.coopCluster || profile.certification || 'Certified Organic'}
               </span>
             </div>
           </div>
@@ -76,13 +86,13 @@ export const ProfileView = ({ onBack, onLogout }) => {
               <span className="font-semibold text-[#786E65] flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-[#7A8B52]" /> Phone
               </span>
-              <span className="font-bold text-[#3B3028]">{farmerProfile.contact}</span>
+              <span className="font-bold text-[#3B3028]">{profile.phone || profile.contact}</span>
             </div>
             <div className="flex justify-between items-center border-t border-[#E6E1D5] pt-2">
               <span className="font-semibold text-[#786E65] flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-[#7A8B52]" /> Email
+                <Mail className="w-3.5 h-3.5 text-[#7A8B52]" /> Wallet
               </span>
-              <span className="font-bold text-[#3B3028]">{farmerProfile.email}</span>
+              <span className="font-bold text-[#3B3028] font-mono text-[11px] truncate max-w-[200px]">{profile.walletAddress || profile.email}</span>
             </div>
           </div>
         </div>
