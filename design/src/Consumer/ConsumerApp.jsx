@@ -25,7 +25,6 @@ import { AddressModal } from './Modals/AddressModal';
 import { NotificationsModal } from './Modals/NotificationsModal';
 
 // Initial Data
-import { initialCartItems } from './data/consumerData';
 import { CheckCircle2 } from 'lucide-react';
 
 export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
@@ -35,7 +34,7 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
     if (onSelectTab) onSelectTab(view);
     else setInternalView(view);
   };
-  const [cartItems, setCartItems] = useState(initialCartItems);
+  const [cartItems, setCartItems] = useState([]);
   const [appliedCoupon, setAppliedCoupon] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const [deliveryAddress, setDeliveryAddress] = useState('Nashik, Maharashtra');
@@ -124,9 +123,8 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
           consumer_name: `Customer Home Delivery (${deliveryAddress})`,
           price_paise: 220000,
         }),
-      }).catch((e) => console.warn('Checkout background sync note:', e));
+      }).catch(() => {});
     } catch (err) {
-      console.warn('Checkout note:', err);
     }
     setIsOrderSuccessOpen(true);
     setCartItems([]);
@@ -245,9 +243,9 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
             onViewOrderDetails={(order) => {
               if (order && order.items && order.items.length > 0) {
                 const firstItemName = order.items[0].name;
-                const matchedProduct = initialCartItems.find(p => p.name === firstItemName) || {
+                const matchedProduct = {
                   name: firstItemName,
-                  batchId: 'TM1256',
+                  batchId: order.items[0].batchId || 'TM1256',
                   origin: 'Nashik, Maharashtra',
                   image: '/images/vegetables_ref.png'
                 };

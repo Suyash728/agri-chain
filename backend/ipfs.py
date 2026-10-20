@@ -2,7 +2,6 @@ import os
 import hashlib
 import pathlib
 import json
-import urllib.request
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 

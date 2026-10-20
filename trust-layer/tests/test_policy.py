@@ -13,8 +13,7 @@ import tempfile
 import pathlib
 
 from app.schemas.telemetry import TelemetryPayload
-from app.schemas.policy import CropPolicy
-from app.services.policy import get_crop_policy, DEFAULT_CONSERVATIVE_TOMATO_POLICY
+from app.services.policy import get_crop_policy
 from app.services.plausibility import run_plausibility_checks
 from app.services.features import extract_features
 from app.services.anomaly_detector import IsolationForestDetector

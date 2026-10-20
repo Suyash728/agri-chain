@@ -18,7 +18,7 @@ VERDICT STATES
   (e.g., first reading missing derived features or untrained ML model).
 """
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from app.schemas.anomaly import AnomalyResult
 from app.schemas.integrity import IntegrityResult

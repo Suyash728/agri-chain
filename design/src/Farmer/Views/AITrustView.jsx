@@ -14,11 +14,24 @@ import {
   Ban, 
   AlertTriangle 
 } from 'lucide-react';
-import { aiTrustData as initialData } from '../../data/mockData';
 import { QuarantineAuditModal } from '../Modals/QuarantineAuditModal';
 
+const defaultTrustData = {
+  score: 92,
+  maxScore: 100,
+  level: "High Trust",
+  status: "Safe & Trustworthy",
+  lastVerified: "10 mins ago",
+  aiVerificationDetails: [
+    { title: "Cold Chain Integrity", status: "100% Compliant (16-20°C Range)" },
+    { title: "GPS Telemetry Validation", status: "Route Verified & Continuous" },
+    { title: "Tamper Prevention", status: "Smart Seal Intact" },
+    { title: "Anomaly Check", status: "0 Deviations Flagged" }
+  ]
+};
+
 export const AITrustView = ({ onBack, onOpenDetails }) => {
-  const [trustData, setTrustData] = useState(initialData);
+  const [trustData, setTrustData] = useState(defaultTrustData);
   const [isQuarantineOpen, setIsQuarantineOpen] = useState(false);
 
   // Live Telemetry Input State
@@ -47,9 +60,7 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
           setTrustData(json);
         }
       })
-      .catch((err) => {
-        console.warn('Failed to fetch live AI trust data, using fallback:', err);
-      });
+      .catch(() => {});
   }, []);
 
   const handleApplyPreset = (type) => {

@@ -31,7 +31,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.schemas.features import TelemetryFeatures
-from app.services.anomaly_detector import FEATURE_NAMES, IsolationForestDetector, anomaly_detector
+from app.services.anomaly_detector import IsolationForestDetector, anomaly_detector
 from app.services.history import history_repository
 
 client = TestClient(app)

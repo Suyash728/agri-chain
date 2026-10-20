@@ -10,7 +10,7 @@ experiments, classification metrics (TP, TN, FP, FN, Precision, Recall, F1, FPR)
 fault-wise detection breakdowns, confusion matrices, and latency measurements.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 from app.schemas.simulation import FaultType

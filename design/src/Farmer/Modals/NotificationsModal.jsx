@@ -75,9 +75,7 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
           ]);
         }
       })
-      .catch((err) => {
-        console.warn('Failed to load notifications:', err);
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [isOpen, role]);
 

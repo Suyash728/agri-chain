@@ -1,5 +1,4 @@
 import pathlib
-import sqlite3
 import uuid
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Response
@@ -14,7 +13,6 @@ import hashlib
 import chain
 import ipfs
 from db import get_connection, init_db, DB_PATH
-from validation import validate_reading
 
 # Ensure trust-layer is importable
 TRUST_LAYER_PATH = pathlib.Path(__file__).resolve().parent.parent / "trust-layer"

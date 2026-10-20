@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { initialOrders } from '../data/consumerData';
 
 export const OrdersView = ({ onViewOrderDetails }) => {
   const [selectedFilter, setSelectedFilter] = useState('All');
-  const [orders, setOrders] = useState(initialOrders);
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:8000/consumer/orders')
@@ -14,7 +13,7 @@ export const OrdersView = ({ onViewOrderDetails }) => {
           setOrders(data);
         }
       })
-      .catch((err) => console.warn('Using default consumer orders:', err));
+      .catch(() => {});
   }, []);
 
   const filterTabs = ['All', 'Delivered', 'In Transit', 'Cancelled'];

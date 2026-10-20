@@ -24,7 +24,7 @@ IMPORTANT ARCHITECTURAL NOTES
 from datetime import datetime, timezone
 import hashlib
 import json
-from typing import Dict, List, Optional, Protocol, Set, Tuple
+from typing import List, Optional, Protocol
 
 from app.schemas.integrity import IntegrityCheckResult, IntegrityResult
 from app.schemas.telemetry import TelemetryPayload

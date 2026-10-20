@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Calendar } from 'lucide-react';
-import { farmerProfile } from '../../data/mockData';
 
 export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount = 3 }) => {
-  const [profile, setProfile] = useState(farmerProfile);
+  const [profile, setProfile] = useState({ name: 'Rahul Patil' });
 
   useEffect(() => {
     fetch('http://localhost:8000/farmer/profile')
@@ -13,7 +12,7 @@ export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount = 3 })
           setProfile(data);
         }
       })
-      .catch((err) => console.warn('Using fallback farmer profile:', err));
+      .catch(() => {});
   }, []);
 
   return (

@@ -56,7 +56,7 @@ export const InventoryView = ({ initialStep = 'available-produce' }) => {
           setProduceItems(mapped);
         }
       })
-      .catch((err) => console.warn('Using default inventory produce:', err));
+      .catch(() => {});
 
     fetch('http://localhost:8000/logistics/storage')
       .then((res) => (res.ok ? res.json() : null))
@@ -65,7 +65,7 @@ export const InventoryView = ({ initialStep = 'available-produce' }) => {
           setWarehouses(data);
         }
       })
-      .catch((err) => console.warn('Using default storage hubs:', err));
+      .catch(() => {});
   }, []);
 
   // Logistics Central Inventory Category Allocations Data (Step 3)

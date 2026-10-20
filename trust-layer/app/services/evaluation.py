@@ -21,7 +21,6 @@ WHAT THIS MODULE DOES
 8. Clearly documents scientific caveats, simulation limitations, and real-world boundaries.
 """
 
-from datetime import datetime, timezone
 import json
 import os
 import time
@@ -39,7 +38,7 @@ from app.schemas.evaluation import (
     EvaluationReport,
     FaultWiseResult,
 )
-from app.schemas.simulation import FaultConfig, FaultType, SimulationConfig
+from app.schemas.simulation import FaultConfig, SimulationConfig
 from app.services.anomaly_detector import anomaly_detector
 from app.services.audit import audit_service
 from app.services.features import extract_features

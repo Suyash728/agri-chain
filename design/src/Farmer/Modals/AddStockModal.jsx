@@ -55,11 +55,11 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
           );
           const initTx = await custodyContract.initializeCustody(b32, account);
           await initTx.wait();
-        } catch (initErr) {
-          console.log('Custody init on-chain note:', initErr);
+        } catch (_) {
+          // Relayer will ensure on-chain registration
         }
-      } catch (walletErr) {
-        console.warn('MetaMask signing rejected or failed, falling back to backend relayer:', walletErr);
+      } catch (_) {
+        // Fallback to backend relayer on user rejection
       }
     }
 

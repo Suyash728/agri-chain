@@ -6,7 +6,6 @@ Connects to SQLite database to load crop-specific environmental limits from
 the `batches` and `policy` tables in backend/agrichain.db.
 """
 
-import sqlite3
 from typing import Optional
 
 from app.schemas.policy import CropPolicy

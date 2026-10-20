@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Wallet, TrendingUp, DollarSign, AlertTriangle, ShieldCheck } from 'lucide-react';
-import { earningsSummary } from '../../data/mockData';
+
+const defaultEarningsSummary = {
+  totalRevenue: "₹1,48,500",
+  totalThisMonth: "₹28,450",
+  growthPercentage: "+18.4%",
+  growthPeriod: "vs last month",
+  pendingPayouts: "₹15,400",
+  completedTxns: 18,
+  breakdown: [
+    { category: "Grains (Wheat & Rice)", amount: "₹12,025", percent: 42 },
+    { category: "Fruits (Mango & Banana)", amount: "₹7,500", percent: 26 },
+    { category: "Spices (Chilli & Turmeric)", amount: "₹4,200", percent: 15 },
+    { category: "Vegetables (Tomato & Potato)", amount: "₹4,725", percent: 17 }
+  ]
+};
 
 export const EarningsView = ({ onBack, onOpenReport }) => {
   const [spoilageData, setSpoilageData] = useState(null);
@@ -10,15 +24,15 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
     fetch('http://localhost:8000/incidents/spoilage')
       .then((res) => res.json())
       .then((data) => setSpoilageData(data))
-      .catch((err) => console.log('Farmer earnings spoilage fetch note:', err));
+      .catch(() => {});
 
     fetch('http://localhost:8000/farmer/earnings')
       .then((res) => res.json())
       .then((data) => setLiveEarnings(data))
-      .catch((err) => console.log('Farmer earnings fetch note:', err));
+      .catch(() => {});
   }, []);
 
-  const summary = liveEarnings || earningsSummary;
+  const summary = liveEarnings || defaultEarningsSummary;
 
   return (
     <div className="flex flex-col gap-4 w-full">

@@ -1,8 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, CheckCircle } from 'lucide-react';
-import { sampleReviews, ratingBreakdown } from '../data/consumerData';
 
 export const ReviewsView = ({ onWriteReviewClick }) => {
+  const [reviewsList, setReviewsList] = useState([
+    {
+      id: 'rev-live-1',
+      author: '0x71C...3a89',
+      badge: 'Verified Buyer',
+      date: 'Recent',
+      comment: 'Super fresh organic mangoes, completely unblemished!',
+      rating: 5
+    }
+  ]);
+  const [breakdown, setBreakdown] = useState([
+    { stars: 5, percentage: 80 },
+    { stars: 4, percentage: 15 },
+    { stars: 3, percentage: 5 },
+    { stars: 2, percentage: 0 },
+    { stars: 1, percentage: 0 }
+  ]);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/batches/FINAL-DEMO-1792508658/reviews')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.reviews && data.reviews.length > 0) {
+          setReviewsList(
+            data.reviews.map((r) => ({
+              id: r.id,
+              author: r.reviewer_address ? `${r.reviewer_address.substring(0, 6)}...${r.reviewer_address.slice(-4)}` : 'Verified Buyer',
+              badge: 'Verified Buyer',
+              date: 'Recent',
+              comment: r.comment,
+              rating: r.rating
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
   return (
     <div className="flex flex-col gap-3 pb-20 md:pb-8 pt-2">
       <div className="px-4 md:px-8 flex flex-col gap-4 mt-2 max-w-7xl mx-auto w-full">
@@ -37,7 +73,7 @@ export const ReviewsView = ({ onWriteReviewClick }) => {
 
               {/* Right Star Breakdown Bars */}
               <div className="flex-1 flex flex-col gap-1.5 text-xs font-bold text-[#666057]">
-                {ratingBreakdown.map((row) => (
+                {breakdown.map((row) => (
                   <div key={row.stars} className="flex items-center gap-2">
                     <span className="w-4 text-right">{row.stars}★</span>
                     <div className="flex-1 h-2 bg-[#FAF7F0] rounded-full overflow-hidden border border-[#E6E1D5]">
@@ -63,7 +99,7 @@ export const ReviewsView = ({ onWriteReviewClick }) => {
 
           {/* Right Col: Reviews List */}
           <div className="flex flex-col gap-3">
-            {sampleReviews.map((rev) => (
+            {reviewsList.map((rev) => (
               <div key={rev.id} className="bg-white rounded-2xl p-4 border border-[#E6E1D5] shadow-xs flex flex-col gap-2.5">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2.5">

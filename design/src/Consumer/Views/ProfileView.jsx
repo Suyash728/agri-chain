@@ -21,7 +21,6 @@ import {
   Smartphone,
   ChevronDown
 } from 'lucide-react';
-import { userProfileData } from '../data/consumerData';
 
 export const ProfileView = ({ onNavigate, onLogout }) => {
   const [activeModal, setActiveModal] = useState(null); // 'personal' | 'addresses' | 'payment' | 'notifications' | 'help' | 'terms' | 'logout' | null
@@ -29,10 +28,10 @@ export const ProfileView = ({ onNavigate, onLogout }) => {
 
   // 1. Personal Information State
   const [profile, setProfile] = useState({
-    name: userProfileData.name || 'Priya Sharma',
-    email: userProfileData.email || 'priya.sharma@gmail.com',
-    phone: userProfileData.phone || '+91 98201 45892',
-    location: userProfileData.location || 'Bandra West, Mumbai',
+    name: 'Priya Sharma',
+    email: 'priya.sharma@gmail.com',
+    phone: '+91 98201 45892',
+    location: 'Bandra West, Mumbai',
     preferredLanguage: 'English',
     memberSince: 'March 2024'
   });

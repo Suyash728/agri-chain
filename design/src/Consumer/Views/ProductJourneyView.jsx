@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, ShieldCheck, Star, CheckCircle, FileText, ExternalLink, X } from 'lucide-react';
-import { productReviewsData } from '../data/consumerData';
 
 export const ProductJourneyView = ({ 
   selectedProduct, 
@@ -55,7 +54,7 @@ export const ProductJourneyView = ({
     fetch(`http://localhost:8000/batches/${displayBatchId}/documents`)
       .then(res => res.json())
       .then(docs => setDocuments(Array.isArray(docs) ? docs : []))
-      .catch(err => console.log('Documents fetch note:', err));
+      .catch(() => {});
 
     fetch(`http://localhost:8000/batches/${displayBatchId}/reviews`)
       .then(res => res.json())
@@ -64,7 +63,7 @@ export const ProductJourneyView = ({
           setLiveReviews(data);
         }
       })
-      .catch(err => console.log('Live reviews fetch note:', err));
+      .catch(() => {});
   }, [displayBatchId, refreshKey]);
 
   const timelineSteps = [
@@ -86,7 +85,27 @@ export const ProductJourneyView = ({
     : timelineSteps;
 
   // Dynamic reviews for the selected product
-  const fallbackReviews = productReviewsData[product.name] || productReviewsData['Organic Tomato'];
+  const fallbackReviews = {
+    reviewsCount: 12,
+    rating: 4.8,
+    reviews: [
+      {
+        id: 'rev-def-1',
+        author: '0x71C...3a89',
+        badge: 'On-Chain Verified',
+        date: 'Recent',
+        comment: 'Crisp and fresh! Zero cold chain breaches confirmed by QR scan.',
+        rating: 5,
+      }
+    ],
+    breakdown: [
+      { stars: 5, percentage: 85 },
+      { stars: 4, percentage: 15 },
+      { stars: 3, percentage: 0 },
+      { stars: 2, percentage: 0 },
+      { stars: 1, percentage: 0 }
+    ]
+  };
   const reviewsCount = liveReviews ? liveReviews.total_reviews : fallbackReviews.reviewsCount;
   const ratingScore = liveReviews ? liveReviews.average_rating : fallbackReviews.rating;
 

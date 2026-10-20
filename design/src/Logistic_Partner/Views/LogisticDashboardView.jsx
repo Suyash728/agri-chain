@@ -61,7 +61,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
           setAvailableProduce(mapped);
         }
       })
-      .catch((err) => console.warn('Using fallback available produce:', err));
+      .catch(() => {});
 
     fetch('http://localhost:8000/logistics/orders')
       .then((res) => res.json())
@@ -70,7 +70,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
           setProcurementOrders(data);
         }
       })
-      .catch((err) => console.warn('Using fallback procurement orders:', err));
+      .catch(() => {});
 
     fetch('http://localhost:8000/logistics/shipments')
       .then((res) => res.json())
@@ -86,7 +86,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
           setActiveVehiclesList(mappedVehicles);
         }
       })
-      .catch((err) => console.warn('Using fallback vehicles:', err));
+      .catch(() => {});
   }, []);
 
   const filteredOrders = procurementFilter === 'All' 

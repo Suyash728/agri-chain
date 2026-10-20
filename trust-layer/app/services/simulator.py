@@ -34,16 +34,9 @@ FAULT SCENARIO REFERENCE
 
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-import math
 import random
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List
 
-from app.config import (
-    MAX_HUMIDITY_CHANGE_RATE_PER_MIN,
-    MAX_PLAUSIBLE_SPEED_KMH,
-    MAX_TELEMETRY_GAP_SECONDS,
-    MAX_TEMPERATURE_CHANGE_RATE_PER_MIN,
-)
 from app.schemas.simulation import FaultConfig, FaultType, SimulationConfig
 from app.schemas.telemetry import TelemetryPayload
 

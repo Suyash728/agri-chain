@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, MapPin, Award, Phone, Mail, Settings, LogOut, CheckCircle2 } from 'lucide-react';
-import { farmerProfile } from '../../data/mockData';
+
+const defaultFarmerProfile = {
+  name: "Rahul Patil",
+  phone: "+91 98765 43210",
+  location: "Nashik, Maharashtra",
+  verified: true,
+  role: "Organic Producer",
+  rating: 4.8,
+  totalSales: "₹ 1,59,000",
+  activeLots: 12
+};
 
 export const ProfileView = ({ onBack, onLogout }) => {
-  const [profile, setProfile] = useState(farmerProfile);
+  const [profile, setProfile] = useState(defaultFarmerProfile);
 
   useEffect(() => {
     fetch('http://localhost:8000/farmer/profile')
@@ -11,7 +21,7 @@ export const ProfileView = ({ onBack, onLogout }) => {
       .then(data => {
         if (data && data.name) setProfile(data);
       })
-      .catch(err => console.error('Error fetching farmer profile:', err));
+      .catch(() => {});
   }, []);
   return (
     <div className="flex flex-col gap-4">

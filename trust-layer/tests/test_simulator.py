@@ -33,7 +33,6 @@ Tests cover:
      - POST /telemetry/simulate with evaluate_pipeline=True
 """
 
-from datetime import datetime, timezone
 import pytest
 from fastapi.testclient import TestClient
 

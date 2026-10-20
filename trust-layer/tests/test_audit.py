@@ -20,7 +20,7 @@ Tests cover:
      - GET /telemetry/audit/{event_hash} (retrieves audit history, 404 on unknown hash)
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 import pytest
 from fastapi.testclient import TestClient
 

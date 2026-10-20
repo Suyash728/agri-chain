@@ -52,13 +52,6 @@ import { AdminBottomNav } from './components/AdminBottomNav';
 // Web3 Wallet
 import { WalletProvider, WalletConnect } from './components/WalletConnect';
 
-// Data
-import { 
-  cropCategories, 
-  recentActivities, 
-  inventoryItems as initialInventory 
-} from './data/mockData';
-
 export default function App() {
   // Role Portal State: 'consumer' (default launch role), 'farmer', 'logistics', or 'darkstore'
   const [activeRole, setActiveRole] = useState('consumer');
@@ -67,10 +60,10 @@ export default function App() {
   // Tab state for Farmer portal
   const [farmerTab, setFarmerTab] = useState('dashboard');
   const [selectedCropCategory, setSelectedCropCategory] = useState(null);
-  const [inventoryList, setInventoryList] = useState(initialInventory);
+  const [inventoryList, setInventoryList] = useState([]);
   const [farmerKpis, setFarmerKpis] = useState([]);
-  const [farmerCrops, setFarmerCrops] = useState(cropCategories);
-  const [farmerActivities, setFarmerActivities] = useState(recentActivities);
+  const [farmerCrops, setFarmerCrops] = useState([]);
+  const [farmerActivities, setFarmerActivities] = useState([]);
   const [farmerLoading, setFarmerLoading] = useState(true);
 
   const fetchFarmerData = useCallback(async () => {

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, SlidersHorizontal, Truck, CheckCircle2, ShieldCheck } from 'lucide-react';
-import { shipmentsList as defaultShipments } from '../../data/mockData';
 import { TraceabilityView } from './TraceabilityView';
 
 export const ShipmentsView = ({ onBack, onViewJourney }) => {
@@ -9,7 +8,7 @@ export const ShipmentsView = ({ onBack, onViewJourney }) => {
 
   // Shipments filter state & data
   const [activeTab, setActiveTab] = useState('All');
-  const [shipments, setShipments] = useState(defaultShipments);
+  const [shipments, setShipments] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:8000/farmer/shipments')
@@ -17,7 +16,7 @@ export const ShipmentsView = ({ onBack, onViewJourney }) => {
       .then(data => {
         if (data && data.length > 0) setShipments(data);
       })
-      .catch(err => console.error('Error fetching farmer shipments:', err));
+      .catch(() => {});
   }, []);
 
   const filteredShipments = shipments.filter(ship => {

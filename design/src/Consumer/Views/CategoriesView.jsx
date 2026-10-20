@@ -1,11 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search } from 'lucide-react';
-import { consumerCategories } from '../data/consumerData';
 
 export const CategoriesView = ({ onBack, onSelectCategory }) => {
+  const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const filteredCategories = consumerCategories.filter(cat => 
+  useEffect(() => {
+    fetch('http://localhost:8000/consumer/products')
+      .then((res) => res.json())
+      .then((products) => {
+        if (Array.isArray(products)) {
+          const counts = {};
+          products.forEach((p) => {
+            const cat = p.category || 'vegetables';
+            counts[cat] = (counts[cat] || 0) + 1;
+          });
+          setCategories([
+            { id: 'all', name: 'All Products', count: products.length, image: '/images/vegetables_ref.png' },
+            { id: 'vegetables', name: 'Fresh Vegetables', count: counts['vegetables'] || 0, image: '/images/vegetables_ref.png' },
+            { id: 'fruits', name: 'Seasonal Fruits', count: counts['fruits'] || 0, image: '/images/fruits_ref.png' },
+            { id: 'dairy', name: 'Dairy & Farm Fresh', count: counts['dairy'] || 0, image: '/images/dairy_ref.png' },
+            { id: 'grains', name: 'Organic Grains', count: counts['grains'] || 0, image: '/images/grains_ref.png' }
+          ]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const filteredCategories = categories.filter(cat => 
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

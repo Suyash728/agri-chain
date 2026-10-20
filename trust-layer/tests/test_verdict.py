@@ -25,7 +25,7 @@ COVERED TEST CASES (Section 16):
  13. End-to-end POST /telemetry response includes structured final verdict.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 import pytest
 

@@ -33,7 +33,7 @@ export const ShipmentTrackingView = () => {
           });
         }
       })
-      .catch((err) => console.warn('Using fallback shipment tracking:', err));
+      .catch(() => {});
   }, []);
 
   return (

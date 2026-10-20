@@ -25,7 +25,7 @@ export const DarkStoreSalesView = ({ onBack }) => {
       .then((data) => {
         if (data) setLiveSales(data);
       })
-      .catch((err) => console.warn('Using default dark store sales:', err));
+      .catch(() => {});
   }, []);
 
   const totalSalesVal = liveSales?.totalSales || '₹ 11,28,450';

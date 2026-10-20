@@ -32,7 +32,6 @@ RESPONSIBILITY BOUNDARY GUARANTEES
 """
 
 from datetime import datetime, timezone
-from typing import Optional
 
 from app.schemas.audit import AuditRecord
 from app.schemas.oracle import OracleHandoffIneligibleError, OracleHandoffPayload

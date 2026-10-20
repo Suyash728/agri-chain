@@ -1,49 +1,49 @@
 {
-  "generatedAt": "2026-09-23T15:57:22.213Z",
+  "generatedAt": "2026-10-20T16:00:41.155Z",
   "network": "hardhat-local-evm",
   "deploymentGas": {
     "monolithicCore": 729935,
-    "modularProductRegistry": 852440,
-    "modularCustodyTransfer": 744186,
-    "modularColdChainMonitor": 842206,
+    "modularProductRegistry": 1213892,
+    "modularCustodyTransfer": 815760,
+    "modularColdChainMonitor": 913332,
     "modularPolicyConfig": 590594,
-    "totalModularDeploy": 3029426
+    "totalModularDeploy": 3533578
   },
   "operationsGas": {
     "batchRegistration": {
       "monolithic": 119085,
-      "modularWithRBAC": 118961
+      "modularWithRBAC": 121189
     },
     "custodyTransfer": {
       "monolithic": 32949,
-      "modularWithRoleEnforcement": 57464
+      "modularWithRoleEnforcement": 59645
     },
     "singleConditionRecord": {
       "monolithic": 28650,
-      "modularWithRBAC": 71484
+      "modularWithRBAC": 73634
     }
   },
   "oracleBatchingEvaluation": [
     {
       "readingsCount": 5,
-      "singleTotalGas": 271920,
-      "batchedGas": 152392,
-      "savingsPercentage": 43.95,
-      "avgGasPerReading": 30478
+      "singleTotalGas": 282670,
+      "batchedGas": 154564,
+      "savingsPercentage": 45.31,
+      "avgGasPerReading": 30913
     },
     {
       "readingsCount": 10,
-      "singleTotalGas": 543840,
-      "batchedGas": 273046,
-      "savingsPercentage": 49.79,
-      "avgGasPerReading": 27305
+      "singleTotalGas": 565340,
+      "batchedGas": 275218,
+      "savingsPercentage": 51.31,
+      "avgGasPerReading": 27522
     },
     {
       "readingsCount": 20,
-      "singleTotalGas": 1087680,
-      "batchedGas": 514337,
-      "savingsPercentage": 52.71,
-      "avgGasPerReading": 25717
+      "singleTotalGas": 1130680,
+      "batchedGas": 516509,
+      "savingsPercentage": 54.31,
+      "avgGasPerReading": 25825
     }
   ]
 }

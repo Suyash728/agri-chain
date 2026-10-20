@@ -9,7 +9,7 @@ export const TransactionsView = () => {
     fetch('http://localhost:8000/incidents/spoilage')
       .then((res) => res.json())
       .then((data) => setSpoilageData(data))
-      .catch((err) => console.log('Logistics transactions spoilage fetch note:', err));
+      .catch(() => {});
 
     fetch('http://localhost:8000/logistics/transactions')
       .then((res) => res.json())
@@ -24,7 +24,7 @@ export const TransactionsView = () => {
           setLiveTransactions(mapped);
         }
       })
-      .catch((err) => console.log('Logistics transactions fetch note:', err));
+      .catch(() => {});
   }, []);
 
   const defaultTxs = [

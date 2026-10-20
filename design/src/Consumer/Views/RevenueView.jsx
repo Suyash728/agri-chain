@@ -1,9 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, TrendingUp } from 'lucide-react';
-import { revenueData } from '../data/consumerData';
 
 export const RevenueView = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('This Month');
+  const [revenue, setRevenue] = useState({
+    totalRevenue: '₹ 11,28,450',
+    growth: '↑ 15% from last month',
+    totalOrders: 320,
+    avgOrderValue: '₹ 1,480',
+    grossProfit: '₹ 3,46,200',
+    netProfit: '₹ 2,12,600'
+  });
+
+  useEffect(() => {
+    fetch('http://localhost:8000/darkstore/kpis')
+      .then((res) => res.json())
+      .then((kpis) => {
+        if (kpis && kpis.revenue) {
+          setRevenue((prev) => ({
+            ...prev,
+            totalRevenue: `₹ ${kpis.revenue.toLocaleString('en-IN')}`,
+            totalOrders: kpis.ordersCount || prev.totalOrders
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="flex flex-col gap-3 pb-20 md:pb-8 pt-2">
@@ -22,10 +44,10 @@ export const RevenueView = () => {
         <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col gap-1">
           <span className="text-xs sm:text-sm font-semibold text-[#666057]">Total Revenue</span>
           <div className="flex items-baseline justify-between">
-            <h3 className="text-2xl sm:text-3xl font-black text-[#2D2620]">{revenueData.totalRevenue}</h3>
+            <h3 className="text-2xl sm:text-3xl font-black text-[#2D2620]">{revenue.totalRevenue}</h3>
             <span className="text-xs sm:text-sm font-extrabold text-emerald-600 flex items-center gap-1">
               <TrendingUp className="w-4 h-4" />
-              <span>{revenueData.growth}</span>
+              <span>{revenue.growth}</span>
             </span>
           </div>
         </div>
@@ -80,22 +102,22 @@ export const RevenueView = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl p-4 border border-[#E6E1D5] shadow-xs flex justify-between md:flex-col md:gap-1 items-center md:items-start">
             <span className="text-xs font-semibold text-[#666057]">Total Orders</span>
-            <span className="text-base sm:text-xl font-extrabold text-[#2D2620]">{revenueData.totalOrders}</span>
+            <span className="text-base sm:text-xl font-extrabold text-[#2D2620]">{revenue.totalOrders}</span>
           </div>
 
           <div className="bg-white rounded-2xl p-4 border border-[#E6E1D5] shadow-xs flex justify-between md:flex-col md:gap-1 items-center md:items-start">
             <span className="text-xs font-semibold text-[#666057]">Average Order Value</span>
-            <span className="text-base sm:text-xl font-extrabold text-[#2D2620]">{revenueData.avgOrderValue}</span>
+            <span className="text-base sm:text-xl font-extrabold text-[#2D2620]">{revenue.avgOrderValue}</span>
           </div>
 
           <div className="bg-white rounded-2xl p-4 border border-[#E6E1D5] shadow-xs flex justify-between md:flex-col md:gap-1 items-center md:items-start">
             <span className="text-xs font-semibold text-[#666057]">Gross Profit</span>
-            <span className="text-base sm:text-xl font-extrabold text-[#354424]">{revenueData.grossProfit}</span>
+            <span className="text-base sm:text-xl font-extrabold text-[#354424]">{revenue.grossProfit}</span>
           </div>
 
           <div className="bg-white rounded-2xl p-4 border border-[#E6E1D5] shadow-xs flex justify-between md:flex-col md:gap-1 items-center md:items-start">
             <span className="text-xs font-semibold text-[#666057]">Net Profit</span>
-            <span className="text-base sm:text-xl font-extrabold text-emerald-700">{revenueData.netProfit}</span>
+            <span className="text-base sm:text-xl font-extrabold text-emerald-700">{revenue.netProfit}</span>
           </div>
         </div>
       </div>

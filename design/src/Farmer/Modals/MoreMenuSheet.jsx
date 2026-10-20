@@ -26,7 +26,7 @@ export const MoreMenuSheet = ({ isOpen, onClose, onSelectTab, onLogout }) => {
         .then((data) => {
           if (data && data.participants) setAdminUsers(data.participants);
         })
-        .catch((err) => console.log('Admin users fetch error:', err));
+        .catch(() => {});
     }
   }, [activeSubView]);
 

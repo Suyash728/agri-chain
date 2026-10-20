@@ -5,8 +5,6 @@ SQLite database management for the AI Trust Layer.
 Persists telemetry history, immutable audit trails, and cryptographic replay records.
 """
 
-import json
-import os
 import pathlib
 import sqlite3
 from typing import Optional

@@ -35,7 +35,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
     fetch('http://localhost:8000/incidents/spoilage')
       .then((res) => res.json())
       .then((data) => setSpoilageData(data))
-      .catch((err) => console.log('Spoilage incidents fetch note:', err));
+      .catch(() => {});
   }, []);
 
   // 4 Risk KPI Summary Cards

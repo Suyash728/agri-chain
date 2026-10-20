@@ -65,7 +65,7 @@ export const NotificationsModal = ({ isOpen, onClose }) => {
         setNotifications(items);
       })
       .catch((err) => {
-        console.warn('Consumer notification fetch error:', err);
+        void err;
         setNotifications([
           {
             id: 'n1',

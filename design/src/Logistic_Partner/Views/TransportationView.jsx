@@ -19,7 +19,7 @@ export const TransportationView = () => {
           setFleet(data);
         }
       })
-      .catch((err) => console.warn('Using fallback fleet:', err));
+      .catch(() => {});
   }, []);
 
   return (

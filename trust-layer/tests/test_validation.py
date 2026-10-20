@@ -39,7 +39,6 @@ COVERED CASES
   test_validation_result_fields — verify response body structure on success
 """
 
-import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 

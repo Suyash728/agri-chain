@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Plus } from 'lucide-react';
-import { consumerProducts } from '../data/consumerData';
 
 export const FavoritesView = ({ onAddToCart, onToggleFavorite, onProductClick }) => {
-  const [products, setProducts] = useState(consumerProducts);
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:8000/consumer/products')
@@ -13,7 +12,7 @@ export const FavoritesView = ({ onAddToCart, onToggleFavorite, onProductClick })
           setProducts(data);
         }
       })
-      .catch((err) => console.warn('Using default consumer favorites:', err));
+      .catch(() => {});
   }, []);
 
   const favoriteItems = products.filter(p => p.isFavorite);

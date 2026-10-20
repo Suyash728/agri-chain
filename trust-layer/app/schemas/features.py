@@ -25,7 +25,7 @@ DESIGN DECISIONS
 3. ML-ready: Supports easy conversion to dictionary or numerical vector.
 """
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 

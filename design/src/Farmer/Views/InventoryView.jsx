@@ -1,26 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, ChevronRight, SlidersHorizontal } from 'lucide-react';
-import { inventoryItems, inventorySummary } from '../../data/mockData';
 import { 
   cropIllustrationsMap, 
   individualCropIllustrationsMap, 
   FruitsIllustration 
 } from '../components/CropIllustrations';
 
+const defaultSummary = {
+  totalProduce: "33.50 Tonnes",
+  totalValue: "₹1,59,000",
+  storageHubs: "3 Hubs Active"
+};
+
 export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem, items }) => {
   const [liveInventory, setLiveInventory] = useState(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/farmer/inventory')
-      .then(res => res.json())
-      .then(data => setLiveInventory(data))
-      .catch(err => console.error('Error fetching farmer inventory:', err));
+      .then((res) => res.json())
+      .then((data) => setLiveInventory(data))
+      .catch(() => {});
   }, []);
 
-  const summary = liveInventory?.summary || inventorySummary;
+  const summary = liveInventory?.summary || defaultSummary;
   const displayItems = (liveInventory?.items && liveInventory.items.length > 0)
     ? liveInventory.items
-    : (items && items.length > 0 ? items : inventoryItems);
+    : (items && items.length > 0 ? items : []);
 
   return (
     <div className="flex flex-col gap-4 w-full">

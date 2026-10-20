@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Sprout, Wheat, Factory, Truck, Store } from 'lucide-react';
-import { traceabilityBatch } from '../../data/mockData';
+
+const defaultBatch = {
+  batchId: "KC-2024-WHT-089",
+  product: "Sharbati Golden Wheat",
+  quantity: "500 kg",
+  harvestDate: "12 Oct 2024",
+  currentLocation: "Cold Storage Hub B, Pune",
+  farmDetails: "GreenField Farms, Nashik"
+};
 
 export const TraceabilityView = ({ onBack, onOpenFullJourney }) => {
   const [liveBatch, setLiveBatch] = useState(null);
@@ -31,7 +39,7 @@ export const TraceabilityView = ({ onBack, onOpenFullJourney }) => {
       .catch(() => {});
   }, []);
 
-  const batchInfo = liveBatch || traceabilityBatch;
+  const batchInfo = liveBatch || defaultBatch;
 
   return (
     <div className="bg-white border border-[#E6E1D5] rounded-2xl p-4 sm:p-6 shadow-xs max-w-xl mx-auto w-full">

@@ -112,7 +112,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
           setExpiryAlerts(mapped);
         }
       })
-      .catch((err) => console.warn('Using default expiry alerts:', err));
+      .catch(() => {});
 
     fetch('http://localhost:8000/farmer/inventory')
       .then((res) => res.json())
@@ -127,7 +127,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
           setBlockchainCerts(mapped);
         }
       })
-      .catch((err) => console.warn('Using default certs:', err));
+      .catch(() => {});
   }, []);
 
   // Middle Card 3: Top Selling Products Data

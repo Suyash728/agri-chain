@@ -14,7 +14,6 @@ Executes an exhaustive automated validation covering:
 """
 
 import json
-import sqlite3
 import sys
 import time
 import urllib.request
@@ -203,7 +202,6 @@ def main():
     # CHECK 5: Decentralized IPFS Document Anchoring
     # =========================================================================
     print("\n--- [CHECK 5] IPFS Document Pinning & On-Chain Anchoring ---")
-    import io
     sample_pdf_bytes = b"%PDF-1.4 AgriChain Quality Certificate - FSSAI Organic Grade A+"
     boundary = "----AgriChainFormBoundary7MA4YWxkTrZu0gW"
     body = (

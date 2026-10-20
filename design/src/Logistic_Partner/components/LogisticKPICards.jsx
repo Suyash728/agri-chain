@@ -16,7 +16,7 @@ export const LogisticKPICards = ({ onCardClick }) => {
           setKpis((prev) => ({ ...prev, ...data }));
         }
       })
-      .catch((err) => console.warn('Using fallback logistics KPIs:', err));
+      .catch(() => {});
   }, []);
 
   return (

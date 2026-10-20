@@ -23,7 +23,6 @@ export const ViewJourneyModal = ({ isOpen, onClose, batchId = 'BATCH-PO-2026-001
         setJourneyData(data);
       })
       .catch((err) => {
-        console.warn('Traceability fetch failed:', err);
         setError(err.message);
       })
       .finally(() => setLoading(false));

@@ -70,7 +70,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
           setOrderList(mapped);
         }
       })
-      .catch((err) => console.warn('Using fallback orders:', err));
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -97,8 +97,8 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
         );
         const receipt = await tx.wait();
         clientTxHash = receipt.hash || tx.hash;
-      } catch (walletErr) {
-        console.warn('MetaMask custody transfer rejected or failed, falling back to backend relayer:', walletErr);
+      } catch (_) {
+        // Fallback to backend relayer on user rejection
       }
     }
 

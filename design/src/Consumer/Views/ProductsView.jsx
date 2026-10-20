@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { SlidersHorizontal, Plus, Star } from 'lucide-react';
-import { consumerProducts } from '../data/consumerData';
 
 export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'all' }) => {
   const [selectedFilter, setSelectedFilter] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState('');
-  const [products, setProducts] = useState(consumerProducts);
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:8000/consumer/products')
@@ -15,7 +14,7 @@ export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'a
           setProducts(data);
         }
       })
-      .catch((err) => console.warn('Using default consumer products:', err));
+      .catch(() => {});
   }, []);
 
   const filterTabs = [
@@ -34,10 +33,7 @@ export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'a
       const categories = ['fruits', 'vegetables', 'grains', 'pulses', 'dairy', 'spices', 'dryfruits'];
       let all12 = [];
       categories.forEach(catId => {
-        let catProducts = products.filter(p => p.category === catId).slice(0, 2);
-        if (catProducts.length === 0) {
-          catProducts = consumerProducts.filter(p => p.category === catId).slice(0, 2);
-        }
+        const catProducts = products.filter(p => p.category === catId).slice(0, 2);
         all12 = [...all12, ...catProducts];
       });
       if (searchQuery) {
@@ -45,10 +41,7 @@ export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'a
       }
       return all12;
     } else {
-      let catProducts = products.filter(p => p.category === selectedFilter);
-      if (catProducts.length === 0) {
-        catProducts = consumerProducts.filter(p => p.category === selectedFilter);
-      }
+      const catProducts = products.filter(p => p.category === selectedFilter);
       if (searchQuery) {
         return catProducts.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
       }

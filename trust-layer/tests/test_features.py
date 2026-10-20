@@ -25,7 +25,6 @@ COVERED TEST CASES (Section 12):
 """
 
 import pytest
-import math
 from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 

@@ -28,7 +28,7 @@ export const DarkStoreRevenueView = ({ onBack }) => {
       .then((data) => {
         if (data) setLiveKpis(data);
       })
-      .catch((err) => console.warn('Using default dark store revenue KPIs:', err));
+      .catch(() => {});
   }, []);
 
   // Revenue Summary Table Dataset (12 Days for pagination)
