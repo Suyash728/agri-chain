@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ClipboardCheck, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2, IndianRupee, ThermometerSnowflake } from 'lucide-react';
 
 export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = 'BATCH-PO-2026-001' }) => {
@@ -11,6 +11,10 @@ export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (defaultBatchId) setBatchId(defaultBatchId);
+  }, [defaultBatchId, isOpen]);
 
   if (!isOpen) return null;
 

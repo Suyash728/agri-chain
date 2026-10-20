@@ -352,14 +352,19 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
       <QRScannerModal
         isOpen={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}
-        onFindBatch={(code) => {
-          const matched = {
-            name: code === 'TM1256' ? 'Organic Tomato' : 'Alphonso Mango',
-            batchId: code || 'TM1256',
-            origin: code === 'TM1256' ? 'Nashik, Maharashtra' : 'Ratnagiri, Maharashtra',
-            image: code === 'TM1256' ? '/images/vegetables_ref.png' : '/images/fruits_ref.png'
-          };
-          handleProductClickForJourney(matched);
+        onFindBatch={(found) => {
+          if (found && typeof found === 'object' && found.batchId) {
+            handleProductClickForJourney(found);
+          } else {
+            const code = typeof found === 'string' ? found : 'TM1256';
+            const matched = {
+              name: code === 'TM1256' ? 'Organic Tomato' : 'Alphonso Mango',
+              batchId: code,
+              origin: code === 'TM1256' ? 'Nashik, Maharashtra' : 'Ratnagiri, Maharashtra',
+              image: code === 'TM1256' ? '/images/vegetables_ref.png' : '/images/fruits_ref.png'
+            };
+            handleProductClickForJourney(matched);
+          }
         }}
       />
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Link2, 
@@ -27,6 +27,25 @@ export const DarkStoreTraceabilityView = ({ onBack }) => {
   const [selectedDate, setSelectedDate] = useState('12 May, 2025');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [activeDocModal, setActiveDocModal] = useState(null);
+  const [liveBatchData, setLiveBatchData] = useState(null);
+
+  useEffect(() => {
+    const cleanId = searchQuery.trim().toUpperCase();
+    if (!cleanId) return;
+    fetch(`http://localhost:8000/batches/${cleanId}/traceability`)
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.batch_id) {
+          setLiveBatchData(data);
+        } else {
+          setLiveBatchData(null);
+        }
+      })
+      .catch(() => setLiveBatchData(null));
+  }, [searchQuery]);
 
   // Sample Batches Dataset for live search
   const batchDataMap = {
@@ -65,7 +84,18 @@ export const DarkStoreTraceabilityView = ({ onBack }) => {
     },
   };
 
-  const activeBatch = batchDataMap[searchQuery.trim().toUpperCase()] || batchDataMap['BATCH-VEG-100525'];
+  const baseBatch = batchDataMap[searchQuery.trim().toUpperCase()] || batchDataMap['BATCH-VEG-100525'];
+  const activeBatch = liveBatchData ? {
+    batchId: liveBatchData.batch_id,
+    product: liveBatchData.produce_name || baseBatch.product,
+    quantity: `${liveBatchData.quantity_kg} kg`,
+    supplier: liveBatchData.farmer_address ? `Farmer (${liveBatchData.farmer_address.slice(0, 8)}...)` : baseBatch.supplier,
+    farmLocation: liveBatchData.farm_location || baseBatch.farmLocation,
+    harvestDate: liveBatchData.harvest_date || baseBatch.harvestDate,
+    packagingDate: liveBatchData.harvest_date || baseBatch.packagingDate,
+    expiryDate: liveBatchData.expiry_date || baseBatch.expiryDate,
+    currentLocation: liveBatchData.current_holder || baseBatch.currentLocation,
+  } : baseBatch;
 
   // 5 Horizontal Journey Timeline Steps
   const journeySteps = [

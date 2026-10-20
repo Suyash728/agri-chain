@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Store, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2, IndianRupee } from 'lucide-react';
 
 export const HandoffRetailerModal = ({ isOpen, onClose, onSuccess, defaultBatchId = 'BATCH-PO-2026-001' }) => {
@@ -9,6 +9,10 @@ export const HandoffRetailerModal = ({ isOpen, onClose, onSuccess, defaultBatchI
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (defaultBatchId) setBatchId(defaultBatchId);
+  }, [defaultBatchId, isOpen]);
 
   if (!isOpen) return null;
 

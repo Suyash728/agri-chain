@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Truck, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2, IndianRupee } from 'lucide-react';
 
 export const AcceptShipmentModal = ({ isOpen, onClose, onSuccess, defaultBatchId = 'BATCH-PO-2026-001' }) => {
@@ -8,6 +8,10 @@ export const AcceptShipmentModal = ({ isOpen, onClose, onSuccess, defaultBatchId
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (defaultBatchId) setBatchId(defaultBatchId);
+  }, [defaultBatchId, isOpen]);
 
   if (!isOpen) return null;
 

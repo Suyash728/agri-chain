@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Sidebar as FarmerSidebar } from './Farmer/components/Sidebar';
 import { BottomNav as FarmerBottomNav } from './Farmer/components/BottomNav';
 import { Header as FarmerHeader } from './Farmer/components/Header';
@@ -318,10 +318,10 @@ export default function App() {
                           onClick={() => handleSelectFarmerTab('traceability')}
                           className="flex items-center gap-2.5 text-xl font-extrabold text-[#2D2620] hover:text-[#556B2F] transition-colors cursor-pointer group"
                         >
-                          <div className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] group-hover:bg-[#E6E1D5] transition-colors flex-shrink-0">
-                            <ArrowLeft className="w-4 h-4 text-[#2D2620]" />
-                          </div>
                           <span>Traceability</span>
+                          <div className="w-7 h-7 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] group-hover:bg-[#E6E1D5] group-hover:translate-x-0.5 transition-all flex-shrink-0">
+                            <ArrowRight className="w-3.5 h-3.5 text-[#2D2620]" />
+                          </div>
                         </button>
                         <p className="text-xs text-[#666057] mt-1 font-medium">Track your produce from farm to fork</p>
                       </div>
@@ -413,10 +413,10 @@ export default function App() {
                         onClick={() => handleSelectFarmerTab('ai-trust')}
                         className="flex items-center gap-2.5 text-xl font-extrabold text-[#2D2620] hover:text-[#556B2F] transition-colors cursor-pointer group"
                       >
-                        <div className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] group-hover:bg-[#E6E1D5] transition-colors flex-shrink-0">
-                          <ArrowLeft className="w-4 h-4 text-[#2D2620]" />
-                        </div>
                         <span>AI Trust Score</span>
+                        <div className="w-7 h-7 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] group-hover:bg-[#E6E1D5] group-hover:translate-x-0.5 transition-all flex-shrink-0">
+                          <ArrowRight className="w-3.5 h-3.5 text-[#2D2620]" />
+                        </div>
                       </button>
 
                       {/* Top Rating Banner */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   ShieldCheck, 
@@ -27,6 +27,25 @@ export const DarkStoreBlockchainView = ({ onBack }) => {
   const [copiedHash, setCopiedHash] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [activeDocModal, setActiveDocModal] = useState(null);
+  const [liveBatchData, setLiveBatchData] = useState(null);
+
+  useEffect(() => {
+    const cleanId = searchQuery.trim().toUpperCase();
+    if (!cleanId) return;
+    fetch(`http://localhost:8000/batches/${cleanId}/traceability`)
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.batch_id) {
+          setLiveBatchData(data);
+        } else {
+          setLiveBatchData(null);
+        }
+      })
+      .catch(() => setLiveBatchData(null));
+  }, [searchQuery]);
 
   // Blockchain Ledger Record Data Map
   const ledgerDataMap = {
@@ -71,7 +90,20 @@ export const DarkStoreBlockchainView = ({ onBack }) => {
     },
   };
 
-  const activeRecord = ledgerDataMap[searchQuery.trim().toUpperCase()] || ledgerDataMap['BATCH-VEG-100525'];
+  const baseRecord = ledgerDataMap[searchQuery.trim().toUpperCase()] || ledgerDataMap['BATCH-VEG-100525'];
+  const activeRecord = liveBatchData ? {
+    batchId: liveBatchData.batch_id,
+    product: liveBatchData.produce_name || baseRecord.product,
+    quantity: `${liveBatchData.quantity_kg} kg`,
+    supplier: liveBatchData.farmer_address ? `Farmer (${liveBatchData.farmer_address.slice(0, 8)}...)` : baseRecord.supplier,
+    harvestDate: liveBatchData.harvest_date || baseRecord.harvestDate,
+    packagingDate: liveBatchData.harvest_date || baseRecord.packagingDate,
+    expiryDate: liveBatchData.expiry_date || baseRecord.expiryDate,
+    txHash: (liveBatchData.custody_events && liveBatchData.custody_events[0] && liveBatchData.custody_events[0].tx_hash) ? `0x${liveBatchData.custody_events[0].tx_hash}` : baseRecord.txHash,
+    blockNumber: '# 5874521',
+    timestamp: (liveBatchData.custody_events && liveBatchData.custody_events[0] && liveBatchData.custody_events[0].timestamp) ? new Date(liveBatchData.custody_events[0].timestamp * 1000).toLocaleString() : baseRecord.timestamp,
+    network: 'AgriChain Local PoA Ledger',
+  } : baseRecord;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(activeRecord.txHash);

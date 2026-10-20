@@ -890,3 +890,54 @@ still static UI with no data flow. Specifically:
 - Frontend build: `npm run build` compiled 1,806 modules in 2.73s with 0 errors.
 - Automated PR Review: Local AI `gpt-oss:20b` evaluated diff and returned `APPROVED`.
 - Full Capstone suite: `python backend/scripts/verify_final_system.py` passed all 8 checks (100% success).
+
+---
+
+## [Multi-Role Precise QA & Custody State Synchronization] — 2026-10-20
+
+**What was done:**
+- Executed high-precision QA audit across all 4 AgriChain user personas (Farmer, Logistics Partner, Dark Store, Consumer) and their respective sub-views, action sheets, and custody modals.
+- **Farmer Dashboard & Modals:**
+  - Repositioned the forward navigation arrow after the title on the `Traceability` and `AI Trust Score` summary cards in `App.jsx`, resolving ambiguous back-arrow visual confusion.
+  - Added dynamic `batchId` synchronization via `useEffect` in `ViewJourneyModal.jsx` so opening or switching batches immediately refreshes on-chain milestone data.
+- **Logistics Partner Portal:**
+  - Added dynamic `defaultBatchId` synchronization via `useEffect` to `AcceptShipmentModal.jsx` and `HandoffRetailerModal.jsx` so selecting an order or batch pre-fills and tracks that specific batch.
+  - Enhanced error handling on custody transfers in `ProcurementOrdersView.jsx` to surface contract revert details if a state transition fails.
+  - Upgraded `TraceabilityView.jsx` with an interactive batch lookup input and dynamic querying against `GET /batches/{id}/traceability` with fallback to preset certificates.
+- **Dark Store Hub Portal:**
+  - Added dynamic `defaultBatchId` synchronization via `useEffect` to `ConfirmGRNModal.jsx` and `RecordSaleModal.jsx`.
+  - Fixed mobile bottom navigation sheet routing in `DarkStoreApp.jsx`: connected `onSelectTab` and `onLogout` to `MoreMenuSheet`, and mapped `earnings` -> `revenue` and `shipments` -> `dispatch`.
+  - Added live on-chain batch lookup with fallback datasets in `DarkStoreBlockchainView.jsx` and `DarkStoreTraceabilityView.jsx`.
+- **Consumer Portal:**
+  - Hardened `onFindBatch` in `ConsumerApp.jsx` to cleanly handle both batch objects and raw string IDs scanned from the QR modal.
+- **System Verification & Local AI Review:**
+  - Verified static syntax and linting with `run_linter.sh` (PASSED).
+  - Verified compilation with `npm run build` (PASSED in 3.12s, 0 errors).
+  - Executed full Capstone verification suite `python backend/scripts/verify_final_system.py` (all 10 checks PASSED).
+  - Evaluated code quality with local AI `gpt-oss:20b` on RTX 5060 Ti: received `APPROVED`. Stopped Ollama afterwards to reclaim GPU VRAM.
+
+**Files changed:**
+- `design/src/App.jsx`
+- `design/src/Consumer/ConsumerApp.jsx`
+- `design/src/Dark_Store/DarkStoreApp.jsx`
+- `design/src/Dark_Store/Modals/ConfirmGRNModal.jsx`
+- `design/src/Dark_Store/Modals/RecordSaleModal.jsx`
+- `design/src/Dark_Store/Views/DarkStoreBlockchainView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreTraceabilityView.jsx`
+- `design/src/Farmer/Modals/ViewJourneyModal.jsx`
+- `design/src/Logistic_Partner/Modals/AcceptShipmentModal.jsx`
+- `design/src/Logistic_Partner/Modals/HandoffRetailerModal.jsx`
+- `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`
+- `design/src/Logistic_Partner/Views/TraceabilityView.jsx`
+- `backend/modular-deployments.json`
+- `contracts/amoy-deployments.json`
+- `trust-layer/reports/figures/benchmark_summary.json`
+- `trust-layer/reports/figures/benchmark_summary.md`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Static linter: `run_linter.sh design` exited with code 0 (all checks passed).
+- Build compilation: `npm run build` compiled 1,806 modules in 3.12s with 0 errors.
+- Full-System Capstone Suite: `backend/scripts/verify_final_system.py` passed all checks across AccessControl, AI Trust evaluation (F1=0.9722), Farmer registration, Logistics custody, ESP32 telemetry & quarantine, IPFS pinning, Dark store inbound receiving, and Consumer purchase.
+- Local AI evaluation: `gpt-oss:20b` returned `APPROVED`.
+- Background services: Hardhat node (8545), FastAPI backend (8000), and Vite dev server (3000) all verified active and healthy.

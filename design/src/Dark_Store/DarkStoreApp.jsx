@@ -95,11 +95,11 @@ export const DarkStoreApp = () => {
           <DarkStoreSalesView onBack={() => handleSelectTab('dashboard')} />
         )}
 
-        {(darkStoreTab === 'analytics' || darkStoreTab === 'revenue') && (
+        {(darkStoreTab === 'analytics' || darkStoreTab === 'revenue' || darkStoreTab === 'earnings') && (
           <DarkStoreRevenueView onBack={() => handleSelectTab('dashboard')} />
         )}
 
-        {darkStoreTab === 'dispatch' && (
+        {(darkStoreTab === 'dispatch' || darkStoreTab === 'shipments') && (
           <DispatchView onBack={() => handleSelectTab('dashboard')} />
         )}
 
@@ -132,6 +132,8 @@ export const DarkStoreApp = () => {
       <MoreMenuSheet 
         isOpen={isMoreOpen} 
         onClose={() => setIsMoreOpen(false)} 
+        onSelectTab={handleSelectTab}
+        onLogout={handleLogout}
       />
 
       {/* Custody Action Modals */}

@@ -7,6 +7,10 @@ export const ViewJourneyModal = ({ isOpen, onClose, batchId = 'BATCH-PO-2026-001
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  useEffect(() => {
+    if (batchId) setSelectedBatch(batchId);
+  }, [batchId]);
+
   const fetchTraceability = (bId) => {
     setLoading(true);
     setError(null);

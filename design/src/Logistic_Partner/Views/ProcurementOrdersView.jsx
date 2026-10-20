@@ -115,6 +115,9 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
       if (res.ok) {
         alert(`Batch ${batchId} dispatched! Custody transferred to IN_TRANSIT on-chain.${clientTxHash ? `\nAudit Tx Hash: ${clientTxHash}` : ''}`);
         fetchOrders();
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        alert(`Failed to dispatch batch: ${errJson.detail || 'Status ' + res.status}`);
       }
     } catch (err) {
       console.error('Failed to dispatch batch:', err);
