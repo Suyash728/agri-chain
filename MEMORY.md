@@ -860,3 +860,33 @@ still static UI with no data flow. Specifically:
 
 **Status:**
 - All services running and verified.
+
+---
+
+## [Consumer Portal UI Refinement & Local AI Code Review] — 2026-10-20
+
+**What was done:**
+- Performed a comprehensive review across all portal sections using the `local-qa-tester` skill and local AI (`gpt-oss:20b` via Ollama on RTX 5060 Ti).
+- Consumer Portal UI cleanup:
+  1. `ConsumerHeader.jsx`: Removed irrelevant commercial `Revenue` (📈) and technical `Blockchain` (🔗) tabs from the top consumer navigation row. Updated default consumer greeting to `Priya Sharma` (the consumer persona) rather than echoing the farmer.
+  2. `ConsumerApp.jsx`: Removed `RevenueView` routing and imports from the consumer shopping application.
+  3. `ProfileView.jsx`: Updated default consumer personal info and payment methods to Priya Sharma (`priya.sharma@gmail.com`, `priya.sharma@okaxis`, Bandra West).
+  4. `ProductJourneyView.jsx` & `BlockchainVerificationView.jsx`: Retitled on-chain ledger view to "Digital Verification Certificate" and added a back navigation button (`← Back to Farm Journey`) so shoppers are never stranded without navigation.
+- Verified deterministic static checks with `run_linter.sh` (PASSED).
+- Verified code changes through local AI (`gpt-oss:20b`): Output `APPROVED` with 0 regressions.
+- Stopped Ollama to free all 12.4GB VRAM in accordance with machine rules.
+
+**Files changed:**
+- `design/src/Consumer/components/ConsumerHeader.jsx`
+- `design/src/Consumer/ConsumerApp.jsx`
+- `design/src/Consumer/data/consumerData.js`
+- `design/src/Consumer/Views/ProfileView.jsx`
+- `design/src/Consumer/Views/ProductJourneyView.jsx`
+- `design/src/Consumer/Views/BlockchainVerificationView.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Static linter: `run_linter.sh design` passed cleanly.
+- Frontend build: `npm run build` compiled 1,806 modules in 2.73s with 0 errors.
+- Automated PR Review: Local AI `gpt-oss:20b` evaluated diff and returned `APPROVED`.
+- Full Capstone suite: `python backend/scripts/verify_final_system.py` passed all 8 checks (100% success).

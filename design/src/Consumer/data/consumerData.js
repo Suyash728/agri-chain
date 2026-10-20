@@ -502,10 +502,10 @@ export const sampleReviews = productReviewsData['Alphonso Mango'].reviews;
 export const ratingBreakdown = productReviewsData['Alphonso Mango'].breakdown;
 
 export const userProfileData = {
-  name: 'Rahul Patil',
-  location: 'Nashik, Maharashtra',
-  email: 'rahul.patil@agrichain.com',
-  phone: '+91 98765 43210',
+  name: 'Priya Sharma',
+  location: 'Bandra West, Mumbai',
+  email: 'priya.sharma@gmail.com',
+  phone: '+91 98201 45892',
   avatar: '/images/fruits_ref.png'
 };
 

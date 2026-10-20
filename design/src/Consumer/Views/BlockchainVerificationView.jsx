@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Copy, Check, Blocks } from 'lucide-react';
+import { ShieldCheck, Copy, Check, Blocks, ArrowLeft } from 'lucide-react';
 
-export const BlockchainVerificationView = ({ selectedProduct }) => {
+export const BlockchainVerificationView = ({ selectedProduct, onBack }) => {
   const [copied, setCopied] = useState(false);
   
   const product = selectedProduct || {
@@ -33,7 +33,16 @@ export const BlockchainVerificationView = ({ selectedProduct }) => {
   return (
     <div className="flex flex-col gap-3 pb-20 md:pb-8 pt-2">
       <div className="px-4 md:px-8 flex flex-col gap-5 mt-2 max-w-7xl mx-auto w-full">
-        <h2 className="text-lg md:text-xl font-black text-[#2D2620]">On-Chain Blockchain Ledger Record</h2>
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="self-start inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#E6E1D5] text-xs font-bold text-[#2D2620] hover:bg-[#FAF7F0] transition-colors cursor-pointer shadow-2xs"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-[#354424]" />
+            <span>Back to Farm Journey</span>
+          </button>
+        )}
+        <h2 className="text-lg md:text-xl font-black text-[#2D2620]">Digital Verification Certificate</h2>
 
         {/* 2-Column Desktop Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">

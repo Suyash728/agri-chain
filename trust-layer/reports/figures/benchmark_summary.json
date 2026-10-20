@@ -28,7 +28,7 @@
     "false_positive_rate": 0.4,
     "insufficient_evidence_count": 0,
     "insufficient_evidence_rate": 0.0,
-    "mean_latency_ms": 34.288
+    "mean_latency_ms": 71.469
   },
   "confusion_matrix": {
     "tp": 35,

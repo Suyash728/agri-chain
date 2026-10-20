@@ -29,8 +29,8 @@ export const ProfileView = ({ onNavigate, onLogout }) => {
 
   // 1. Personal Information State
   const [profile, setProfile] = useState({
-    name: userProfileData.name || 'Rahul Patil',
-    email: userProfileData.email || 'rahul.patil@agrichain.com',
+    name: userProfileData.name || 'Priya Sharma',
+    email: userProfileData.email || 'priya.sharma@gmail.com',
     phone: userProfileData.phone || '+91 98201 45892',
     location: userProfileData.location || 'Bandra West, Mumbai',
     preferredLanguage: 'English',
@@ -63,7 +63,7 @@ export const ProfileView = ({ onNavigate, onLogout }) => {
   // 3. Payment Methods State
   const [payments, setPayments] = useState([
     { id: 'pay-1', type: 'wallet', title: 'AgriChain Cash Wallet', detail: 'Balance: ₹ 1,250', isDefault: true },
-    { id: 'pay-2', type: 'upi', title: 'Google Pay / UPI', detail: 'rahul.patil@okaxis', isDefault: false },
+    { id: 'pay-2', type: 'upi', title: 'Google Pay / UPI', detail: 'priya.sharma@okaxis', isDefault: false },
     { id: 'pay-3', type: 'card', title: 'HDFC Bank Credit Card', detail: '•••• •••• •••• 4892', isDefault: false }
   ]);
   const [showAddPayment, setShowAddPayment] = useState(false);

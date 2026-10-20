@@ -12,10 +12,8 @@ export const ConsumerHeader = ({
     { id: 'home', label: 'Home', emoji: '🏠' },
     { id: 'products', label: 'Products', emoji: '📦' },
     { id: 'orders', label: 'Orders', emoji: '🛍️' },
-    { id: 'journey', label: 'Journey', emoji: '🌱' },
-    { id: 'blockchain', label: 'Blockchain', emoji: '🔗' },
-    { id: 'revenue', label: 'Revenue', emoji: '📈' },
-    { id: 'scan', label: 'Scan', emoji: '📷' },
+    { id: 'journey', label: 'Farm Origin', emoji: '🌱' },
+    { id: 'scan', label: 'Scan QR', emoji: '📷' },
     { id: 'profile', label: 'Profile', emoji: '👤' },
   ];
 
@@ -26,7 +24,7 @@ export const ConsumerHeader = ({
         <div>
           <span className="text-xs font-semibold text-[#666057]">Good morning,</span>
           <h2 className="text-lg md:text-xl font-black text-[#2D2620] flex items-center gap-1.5 leading-tight">
-            Rahul Patil <span className="text-sm md:text-base">🍃</span>
+            Priya Sharma <span className="text-sm md:text-base">🍃</span>
           </h2>
         </div>
       </div>

@@ -139,7 +139,7 @@ export const ProductJourneyView = ({
                   This product is 100% traceable from farm to your doorstep.
                 </p>
                 <span className="text-xs font-black text-[#556B2F] underline mt-1 block">
-                  View Blockchain Verification Record →
+                  View Verified Origin Certificate →
                 </span>
               </div>
             </div>

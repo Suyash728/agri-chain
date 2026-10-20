@@ -14,7 +14,6 @@ import { ScanProductView } from './Views/ScanProductView';
 import { ProductJourneyView } from './Views/ProductJourneyView';
 import { FavoritesView } from './Views/FavoritesView';
 import { BlockchainVerificationView } from './Views/BlockchainVerificationView';
-import { RevenueView } from './Views/RevenueView';
 import { ProfileView } from './Views/ProfileView';
 
 // Modals
@@ -308,19 +307,11 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
           />
         )}
 
-        {activeView === 'revenue' && (
-          <RevenueView
-            onBack={() => setActiveView('profile')}
-            onNavigate={(view) => setActiveView(view)}
-          />
-        )}
-
         {activeView === 'profile' && (
           <ProfileView
             onBack={() => setActiveView('home')}
             onNavigate={(view) => {
               if (view === 'favorites') setActiveView('favorites');
-              else if (view === 'revenue') setActiveView('revenue');
               else if (view === 'scan') setActiveView('scan');
               else setActiveView(view);
             }}
