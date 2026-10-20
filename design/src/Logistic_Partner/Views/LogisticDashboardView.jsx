@@ -95,7 +95,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
       {/* ============================================================== */}
       
       {/* ROW 1: Available Produce, Procurement / Orders, Transportation */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* CARD 1: AVAILABLE PRODUCE Summary */}
         <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col justify-between space-y-4">
@@ -232,7 +232,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
       </div>
 
       {/* ROW 2: Inventory, Shipment Tracking, AI Trust Score */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* CARD 4: INVENTORY Summary */}
         <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col justify-between space-y-4">

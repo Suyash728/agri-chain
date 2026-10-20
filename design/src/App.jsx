@@ -247,7 +247,7 @@ export default function App() {
             onLogout={handleLogout}
           />
 
-          <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-14 md:pt-16">
+          <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] p-4 sm:p-6 lg:p-8 max-w-7xl pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16">
             {logisticTab === 'dashboard' && (
               <LogisticDashboardView 
                 onSelectTab={handleSelectLogisticTab} 
@@ -301,7 +301,7 @@ export default function App() {
             onLogout={handleLogout}
           />
 
-          <main className="flex-1 md:ml-64 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-14 md:pt-16">
+          <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] p-4 sm:p-6 lg:p-8 max-w-7xl pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16">
             {farmerTab === 'dashboard' && (
               <div className="flex flex-col gap-6 animate-fade-in">
                 <FarmerHeader 
@@ -434,7 +434,7 @@ export default function App() {
                       </button>
 
                       {/* Top Rating Banner */}
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 p-4 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5]">
                         <div className="flex items-center gap-3.5">
                           <div className="w-12 h-12 rounded-2xl bg-[#3D4E2A] text-white flex items-center justify-center shadow-xs flex-shrink-0">
                             <span className="text-xl">🛡️</span>
@@ -449,7 +449,7 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 self-end sm:self-auto">
+                        <div className="flex items-center gap-3 self-start xl:self-auto flex-wrap">
                           {/* Smooth Upward-Trending AI Trust Score Line Chart */}
                           <svg className="w-24 h-9 overflow-visible" viewBox="0 0 100 40">
                             <defs>

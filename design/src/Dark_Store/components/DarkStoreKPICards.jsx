@@ -21,7 +21,7 @@ export const DarkStoreKPICards = ({ onCardClick, kpis: externalKpis }) => {
   };
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5 w-full">
+    <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-3.5 w-full">
       
       {/* ========================================== */}
       {/* CARD 1: Total Inventory Value              */}

@@ -1090,3 +1090,38 @@ still static UI with no data flow. Specifically:
 - Pytest suite: 7/7 tests passed.
 - Hardhat tests: 31/31 tests passed.
 - Capstone verification: `verify_final_system.py` passed 10/10 checks.
+
+---
+
+## [Responsive Hardening & Multi-Viewport Playwright QA Audit] — 2026-10-20
+
+**Branch:** `reference-review` (Responsive UI Hardening & QA).
+
+**What was done:**
+- Performed an automated headless browser layout audit using Playwright (`local-qa-tester` skill) across 11 standard device viewports:
+  - Mobile Small Portrait: 375x667 (iPhone SE)
+  - Mobile Small Landscape: 667x375 (iPhone SE)
+  - Mobile Standard Portrait: 390x844 (iPhone 13/14)
+  - Mobile Standard Landscape: 844x390
+  - Mobile Large Portrait: 412x915 (Pixel 7 / Galaxy)
+  - Tablet Portrait: 768x1024 (iPad Mini / 9th Gen)
+  - Tablet Landscape: 1024x768 (iPad)
+  - Tablet Air Portrait: 820x1180
+  - Desktop Standard: 1280x800
+  - Desktop Full HD: 1920x1080
+  - Desktop 2K QHD: 2560x1440
+  across all 5 user roles: Farmer, Logistics Partner, Dark Store, Consumer, Admin.
+- Identified and fixed 5 horizontal scroll / layout overflow bugs:
+  1. `<main>` width clashing with fixed 256px (`w-64`) desktop sidebar: In `design/src/App.jsx` (Logistics, Farmer) and `design/src/Dark_Store/DarkStoreApp.jsx` (Dark Store), `<main className="flex-1 md:ml-64 ... w-full">` caused 256px horizontal overflow on screens >= 768px. Updated to `min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] max-w-7xl pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16`.
+  2. Farmer Trust Score card overflow on 1024px tablet landscape: Inside `design/src/App.jsx`, changed `sm:flex-row` to `xl:flex-row` and added `flex-wrap` so trust score and trend chart wrap neatly instead of exceeding the 2-column card width.
+  3. Dark Store KPI cards grid on 1024px tablet landscape: In `DarkStoreKPICards.jsx`, changed `lg:grid-cols-6` to `xl:grid-cols-6` (with `sm:grid-cols-3`) to render 3 cards per row instead of compressing 6 cards into a 720px space.
+  4. Logistics Dashboard summary card grids on tablet portrait (768px–844px): In `LogisticDashboardView.jsx`, changed `md:grid-cols-3` to `lg:grid-cols-3` to prevent card squishing and button overflow.
+  5. Admin Portal address wrapping: Added `break-all` to Ethereum address strings in `AdminPortalView.jsx` to prevent overflow on narrow mobile screens.
+- Added comprehensive automated QA test script: `design/test_comprehensive_responsive.py`.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Automated Playwright QA Audit: 55/55 viewports and roles passed (100% pass rate, zero horizontal scroll overflow across all 11 viewports and all 5 roles).
+- `npm run build` in `design/`: Built cleanly in 2.79s with 0 errors.
+- `pytest tests/`: 7/7 passed in 7.75s.
+- `python backend/scripts/verify_final_system.py`: 10/10 checks passed with complete capstone verification.
+

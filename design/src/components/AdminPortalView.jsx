@@ -158,7 +158,7 @@ export const AdminPortalView = () => {
   };
 
   return (
-    <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-14 md:pt-16">
+    <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16">
       {/* Header Banner */}
       <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-3xl p-6 sm:p-8 mb-8 relative overflow-hidden shadow-xs">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
@@ -203,7 +203,7 @@ export const AdminPortalView = () => {
           <Layers className="w-5 h-5 text-[#5B21B6]" />
           <h2 className="text-lg font-black text-[#2D2620]">Smart Contract Circuit Breakers (Pausable)</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {['ProductRegistry', 'CustodyTransfer', 'ColdChainMonitor'].map((name) => {
             const isPaused = Boolean(contractStatus[name]);
             return (
@@ -314,7 +314,7 @@ export const AdminPortalView = () => {
                       {p.role}
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-[#8C827A] block mt-0.5">{p.address}</span>
+                  <span className="text-[11px] font-mono text-[#8C827A] block mt-0.5 break-all">{p.address}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
