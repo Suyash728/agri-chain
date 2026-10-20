@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Bell, CheckCircle2, AlertTriangle, Truck, RefreshCw, ShieldAlert, ShoppingBag } from 'lucide-react';
 
-export const NotificationsModal = ({ isOpen, onClose }) => {
+export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -10,23 +10,31 @@ export const NotificationsModal = ({ isOpen, onClose }) => {
 
     setLoading(true);
     Promise.allSettled([
-      fetch('http://localhost:8000/telemetry/quarantine').then((r) => r.json()),
+      fetch(`http://localhost:8000/notifications/all-users?role=${role}`).then((r) => r.json()),
       fetch('http://localhost:8000/farmer/activity').then((r) => r.json())
     ])
-      .then(([quarantineRes, actRes]) => {
+      .then(([allUsersRes, actRes]) => {
         const items = [];
 
-        // 1. Quarantine alerts (high priority warnings)
-        if (quarantineRes.status === 'fulfilled' && Array.isArray(quarantineRes.value)) {
-          quarantineRes.value.slice(0, 3).forEach((q) => {
+        // 1. Spoilage failure & financial loss notifications from backend
+        if (allUsersRes.status === 'fulfilled' && Array.isArray(allUsersRes.value)) {
+          allUsersRes.value.forEach((n) => {
+            let IconComponent = AlertTriangle;
+            if (n.icon === 'Truck') IconComponent = Truck;
+            else if (n.icon === 'ShieldCheck') IconComponent = CheckCircle2;
+            else if (n.icon === 'AlertCircle') IconComponent = ShieldAlert;
+
             items.push({
-              id: `q-${q.id}`,
-              title: `AI Quarantine: ${q.cropName || 'Batch'} Alert`,
-              desc: `Batch #${q.batchId} intercepted: ${q.reasons?.join(', ') || 'Thermal policy violation'}.`,
-              time: q.quarantinedAt || 'Recent',
-              icon: AlertTriangle,
-              color: 'text-red-600',
-              bgColor: 'bg-red-50 border-red-200'
+              id: n.id,
+              title: n.title,
+              desc: n.desc,
+              time: n.time || 'Recent',
+              icon: IconComponent,
+              color: n.color || 'text-red-600',
+              bgColor: n.bgColor || 'bg-red-50 border-red-200',
+              lossKg: n.loss_goods_kg,
+              lossInr: n.loss_money_inr,
+              isFailureLoss: true,
             });
           });
         }
@@ -71,7 +79,7 @@ export const NotificationsModal = ({ isOpen, onClose }) => {
         console.warn('Failed to load notifications:', err);
       })
       .finally(() => setLoading(false));
-  }, [isOpen]);
+  }, [isOpen, role]);
 
   if (!isOpen) return null;
 
@@ -110,7 +118,17 @@ export const NotificationsModal = ({ isOpen, onClose }) => {
                       <h4 className="text-xs font-bold text-[#3B3028]">{item.title}</h4>
                       <span className="text-[10px] text-[#786E65]">{item.time}</span>
                     </div>
-                    <p className="text-xs text-[#786E65] mt-0.5">{item.desc}</p>
+                    <p className="text-xs text-[#786E65] mt-0.5 leading-snug">{item.desc}</p>
+                    {item.lossKg !== undefined && item.lossInr !== undefined && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-800 text-[10px] font-black">
+                          📦 {item.lossKg} kg Spoiled
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-black">
+                          💸 -₹{item.lossInr.toLocaleString('en-IN')} Loss
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

@@ -610,7 +610,7 @@ export default function App() {
       <MoreMenuSheet isOpen={isMoreOpen} onClose={() => setIsMoreOpen(false)} onSelectTab={handleSelectFarmerTab} currentTab={farmerTab} />
       <AddStockModal isOpen={isAddStockOpen} onClose={() => setIsAddStockOpen(false)} onAddStock={handleAddStock} />
       <ViewJourneyModal isOpen={isJourneyOpen} onClose={() => setIsJourneyOpen(false)} />
-      <NotificationsModal isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
+      <NotificationsModal isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} role={activeRole} />
     </div>
   </WalletProvider>
   );

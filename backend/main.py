@@ -1,5 +1,6 @@
 import pathlib
 import sqlite3
+import uuid
 from typing import Optional, List
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -468,6 +469,61 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
                 "INSERT INTO quarantine (reading_id, reason) VALUES (?, ?)",
                 (reading_id, f"{reason_str} | tx: {tx_hash or 'PENDING_BATCH'}"),
             )
+
+            # Automatically record supply chain failure / spoilage incident with goods and financial loss
+            try:
+                batch_info = conn.execute(
+                    "SELECT crop_name, origin_farm FROM batches WHERE batch_id = ?",
+                    (payload.batch_id,)
+                ).fetchone()
+                crop_n = batch_info["crop_name"] if batch_info else (payload.crop_name or "Produce")
+                loss_kg = 200.0
+                if batch_info and "qty=" in str(batch_info["origin_farm"]):
+                    try:
+                        qty_str = str(batch_info["origin_farm"]).split("qty=")[1].split("||")[0]
+                        loss_kg = float(qty_str) * 1000.0
+                    except Exception:
+                        pass
+
+                latest_price_paise = 6000
+                custody_row = conn.execute(
+                    "SELECT price_paise FROM custody_events WHERE batch_id = ? ORDER BY id DESC LIMIT 1",
+                    (payload.batch_id,)
+                ).fetchone()
+                if custody_row and custody_row["price_paise"]:
+                    latest_price_paise = max(2000, int(custody_row["price_paise"] / max(1.0, loss_kg)))
+
+                total_loss_paise = int(loss_kg * latest_price_paise)
+                total_loss_inr = round(total_loss_paise / 100.0, 2)
+                spoil_incident_id = f"INC-SPOIL-{uuid.uuid4().hex[:8].upper()}"
+
+                conn.execute(
+                    """
+                    INSERT INTO spoilage_incidents (
+                        incident_id, batch_id, crop_name, stage, failure_type,
+                        severity, loss_goods_kg, price_per_kg_paise, total_loss_paise,
+                        total_loss_inr, custodian_at_fault, details, status
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        spoil_incident_id,
+                        payload.batch_id,
+                        crop_n,
+                        custody_state,
+                        "THERMAL_BREACH",
+                        "CRITICAL" if temp_c > 30.0 or temp_c < -5.0 else "HIGH",
+                        loss_kg,
+                        latest_price_paise,
+                        total_loss_paise,
+                        total_loss_inr,
+                        custodian_attribution,
+                        reason_str,
+                        "CONFIRMED_LOSS"
+                    )
+                )
+            except Exception as spoil_err:
+                print(f"[spoilage] Warning: Failed to record automatic spoilage incident: {spoil_err}")
+
             conn.commit()
 
             return TelemetryResponse(
@@ -700,6 +756,242 @@ def get_telemetry_quarantine():
             }]
 
         return incidents
+    finally:
+        conn.close()
+
+
+# ---------------- Spoilage & Supply Chain Failure Loss Models & Routes ----------------
+
+class SpoilageIncidentRequest(BaseModel):
+    batch_id: str
+    crop_name: str
+    stage: str  # "IN_TRANSIT", "IN_STORAGE", "FARM", "RETAIL"
+    failure_type: str  # "REEFER_COOLING_FAILURE", "THERMAL_BREACH", "EXPIRED_SHELF_LIFE", "HUMIDITY_SPIKE_SPOILAGE", "CONTAMINATION"
+    severity: str  # "CRITICAL", "HIGH", "MEDIUM"
+    loss_goods_kg: float
+    price_per_kg_inr: float
+    custodian_at_fault: str
+    details: str
+    status: Optional[str] = "CONFIRMED_LOSS"
+
+
+class SpoilageIncidentItem(BaseModel):
+    incident_id: str
+    batch_id: str
+    crop_name: str
+    stage: str
+    failure_type: str
+    severity: str
+    loss_goods_kg: float
+    price_per_kg_inr: float
+    total_loss_paise: int
+    total_loss_inr: float
+    custodian_at_fault: str
+    details: str
+    status: str
+    created_at: str
+
+
+class SpoilageSummaryResponse(BaseModel):
+    total_incidents: int
+    total_loss_goods_kg: float
+    total_loss_money_inr: float
+    incidents: List[SpoilageIncidentItem]
+
+
+@app.get("/incidents/spoilage", response_model=SpoilageSummaryResponse)
+def get_spoilage_incidents(batch_id: Optional[str] = None, stage: Optional[str] = None):
+    """Retrieve supply chain failure and spoilage incidents with goods and money lost."""
+    conn = get_connection()
+    try:
+        query = "SELECT * FROM spoilage_incidents WHERE 1=1"
+        params = []
+        if batch_id:
+            query += " AND batch_id = ?"
+            params.append(batch_id.strip().upper())
+        if stage:
+            query += " AND stage = ?"
+            params.append(stage.strip().upper())
+        query += " ORDER BY id DESC"
+
+        rows = conn.execute(query, params).fetchall()
+        items = []
+        tot_kg = 0.0
+        tot_inr = 0.0
+
+        for r in rows:
+            kg = float(r["loss_goods_kg"])
+            inr = float(r["total_loss_inr"])
+            tot_kg += kg
+            tot_inr += inr
+            price_kg = round(float(r["price_per_kg_paise"]) / 100.0, 2)
+            items.append(SpoilageIncidentItem(
+                incident_id=r["incident_id"],
+                batch_id=r["batch_id"],
+                crop_name=r["crop_name"],
+                stage=r["stage"],
+                failure_type=r["failure_type"],
+                severity=r["severity"],
+                loss_goods_kg=kg,
+                price_per_kg_inr=price_kg,
+                total_loss_paise=int(r["total_loss_paise"]),
+                total_loss_inr=inr,
+                custodian_at_fault=r["custodian_at_fault"],
+                details=r["details"],
+                status=r["status"],
+                created_at=str(r["created_at"])[:19],
+            ))
+
+        return SpoilageSummaryResponse(
+            total_incidents=len(items),
+            total_loss_goods_kg=round(tot_kg, 2),
+            total_loss_money_inr=round(tot_inr, 2),
+            incidents=items,
+        )
+    finally:
+        conn.close()
+
+
+@app.post("/incidents/spoilage")
+def post_spoilage_incident(payload: SpoilageIncidentRequest):
+    """Record a supply chain failure or spoilage incident with loss of goods and money."""
+    conn = get_connection()
+    try:
+        incident_id = f"INC-SPOIL-{uuid.uuid4().hex[:8].upper()}"
+        price_per_kg_paise = int(payload.price_per_kg_inr * 100)
+        total_loss_paise = int(payload.loss_goods_kg * price_per_kg_paise)
+        total_loss_inr = round(total_loss_paise / 100.0, 2)
+
+        conn.execute(
+            """
+            INSERT INTO spoilage_incidents (
+                incident_id, batch_id, crop_name, stage, failure_type,
+                severity, loss_goods_kg, price_per_kg_paise, total_loss_paise,
+                total_loss_inr, custodian_at_fault, details, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                incident_id,
+                payload.batch_id.strip().upper(),
+                payload.crop_name,
+                payload.stage.upper(),
+                payload.failure_type.upper(),
+                payload.severity.upper(),
+                payload.loss_goods_kg,
+                price_per_kg_paise,
+                total_loss_paise,
+                total_loss_inr,
+                payload.custodian_at_fault,
+                payload.details,
+                payload.status or "CONFIRMED_LOSS",
+            ),
+        )
+        conn.commit()
+
+        return {
+            "status": "success",
+            "incident_id": incident_id,
+            "batch_id": payload.batch_id,
+            "loss_goods_kg": payload.loss_goods_kg,
+            "total_loss_inr": total_loss_inr,
+            "custodian_at_fault": payload.custodian_at_fault,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/notifications/all-users")
+def get_universal_notifications(role: Optional[str] = None):
+    """
+    Returns multi-role tailored notifications for all 4 users:
+    Farmer, Logistics Partner, Dark Store, and Consumer.
+    Explicitly includes supply chain failure and spoilage loss alerts.
+    """
+    conn = get_connection()
+    try:
+        role_filter = (role or "").strip().lower()
+
+        spoilage_rows = conn.execute(
+            "SELECT * FROM spoilage_incidents ORDER BY id DESC LIMIT 20"
+        ).fetchall()
+
+        notifications = []
+
+        # 1. FARMER NOTIFICATIONS
+        if not role_filter or role_filter in ("farmer", "all"):
+            for sp in spoilage_rows:
+                notifications.append({
+                    "id": f"spoil-farmer-{sp['incident_id']}",
+                    "recipient_role": "farmer",
+                    "category": "FAILURE_LOSS",
+                    "title": f"Crop Loss Alert: Batch #{sp['batch_id']} ({sp['crop_name']})",
+                    "desc": f"Transit failure at stage {sp['stage']}. {sp['loss_goods_kg']} kg spoiled. Net financial impact: -₹{sp['total_loss_inr']:,.2f}. Custodian: {sp['custodian_at_fault']}. Claim status: {sp['status']}.",
+                    "loss_goods_kg": sp["loss_goods_kg"],
+                    "loss_money_inr": sp["total_loss_inr"],
+                    "severity": sp["severity"],
+                    "time": str(sp["created_at"])[:16],
+                    "icon": "AlertTriangle",
+                    "color": "text-red-600",
+                    "bgColor": "bg-red-50 border-red-200",
+                })
+
+        # 2. LOGISTICS PARTNER NOTIFICATIONS
+        if not role_filter or role_filter in ("logistics", "all"):
+            for sp in spoilage_rows:
+                is_transit = sp["stage"] == "IN_TRANSIT" or "logistics" in str(sp["custodian_at_fault"]).lower()
+                notifications.append({
+                    "id": f"spoil-logistics-{sp['incident_id']}",
+                    "recipient_role": "logistics",
+                    "category": "LIABILITY_PENALTY" if is_transit else "NETWORK_ALERT",
+                    "title": f"{'Transit Breach Penalty' if is_transit else 'Supply Chain Failure'}: Batch #{sp['batch_id']}",
+                    "desc": f"{sp['details']} {sp['loss_goods_kg']} kg spoiled. Transporter damage liability: ₹{sp['total_loss_inr']:,.2f}. Custody: {sp['custodian_at_fault']}.",
+                    "loss_goods_kg": sp["loss_goods_kg"],
+                    "loss_money_inr": sp["total_loss_inr"],
+                    "severity": "CRITICAL" if is_transit else "HIGH",
+                    "time": str(sp["created_at"])[:16],
+                    "icon": "Truck",
+                    "color": "text-amber-700",
+                    "bgColor": "bg-amber-50 border-amber-200",
+                })
+
+        # 3. DARK STORE NOTIFICATIONS
+        if not role_filter or role_filter in ("darkstore", "all"):
+            for sp in spoilage_rows:
+                notifications.append({
+                    "id": f"spoil-darkstore-{sp['incident_id']}",
+                    "recipient_role": "darkstore",
+                    "category": "INVENTORY_WRITE_OFF",
+                    "title": f"Inbound Spoilage Write-Off: Batch #{sp['batch_id']} ({sp['crop_name']})",
+                    "desc": f"{sp['loss_goods_kg']} kg condemned during {sp['stage']}. Inventory write-off: -₹{sp['total_loss_inr']:,.2f}. Fault: {sp['custodian_at_fault']}. Return GRN initiated.",
+                    "loss_goods_kg": sp["loss_goods_kg"],
+                    "loss_money_inr": sp["total_loss_inr"],
+                    "severity": "HIGH",
+                    "time": str(sp["created_at"])[:16],
+                    "icon": "AlertCircle",
+                    "color": "text-rose-700",
+                    "bgColor": "bg-rose-50 border-rose-200",
+                })
+
+        # 4. CONSUMER NOTIFICATIONS
+        if not role_filter or role_filter in ("consumer", "all"):
+            for sp in spoilage_rows:
+                consumer_refund = min(2200.0, float(sp["total_loss_inr"]))
+                notifications.append({
+                    "id": f"spoil-consumer-{sp['incident_id']}",
+                    "recipient_role": "consumer",
+                    "category": "SAFETY_RECALL_REFUND",
+                    "title": f"AgriChain Freshness Recall: Batch #{sp['batch_id']}",
+                    "desc": f"Cold-chain temperature breach detected in transit ({sp['crop_name']}). Produce was intercepted before delivery to protect quality & safety. 100% refund of ₹{consumer_refund:,.2f} credited to your UPI.",
+                    "loss_goods_kg": sp["loss_goods_kg"],
+                    "refund_inr": consumer_refund,
+                    "severity": "MEDIUM",
+                    "time": str(sp["created_at"])[:16],
+                    "icon": "ShieldCheck",
+                    "color": "text-emerald-700",
+                    "bgColor": "bg-emerald-50 border-emerald-200",
+                })
+
+        return notifications
     finally:
         conn.close()
 

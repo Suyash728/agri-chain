@@ -941,3 +941,48 @@ still static UI with no data flow. Specifically:
 - Full-System Capstone Suite: `backend/scripts/verify_final_system.py` passed all checks across AccessControl, AI Trust evaluation (F1=0.9722), Farmer registration, Logistics custody, ESP32 telemetry & quarantine, IPFS pinning, Dark store inbound receiving, and Consumer purchase.
 - Local AI evaluation: `gpt-oss:20b` returned `APPROVED`.
 - Background services: Hardhat node (8545), FastAPI backend (8000), and Vite dev server (3000) all verified active and healthy.
+
+---
+
+## [Supply Chain Failure & Spoilage Loss Tracking for All Users] — 2026-10-20
+
+**What was done:**
+- Investigated user requirement: checking if supply chain failures/spoilages resulting in loss of goods (kg) and money (₹) were tracked and noted to all users. Confirmed that while raw sensor breaches were caught, explicit loss accounting and multi-user notifications did not exist.
+- Implemented comprehensive supply chain failure, spoilage loss accounting, and multi-user notification architecture:
+  - **Backend Data Layer (`backend/db.py`, `backend/main.py`)**:
+    - Created `spoilage_incidents` SQLite table tracking `incident_id`, `batch_id`, `crop_name`, `stage`, `failure_type`, `severity`, `loss_goods_kg`, `price_per_kg_paise`, `total_loss_paise`, `total_loss_inr`, `custodian_at_fault`, `details`, and `status`.
+    - Added automated breach-to-spoilage incident generator in `POST /telemetry`: whenever a genuine cold-chain breach occurs, it automatically computes goods lost (kg) and financial loss (₹) and attributes custodian liability.
+    - Added `GET /incidents/spoilage` and `POST /incidents/spoilage` to retrieve and report failure incidents.
+    - Added `GET /notifications/all-users` providing tailored failure & loss alerts for all 4 roles.
+  - **Farmer Portal**:
+    - `Farmer/Modals/NotificationsModal.jsx`: Displays Spoilage Failure & Crop Loss alert cards with spoiled goods (`kg`) and financial impact (`-₹X`) badges.
+    - `Farmer/Views/EarningsView.jsx`: Renders dedicated "Supply Chain Spoilage & Financial Deductions" section showing impacted batches, loss write-offs, and insurance claim statuses.
+  - **Logistics Partner Portal**:
+    - `Logistic_Partner/Views/TransactionsView.jsx`: Renders "Cold-Chain Breach & Transporter Damage Penalties" ledger detailing transit refrigeration failures and freight liability deductions.
+    - `NotificationsModal`: Tailors failure alerts to transit damage liabilities.
+  - **Dark Store Hub Portal**:
+    - `Dark_Store/Views/DarkStoreExpiryAlertsView.jsx`: Renders "Active Supply Chain Spoilage & Loss Incidents" card with total spoiled kilograms, inventory write-offs in ₹, and liable parties.
+    - `DarkStoreApp.jsx`: Passes `role="darkstore"` to notifications.
+  - **Consumer Portal**:
+    - `Consumer/Modals/NotificationsModal.jsx`: Fetches live recall notices and renders "AgriChain Freshness Recall" alerts confirming intercepted bad produce, consumer safety protection, and 100% money refund.
+    - `Consumer/Views/ProductJourneyView.jsx`: Renders an on-chain Quality Recall warning banner on batches that suffered thermal degradation.
+
+**Files changed:**
+- `backend/db.py`
+- `backend/main.py`
+- `design/src/App.jsx`
+- `design/src/Consumer/Modals/NotificationsModal.jsx`
+- `design/src/Consumer/Views/ProductJourneyView.jsx`
+- `design/src/Dark_Store/DarkStoreApp.jsx`
+- `design/src/Dark_Store/Views/DarkStoreExpiryAlertsView.jsx`
+- `design/src/Farmer/Modals/NotificationsModal.jsx`
+- `design/src/Farmer/Views/EarningsView.jsx`
+- `design/src/Logistic_Partner/Views/TransactionsView.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Backend endpoints: `GET /incidents/spoilage` verified returning aggregated 725 kg goods lost and ₹26,650 financial loss across incidents.
+- Multi-user notifications: `GET /notifications/all-users` verified returning customized failure/loss notifications for `farmer`, `logistics`, `darkstore`, and `consumer`.
+- Full capstone verification: `backend/scripts/verify_final_system.py` passed 10/10 checks (100% success), confirming automatic generation of `INC-SPOIL-...` on genuine breach.
+- Deterministic static check: `run_linter.sh design` PASSED with 0 errors.
+- Production build: `npm run build` compiled 1,806 modules cleanly in 2.90s.

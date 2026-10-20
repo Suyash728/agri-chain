@@ -24,6 +24,7 @@ export const ProductJourneyView = ({
   const [documents, setDocuments] = useState([]);
   const [showDocModal, setShowDocModal] = useState(false);
   const [liveReviews, setLiveReviews] = useState(null);
+  const [batchIncident, setBatchIncident] = useState(null);
 
   useEffect(() => {
     fetch(`http://localhost:8000/batches/${displayBatchId}/traceability`)
@@ -39,6 +40,17 @@ export const ProductJourneyView = ({
         console.error('Error fetching batch traceability:', err);
         setLoading(false);
       });
+
+    fetch(`http://localhost:8000/incidents/spoilage?batch_id=${displayBatchId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.incidents && data.incidents.length > 0) {
+          setBatchIncident(data.incidents[0]);
+        } else {
+          setBatchIncident(null);
+        }
+      })
+      .catch(() => setBatchIncident(null));
 
     fetch(`http://localhost:8000/batches/${displayBatchId}/documents`)
       .then(res => res.json())
@@ -125,6 +137,25 @@ export const ProductJourneyView = ({
                 </span>
               </div>
             </div>
+
+            {/* Supply Chain Spoilage & Quality Recall Warning if incident recorded */}
+            {batchIncident && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex flex-col gap-2 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-xs font-black text-red-900">
+                    <span>⚠️</span> Thermal Failure & Spoilage Intercepted
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-red-600 text-white text-[10px] font-black">
+                    {batchIncident.severity}
+                  </span>
+                </div>
+                <p className="text-[11px] text-red-700 leading-snug">{batchIncident.details}</p>
+                <div className="flex items-center justify-between pt-1 border-t border-red-200 text-[10px] font-bold text-red-800">
+                  <span>Goods Loss: {batchIncident.loss_goods_kg} kg degraded</span>
+                  <span>Financial Loss: -₹{batchIncident.total_loss_inr.toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+            )}
 
             {/* Trust & Blockchain Verification Card */}
             <div 

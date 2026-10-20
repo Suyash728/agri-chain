@@ -1,7 +1,16 @@
-import React from 'react';
-import { FileText, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FileText, Download, AlertTriangle } from 'lucide-react';
 
 export const TransactionsView = () => {
+  const [spoilageData, setSpoilageData] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/incidents/spoilage')
+      .then((res) => res.json())
+      .then((data) => setSpoilageData(data))
+      .catch((err) => console.log('Logistics transactions spoilage fetch note:', err));
+  }, []);
+
   const txs = [
     { desc: 'Payment to Supplier (ORD1256)', amount: '₹ 21,000', date: '12 May, 2025', status: 'Completed' },
     { desc: 'Freight Charges (SHP5678)', amount: '₹ 8,500', date: '12 May, 2025', status: 'Completed' },
@@ -22,6 +31,44 @@ export const TransactionsView = () => {
           <span>Export Ledger</span>
         </button>
       </div>
+
+      {/* Transit Thermal Breach & Damage Liability Ledger */}
+      {spoilageData && spoilageData.total_incidents > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/60 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-sm">
+                🚚
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-amber-950">Cold-Chain Breach & Transporter Damage Penalties</h3>
+                <p className="text-[11px] text-amber-800">Assigned freight liability deductions due to transit cooling failures</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 bg-amber-600 text-white rounded-xl text-xs font-extrabold">
+              Total Transit Liability: ₹{spoilageData.total_loss_money_inr.toLocaleString('en-IN')}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            {spoilageData.incidents.map((inc) => (
+              <div key={inc.incident_id} className="bg-white p-3.5 rounded-xl border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-[#2D2620]">Batch #{inc.batch_id} ({inc.crop_name})</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900">{inc.failure_type}</span>
+                  </div>
+                  <p className="text-[11px] text-[#666057] mt-0.5">{inc.details}</p>
+                </div>
+                <div className="text-right sm:flex-shrink-0">
+                  <span className="text-xs font-black text-rose-600 block">-₹{inc.total_loss_inr.toLocaleString('en-IN')} Penalty</span>
+                  <span className="text-[10px] text-[#8C8275] block font-bold">{inc.loss_goods_kg} kg spoiled ({inc.status})</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-[#E6E1D5] shadow-xs overflow-hidden">
         <div className="overflow-x-auto">

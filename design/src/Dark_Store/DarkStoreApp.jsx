@@ -126,6 +126,7 @@ export const DarkStoreApp = () => {
       <NotificationsModal 
         isOpen={isNotificationsOpen} 
         onClose={() => setIsNotificationsOpen(false)} 
+        role="darkstore"
       />
 
       {/* Shared Mobile More Sheet */}

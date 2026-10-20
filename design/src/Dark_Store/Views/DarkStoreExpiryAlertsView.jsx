@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   AlertTriangle, 
@@ -29,6 +29,14 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
   const [activeModal, setActiveModal] = useState(null); // 'timeline-modal', 'notifications-modal', 'fefo-modal', 'row-options-modal'
   const [selectedRowOptions, setSelectedRowOptions] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [spoilageData, setSpoilageData] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/incidents/spoilage')
+      .then((res) => res.json())
+      .then((data) => setSpoilageData(data))
+      .catch((err) => console.log('Spoilage incidents fetch note:', err));
+  }, []);
 
   // 4 Risk KPI Summary Cards
   const kpis = [
@@ -355,6 +363,47 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
               </div>
             </div>
           </div>
+
+          {/* Real-time Supply Chain Spoilage & Financial Write-Off Card */}
+          {spoilageData && spoilageData.total_incidents > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-3xl p-5 shadow-xs flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-red-200/60 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                    🚨
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-red-950">Active Supply Chain Spoilage & Loss Incidents</h3>
+                    <p className="text-[11px] text-red-700">Tracked inventory condemnation, damaged crates & write-off claims</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                  <div className="px-3 py-1 bg-white border border-red-200 rounded-xl text-xs font-bold text-red-800">
+                    Total Spoiled: <span className="font-extrabold">{spoilageData.total_loss_goods_kg} kg</span>
+                  </div>
+                  <div className="px-3 py-1 bg-red-600 text-white rounded-xl text-xs font-extrabold shadow-2xs">
+                    Write-Off Loss: ₹{spoilageData.total_loss_money_inr.toLocaleString('en-IN')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                {spoilageData.incidents.map((inc) => (
+                  <div key={inc.incident_id} className="bg-white p-3.5 rounded-2xl border border-red-200 shadow-2xs flex flex-col gap-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-[#2D2620]">{inc.crop_name} (Batch #{inc.batch_id})</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">{inc.severity}</span>
+                    </div>
+                    <p className="text-[11px] text-[#666057] leading-snug">{inc.details}</p>
+                    <div className="flex items-center justify-between pt-1 border-t border-[#E6E1D5]/60 text-[10px]">
+                      <span className="font-bold text-[#666057]">Fault: <span className="text-[#2D2620] font-semibold">{inc.custodian_at_fault}</span></span>
+                      <span className="font-black text-red-600">Loss: {inc.loss_goods_kg} kg (-₹{inc.total_loss_inr.toLocaleString('en-IN')})</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ROW 2: DONUT CHART & UPCOMING EXPIRY TIMELINE */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full items-stretch">

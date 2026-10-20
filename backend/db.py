@@ -123,6 +123,24 @@ CREATE TABLE IF NOT EXISTS batch_reviews (
     reviewer_address TEXT,
     created_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS spoilage_incidents (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    incident_id         TEXT UNIQUE NOT NULL,
+    batch_id            TEXT NOT NULL REFERENCES batches(batch_id),
+    crop_name           TEXT NOT NULL,
+    stage               TEXT NOT NULL,
+    failure_type        TEXT NOT NULL,
+    severity            TEXT NOT NULL,
+    loss_goods_kg       REAL NOT NULL,
+    price_per_kg_paise  INTEGER NOT NULL,
+    total_loss_paise    INTEGER NOT NULL,
+    total_loss_inr      REAL NOT NULL,
+    custodian_at_fault  TEXT NOT NULL,
+    details             TEXT NOT NULL,
+    status              TEXT NOT NULL,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 DEFAULT_POLICIES = [
@@ -132,6 +150,39 @@ DEFAULT_POLICIES = [
     ("Tomato", 2.0, 8.0, 85.0, 95.0),
     ("Mango", 10.0, 15.0, 85.0, 90.0),
     ("Wheat", 15.0, 25.0, 50.0, 70.0),
+]
+
+DEFAULT_SPOILAGE_INCIDENTS = [
+    (
+        "INC-SPOIL-2026-001",
+        "TM1256",
+        "Tomato",
+        "IN_TRANSIT",
+        "REEFER_COOLING_FAILURE",
+        "CRITICAL",
+        180.0,
+        8000,
+        1440000,
+        14400.0,
+        "Safexpress Cold Chain Logistics",
+        "Reefer compressor failure during transit on NH-60. Temperature rose to 16.5°C (policy max 8.0°C). 180 kg degraded.",
+        "CLAIM_PENDING",
+    ),
+    (
+        "INC-SPOIL-2026-002",
+        "BATCH-PO-2026-001",
+        "Spinach",
+        "IN_STORAGE",
+        "HUMIDITY_SPIKE_SPOILAGE",
+        "HIGH",
+        45.0,
+        5000,
+        225000,
+        2250.0,
+        "Nashik Central Dark Store (DS-402)",
+        "Condensation breach in storage Bay B. Excessive humidity (99%) caused leaf spoilage. 45 kg condemned and written off.",
+        "DISCARDED_WRITTEN_OFF",
+    ),
 ]
 
 
@@ -291,6 +342,17 @@ def init_db(db_path: str | pathlib.Path = DB_PATH) -> pathlib.Path | str:
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (crop_name, min_temp, max_temp, min_hum, max_hum),
+            )
+        for inc in DEFAULT_SPOILAGE_INCIDENTS:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO spoilage_incidents (
+                    incident_id, batch_id, crop_name, stage, failure_type,
+                    severity, loss_goods_kg, price_per_kg_paise, total_loss_paise,
+                    total_loss_inr, custodian_at_fault, details, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                inc,
             )
         conn.commit()
     return path
