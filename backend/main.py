@@ -1,6 +1,7 @@
 import pathlib
 import uuid
 from typing import Optional, List
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -32,17 +33,6 @@ from app.services.audit import audit_service
 from app.services.history import history_repository
 from app.services.evaluation import evaluation_service
 from app.schemas.evaluation import EvaluationConfig, EvaluationReport
-
-app = FastAPI(title="AgriChain API", version="1.0.0")
-
-# Enable CORS for frontend communication (Vite on localhost:5173)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 PARTICIPANT_ADDRESSES = {
     "farmer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -94,13 +84,26 @@ def init_baseline_anomaly_model():
     anomaly_detector.fit(X)
 
 
-@app.on_event("startup")
-def on_startup():
+@asynccontextmanager
+async def lifespan(app_instance: FastAPI):
     init_db()
     try:
         init_baseline_anomaly_model()
     except Exception as e:
         print(f"Warning: could not fit baseline anomaly detector: {e}")
+    yield
+
+
+app = FastAPI(title="AgriChain API", version="1.0.0", lifespan=lifespan)
+
+# Enable CORS for frontend communication (Vite on localhost:5173 or 3000)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")

@@ -60,12 +60,21 @@ CREATE TABLE IF NOT EXISTS replay_latest_timestamps (
 """
 
 
+class ClosingConnection(sqlite3.Connection):
+    """SQLite connection that automatically closes on context exit to prevent resource leaks."""
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            return super().__exit__(exc_type, exc_val, exc_tb)
+        finally:
+            self.close()
+
+
 def get_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     """Return a sqlite3 connection with Row factory and WAL enabled."""
     target_path = db_path or SQLITE_DB_PATH
     if target_path != ":memory:":
         pathlib.Path(target_path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(target_path, timeout=15.0)
+    conn = sqlite3.connect(target_path, timeout=15.0, factory=ClosingConnection)
     conn.row_factory = sqlite3.Row
     if target_path != ":memory:":
         try:

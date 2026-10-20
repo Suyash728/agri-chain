@@ -1297,5 +1297,39 @@ still static UI with no data flow. Specifically:
 - Pytest Suite: 154/154 unit & integration tests passed in 30.97s (`.venv/bin/pytest tests/ trust-layer/tests/`).
 - Frontend Production Build: 1,810 modules transformed cleanly in 2.92s with 0 errors (`npm run build`).
 
+---
+
+## [Extensive Project Audit, Deprecation Fixes, Resource Leak Elimination & Template Cleanup] — 2026-10-21
+
+**What was done:**
+- Completed a comprehensive, zero-shortcut audit across all project layers (`contracts/`, `backend/`, `trust-layer/`, `design/`, `hardware/`, `simulator/`):
+  1. **Smart Contracts Layer**:
+     - Removed Hardhat sample boilerplate files: `contracts/contracts/Lock.sol`, `contracts/test/Lock.js`, and `contracts/ignition/modules/Lock.js`.
+     - Completely rewrote `contracts/README.md` to document AgriChain's modular architecture (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, `AccessControlRoles`, `AgriChainCore`), testing, deployment to Polygon Amoy, and gas benchmarking.
+     - Confirmed all 22 core AgriChain Hardhat unit tests pass in 708ms.
+  2. **FastAPI Backend Layer**:
+     - Modernized application lifecycle: migrated from deprecated `@app.on_event("startup")` to standard `@asynccontextmanager async def lifespan(app: FastAPI)` handler, eliminating Starlette deprecation warnings.
+     - Verified CORS handling for both localhost:3000 and 5173.
+  3. **AI Trust Layer & Database Resource Management**:
+     - Implemented `ClosingConnection(sqlite3.Connection)` factory in `trust-layer/app/services/db.py`, ensuring all SQLite connections automatically commit/rollback and call `self.close()` upon context block exit.
+     - Completely eliminated all 200 `ResourceWarning: unclosed database in <sqlite3.Connection>` warnings during test execution.
+  4. **Root Repository Cleanup**:
+     - Removed redundant draft file: `DESIGN.md.updated` from the repository root.
+  5. **Hardware & Simulator Validation**:
+     - Validated `hardware/simulate_esp32.py` in nominal (4.5°C) and GPIO 4 button fault (48.0°C) modes against live backend.
+     - Validated `simulator/simulate.py` multi-fault telemetry streaming.
+  6. **UI & Data Integrity Verification**:
+     - Validated `design/test_live_data_integrity.py`: 5/5 roles rendered live values with zero console/page errors.
+     - Validated `design/test_comprehensive_responsive.py`: 55/55 viewports across mobile, tablet, and desktop passed with 0px horizontal overflow.
+     - Validated `scratch/test_godmode_flow.py`: full 5-step Cinema Tour, 4-quadrant sync, manual slider override, and inspector with 0 errors.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Pytest Suite: 154/154 passed cleanly with 0 ResourceWarnings (`.venv/bin/pytest tests/ trust-layer/tests/`).
+- Hardhat Suite: 22/22 smart contract tests passed in 708ms (`cd contracts && npx hardhat test`).
+- Full-System Capstone: 8/8 checks passed (`backend/scripts/verify_final_system.py`).
+- Frontend Production Build: 1,810 modules transformed cleanly in 3.08s with 0 errors (`npm run build`).
+- Live Data Integrity: All 5 roles confirmed rendering ground truth (`design/test_live_data_integrity.py`).
+- Responsive QA: 55/55 viewport checks passed with 0px overflow (`design/test_comprehensive_responsive.py`).
+
 
 
