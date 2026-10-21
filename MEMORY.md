@@ -1333,3 +1333,43 @@ still static UI with no data flow. Specifically:
 
 
 
+---
+
+## [Documentation Synchronization & Condensing of Core Guidance] — 2026-10-21
+
+**What was done:**
+- Synchronized all repository documentation (`.md`) to reflect the latest capstone state:
+  1. **`README.md` (Condensed to ~100 lines)**:
+     - Streamlined from 300 lines down to a concise, high-impact summary.
+     - Documented the 5-tier architecture, key capabilities (Pre-chain AI gatekeeper, 52.71% gas reduction, fair-share price trail, IsoLog hash chain, Omniscient God Mode Hub), quickstart setup, and verification test commands.
+  2. **`AGENTS.md` (Condensed to ~30 lines)**:
+     - Compressed from 140 lines into an ultra-sharp, high-discipline developer and agent manifesto.
+     - Codified Rule 0 (zero-memory logging in `MEMORY.md`), read order, frontend lock (`design/` is wiring-only), strict integer money (`price_paise`) and temperature (`temp_deci_c`), execution discipline, and commit conventions.
+  3. **`PRD.md`**:
+     - Updated post-essential feature table (O1 through O15): marked all items `✅ Complete` with deliverable references.
+  4. **`ARCHITECTURE.md`**:
+     - Updated tech stack and endpoint matrices: added Omniscient God Mode endpoints (`/demo/godmode/{id}`, `/demo/godmode/tour-step`, `/demo/iot/inject`), IsoLog tamper verification (`/quarantine/verify-integrity`), and dual DB / IPFS architecture.
+  5. **`PLAN.md`**:
+     - Updated phase status to 100% complete across all 13 phases and capstone milestones.
+  6. **`TASKS.md`**:
+     - Checked off all tasks (including Task 1.4), added Phase 13 (Omniscient God Mode Hub, Showcase Automation & Capstone Audit) tasks, all marked verified.
+  7. **`RULES.md`**:
+     - Updated stack whitelist to explicitly document approved additions (`ethers.js` v6, `scikit-learn`, OpenZeppelin `AccessControl` / `Pausable`, Supabase PostgreSQL, Pinata IPFS).
+  8. **`backend/README.md`**:
+     - Modernized from obsolete early prototype draft to current architecture (FastAPI lifespan, modular contracts, dual DB adapter, IPFS, God Mode endpoints).
+
+**Files changed:**
+- `README.md`
+- `AGENTS.md`
+- `PRD.md`
+- `ARCHITECTURE.md`
+- `PLAN.md`
+- `TASKS.md`
+- `RULES.md`
+- `backend/README.md`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Pytest Suite: 154/154 passed cleanly (`.venv/bin/pytest tests/ trust-layer/tests/`).
+- Hardhat Contract Suite: 22/22 tests passed in 659ms (`npx hardhat test`).
+- Documentation Line Limits: `README.md` (104 lines) and `AGENTS.md` (29 lines) verified short and concise (`wc -l README.md AGENTS.md`).

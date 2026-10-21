@@ -12,12 +12,12 @@ closes off a specific way that goes wrong.
 
 ## 1. Stack whitelist — nothing outside this list without updating this file first
 
-| Layer | Allowed | Not allowed (without explicit sign-off + updating this file) |
-|---|---|---|
-| Frontend | Vite, React 18, Tailwind CSS, `lucide-react` — exactly what `design/package.json` already lists | Any new npm package. Any router. Any state library (Redux, Zustand, etc.). TypeScript conversion. Next.js. |
-| Backend | Python 3.11+, FastAPI, `uvicorn`, `web3.py`, `sqlite3` (stdlib) or `sqlmodel` | Django, Flask, Node/Express for the backend. Any ORM beyond `sqlmodel` unless this file is updated first. |
-| Blockchain | Solidity ^0.8.20, Hardhat, `hardhat-toolbox` | Foundry, Truffle, any other chain (this is Ethereum-compatible only), OpenZeppelin contracts (deferred to O6) |
-| Storage | SQLite, one file, `backend/agrichain.db` | Supabase, Postgres, MongoDB, Redis — all deferred to O7 |
+| Layer | Allowed | Approved Additions (Phases 6–13) | Not allowed |
+|---|---|---|---|
+| Frontend | Vite, React 18, Tailwind CSS, `lucide-react` | `ethers` v6 (for client-side MetaMask Web3 wallet connection & signing) | Any other new npm package. Any router. Any state library (Redux, Zustand). TypeScript conversion. Next.js. |
+| Backend | Python 3.11+, FastAPI, `uvicorn`, `web3.py`, `sqlite3` | `scikit-learn`, `numpy` (Isolation Forest ML trust layer), `httpx`, `pytest` | Django, Flask, Node/Express for the backend. |
+| Blockchain | Solidity ^0.8.20, Hardhat, `hardhat-toolbox` | OpenZeppelin `AccessControl` (RBAC) and `Pausable` (circuit breakers) | Foundry, Truffle, any non-EVM chain. |
+| Storage | SQLite (`backend/agrichain.db`) | Supabase Cloud PostgreSQL (`psycopg2`) via `DATABASE_URL` pooler; Pinata IPFS gateway for certificate pinning | MongoDB, Redis, unauthorized cloud databases. |
 
 If a task genuinely needs something not on this list, the correct move is to
 add it to this file with a one-line justification, in the same commit as the

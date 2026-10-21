@@ -61,7 +61,7 @@ same commit that finishes it. After the last task in a phase, append the
   returns `{"status":"ok"}`.
 
 ### Task 1.4 — `.gitignore` check
-- [ ] Confirm the repo's `.gitignore` includes at minimum: `.env`,
+- [x] Confirm the repo's `.gitignore` includes at minimum: `.env`,
   `node_modules/`, `__pycache__/`, `.venv/`, `*.db`, `contracts/artifacts/`,
   `contracts/cache/`. Add any that are missing.
 - **DONE WHEN:** running `git status` from the repo root after Tasks 1.2–1.3
@@ -705,3 +705,34 @@ Benchmarked against 6 reference repositories (`ONTOCHAIN/ADOS`, `bhaskardatta/Cr
   - Tamper-Evident Quarantine Hash Chain Audit Verifier (`/quarantine/verify-integrity`)
   - Participant Role Governance (`/admin/users`, `/admin/roles/grant`, `/admin/roles/revoke`)
 - **DONE WHEN:** Admin persona view allows viewing participant addresses, granting/revoking roles, and viewing cryptographic audit log verification status in the UI. (Verified: `npm run build` succeeds cleanly; Admin persona switcher is accessible from the top-level bar).
+
+---
+
+## Phase 13 — Omniscient God Mode Hub, Showcase Automation & Capstone Audit
+
+Goal: Deliver a synchronized command center for presentation, audience-interactive scenario injection, and complete codebase audit.
+
+### Task 13.1 — Omniscient God Mode 4-Quadrant Split-Screen (`GodModeHub.jsx`)
+- [x] In `design/src/components/GodModeHub.jsx`, create a responsive 2x2 grid rendering all four supply chain participants simultaneously with zero mock data:
+  - Quadrant 1 (Farmer Origin & Escrow Protection)
+  - Quadrant 2 (Logistics Reefer Cockpit & Live NH-48 Telematics Gauges)
+  - Quadrant 3 (Dark Store Inbound Salvage Bay & FEFO Markdown Logic)
+  - Quadrant 4 (Consumer QR Provenance Passport & Thermal Disclosure)
+- **DONE WHEN:** launching God Mode displays live ground-truth state across all 4 quadrants without layout clipping or console errors. (Verified: `GodModeHub.jsx` verified with Playwright across mobile, tablet, and desktop viewports with 0 errors).
+
+### Task 13.2 — 100% Real-Valued Backend God Mode Aggregation & Cinema Tour Endpoints
+- [x] In `backend/main.py`, implement:
+  - `GET /demo/godmode/{batch_id}`: compiles atomic state across SQLite tables and EVM contracts.
+  - `POST /demo/godmode/tour-step`: steps through 5 guided presentation storylines, executing smart contract calls.
+  - `POST /demo/iot/inject`: injects manual telemetry, calculates spoilage incidents, and updates carrier SLA penalties.
+- **DONE WHEN:** calling `/demo/godmode/tour-step` advances custody and state on-chain and reflects in all 4 quadrants simultaneously. (Verified: tested via headless browser automation and curl; state updates in real time).
+
+### Task 13.3 — Interactive Showcase Drawer & Manual IoT Controls
+- [x] In `design/src/components/ShowcaseDrawer.jsx`, implement interactive slider controls for temperature and humidity, manual produce onboarding, and preset scenarios ("Golden Harvest", "In-Transit Spoilage").
+- **DONE WHEN:** moving the temperature slider above 12°C triggers an immediate warning badge and logs a spoilage breach in the backend. (Verified: manual slider injection tested and validated).
+
+### Task 13.4 — Codebase Audit, Deprecation Fixes & Resource Leak Elimination
+- [x] Migrate from deprecated `@app.on_event("startup")` to FastAPI `@asynccontextmanager async def lifespan(app: FastAPI)` handler.
+- [x] Eliminate all 200 SQLite resource leaks in `trust-layer/app/services/db.py` by introducing `ClosingConnection` auto-closing context manager.
+- [x] Remove sample template files (`contracts/contracts/Lock.sol`, `contracts/test/Lock.js`, `contracts/ignition/modules/Lock.js`).
+- **DONE WHEN:** running pytest executes with 0 `ResourceWarning` unclosed database warnings, and Hardhat test suite compiles only AgriChain contracts. (Verified: 154/154 pytest tests passed in 29.9s with 0 warnings; 22/22 Hardhat tests passed cleanly).

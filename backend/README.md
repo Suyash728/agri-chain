@@ -1,62 +1,72 @@
-# Backend Overview
+# AgriChain Backend API
 
-This directory contains a tiny FastAPI‑based web service that exposes the REST API described in **ARCHITECTURE.md – §7**.  It runs a SQLite database locally, validates telemetry, and writes data to a Hardhat‑deployed Solidity contract using **web3.py**.
+FastAPI REST API serving multi-role dashboards, smart contract orchestration, AI trust layer ingestion, dual-mode relational storage, IPFS document pinning, and Omniscient God Mode synchronization.
 
-> ⚠️  The code is intentionally minimal – it’s only meant to support the two‑week
-> essential build.  Production‑grade error handling, logging, and authentication
-> are all out of scope.
+---
 
-## Directory layout
+## 1. Architecture & Capabilities
+
+- **Modular Smart Contract Relayer (`chain.py`)**: Interfaces with deployed EVM contracts (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, `AccessControlRoles`) on local Hardhat nodes or Polygon Amoy.
+- **Dual-Storage Relational Layer (`db.py`)**: Seamlessly connects to Supabase Cloud PostgreSQL via `DATABASE_URL` session pooler, with automatic fallback to local SQLite (`backend/agrichain.db`).
+- **Pre-Chain AI Trust Layer Ingestion**: Ingests IoT sensor telemetry (`POST /telemetry`), routes payloads through 11-D feature extraction and Isolation Forest ML models ($F_1 = 0.9722$), and anchors verified batches on-chain while quarantining anomalies.
+- **Decentralized Storage (`ipfs.py`)**: Pins produce inspection certificates (PDF/images) to IPFS via Pinata and anchors cryptographic CIDs (`ipfs://Qm...`) on-chain.
+- **Omniscient God Mode (`main.py`)**: Consolidated real-time 4-quadrant state aggregation (`GET /demo/godmode/{id}`) and automated cinematic presentation tour (`POST /demo/godmode/tour-step`).
+- **Tamper-Evident Quarantine Audit**: Implements IsoLog SHA-256 hash chaining (`prev_hash` → `entry_hash`) with runtime cryptographic verification (`GET /quarantine/verify-integrity`).
+
+---
+
+## 2. Directory Structure
+
 ```
 backend/
-├── main.py            – FastAPI entry point (health‑check + later routes)
-├── db.py              – Helper that creates the SQLite schema
-├── chain.py            – Thin wrapper around web3.py that talks to the chain
-├── validation.py       – Rule‑based AI trust layer
-├── requirements.txt    – Python dependencies
-└── README.md          – YOU'RE HERE!
+├── main.py                     FastAPI application, lifespan handler & multi-role endpoints
+├── db.py                       Dual database adapter (PostgreSQL + SQLite) with connection pooling
+├── chain.py                    Web3.py client for modular smart contracts & role management
+├── ipfs.py                     Pinata IPFS pinning gateway & cryptographic CID hasher
+├── migrations/                 PostgreSQL DDL schema definitions (11 normalized tables)
+├── modular-abis/               Exported ABIs for modular contracts
+├── modular-deployments.json    Active contract deployment addresses
+└── scripts/                    Verification and test suites
+    ├── verify_final_system.py  Capstone 8-stage automated verification suite
+    ├── verify_phase7_e2e.py    Multi-role custody lifecycle test
+    └── migrate_sqlite_to_supabase.py Database migration utility
 ```
 
-## Quick‑start for a local dev machine
-1. **Create a virtual environment** and install the requirements:
-   ```bash
-   cd backend
-   python3 -m venv .venv
-   source .venv/bin/activate   #  or  .venv\Scripts\activate on Windows
-   pip install -r requirements.txt
-   ```
-2. **Setup environment variables**.
-   
-   The following variables must be present in a file named `.env` in the
-   project root (or you can export them directly).  Create the file
-   with sensible defaults and edit it yourself.
-   ```env
-   # RPC endpoint – use the local Hardhat node
-   RPC_URL=http://127.0.0.1:8545
-   
-   # The address of the deployed AgriChainCore contract
-   CONTRACT_ADDRESS=<paste-here>
-   
-   # Private key of the backend account (a Hardhat funded test account works).  Example:
-   PRIVATE_KEY=0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-   ```
-3. **Initialise the database** (only needed once):
-   ```bash
-   python -c "from db import init_db; init_db()"
-   ```
-   This creates `data/db.sqlite` and the five tables.
-4. **Run the FastAPI server**:
-   ```bash
-   uvicorn main:app --reload
-   ```
-   The service will be available at `http://localhost:8000`.
-5. **Interact with the other pieces**.
-   - The *simulator* will POST telemetry to `/telemetry`.
-   - The *frontend* will fetch data from the `/farmer/*`, `/batches/*`, and `/consumer/*` endpoints.
+---
 
-## Extending
-- Add more routes in `main.py` and expose them via FastAPI’s decorator syntax.
-- Update `validation.py` with new rules or plug in an ML model.
-- If you need to persist the contract’s transaction history, you can add a helper in `chain.py` that queries past events.
+## 3. Running the Backend
 
-Happy hacking!
+### Prerequisites
+Ensure Python 3.11+ is installed and dependencies are satisfied:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt -r trust-layer/requirements.txt
+```
+
+### Environment Configuration (`.env`)
+Create `.env` in the repository root:
+```env
+DATABASE_URL="postgresql://postgres.[REF]:[PASS]@aws-0-ap-south-1.pooler.supabase.com:5432/postgres"
+HARDHAT_RPC_URL="http://127.0.0.1:8545"
+PINATA_JWT="your_pinata_jwt_here"
+```
+
+### Start the Server
+```bash
+cd backend
+uvicorn main:app --reload --port 8000
+```
+Swagger API documentation is available at `http://localhost:8000/docs`.
+
+---
+
+## 4. Verification Tests
+
+```bash
+# Execute capstone 8-stage full system test
+python backend/scripts/verify_final_system.py
+
+# Execute full backend test suite
+pytest tests/
+```

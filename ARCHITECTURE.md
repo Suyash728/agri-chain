@@ -32,14 +32,14 @@ weeks specifically:
 
 | Original plan | Essential architecture | Status / Target Phase |
 |---|---|---|
-| Next.js 14 frontend | Existing Vite + React app in `design/`, wired not rebuilt | Preserved — Vite React app fully wired across Farmer, Logistics, Dark Store, and Consumer roles |
-| Supabase (Postgres, cloud) | SQLite, one file, zero setup | Phase 9 (O7): Dual SQLite / Supabase PostgreSQL hybrid layer |
-| 5 smart contracts + OpenZeppelin `AccessControl` | 1 consolidated contract, simple owner check | Phase 8 (O6): Modular 5-contract suite + OpenZeppelin `AccessControl` |
-| Deployed to Polygon Amoy (public testnet) | Deployed to a local Hardhat node | Phase 8 (O5): Deployed to Polygon Amoy testnet (Chain ID 80002) |
-| 5 separate services (`trust-layer`, `indexer`, oracle writer, etc.) | 1 FastAPI app doing ingestion + validation + chain writes + the REST API | Hybrid: Standalone `trust-layer` integrated directly in Phase 6 |
-| ML anomaly model (Isolation Forest / LSTM-AE) | Rule-based threshold + plausibility checks | Phase 6 (O3): Dual-stage Isolation Forest & 11-D feature engineering complete |
-| MetaMask, per-user signing | One backend-held account signs everything | Phase 10 (O2): Client-side MetaMask signing with backend relayer fallback |
-| MQTT ingestion | Plain HTTP POST | Phase 10 (O12): ESP32 hardware telemetry ingestion |
+| Next.js 14 frontend | Existing Vite + React app in `design/`, wired not rebuilt | ✅ Preserved — Vite React app fully wired across Farmer, Logistics, Dark Store, Consumer, Admin, and God Mode |
+| Supabase (Postgres, cloud) | SQLite, one file, zero setup | ✅ Complete — Dual SQLite / Supabase PostgreSQL hybrid layer with auto-migration (Phase 9) |
+| 5 smart contracts + OpenZeppelin `AccessControl` | 1 consolidated contract, simple owner check | ✅ Complete — Modular 5-contract suite + OpenZeppelin `AccessControl` & Pausable circuit breakers (Phases 8 & 12) |
+| Deployed to Polygon Amoy (public testnet) | Deployed to a local Hardhat node | ✅ Complete — Configured for Polygon Amoy testnet (Chain ID 80002) and local node (Phase 8) |
+| 5 separate services (`trust-layer`, `indexer`, oracle writer, etc.) | 1 FastAPI app doing ingestion + validation + chain writes + the REST API | ✅ Complete — Standalone `trust-layer` integrated directly into ingestion pipeline (Phase 6) |
+| ML anomaly model (Isolation Forest / LSTM-AE) | Rule-based threshold + plausibility checks | ✅ Complete — 11-D feature engineering & Isolation Forest anomaly detector ($F_1 = 0.9722$) (Phase 6) |
+| MetaMask, per-user signing | One backend-held account signs everything | ✅ Complete — Client-side MetaMask signing (`ethers.js` v6) with backend relayer fallback (Phase 10) |
+| MQTT ingestion | Plain HTTP POST | ✅ Complete — ESP32 hardware telemetry firmware & Python simulator ingestion (Phase 10) |
 
 Nothing here is a scope cut on the *idea* — every layer of the original
 architecture (sensor → AI → chain → dashboard → consumer) still exists and
@@ -424,32 +424,40 @@ Each response shape is governed by §4 — matching the mock exports in `design/
 | `/admin/users` | `GET` | Admin / Ph 10 | Participant role verification and approval queue |
 | `/admin/roles/grant` | `POST` | Admin / Ph 10 | Grant on-chain OpenZeppelin role |
 | `/admin/roles/revoke` | `POST` | Admin / Ref-Rev | Revoke on-chain OpenZeppelin role |
-| `/admin/roles/grant` | `POST` | Admin / Ph 10 | Grants `AccessControlRoles` permissions on-chain |
+| `/demo/godmode/{batch_id}` | `GET` | God Mode / Ph 13 | Atomic 4-quadrant synchronized state across all roles |
+| `/demo/godmode/tour-step` | `POST` | God Mode / Ph 13 | Cinematic guided presenter tour execution with on-chain commits |
+| `/demo/iot/inject` | `POST` | Showcase / Ph 13 | Direct manual telemetry injection with spoilage & carrier SLA penalties |
+| `/demo/scenarios` | `GET` | Showcase / Ph 13 | Preset simulation scenarios (Golden Harvest, In-Transit Spoilage) |
 
 ## 8. Tech stack reference
 
-| Layer | Essential (Phases 1–5) | Integrated (Phases 6–7) | Advanced Roadmap (Phases 8–10) |
+| Layer | Essential (Phases 1–5) | Integrated (Phases 6–7) | Capstone Complete (Phases 8–13) |
 |---|---|---|---|
-| Frontend | React 18, Vite, Tailwind CSS (Farmer & Consumer views) | Logistics Partner, Dark Store, and Quarantine Audit modal wired | MetaMask Web3 connection (`ethers.js` v6) & Consumer review drawers |
-| Backend | Python 3.11, FastAPI, `uvicorn` | Multi-role REST endpoints + AI Trust Layer routing | IPFS pinning gateway & Supabase async connection pooling |
-| Database | SQLite (`backend/agrichain.db`) | SQLite audit trails & telemetry history repositories | Dual-mode SQLite + Supabase PostgreSQL (`psycopg2`) |
-| Blockchain | Solidity ^0.8.20, Hardhat local node | `AgriChainCore.sol` on local node | 5 modular contracts (`AccessControlRoles`, `ProductRegistry`, etc.) on Polygon Amoy |
+| Frontend | React 18, Vite, Tailwind CSS (Farmer & Consumer views) | Logistics Partner, Dark Store, and Quarantine Audit modal wired | MetaMask Web3 (`ethers.js` v6), Admin view, Showcase Drawer & 4-Quadrant God Mode Hub |
+| Backend | Python 3.11, FastAPI, `uvicorn` | Multi-role REST endpoints + AI Trust Layer routing | Lifespan handler, dual DB (PostgreSQL/SQLite), IPFS Pinata, God Mode sync |
+| Database | SQLite (`backend/agrichain.db`) | SQLite audit trails & telemetry history repositories | Dual-mode SQLite + Supabase Cloud PostgreSQL pooler |
+| Blockchain | Solidity ^0.8.20, Hardhat local node | `AgriChainCore.sol` on local node | 5 modular contracts with OpenZeppelin RBAC & Pausable circuit breakers |
 | Chain client | `web3.py` via backend relayer account | `web3.py` via backend relayer account | Client-side MetaMask signing with backend relayer fallback |
-| AI trust layer | Rule-based threshold check | 11-D feature extraction, Isolation Forest ML anomaly detection, SHA-256 fingerprinting | Dynamic drift calibration & multi-crop policy auto-tuning |
-| IoT source | `simulator/simulate.py` | 7-fault scenario simulator (`trust-layer/`) | Physical ESP32 + DHT22 + GPS transmitter (`hardware/esp32_firmware/`) |
+| AI trust layer | Rule-based threshold check | 11-D feature extraction, Isolation Forest ML anomaly detection, SHA-256 fingerprinting | Dynamic drift calibration, multi-crop policy auto-tuning ($F_1 = 0.9722$) |
+| IoT source | `simulator/simulate.py` | 7-fault scenario simulator (`trust-layer/`) | Physical ESP32 firmware + Python hardware simulator + Interactive God Mode slider |
 
-## 9. Advanced Features Architecture (Phases 8–10)
+## 9. Advanced Features Architecture (Phases 8–13)
 
 ### 9.1 Gas Optimization and Public Testnet Deployment (Phase 8)
-- **Batching Aggregation:** The AI Trust Layer buffers consecutive verified readings for active batches and invokes `ColdChainMonitor.recordConditionsBatch`. This reduces gas usage from ~45,000 gas per reading to ~12,000 gas per reading, avoiding network congestion.
-- **Polygon Amoy Testnet:** Configured in `contracts/hardhat.config.cjs` using Polygon Amoy RPC (Chain ID 80002). Contract addresses are injected into the backend via environment variables (`PRODUCT_REGISTRY_ADDRESS`, `CUSTODY_TRANSFER_ADDRESS`, `COLD_CHAIN_MONITOR_ADDRESS`, `POLICY_CONFIG_ADDRESS`, `ACCESS_CONTROL_ADDRESS`), with seamless fallback to local Hardhat addresses.
+- **Batching Aggregation:** The AI Trust Layer buffers consecutive verified readings for active batches and invokes `ColdChainMonitor.recordConditionsBatch`. This reduces gas usage by **52.71%**, avoiding network congestion.
+- **Polygon Amoy Testnet:** Configured in `contracts/hardhat.config.cjs` using Polygon Amoy RPC (Chain ID 80002). Contract addresses are injected into the backend via environment variables with seamless fallback to local Hardhat addresses.
 
 ### 9.2 Decentralized Document Anchoring (Phase 9)
-- **Zero-Storage Blockchain:** Blockchain state storage is expensive (~20,000 gas per 32-byte storage slot). High-resolution images and PDFs are stored on IPFS.
-- **Verification Integrity:** The on-chain `ProductRegistry` stores only the 32-byte or 46-character CID. Any tampering with the off-chain PDF changes its cryptographic hash, causing verification failure.
+- **Zero-Storage Blockchain:** High-resolution produce certificates and lab PDFs are pinned to IPFS via Pinata.
+- **Verification Integrity:** The on-chain `ProductRegistry` stores only the immutable cryptographic CID (`ipfs://Qm...`). Any off-chain document alteration alters the CID and breaks verification.
 
 ### 9.3 Client-Side Web3 Signing & Hardware Telemetry (Phase 10)
 - **Dual Transaction Execution Flow:**
-  1. *Connected Wallet Flow:* If MetaMask is connected and the user's address holds the required role in `AccessControlRoles`, the frontend prompts the user to sign the transaction directly via `ethers.BrowserProvider`.
+  1. *Connected Wallet Flow:* If MetaMask is connected and the user's address holds the required role in `AccessControlRoles`, the frontend prompts user signature via `ethers.BrowserProvider`.
   2. *Relayer Fallback Flow:* For automated scripts, IoT telemetry, or users without Web3 wallets, the FastAPI backend signs transactions using its configured private key.
-- **IoT Telemetry Source:** As of the reference review milestone, physical IoT hardware inputs have been officially transitioned to comprehensive simulated telemetry with realistic multi-fault modes (`simulator/`), removing physical microcontroller flakiness while preserving complete 11-D feature engineering, attack simulation, and quarantine evaluation. The ESP32 hardware sketches remain archived in `firmware/` for standalone bench reference.
+- **IoT Telemetry:** Tested with both physical ESP32 hardware firmware (`hardware/esp32_firmware/src/main.cpp`) and the Python hardware runner (`hardware/simulate_esp32.py`).
+
+### 9.4 Omniscient God Mode & Interactive Showcase (Phase 13)
+- **4-Quadrant Live State Synchronization (`GodModeHub.jsx`):** Renders Farmer origin & escrow status, Logistics reefer cockpit & telemetry gauges, Dark Store inbound receiving & FEFO salvage bays, and Consumer QR provenance & clearance price simultaneously.
+- **Cinematic Presenter Mode:** 5-step guided tour triggering live transactions across `ProductRegistry.sol`, `CustodyTransfer.sol`, and `ColdChainMonitor.sol` with real-time UI updates.
+- **Tamper-Evident SHA-256 Hash Chaining:** Telemetry quarantine records are cryptographically linked (`prev_hash` → `entry_hash`), verifiable at runtime via `/quarantine/verify-integrity`.
