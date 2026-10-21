@@ -8,7 +8,7 @@ import {
   Building2 
 } from 'lucide-react';
 
-export const InventoryView = ({ initialStep = 'available-produce' }) => {
+export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }) => {
   // Step state: 'available-produce' (default) | 'storage-warehouse' | 'logistics-orders'
   const [activeStep, setActiveStep] = useState(initialStep);
 
@@ -16,27 +16,8 @@ export const InventoryView = ({ initialStep = 'available-produce' }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
 
-  const defaultProduceItems = [
-    { id: 1, name: 'Premium Basmati Wheat', category: 'Grains', qty: '500 Tonnes', price: '₹2,100 / Quintal', farm: 'Patil Organic Farm, Nashik', status: 'In Stock', icon: '/images/wheat_only.png' },
-    { id: 2, name: 'Basmati Long Grain Rice', category: 'Grains', qty: '300 Tonnes', price: '₹2,800 / Quintal', farm: 'Godavari Delta Fields', status: 'In Stock', icon: '/images/rice_only.png' },
-    { id: 3, name: 'Fresh Organic Tomatoes', category: 'Vegetables', qty: '200 Tonnes', price: '₹1,200 / Quintal', farm: 'Sahyadri Agri Hub, Pune', status: 'Limited', icon: '/images/tomato_only.png' },
-    { id: 4, name: 'Cold-Stored Potatoes', category: 'Vegetables', qty: '400 Tonnes', price: '₹1,000 / Quintal', farm: 'Satara Valley Orchards', status: 'In Stock', icon: '/images/potato_only.png' },
-    { id: 5, name: 'Red Nashik Onions', category: 'Vegetables', qty: '250 Tonnes', price: '₹900 / Quintal', farm: 'Nashik Mandi Direct', status: 'In Stock', icon: '/images/potato_only.png' },
-    { id: 6, name: 'Organic Chickpeas (Garbanzo)', category: 'Pulses', qty: '180 Tonnes', price: '₹4,500 / Quintal', farm: 'Malwa Agriculture Cooperative', status: 'In Stock', icon: '/images/chickpea_only.png' },
-    { id: 7, name: 'Green Gram (Moong Dal)', category: 'Pulses', qty: '150 Tonnes', price: '₹5,200 / Quintal', farm: 'Vidarbha Farmer Producer Co.', status: 'In Stock', icon: '/images/greengram_only.png' },
-    { id: 8, name: 'Guntur Red Chillies', category: 'Spices', qty: '80 Tonnes', price: '₹12,000 / Quintal', farm: 'Deccan Spice Estate', status: 'In Stock', icon: '/images/chilli_only.png' },
-  ];
-
-  // Storage & Warehouse Infrastructure Data
-  const defaultWarehouses = [
-    { name: 'Nashik Warehouse Hub', capacity: '3,000 Tonnes', utilized: '2,400 Tonnes', pct: 80, temp: '18°C (Ambient Grain Silo)', location: 'MIDC Ambad, Nashik' },
-    { name: 'Pune Cold Storage Facility', capacity: '2,500 Tonnes', utilized: '1,500 Tonnes', pct: 60, temp: '4°C (Cold-Chain Reefer)', location: 'Chakan Industrial Area, Pune' },
-    { name: 'Nagpur Warehouse Hub', capacity: '2,000 Tonnes', utilized: '1,500 Tonnes', pct: 75, temp: '20°C (Dry Storage)', location: 'Kalamna Market, Nagpur' },
-    { name: 'Raipur Central Warehouse', capacity: '2,500 Tonnes', utilized: '1,000 Tonnes', pct: 40, temp: '16°C (Controlled Humidity)', location: 'Tatibandh, Raipur' },
-  ];
-
-  const [produceItems, setProduceItems] = useState(defaultProduceItems);
-  const [warehouses, setWarehouses] = useState(defaultWarehouses);
+  const [produceItems, setProduceItems] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:8000/logistics/available-produce')
@@ -181,33 +162,39 @@ export const InventoryView = ({ initialStep = 'available-produce' }) => {
 
           {/* Available Produce Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {filteredProduce.map(item => (
-              <div key={item.id} className="bg-white rounded-2xl p-4 border border-[#E6E1D5] shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-12 h-12 rounded-xl bg-[#FAF7F0] p-1.5 border border-[#E6E1D5] flex items-center justify-center">
-                      <img src={item.icon} alt={item.name} className="w-full h-full object-contain" />
-                    </div>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'In Stock' ? 'bg-[#556B2F]/15 text-[#556B2F]' : 'bg-[#B85C38]/15 text-[#B85C38]'}`}>
-                      {item.status}
-                    </span>
-                  </div>
-                  <h3 className="font-extrabold text-sm text-[#2D2620] mb-1">{item.name}</h3>
-                  <p className="text-xs text-[#666057] font-medium">{item.farm}</p>
-                  <div className="mt-3 pt-3 border-t border-[#E6E1D5]/60 flex items-center justify-between text-xs">
-                    <span className="text-[#666057]">Qty: <strong className="text-[#2D2620]">{item.qty}</strong></span>
-                    <span className="font-extrabold text-[#556B2F]">{item.price}</span>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => alert(`Procurement request initiated for ${item.name}`)}
-                  className="mt-4 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
-                >
-                  <span>Initiate Procurement</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+            {filteredProduce.length === 0 ? (
+              <div className="col-span-full p-8 text-center bg-white rounded-2xl border border-[#E6E1D5] text-sm text-[#666057] font-semibold">
+                No produce items found matching the selected filter.
               </div>
-            ))}
+            ) : (
+              filteredProduce.map(item => (
+                <div key={item.id} className="bg-white rounded-2xl p-4 border border-[#E6E1D5] shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-12 h-12 rounded-xl bg-[#FAF7F0] p-1.5 border border-[#E6E1D5] flex items-center justify-center">
+                        <img src={item.icon} alt={item.name} className="w-full h-full object-contain" />
+                      </div>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'In Stock' ? 'bg-[#556B2F]/15 text-[#556B2F]' : 'bg-[#B85C38]/15 text-[#B85C38]'}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                    <h3 className="font-extrabold text-sm text-[#2D2620] mb-1">{item.name}</h3>
+                    <p className="text-xs text-[#666057] font-medium">{item.farm}</p>
+                    <div className="mt-3 pt-3 border-t border-[#E6E1D5]/60 flex items-center justify-between text-xs">
+                      <span className="text-[#666057]">Qty: <strong className="text-[#2D2620]">{item.qty}</strong></span>
+                      <span className="font-extrabold text-[#556B2F]">{item.price}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => onSelectTab && onSelectTab('procurement-orders')}
+                    className="mt-4 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
+                  >
+                    <span>Initiate Procurement</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -219,7 +206,12 @@ export const InventoryView = ({ initialStep = 'available-produce' }) => {
         <div className="space-y-6 animate-fade-in">
           {/* All 4 Warehouse Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {warehouses.map((wh, idx) => (
+            {warehouses.length === 0 ? (
+              <div className="col-span-full p-8 text-center bg-white rounded-2xl border border-[#E6E1D5] text-sm text-[#666057] font-semibold">
+                No storage facilities registered yet.
+              </div>
+            ) : (
+              warehouses.map((wh, idx) => (
               <div key={idx} className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs space-y-4">
                 <div className="flex items-center gap-3">
                   <img src="/images/warehouse_3d.png" alt="Warehouse" className="w-12 h-12 object-contain" />
@@ -243,7 +235,8 @@ export const InventoryView = ({ initialStep = 'available-produce' }) => {
                   </p>
                 </div>
               </div>
-            ))}
+            ))
+            )}
           </div>
         </div>
       )}

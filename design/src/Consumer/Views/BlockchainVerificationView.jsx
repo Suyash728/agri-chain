@@ -78,7 +78,9 @@ export const BlockchainVerificationView = ({ selectedProduct, onBack }) => {
 
               <div className="flex justify-between items-center pb-2.5 border-b border-[#F4F5E6]">
                 <span className="text-xs sm:text-sm font-semibold text-[#666057]">Verified Date</span>
-                <span className="text-xs sm:text-sm font-extrabold text-[#2D2620]">10 May, 2025, 11:30 AM</span>
+                <span className="text-xs sm:text-sm font-extrabold text-[#2D2620]">
+                  {product.date || product.harvest_date || product.journeyData?.custodyHistory?.[0]?.date || new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </span>
               </div>
 
               <div className="flex justify-between items-center">

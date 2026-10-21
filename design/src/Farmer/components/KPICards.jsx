@@ -15,10 +15,10 @@ export const KPICards = ({ metrics = [], onCardClick }) => {
     };
   };
 
-  const inventory = getMetric('inventory', '3.45', 'Tonnes');
-  const orders = getMetric('orders', '4', 'Orders');
-  const shipments = getMetric('shipments', '2', 'In Transit');
-  const earnings = getMetric('earnings', '₹ 28,450', 'This Month');
+  const inventory = getMetric('inventory', '0.00', 'Tonnes');
+  const orders = getMetric('orders', '0', 'Orders');
+  const shipments = getMetric('shipments', '0', 'In Transit');
+  const earnings = getMetric('earnings', '₹ 0', 'This Month');
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">

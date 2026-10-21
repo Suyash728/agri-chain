@@ -2,39 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Star, CheckCircle } from 'lucide-react';
 
 export const ReviewsView = ({ onWriteReviewClick }) => {
-  const [reviewsList, setReviewsList] = useState([
-    {
-      id: 'rev-live-1',
-      author: '0x71C...3a89',
-      badge: 'Verified Buyer',
-      date: 'Recent',
-      comment: 'Super fresh organic mangoes, completely unblemished!',
-      rating: 5
-    }
-  ]);
+  const [reviewsList, setReviewsList] = useState([]);
+  const [averageRating, setAverageRating] = useState(5.0);
+  const [totalReviews, setTotalReviews] = useState(0);
   const [breakdown, setBreakdown] = useState([
-    { stars: 5, percentage: 80 },
-    { stars: 4, percentage: 15 },
-    { stars: 3, percentage: 5 },
+    { stars: 5, percentage: 100 },
+    { stars: 4, percentage: 0 },
+    { stars: 3, percentage: 0 },
     { stars: 2, percentage: 0 },
     { stars: 1, percentage: 0 }
   ]);
 
   useEffect(() => {
-    fetch('http://localhost:8000/batches/FINAL-DEMO-1792508658/reviews')
-      .then((res) => res.json())
+    fetch('http://localhost:8000/consumer/reviews')
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (data && data.reviews && data.reviews.length > 0) {
-          setReviewsList(
-            data.reviews.map((r) => ({
-              id: r.id,
-              author: r.reviewer_address ? `${r.reviewer_address.substring(0, 6)}...${r.reviewer_address.slice(-4)}` : 'Verified Buyer',
-              badge: 'Verified Buyer',
-              date: 'Recent',
-              comment: r.comment,
-              rating: r.rating
-            }))
-          );
+        if (data) {
+          if (Array.isArray(data.reviews)) setReviewsList(data.reviews);
+          if (data.averageRating) setAverageRating(data.averageRating);
+          if (data.totalReviews !== undefined) setTotalReviews(data.totalReviews);
+          if (Array.isArray(data.breakdown)) setBreakdown(data.breakdown);
         }
       })
       .catch(() => {});
@@ -62,13 +49,13 @@ export const ReviewsView = ({ onWriteReviewClick }) => {
             <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex items-center gap-6">
               {/* Left Large Rating */}
               <div className="flex flex-col items-center justify-center flex-shrink-0 pr-6 border-r border-[#E6E1D5]">
-                <span className="text-4xl font-black text-[#2D2620]">4.6</span>
+                <span className="text-4xl font-black text-[#2D2620]">{averageRating.toFixed(1)}</span>
                 <div className="flex items-center gap-0.5 text-amber-500 my-1">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star key={s} className="w-4 h-4 fill-amber-500 text-amber-500" />
                   ))}
                 </div>
-                <span className="text-xs font-semibold text-[#666057]">(128 Reviews)</span>
+                <span className="text-xs font-semibold text-[#666057]">({totalReviews} Reviews)</span>
               </div>
 
               {/* Right Star Breakdown Bars */}

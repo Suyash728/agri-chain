@@ -10,6 +10,8 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
   const [category, setCategory] = useState('Grains');
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
+  const [originFarm, setOriginFarm] = useState('Nashik Organic Farm cluster 4');
+  const [farmerName, setFarmerName] = useState('Rahul Patil');
   const [successMsg, setSuccessMsg] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -39,7 +41,7 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
         const tx = await registryContract.registerBatch(
           b32,
           cropName,
-          'Nashik Organic Farm cluster 4',
+          originFarm || 'Nashik Organic Farm cluster 4',
           harvestTimestamp,
           account
         );
@@ -66,9 +68,9 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
     const payload = {
       batch_id: batchId,
       crop_name: cropName,
-      origin_farm: 'Nashik Organic Farm cluster 4',
+      origin_farm: originFarm || 'Nashik Organic Farm cluster 4',
       harvest_date: new Date().toISOString().split('T')[0],
-      farmer_name: 'Rahul Patil',
+      farmer_name: farmerName || 'Rahul Patil',
       farmer_address: account || undefined,
       category: category,
       quantity_tonnes: parseFloat(quantity) || 0.5,
@@ -185,6 +187,31 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
                   <option value="Spices">Spices</option>
                   <option value="DryFruits">Dry Fruits & Nuts</option>
                 </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-[#3B3028] block mb-1">Farm Origin</label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Nashik Organic Cluster 4"
+                    value={originFarm}
+                    onChange={(e) => setOriginFarm(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-sm focus:outline-none focus:ring-2 focus:ring-[#3D4E2A]"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#3B3028] block mb-1">Farmer Name</label>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Rahul Patil"
+                    value={farmerName}
+                    onChange={(e) => setFarmerName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-sm focus:outline-none focus:ring-2 focus:ring-[#3D4E2A]"
+                    required
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

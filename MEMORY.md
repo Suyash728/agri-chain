@@ -1373,3 +1373,106 @@ still static UI with no data flow. Specifically:
 - Pytest Suite: 154/154 passed cleanly (`.venv/bin/pytest tests/ trust-layer/tests/`).
 - Hardhat Contract Suite: 22/22 tests passed in 659ms (`npx hardhat test`).
 - Documentation Line Limits: `README.md` (104 lines) and `AGENTS.md` (29 lines) verified short and concise (`wc -l README.md AGENTS.md`).
+
+---
+
+## [Repo Pull & Full-Stack System Startup] — 2026-10-21
+
+**What was done:**
+- Fetched latest changes from GitHub (`origin/main`) and executed clean fast-forward merge of 21 incoming commits.
+- Verified and updated npm dependencies in `contracts/` and `design/`.
+- Ran database migrations via `init_db()` in `backend/db.py` ensuring the hash-chain quarantine schema is populated.
+- Started local Hardhat node on port `8545`.
+- Deployed modular smart contracts suite (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, `AgriChainCore`), granted supply-chain roles, and seeded initial on-chain crop policies.
+- Seeded demo batch `TM1256` with full farm-to-fork journey, custody markups, and cold-chain condition readings.
+- Started FastAPI REST backend on `http://0.0.0.0:8000`.
+- Started Vite frontend development server on `http://localhost:3000`.
+- Verified entire system test suite:
+  - 154/154 pytest tests passed in 29.42s.
+  - 22/22 Hardhat smart contract tests passed in 861ms.
+  - 8/8 capstone full-system verification checks passed (`backend/scripts/verify_final_system.py`).
+
+**Status:**
+- All 3 stack layers are active and operational:
+  - Hardhat Local Blockchain: `http://127.0.0.1:8545`
+  - FastAPI REST API: `http://localhost:8000`
+  - React/Vite Multi-Role UI: `http://localhost:3000`
+
+
+---
+
+## [Purge of Hardcoded Dummy Data & Dynamic Real-Time UI Binding] — 2026-10-21
+
+**What was done:**
+- Completely purged all hardcoded, dummy, and static fallback data across the entire project (Farmer, Logistics Partner, Dark Store, and Consumer apps).
+- Replaced all static arrays and fallback data (`defaultDeliveries`, `defaultCrops`, `defaultWarehouses`, `defaultTxs`, `defaultEarningsSummary`, `initialOrders`, `defaultBins`, `defaultBatch`, `fallbackReviews`) with real-time state derived directly from SQLite and Hardhat blockchain events.
+- Replaced all static legacy dates (e.g. May 2025 constants) across headers, milestone logs, calendar pickers, and traceability timelines with dynamic real-time date calculations.
+- Connected all interactive controls and clickable elements to real actions, modals, or API endpoints (GRN reception, custody handoffs, telemetry evaluations, PDF statement alerts, QR printing, and flash sales).
+- In Dark Store views:
+  - `DarkStoreRevenueView.jsx`: Connected revenue table and charts dynamically to `GET /darkstore/revenue` computed from `SOLD` events.
+  - `DarkStoreSalesView.jsx`: Wired sales metrics and recent orders to `GET /darkstore/sales` without baseline constants.
+  - `DarkStoreDashboardView.jsx`: Removed default mock deliveries, expiry alerts, and certificates; initialized to dynamic state with empty states.
+  - `InboundGRNView.jsx`: Removed 240+ lines of `defaultDeliveries`; bound calendar picker and lots directly to `GET /darkstore/inbound`.
+  - `MicroInventoryView.jsx` & `FulfillmentOrdersView.jsx`: Bound inventory bins and order fulfillment queue to `GET /darkstore/inventory` and `GET /darkstore/sales`.
+  - `DarkStoreBlockchainView.jsx` & `DarkStoreTraceabilityView.jsx`: Wired batch lookups to live on-chain traceability endpoint with dynamic milestone rendering.
+  - `DarkStoreExpiryAlertsView.jsx`: Replaced fixed May 2025 expiry dates with dynamic date offsets.
+- In Logistics Partner views:
+  - `ProcurementOrdersView.jsx`: Removed static `initialOrders` and static transaction rows; wired to `GET /logistics/orders` and `GET /logistics/transactions`; dynamically computed 5 overview metric cards and volume summaries from live state.
+  - `InventoryView.jsx`: Removed mock items and facilities; wired procurement button and empty states.
+  - `StorageView.jsx` & `TransactionsView.jsx`: Bound directly to live storage and blockchain ledger transactions.
+  - `ShipmentTrackingView.jsx`: Replaced static May 2025 audit logs with dynamic relative timestamps.
+  - `TraceabilityView.jsx`: Dynamically fetches initial lot from live orders and displays real on-chain nodes.
+- In Farmer views:
+  - `AITrustView.jsx`: Initialized with neutral telemetry state; refreshes AI trust score dynamically upon posting telemetry.
+  - `ProfileView.jsx`: Zeroed out dummy sales metrics; dynamically loads farmer profile.
+  - `TraceabilityView.jsx`: Bound to first inventory lot dynamically; removed static batch.
+  - `CropDetailsView.jsx`, `EarningsView.jsx`, `MyCropsView.jsx`, `OrdersView.jsx`: Added empty state cards and dynamic fallbacks.
+  - `AddStockModal.jsx`: Added farm origin and farmer name inputs for full customization.
+- In Consumer views:
+  - `ProductJourneyView.jsx` & `BlockchainVerificationView.jsx`: Replaced static review lists with dynamic consumer reviews from `/consumer/reviews`; bound verification badges to current timestamps.
+
+**Files changed:**
+- `backend/main.py`: Enhanced `/darkstore/revenue` and `/darkstore/sales` endpoints to dynamically aggregate SQLite custody events.
+- `design/src/Dark_Store/Views/DarkStoreRevenueView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreSalesView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreDashboardView.jsx`
+- `design/src/Dark_Store/Views/InboundGRNView.jsx`
+- `design/src/Dark_Store/Views/MicroInventoryView.jsx`
+- `design/src/Dark_Store/Views/FulfillmentOrdersView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreBlockchainView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreTraceabilityView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreExpiryAlertsView.jsx`
+- `design/src/Dark_Store/components/DarkStoreHeader.jsx`
+- `design/src/Dark_Store/components/DarkStoreKPICards.jsx`
+- `design/src/Farmer/Views/AITrustView.jsx`
+- `design/src/Farmer/Views/CropDetailsView.jsx`
+- `design/src/Farmer/Views/EarningsView.jsx`
+- `design/src/Farmer/Views/InventoryView.jsx`
+- `design/src/Farmer/Views/MyCropsView.jsx`
+- `design/src/Farmer/Views/OrdersView.jsx`
+- `design/src/Farmer/Views/ProfileView.jsx`
+- `design/src/Farmer/Views/ShipmentsView.jsx`
+- `design/src/Farmer/Views/TraceabilityView.jsx`
+- `design/src/Farmer/components/Header.jsx`
+- `design/src/Farmer/components/KPICards.jsx`
+- `design/src/Farmer/Modals/AddStockModal.jsx`
+- `design/src/Logistic_Partner/Views/InventoryView.jsx`
+- `design/src/Logistic_Partner/Views/LogisticDashboardView.jsx`
+- `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`
+- `design/src/Logistic_Partner/Views/ShipmentTrackingView.jsx`
+- `design/src/Logistic_Partner/Views/StorageView.jsx`
+- `design/src/Logistic_Partner/Views/TraceabilityView.jsx`
+- `design/src/Logistic_Partner/Views/TransactionsView.jsx`
+- `design/src/Logistic_Partner/components/LogisticHeader.jsx`
+- `design/src/Logistic_Partner/components/LogisticKPICards.jsx`
+- `design/src/Consumer/Views/BlockchainVerificationView.jsx`
+- `design/src/Consumer/Views/ProductJourneyView.jsx`
+- `design/src/Consumer/Views/ReviewsView.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build (`cd design && npm run build`): Transformed 1810 modules cleanly with 0 errors.
+- Pytest Suite (`.venv/bin/pytest tests/ trust-layer/tests/`): All 154/154 tests passed cleanly in 636.93s.
+- Hardhat Smart Contract Suite (`cd contracts && npx hardhat test`): All 22/22 tests passed in 997ms.
+- Zero Hardcoded Mock Data: Scanned entire frontend code; verified zero unimported legacy mock data references and zero static 2025 dates in active UI templates.
+- Endpoints verified with live cURL requests (`/darkstore/kpis`, `/darkstore/revenue`, `/darkstore/sales`, `/logistics/orders`, `/logistics/transactions`, `/farmer/ai-trust`, `/farmer/profile`).

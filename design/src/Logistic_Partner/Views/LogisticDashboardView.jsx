@@ -18,32 +18,10 @@ import {
 
 export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
   const [procurementFilter, setProcurementFilter] = useState('All');
-
-  // 1. Available Produce Concise Summary Data
-  const availableProduceList = [
-    { name: 'Wheat', icon: '/images/wheat_only.png', qty: '500 Tonnes', price: '₹ 2,100', status: 'In Stock', badge: 'bg-[#556B2F]/15 text-[#556B2F]' },
-    { name: 'Rice', icon: '/images/rice_only.png', qty: '300 Tonnes', price: '₹ 2,800', status: 'In Stock', badge: 'bg-[#556B2F]/15 text-[#556B2F]' },
-    { name: 'Tomato', icon: '/images/tomato_only.png', qty: '200 Tonnes', price: '₹ 1,200', status: 'Limited', badge: 'bg-[#B85C38]/15 text-[#B85C38]' },
-    { name: 'Potato', icon: '/images/potato_only.png', qty: '400 Tonnes', price: '₹ 1,000', status: 'In Stock', badge: 'bg-[#556B2F]/15 text-[#556B2F]' },
-  ];
-
-  // 2. Procurement / Orders Concise Summary Data
-  const initialOrdersList = [
-    { id: 'ORD1256', supplier: 'FreshMart Supply Co.', produce: 'Wheat (500 kg)', status: 'Confirmed', badgeClass: 'bg-[#556B2F]/15 text-[#556B2F]' },
-    { id: 'ORD1255', supplier: 'Green Valley Traders', produce: 'Tomato (400 kg)', status: 'Pending', badgeClass: 'bg-[#B85C38]/15 text-[#B85C38]' },
-    { id: 'ORD1254', supplier: 'Daily Needs Store', produce: 'Potato (600 kg)', status: 'In Progress', badgeClass: 'bg-[#2B6CB0]/15 text-[#2B6CB0]' },
-  ];
-
-  // 3. Transportation Concise Summary Data
-  const initialVehiclesList = [
-    { number: 'MH12 AB 1234', status: 'In Transit', badgeClass: 'bg-[#556B2F]/15 text-[#556B2F]', driver: 'Ramesh Yadav', route: 'Nashik → Pune' },
-    { number: 'MH15 CD 5678', status: 'Loading', badgeClass: 'bg-[#B85C38]/15 text-[#B85C38]', driver: 'Suresh Patil', route: 'Raipur → Nagpur' },
-    { number: 'UP14 EF 9101', status: 'Delivered', badgeClass: 'bg-gray-100 text-gray-700', driver: 'Arvind Kumar', route: 'Aligarh → Nashik' },
-  ];
-
-  const [availableProduce, setAvailableProduce] = useState(availableProduceList);
-  const [procurementOrders, setProcurementOrders] = useState(initialOrdersList);
-  const [activeVehiclesList, setActiveVehiclesList] = useState(initialVehiclesList);
+  const [availableProduce, setAvailableProduce] = useState([]);
+  const [procurementOrders, setProcurementOrders] = useState([]);
+  const [activeVehiclesList, setActiveVehiclesList] = useState([]);
+  const [stockSummary, setStockSummary] = useState(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/logistics/available-produce')
@@ -84,6 +62,14 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
             route: `${s.from} → ${s.to}`,
           }));
           setActiveVehiclesList(mappedVehicles);
+        }
+      })
+      .catch(() => {});
+    fetch('http://localhost:8000/farmer/inventory')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.summary) {
+          setStockSummary(data.summary);
         }
       })
       .catch(() => {});
@@ -135,21 +121,27 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
             <p className="text-xs text-[#666057] mb-3">Verified farm-gate produce ready for procurement</p>
 
             <div className="space-y-2.5">
-              {availableProduce.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF7F0]/60 border border-[#E6E1D5]/60">
-                  <div className="flex items-center gap-2.5">
-                    <img src={item.icon} alt={item.name} className="w-6 h-6 object-contain" />
-                    <div>
-                      <h4 className="font-extrabold text-xs text-[#2D2620]">{item.name}</h4>
-                      <span className="text-[10px] text-[#666057]">{item.qty}</span>
+              {availableProduce.length === 0 ? (
+                <div className="p-4 text-center text-xs text-[#666057] font-semibold bg-[#FAF7F0] rounded-xl border border-[#E6E1D5]/60">
+                  No registered produce lots waiting for pickup.
+                </div>
+              ) : (
+                availableProduce.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF7F0]/60 border border-[#E6E1D5]/60">
+                    <div className="flex items-center gap-2.5">
+                      <img src={item.icon} alt={item.name} className="w-6 h-6 object-contain" />
+                      <div>
+                        <h4 className="font-extrabold text-xs text-[#2D2620]">{item.name}</h4>
+                        <span className="text-[10px] text-[#666057]">{item.qty}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-extrabold text-xs text-[#556B2F] block">{item.price}</span>
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${item.badge}`}>{item.status}</span>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="font-extrabold text-xs text-[#556B2F] block">{item.price}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${item.badge}`}>{item.status}</span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -187,19 +179,25 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
             </div>
 
             <div className="space-y-2.5">
-              {filteredOrders.map((order, idx) => (
-                <div key={idx} className="p-2.5 rounded-xl bg-[#FAF7F0]/60 border border-[#E6E1D5]/60 flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-xs text-[#2D2620]">{order.id}</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${order.badgeClass}`}>{order.status}</span>
-                    </div>
-                    <p className="text-[11px] text-[#666057] mt-0.5">{order.supplier}</p>
-                    <p className="text-[10px] text-[#8C8275]">{order.produce}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-[#8C8275]" />
+              {filteredOrders.length === 0 ? (
+                <div className="p-4 text-center text-xs text-[#666057] font-semibold bg-[#FAF7F0] rounded-xl border border-[#E6E1D5]/60">
+                  No orders matching '{procurementFilter}'.
                 </div>
-              ))}
+              ) : (
+                filteredOrders.map((order, idx) => (
+                  <div key={idx} className="p-2.5 rounded-xl bg-[#FAF7F0]/60 border border-[#E6E1D5]/60 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-xs text-[#2D2620]">{order.id}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${order.badgeClass}`}>{order.status}</span>
+                      </div>
+                      <p className="text-[11px] text-[#666057] mt-0.5">{order.supplier}</p>
+                      <p className="text-[10px] text-[#8C8275]">{order.produce}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-[#8C8275]" />
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -225,24 +223,32 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
             <div className="p-3 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] mb-3 flex items-center justify-between">
               <div>
                 <span className="text-xs text-[#666057] font-semibold">Active Fleet Vehicles</span>
-                <span className="text-lg font-extrabold text-[#2D2620] block">12 Vehicles En Route</span>
+                <span className="text-lg font-extrabold text-[#2D2620] block">
+                  {activeVehiclesList.length > 0 ? `${activeVehiclesList.length} Vehicles En Route` : '0 Active Vehicles'}
+                </span>
               </div>
               <img src="/images/logistics_truck_kpi.png" alt="Truck" className="w-9 h-9 object-contain" />
             </div>
 
             <div className="space-y-2.5">
-              {activeVehiclesList.map((veh, idx) => (
-                <div key={idx} className="p-2.5 rounded-xl border border-[#E6E1D5]/60 flex items-center justify-between hover:bg-[#FAF7F0]/40 transition-colors">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-xs text-[#2D2620]">{veh.number}</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${veh.badgeClass}`}>{veh.status}</span>
-                    </div>
-                    <p className="text-[10px] text-[#666057] mt-0.5">Driver: {veh.driver} | {veh.route}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-[#8C8275]" />
+              {activeVehiclesList.length === 0 ? (
+                <div className="p-4 text-center text-xs text-[#666057] font-semibold bg-[#FAF7F0] rounded-xl border border-[#E6E1D5]/60">
+                  No active fleet dispatches in transit.
                 </div>
-              ))}
+              ) : (
+                activeVehiclesList.map((veh, idx) => (
+                  <div key={idx} className="p-2.5 rounded-xl border border-[#E6E1D5]/60 flex items-center justify-between hover:bg-[#FAF7F0]/40 transition-colors">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-xs text-[#2D2620]">{veh.number}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${veh.badgeClass}`}>{veh.status}</span>
+                      </div>
+                      <p className="text-[10px] text-[#666057] mt-0.5">Driver: {veh.driver} | {veh.route}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-[#8C8275]" />
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -272,11 +278,15 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
             <div className="p-3 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] mb-3 flex items-center justify-between">
               <div>
                 <span className="text-xs text-[#666057] font-semibold">Total Central Stock</span>
-                <span className="text-lg font-extrabold text-[#2D2620] block">7,850 Tonnes</span>
+                <span className="text-lg font-extrabold text-[#2D2620] block">
+                  {stockSummary ? `${stockSummary.totalVolume} ${stockSummary.volumeUnit}` : '0.00 Tonnes'}
+                </span>
               </div>
               <div className="text-right">
                 <span className="text-xs text-[#666057] font-semibold">Total Stock Value</span>
-                <span className="text-base font-extrabold text-[#556B2F] block">₹ 1,25,600</span>
+                <span className="text-base font-extrabold text-[#556B2F] block">
+                  {stockSummary ? stockSummary.totalValue : '₹ 0'}
+                </span>
               </div>
             </div>
 
@@ -320,7 +330,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#556B2F]/15 text-[#556B2F]">In Transit</span>
               </div>
               <p className="text-[11px] text-[#666057]">Route: <strong className="text-[#2D2620]">Nashik → Pune</strong></p>
-              <p className="text-[10px] text-[#8C8275] mt-0.5">ETA: 14 May, 2025 • Temperature: 4°C</p>
+              <p className="text-[10px] text-[#8C8275] mt-0.5">ETA: {new Date(Date.now() + 86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })} • Temperature: 4°C</p>
             </div>
 
             {/* Concise Milestone Progress */}

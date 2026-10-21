@@ -115,46 +115,56 @@ export const ShipmentsView = ({ onBack, onViewJourney }) => {
 
           {/* Shipments List with Warm Cream Card Backgrounds */}
           <div className="flex flex-col gap-3.5 w-full">
-            {filteredShipments.map((ship) => (
-              <div 
-                key={ship.id}
-                style={{ backgroundColor: '#FAF7F0' }}
-                className="border border-[#E8E2D5] rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 cursor-pointer hover:shadow-md hover:border-[#7A8B52] transition-all duration-200 w-full"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-base sm:text-lg font-extrabold text-[#3B3028]">
-                    {ship.id}
-                  </span>
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                    ship.status === 'In Transit' ? 'badge-intransit' : 'badge-delivered'
-                  }`}>
-                    {ship.status}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs sm:text-sm">
-                  <div className="flex flex-col gap-1.5 text-[#786E65]">
-                    <div><span className="font-bold text-[#3B3028]">Order ID</span>: <span className="font-extrabold text-[#3B3028]">{ship.orderId}</span></div>
-                    <div><span className="font-bold text-[#3B3028]">Transporter</span>: <span className="font-semibold text-[#3B3028]">{ship.transporter}</span></div>
-                    <div><span className="font-bold text-[#3B3028]">Date</span>: <span className="font-semibold text-[#3B3028]">{ship.date}</span></div>
-                  </div>
-
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white flex items-center justify-center border border-[#E6E1D5] shadow-xs flex-shrink-0">
-                    {ship.status === 'In Transit' ? (
-                      <Truck className="w-6 h-6 text-[#B85C38]" />
-                    ) : (
-                      <CheckCircle2 className="w-6 h-6 text-[#3D5220]" />
-                    )}
-                  </div>
-                </div>
+            {filteredShipments.length === 0 ? (
+              <div className="p-8 text-center bg-white rounded-2xl border border-[#E6E1D5] text-sm text-[#666057] font-semibold">
+                No shipments recorded for this filter.
               </div>
-            ))}
+            ) : (
+              filteredShipments.map((ship) => (
+                <div 
+                  key={ship.id}
+                  onClick={() => onViewJourney && onViewJourney(ship.batchId || ship.id || 'TM1256')}
+                  style={{ backgroundColor: '#FAF7F0' }}
+                  className="border border-[#E8E2D5] rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 cursor-pointer hover:shadow-md hover:border-[#7A8B52] transition-all duration-200 w-full"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-base sm:text-lg font-extrabold text-[#3B3028]">
+                      {ship.id}
+                    </span>
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                      ship.status === 'In Transit' ? 'badge-intransit' : 'badge-delivered'
+                    }`}>
+                      {ship.status}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
+                    <div className="flex flex-col gap-1.5 text-[#786E65]">
+                      <div><span className="font-bold text-[#3B3028]">Order ID</span>: <span className="font-extrabold text-[#3B3028]">{ship.orderId}</span></div>
+                      <div><span className="font-bold text-[#3B3028]">Transporter</span>: <span className="font-semibold text-[#3B3028]">{ship.transporter}</span></div>
+                      <div><span className="font-bold text-[#3B3028]">Date</span>: <span className="font-semibold text-[#3B3028]">{ship.date}</span></div>
+                    </div>
+
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white flex items-center justify-center border border-[#E6E1D5] shadow-xs flex-shrink-0">
+                      {ship.status === 'In Transit' ? (
+                        <Truck className="w-6 h-6 text-[#B85C38]" />
+                      ) : (
+                        <CheckCircle2 className="w-6 h-6 text-[#3D5220]" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Action Button */}
           <div className="mt-2">
-            <button className="w-full py-4 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer">
-              <span>View Full Shipments</span>
+            <button 
+              onClick={() => setActiveStep(2)}
+              className="w-full py-4 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+            >
+              <span>View Full Shipments & Traceability</span>
             </button>
           </div>
         </div>

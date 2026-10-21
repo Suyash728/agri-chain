@@ -37,7 +37,7 @@ export const DarkStoreHeader = ({ onOpenNotifications }) => {
 
         {/* Date Pill */}
         <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-[#E6E1D5] shadow-xs text-xs font-bold text-[#2D2620]">
-          <span>12 May, 2025</span>
+          <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
           <Calendar className="w-4 h-4 text-[#666057]" />
         </div>
 

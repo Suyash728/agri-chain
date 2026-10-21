@@ -14,14 +14,11 @@ import {
 
 export const CropDetailsView = ({ category, onBack }) => {
   const cat = category || {
-    name: "Vegetables",
-    id: "vegetables",
-    totalInventory: "1.20 Tonnes",
-    totalValue: "₹4,800",
-    crops: [
-      { name: "Tomato", quantity: "0.60 Tonnes", value: "₹2,400", status: "In Stock" },
-      { name: "Potato", quantity: "0.60 Tonnes", value: "₹2,400", status: "In Stock" }
-    ]
+    name: "Produce Category",
+    id: "produce",
+    totalInventory: "0.00 Tonnes",
+    totalValue: "₹0",
+    crops: []
   };
 
   const getCropIcon = (name) => {
@@ -75,7 +72,12 @@ export const CropDetailsView = ({ category, onBack }) => {
 
       {/* Crop List Cards with Warm Cream Background & Direct Isolated Artwork */}
       <div className="flex flex-col gap-3.5 w-full">
-        {cat.crops && cat.crops.map((crop, index) => (
+        {(!cat.crops || cat.crops.length === 0) ? (
+          <div className="p-8 text-center bg-white rounded-2xl border border-[#E6E1D5] text-sm text-[#666057] font-semibold">
+            No crops registered in this category yet.
+          </div>
+        ) : (
+          cat.crops.map((crop, index) => (
           <div 
             key={index} 
             style={{ backgroundColor: '#FAF7F0' }}
@@ -107,7 +109,8 @@ export const CropDetailsView = ({ category, onBack }) => {
               </span>
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

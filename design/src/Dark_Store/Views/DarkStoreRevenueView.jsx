@@ -16,11 +16,13 @@ import {
 } from 'lucide-react';
 
 export const DarkStoreRevenueView = ({ onBack }) => {
-  const [selectedDateRange, setSelectedDateRange] = useState('01 May, 2025 - 12 May, 2025');
+  const currentDateFormatted = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const [selectedDateRange, setSelectedDateRange] = useState(`${currentDateFormatted}`);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [activeStore, setActiveStore] = useState('Nashik Central Store');
   const [currentPage, setCurrentPage] = useState(1);
   const [liveKpis, setLiveKpis] = useState(null);
+  const [revenueData, setRevenueData] = useState(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/darkstore/kpis')
@@ -29,54 +31,37 @@ export const DarkStoreRevenueView = ({ onBack }) => {
         if (data) setLiveKpis(data);
       })
       .catch(() => {});
+
+    fetch('http://localhost:8000/darkstore/revenue')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setRevenueData(data);
+      })
+      .catch(() => {});
   }, []);
 
-  // Revenue Summary Table Dataset (12 Days for pagination)
-  const revenueTableData = [
-    { date: '12 May, 2025', orders: 48, grossRev: '26,450', discount: '1,250', netRev: '25,200', profit: '7,560', margin: '30.0%' },
-    { date: '11 May, 2025', orders: 62, grossRev: '31,850', discount: '1,500', netRev: '30,350', profit: '9,410', margin: '31.0%' },
-    { date: '10 May, 2025', orders: 70, grossRev: '35,620', discount: '1,800', netRev: '33,820', profit: '10,820', margin: '32.0%' },
-    { date: '09 May, 2025', orders: 55, grossRev: '27,430', discount: '1,300', netRev: '26,130', profit: '8,120', margin: '31.1%' },
-    { date: '08 May, 2025', orders: 47, grossRev: '22,980', discount: '1,100', netRev: '21,880', profit: '6,710', margin: '30.6%' },
-    { date: '07 May, 2025', orders: 52, grossRev: '25,100', discount: '1,200', netRev: '23,900', profit: '7,350', margin: '30.8%' },
-    { date: '06 May, 2025', orders: 58, grossRev: '28,400', discount: '1,400', netRev: '27,000', profit: '8,370', margin: '31.0%' },
-    { date: '05 May, 2025', orders: 76, grossRev: '39,200', discount: '1,900', netRev: '37,300', profit: '11,900', margin: '31.9%' },
-    { date: '04 May, 2025', orders: 60, grossRev: '29,800', discount: '1,450', netRev: '28,350', profit: '8,780', margin: '31.0%' },
-    { date: '03 May, 2025', orders: 64, grossRev: '31,200', discount: '1,500', netRev: '29,700', profit: '9,200', margin: '31.0%' },
-    { date: '02 May, 2025', orders: 54, grossRev: '26,800', discount: '1,300', netRev: '25,500', profit: '7,900', margin: '31.0%' },
-    { date: '01 May, 2025', orders: 50, grossRev: '24,500', discount: '1,150', netRev: '23,350', profit: '7,200', margin: '30.8%' },
-  ];
+  // Revenue Summary Table Dataset from live API
+  const revenueTableData = revenueData?.revenueTableData || [];
 
   // Pagination Logic (5 rows per page)
   const pageSize = 5;
-  const totalPages = Math.ceil(revenueTableData.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(revenueTableData.length / pageSize));
   const paginatedData = revenueTableData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Revenue Over Time Vertical Bars Data
-  const dailyBarData = [
-    { day: '01 May', height: '48%' },
-    { day: '02 May', height: '54%' },
-    { day: '03 May', height: '60%' },
-    { day: '04 May', height: '60%' },
-    { day: '05 May', height: '78%' },
-    { day: '06 May', height: '56%' },
-    { day: '07 May', height: '52%' },
-    { day: '08 May', height: '44%' },
-    { day: '09 May', height: '60%' },
-    { day: '10 May', height: '74%' },
-    { day: '11 May', height: '82%' },
-    { day: '12 May', height: '42%' },
-  ];
+  const dailyBarData = revenueData?.dailyBarData && revenueData.dailyBarData.length > 0
+    ? revenueData.dailyBarData
+    : [
+        { day: 'D-1', height: '30%' },
+        { day: 'Today', height: '70%' },
+      ];
 
   // Revenue by Source Horizontal Bars Data
-  const sourceBarData = [
-    { name: 'Fresh Veg Traders', val: '₹78,450', width: '78%' },
-    { name: 'Green Valley Farms', val: '₹56,320', width: '56%' },
-    { name: 'Daily Needs Store', val: '₹42,180', width: '42%' },
-    { name: 'Dairy Connect', val: '₹38,950', width: '38%' },
-    { name: 'Organic World', val: '₹24,600', width: '24%' },
-    { name: 'Farm Fresh Hub', val: '₹8,250', width: '10%' },
-  ];
+  const sourceBarData = revenueData?.sourceBarData && revenueData.sourceBarData.length > 0
+    ? revenueData.sourceBarData
+    : [
+        { name: 'Direct Farm Hub', val: revenueData?.totalRevenue || '₹ 0', width: '80%' },
+      ];
 
   return (
     <div className="flex flex-col gap-5 animate-fade-in w-full">
@@ -117,7 +102,7 @@ export const DarkStoreRevenueView = ({ onBack }) => {
 
           {/* Date Selector Pill */}
           <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-[#E6E1D5] shadow-xs text-xs font-bold text-[#2D2620]">
-            <span>12 May, 2025</span>
+            <span>{currentDateFormatted}</span>
             <Calendar className="w-4 h-4 text-[#666057]" />
           </div>
 
@@ -155,13 +140,13 @@ export const DarkStoreRevenueView = ({ onBack }) => {
 
           <div className="my-auto">
             <div className="text-2xl sm:text-[26px] font-extrabold text-[#1A1A1A] tracking-tight">
-              {liveKpis?.revenueThisMonth || '₹2,48,750'}
+              {revenueData?.totalRevenue || liveKpis?.revenueThisMonth || '₹ 0'}
             </div>
           </div>
 
           <p className="text-[10px] font-bold text-[#354424] flex items-center gap-1 leading-tight">
-            <span>↑ 18.6%</span>
-            <span className="text-[#666057] font-medium">vs 01 Apr – 30 Apr, 2025</span>
+            <span>↑ Verified</span>
+            <span className="text-[#666057] font-medium">from settled consumer checkouts</span>
           </p>
         </div>
 
@@ -215,13 +200,13 @@ export const DarkStoreRevenueView = ({ onBack }) => {
 
           <div className="my-auto">
             <div className="text-2xl sm:text-[26px] font-extrabold text-[#1A1A1A] tracking-tight">
-              ₹1,256
+              {revenueData?.avgOrderValue || '₹ 0'}
             </div>
           </div>
 
           <p className="text-[10px] font-bold text-[#354424] flex items-center gap-1 leading-tight">
-            <span>↑ 14.3%</span>
-            <span className="text-[#666057] font-medium">vs 01 Apr – 30 Apr, 2025</span>
+            <span>↑ {revenueData?.totalOrders || 0} orders</span>
+            <span className="text-[#666057] font-medium">completed</span>
           </p>
         </div>
 
@@ -420,24 +405,32 @@ export const DarkStoreRevenueView = ({ onBack }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E6E1D5]/70 text-xs font-semibold text-[#2D2620]">
-              {paginatedData.map((row, idx) => (
-                <tr key={idx} className="hover:bg-[#FAF7F0]/50 transition-colors">
-                  <td className="py-4 px-5 font-extrabold text-[#2D2620]">{row.date}</td>
-                  <td className="py-4 px-5 text-[#2D2620]">{row.orders}</td>
-                  <td className="py-4 px-5 font-bold text-[#2D2620]">{row.grossRev}</td>
-                  <td className="py-4 px-5 text-[#666057]">{row.discount}</td>
-                  <td className="py-4 px-5 font-bold text-[#2D2620]">{row.netRev}</td>
-                  <td className="py-4 px-5 font-extrabold text-[#354424]">{row.profit}</td>
-                  <td className="py-4 px-5 font-extrabold text-[#354424]">{row.margin}</td>
+              {paginatedData.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-6 text-sm text-[#666057]">
+                    No revenue settlement records found for this period.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                paginatedData.map((row, idx) => (
+                  <tr key={idx} className="hover:bg-[#FAF7F0]/50 transition-colors">
+                    <td className="py-4 px-5 font-extrabold text-[#2D2620]">{row.date}</td>
+                    <td className="py-4 px-5 text-[#2D2620]">{row.orders}</td>
+                    <td className="py-4 px-5 font-bold text-[#2D2620]">{row.grossRev}</td>
+                    <td className="py-4 px-5 text-[#666057]">{row.discount}</td>
+                    <td className="py-4 px-5 font-bold text-[#2D2620]">{row.netRev}</td>
+                    <td className="py-4 px-5 font-extrabold text-[#354424]">{row.profit}</td>
+                    <td className="py-4 px-5 font-extrabold text-[#354424]">{row.margin}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Bottom Pagination Bar */}
         <div className="p-4 sm:p-5 border-t border-[#E6E1D5] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs font-semibold text-[#666057]">
-          <span>Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, revenueTableData.length)} of {revenueTableData.length} days</span>
+          <span>Showing {revenueTableData.length > 0 ? ((currentPage - 1) * pageSize) + 1 : 0} to {Math.min(currentPage * pageSize, revenueTableData.length)} of {revenueTableData.length} days</span>
 
           <div className="flex items-center gap-1.5">
             <button 
@@ -448,7 +441,7 @@ export const DarkStoreRevenueView = ({ onBack }) => {
               <ChevronLeft className="w-4 h-4 text-[#2D2620]" />
             </button>
 
-            {[1, 2, 3].map((page) => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
               <button 
                 key={page}
                 onClick={() => setCurrentPage(page)}

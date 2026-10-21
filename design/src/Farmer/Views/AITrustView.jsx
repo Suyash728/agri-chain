@@ -16,22 +16,22 @@ import {
 } from 'lucide-react';
 import { QuarantineAuditModal } from '../Modals/QuarantineAuditModal';
 
-const defaultTrustData = {
-  score: 92,
+const initialTrustData = {
+  score: 100,
   maxScore: 100,
-  level: "High Trust",
-  status: "Safe & Trustworthy",
-  lastVerified: "10 mins ago",
+  level: "Analyzing...",
+  status: "Live On-Chain Audit",
+  lastVerified: "Connecting...",
   aiVerificationDetails: [
-    { title: "Cold Chain Integrity", status: "100% Compliant (16-20°C Range)" },
-    { title: "GPS Telemetry Validation", status: "Route Verified & Continuous" },
-    { title: "Tamper Prevention", status: "Smart Seal Intact" },
-    { title: "Anomaly Check", status: "0 Deviations Flagged" }
+    { title: "Cold Chain Integrity", status: "Awaiting Live Sensor Stream" },
+    { title: "GPS Telemetry Validation", status: "Scanning Geo-coordinates" },
+    { title: "Tamper Prevention", status: "Smart Seal Telemetry Sync" },
+    { title: "Anomaly Check", status: "AI Oracle Inference Ready" }
   ]
 };
 
 export const AITrustView = ({ onBack, onOpenDetails }) => {
-  const [trustData, setTrustData] = useState(defaultTrustData);
+  const [trustData, setTrustData] = useState(initialTrustData);
   const [isQuarantineOpen, setIsQuarantineOpen] = useState(false);
 
   // Live Telemetry Input State
@@ -58,6 +58,16 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
       .then((json) => {
         if (json && json.score !== undefined) {
           setTrustData(json);
+        }
+      })
+      .catch(() => {});
+
+    fetch('http://localhost:8000/farmer/inventory')
+      .then((res) => res.json())
+      .then((inv) => {
+        if (Array.isArray(inv) && inv.length > 0 && inv[0].batchId) {
+          setBatchId(inv[0].batchId);
+          if (inv[0].cropName) setCropName(inv[0].cropName.toLowerCase());
         }
       })
       .catch(() => {});
@@ -107,6 +117,15 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
 
       const data = await res.json();
       setEvalResult(data);
+      // Immediately refresh overall trust score
+      fetch('http://localhost:8000/farmer/ai-trust')
+        .then((res) => res.json())
+        .then((json) => {
+          if (json && json.score !== undefined) {
+            setTrustData(json);
+          }
+        })
+        .catch(() => {});
     } catch (err) {
       console.error('Failed to submit telemetry:', err);
       setEvalError(err.message || 'Network error occurred while contacting AI Trust Layer.');

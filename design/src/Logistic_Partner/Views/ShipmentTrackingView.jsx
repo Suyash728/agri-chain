@@ -6,13 +6,23 @@ export const ShipmentTrackingView = () => {
     batchId: 'SHP5678',
     from: 'Nashik, MH',
     to: 'Pune, MH',
-    status: 'In Transit (ETA: 14 May)',
+    status: 'In Transit',
     speed: '58 km/h',
     temp: '4.2°C Chilled Reefer',
     distanceRemaining: '78 km',
     latitude: 18.5204,
     longitude: 73.8567,
   });
+
+  const now = new Date();
+  const formatTime = (offsetHours) => {
+    const d = new Date(now.getTime() - offsetHours * 3600000);
+    return d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+  };
+  const formatEta = (offsetHours) => {
+    const d = new Date(now.getTime() + offsetHours * 3600000);
+    return d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+  };
 
   useEffect(() => {
     fetch('http://localhost:8000/logistics/shipments')
@@ -70,7 +80,7 @@ export const ShipmentTrackingView = () => {
               <CheckCircle2 className="w-5 h-5 text-[#556B2F] -ml-[27px] bg-white rounded-full" />
               <div>
                 <p className="text-xs font-bold text-[#2D2620]">Order Confirmed</p>
-                <p className="text-[11px] text-[#8C8275]">12 May, 2025, 09:00 AM</p>
+                <p className="text-[11px] text-[#8C8275]">{formatTime(6)}</p>
               </div>
             </div>
 
@@ -78,7 +88,7 @@ export const ShipmentTrackingView = () => {
               <CheckCircle2 className="w-5 h-5 text-[#556B2F] -ml-[27px] bg-white rounded-full" />
               <div>
                 <p className="text-xs font-bold text-[#2D2620]">Farm Gate Pickup Completed</p>
-                <p className="text-[11px] text-[#8C8275]">12 May, 2025, 11:30 AM</p>
+                <p className="text-[11px] text-[#8C8275]">{formatTime(4)}</p>
               </div>
             </div>
 
@@ -86,7 +96,7 @@ export const ShipmentTrackingView = () => {
               <Truck className="w-5 h-5 text-[#2B6CB0] -ml-[27px] bg-white rounded-full" />
               <div>
                 <p className="text-xs font-bold text-[#2B6CB0]">Cold-Chain Highway Transit</p>
-                <p className="text-[11px] text-[#8C8275]">13 May, 2025, 08:15 AM</p>
+                <p className="text-[11px] text-[#8C8275]">{formatTime(1)}</p>
               </div>
             </div>
 
@@ -94,7 +104,7 @@ export const ShipmentTrackingView = () => {
               <div className="w-4 h-4 rounded-full border-2 border-[#8C8275] -ml-[25px] bg-white" />
               <div>
                 <p className="text-xs font-bold text-[#666057]">Warehouse Arrival & Inspection</p>
-                <p className="text-[11px] text-[#8C8275]">14 May, 2025, 08:00 AM</p>
+                <p className="text-[11px] text-[#8C8275]">{formatEta(3)}</p>
               </div>
             </div>
           </div>

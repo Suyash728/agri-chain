@@ -2,8 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Link2, ShieldCheck, QrCode, CheckCircle2, Search } from 'lucide-react';
 
 export const TraceabilityView = () => {
-  const [searchQuery, setSearchQuery] = useState('WH-120525-01');
+  const [searchQuery, setSearchQuery] = useState('');
   const [liveBatch, setLiveBatch] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/logistics/orders')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0 && data[0].id) {
+          setSearchQuery(data[0].id);
+        } else {
+          fetch('http://localhost:8000/farmer/inventory')
+            .then(r => r.json())
+            .then(inv => {
+              if (inv?.items?.[0]?.batchId) {
+                setSearchQuery(inv.items[0].batchId);
+              }
+            }).catch(() => {});
+        }
+      }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const cleanId = searchQuery.trim().toUpperCase();
@@ -14,7 +32,7 @@ export const TraceabilityView = () => {
         return res.json();
       })
       .then((data) => {
-        if (data && data.batch_id) {
+        if (data && (data.batchId || data.batch_id)) {
           setLiveBatch(data);
         } else {
           setLiveBatch(null);
@@ -24,18 +42,18 @@ export const TraceabilityView = () => {
   }, [searchQuery]);
 
   const batchTitle = liveBatch 
-    ? `Batch #${liveBatch.batch_id} (${liveBatch.produce_name || 'Produce'})` 
-    : `Batch #${searchQuery} (Organic Basmati Wheat)`;
+    ? `Batch #${liveBatch.batchId || liveBatch.batch_id} (${liveBatch.product || liveBatch.produce_name || 'Produce'})` 
+    : `Batch #${searchQuery || 'LIVE-001'} (Agricultural Produce)`;
 
   const nodes = liveBatch ? [
-    { step: '1. Farm Gate', status: 'Completed', icon: '🌱', detail: liveBatch.farm_location || 'Farm Origin' },
-    { step: '2. Harvest', status: 'Completed', icon: '🌾', detail: liveBatch.harvest_date || 'Logged' },
-    { step: '3. Quality Check', status: 'Verified', icon: '⚙️', detail: 'On-Chain Validated' },
-    { step: '4. Transit', status: liveBatch.current_state === 'IN_TRANSIT' ? 'In Progress' : (['IN_STORAGE', 'AT_RETAIL', 'SOLD'].includes(liveBatch.current_state) ? 'Completed' : 'Pending'), icon: '🚚', detail: liveBatch.current_holder || 'In Transit' },
-    { step: '5. Retail Hub', status: ['AT_RETAIL', 'SOLD', 'IN_STORAGE'].includes(liveBatch.current_state) ? 'Received' : 'Pending', icon: '🏬', detail: liveBatch.current_state || 'Pending' },
+    { step: '1. Farm Gate', status: 'Completed', icon: '🌱', detail: (liveBatch.farmDetails || liveBatch.origin_farm || 'Nashik Organic Farm cluster 4').split('||')[0].trim() },
+    { step: '2. Harvest', status: 'Completed', icon: '🌾', detail: liveBatch.harvestDate || 'Harvest Logged' },
+    { step: '3. Quality Check', status: 'Verified', icon: '⚙️', detail: `Grade ${liveBatch.qualityGrade || 'A+'} (${liveBatch.qualityScore || 98}%)` },
+    { step: '4. Transit', status: (liveBatch.currentLocation || '').includes('Transit') ? 'In Progress' : 'Completed', icon: '🚚', detail: liveBatch.currentLocation || 'In Transit' },
+    { step: '5. Retail Hub', status: (liveBatch.currentLocation || '').includes('Store') ? 'Received' : 'Pending', icon: '🏬', detail: (liveBatch.currentLocation || '').includes('Store') ? liveBatch.currentLocation : 'En Route to Hub' },
   ] : [
     { step: '1. Farm Gate', status: 'Completed', icon: '🌱', detail: 'Patil Farm, Nashik' },
-    { step: '2. Harvest', status: 'Completed', icon: '🌾', detail: '05 May, 2025' },
+    { step: '2. Harvest', status: 'Completed', icon: '🌾', detail: new Date().toISOString().split('T')[0] },
     { step: '3. Quality Check', status: 'Passed A+', icon: '⚙️', detail: 'Moisture 11.2%' },
     { step: '4. Transit', status: 'In Progress', icon: '🚚', detail: 'MH12 AB 1234' },
     { step: '5. Retail Hub', status: 'Pending', icon: '🏬', detail: 'Pune Warehouse' },

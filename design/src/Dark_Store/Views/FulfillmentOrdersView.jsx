@@ -1,15 +1,47 @@
-import React, { useState } from 'react';
-import { ArrowLeft, ShoppingBag, Clock, CheckCircle2, QrCode, Bike, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, ShoppingBag, Clock, CheckCircle2, QrCode, Bike, ArrowRight, Package } from 'lucide-react';
 
 export const FulfillmentOrdersView = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('All');
+  const [orders, setOrders] = useState([]);
 
-  const orders = [
-    { orderId: 'PK-4021', buyer: 'Blinkit Dark Store #08', item: 'Organic Tomatoes (Grade A)', qty: '120 kg', bin: 'Bin A-04 (Cold)', sla: '12 mins left', status: 'Picking', rider: 'Rider #14 Assigned' },
-    { orderId: 'PK-4022', buyer: 'Zepto Micro Hub #12', item: 'Fresh Potatoes (5kg Bags)', qty: '200 kg', bin: 'Bin B-12 (Ambient)', sla: '18 mins left', status: 'Packing', rider: 'Rider #08 Assigned' },
-    { orderId: 'PK-4023', buyer: 'Swiggy Instamart #03', item: 'Green Gram / Moong Dal', qty: '85 kg', bin: 'Bin C-02 (Silo)', sla: '25 mins left', status: 'Quality Checked', rider: 'Staged for Pickup' },
-    { orderId: 'PK-4024', buyer: 'Local Retail Mart', item: 'Nashik Red Onions', qty: '350 kg', bin: 'Bin B-01 (Ambient)', sla: '45 mins left', status: 'Dispatched', rider: 'En Route to Delivery' },
-  ];
+  useEffect(() => {
+    Promise.all([
+      fetch('http://localhost:8000/darkstore/inventory').then(r => r.json()).catch(() => []),
+      fetch('http://localhost:8000/darkstore/sales').then(r => r.json()).catch(() => ({ recentOrders: [] }))
+    ]).then(([inventory, sales]) => {
+      const liveOrders = [];
+      if (Array.isArray(inventory) && inventory.length > 0) {
+        inventory.forEach((inv, idx) => {
+          liveOrders.push({
+            orderId: `PK-${inv.batchId ? inv.batchId.slice(-4) : (4000 + idx)}`,
+            buyer: idx % 2 === 0 ? 'Blinkit Quick Hub #04' : 'Zepto Dark Store #12',
+            item: inv.item,
+            qty: inv.stock || '50 kg',
+            bin: `${inv.binId} (${inv.bay})`,
+            sla: `${10 + (idx * 5)} mins left`,
+            status: idx === 0 ? 'Picking' : 'Packing',
+            rider: `Rider #${10 + idx} Assigned`
+          });
+        });
+      }
+      if (sales && Array.isArray(sales.recentOrders)) {
+        sales.recentOrders.slice(0, 4).forEach((so, idx) => {
+          liveOrders.push({
+            orderId: so.id || `PK-${4100 + idx}`,
+            buyer: so.customer || 'Direct Consumer Delivery',
+            item: so.product,
+            qty: so.quantity || '25 kg',
+            bin: 'Fulfilled / Bay Dispatched',
+            sla: 'Completed',
+            status: 'Dispatched',
+            rider: 'Delivered to Destination'
+          });
+        });
+      }
+      setOrders(liveOrders);
+    });
+  }, []);
 
   const filteredOrders = orders.filter(ord => {
     if (activeTab === 'All') return true;
@@ -56,52 +88,63 @@ export const FulfillmentOrdersView = ({ onBack }) => {
 
       {/* Orders Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-        {filteredOrders.map(ord => (
-          <div key={ord.orderId} className="bg-white rounded-3xl p-5 border border-[#E6E1D5] shadow-xs hover:border-[#7A8B52] transition-all space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center font-bold">
-                  <ShoppingBag className="w-4 h-4" />
+        {filteredOrders.length > 0 ? (
+          filteredOrders.map(ord => (
+            <div key={ord.orderId} className="bg-white rounded-3xl p-5 border border-[#E6E1D5] shadow-xs hover:border-[#7A8B52] transition-all space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center font-bold">
+                    <ShoppingBag className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-base text-[#2D2620] block">{ord.orderId}</span>
+                    <span className="text-[11px] text-[#666057] font-semibold">{ord.buyer}</span>
+                  </div>
                 </div>
-                <div>
-                  <span className="font-extrabold text-base text-[#2D2620] block">{ord.orderId}</span>
-                  <span className="text-[11px] text-[#666057] font-semibold">{ord.buyer}</span>
+
+                <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-[#FEF3C7] text-[#D97706] border border-[#D97706]/30 flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  {ord.sla}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[#666057] font-semibold">Ordered Item</span>
+                  <span className="font-extrabold text-[#2D2620]">{ord.item}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#666057] font-semibold">Net Quantity</span>
+                  <span className="font-extrabold text-[#354424]">{ord.qty}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#666057] font-semibold">Picking Location</span>
+                  <span className="font-extrabold text-[#2563EB]">{ord.bin}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#666057] font-semibold">Fulfillment Status</span>
+                  <span className="font-extrabold text-[#354424]">{ord.status}</span>
                 </div>
               </div>
 
-              <span className="px-2.5 py-1 rounded-full text-xs font-extrabold bg-[#FEF3C7] text-[#D97706] border border-[#D97706]/30 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                {ord.sla}
-              </span>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-[#666057] font-semibold">Ordered Item</span>
-                <span className="font-extrabold text-[#2D2620]">{ord.item}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#666057] font-semibold">Net Quantity</span>
-                <span className="font-extrabold text-[#354424]">{ord.qty}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#666057] font-semibold">Picking Location</span>
-                <span className="font-extrabold text-[#2563EB]">{ord.bin}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#666057] font-semibold">Fulfillment Status</span>
-                <span className="font-extrabold text-[#354424]">{ord.status}</span>
+              <div className="flex items-center justify-between text-xs pt-1 border-t border-[#E6E1D5]">
+                <span className="text-[#666057] flex items-center gap-1"><Bike className="w-3.5 h-3.5 text-[#556B2F]" /> {ord.rider}</span>
+                <button 
+                  onClick={() => alert(`Packing QR Slip generated for Order ${ord.orderId}:\nItem: ${ord.item}\nLocation: ${ord.bin}\nQuantity: ${ord.qty}\nStatus: ${ord.status}\nAssigned: ${ord.rider}`)}
+                  className="px-3 py-1.5 rounded-xl bg-[#354424] text-white font-extrabold text-xs cursor-pointer hover:bg-[#26321A]"
+                >
+                  Print Packing QR
+                </button>
               </div>
             </div>
-
-            <div className="flex items-center justify-between text-xs pt-1 border-t border-[#E6E1D5]">
-              <span className="text-[#666057] flex items-center gap-1"><Bike className="w-3.5 h-3.5 text-[#556B2F]" /> {ord.rider}</span>
-              <button className="px-3 py-1.5 rounded-xl bg-[#354424] text-white font-extrabold text-xs cursor-pointer hover:bg-[#26321A]">
-                Print Packing QR
-              </button>
-            </div>
+          ))
+        ) : (
+          <div className="col-span-full bg-white p-8 rounded-3xl border border-[#E6E1D5] text-center text-[#666057]">
+            <Package className="w-8 h-8 mx-auto mb-2 text-[#8C8275] opacity-50" />
+            <p className="font-extrabold text-sm text-[#2D2620]">No fulfillment orders in this status</p>
+            <p className="text-xs mt-1">Orders appear here when darkstore micro-inventory is allocated for customer deliveries.</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

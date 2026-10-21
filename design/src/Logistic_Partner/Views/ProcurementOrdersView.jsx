@@ -37,30 +37,19 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
   const [activeModal, setActiveModal] = useState(null); // 'all-orders' | 'all-transactions' | 'all-activity' | null
   const [modalSearch, setModalSearch] = useState('');
 
-  // Primary Procurement Orders Data
-  const initialOrders = [
-    { id: 'ORD1256', supplier: 'FreshMart Supply Co.', product: 'Wheat (500 kg)', qty: '500 kg', status: 'Confirmed', badge: 'bg-[#556B2F]/15 text-[#556B2F]', date: '12 May, 2025', price: '₹ 21,000' },
-    { id: 'ORD1255', supplier: 'Green Valley Traders', product: 'Tomato (400 kg)', qty: '400 kg', status: 'Pending', badge: 'bg-[#B85C38]/15 text-[#B85C38]', date: '10 May, 2025', price: '₹ 16,000' },
-    { id: 'ORD1254', supplier: 'Daily Needs Store', product: 'Potato (600 kg)', qty: '600 kg', status: 'In Progress', badge: 'bg-[#2B6CB0]/15 text-[#2B6CB0]', date: '09 May, 2025', price: '₹ 18,500' },
-    { id: 'ORD1253', supplier: 'AgriCorp Co-op', product: 'Rice (1,000 kg)', qty: '1,000 kg', status: 'Completed', badge: 'bg-gray-100 text-gray-700', date: '08 May, 2025', price: '₹ 42,000' },
-    { id: 'ORD1252', supplier: 'Mandi Traders Nashik', product: 'Chickpea (300 kg)', qty: '300 kg', status: 'Confirmed', badge: 'bg-[#556B2F]/15 text-[#556B2F]', date: '07 May, 2025', price: '₹ 27,000' },
-    { id: 'ORD1251', supplier: 'Sahyadri Farmers Producer', product: 'Green Gram (250 kg)', qty: '250 kg', status: 'Completed', badge: 'bg-gray-100 text-gray-700', date: '06 May, 2025', price: '₹ 13,000' },
-    { id: 'ORD1250', supplier: 'Vidarbha Organic Hub', product: 'Red Chillies (150 kg)', qty: '150 kg', status: 'Confirmed', badge: 'bg-[#556B2F]/15 text-[#556B2F]', date: '05 May, 2025', price: '₹ 18,000' },
-    { id: 'ORD1249', supplier: 'Deccan Spice Estate', product: 'Turmeric (200 kg)', qty: '200 kg', status: 'Pending', badge: 'bg-[#B85C38]/15 text-[#B85C38]', date: '04 May, 2025', price: '₹ 24,000' },
-  ];
-
-  const [orderList, setOrderList] = useState(initialOrders);
+  const [orderList, setOrderList] = useState([]);
+  const [txs, setTxs] = useState([]);
 
   const fetchOrders = useCallback(() => {
     fetch('http://localhost:8000/logistics/orders')
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped = data.map((d) => ({
             id: d.id,
-            supplier: d.supplier,
+            supplier: (d.supplier || '').replace(/\|\|.*?\)/, ')').trim(),
             product: d.produce,
-            qty: '500 kg',
+            qty: d.quantity || '500 kg',
             status: d.status,
             badge: d.badgeClass,
             date: d.harvestDate,
@@ -68,6 +57,28 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
             isLiveBatch: true,
           }));
           setOrderList(mapped);
+          if (mapped.length > 0 && activeCustodyBatchId === 'BATCH-PO-2026-001') {
+            setActiveCustodyBatchId(mapped[0].id);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [activeCustodyBatchId]);
+
+  const fetchTxs = useCallback(() => {
+    fetch('http://localhost:8000/logistics/transactions')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const mapped = data.map((t) => ({
+            id: t.id,
+            desc: `${t.type}: ${t.crop || 'Batch'} (${t.batchId ? t.batchId.slice(0, 10) : ''})`,
+            date: t.date || new Date().toISOString().split('T')[0],
+            amount: t.amount,
+            status: t.status,
+            category: t.type,
+          }));
+          setTxs(mapped);
         }
       })
       .catch(() => {});
@@ -75,7 +86,8 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
 
   useEffect(() => {
     fetchOrders();
-  }, [fetchOrders]);
+    fetchTxs();
+  }, [fetchOrders, fetchTxs]);
 
   const handleDispatch = async (batchId) => {
     setDispatchingBatchId(batchId);
@@ -126,27 +138,28 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
     }
   };
 
-  // Primary Transactions Data
-  const txs = [
-    { id: 'TX-901', desc: 'Payment to Supplier (ORD1256)', date: '12 May, 2025', amount: '₹ 21,000', status: 'Completed', category: 'Supplier Payout' },
-    { id: 'TX-902', desc: 'Advance from Buyer (Green Valley Traders)', date: '10 May, 2025', amount: '₹ 50,000', status: 'Completed', category: 'Buyer Advance' },
-    { id: 'TX-903', desc: 'Freight Charges (SHP5678)', date: '09 May, 2025', amount: '₹ 8,500', status: 'Completed', category: 'Transportation' },
-    { id: 'TX-904', desc: 'Storage Charges (Nashik Warehouse)', date: '08 May, 2025', amount: '₹ 5,200', status: 'Completed', category: 'Warehousing' },
-    { id: 'TX-905', desc: 'Payment to Supplier (ORD1252)', date: '07 May, 2025', amount: '₹ 27,000', status: 'Completed', category: 'Supplier Payout' },
-    { id: 'TX-906', desc: 'Payment to Supplier (ORD1251)', date: '06 May, 2025', amount: '₹ 13,000', status: 'Completed', category: 'Supplier Payout' },
-    { id: 'TX-907', desc: 'Cold Storage Inspection Fee', date: '05 May, 2025', amount: '₹ 3,400', status: 'Completed', category: 'Quality Control' },
-  ];
+  const recentActivities = txs.slice(0, 7).map((t, idx) => ({
+    id: t.id,
+    text: `${t.desc} — ${t.amount}`,
+    time: t.date,
+    relative: `${idx * 15 + 5}m ago`,
+    dot: idx === 0 ? 'bg-[#556B2F]' : (idx % 2 === 1 ? 'bg-[#2B6CB0]' : 'bg-[#B85C38]'),
+  }));
 
-  // Primary Recent Order Activity Data
-  const recentActivities = [
-    { id: 'ORD1256', text: 'ORD1256 confirmed by FreshMart Supply Co.', time: '12 May, 2025 • 10:30 AM', relative: '2h ago', dot: 'bg-[#556B2F]' },
-    { id: 'ORD1255', text: 'ORD1255 is pending buyer confirmation', time: '10 May, 2025 • 04:15 PM', relative: '1d ago', dot: 'bg-[#B85C38]' },
-    { id: 'ORD1254', text: 'ORD1254 is out for delivery', time: '09 May, 2025 • 11:20 AM', relative: '2d ago', dot: 'bg-[#2B6CB0]' },
-    { id: 'ORD1253', text: 'ORD1253 marked as completed', time: '08 May, 2025 • 05:45 PM', relative: '3d ago', dot: 'bg-gray-500' },
-    { id: 'ORD1252', text: 'ORD1252 confirmed by Mandi Traders Nashik', time: '07 May, 2025 • 09:10 AM', relative: '4d ago', dot: 'bg-[#556B2F]' },
-    { id: 'ORD1251', text: 'ORD1251 dispatched from Patil Farm, Nashik', time: '06 May, 2025 • 02:40 PM', relative: '5d ago', dot: 'bg-[#2B6CB0]' },
-    { id: 'ORD1250', text: 'ORD1250 quality inspection passed (Grade A+)', time: '05 May, 2025 • 11:00 AM', relative: '6d ago', dot: 'bg-[#556B2F]' },
-  ];
+  const totalTxVolume = txs.reduce((acc, t) => {
+    const num = parseInt((t.amount || '').replace(/[^0-9]/g, '')) || 0;
+    return acc + num;
+  }, 0);
+
+  const totalOrdersCount = orderList.length;
+  const pendingOrdersCount = orderList.filter(o => o.status === 'Pending' || o.status === 'Ready for Pickup').length;
+  const inProgressOrdersCount = orderList.filter(o => o.status === 'In Progress' || o.status === 'In Transit').length;
+  const completedOrdersCount = orderList.filter(o => o.status === 'Completed' || o.status === 'Delivered').length;
+  const totalQtyKg = orderList.reduce((acc, o) => {
+    const num = parseInt((o.qty || '').replace(/[^0-9]/g, '')) || 500;
+    return acc + num;
+  }, 0);
+  const totalSuppliersCount = new Set(orderList.map(o => o.supplier).filter(Boolean)).size || (orderList.length > 0 ? 1 : 0);
 
   const filteredOrders = filter === 'All' ? orderList.slice(0, 5) : orderList.filter(o => o.status === filter);
 
@@ -218,41 +231,49 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E6E1D5]/40">
-                  {filteredOrders.map((ord, idx) => (
-                    <tr key={idx} className="hover:bg-[#FAF7F0]/60 transition-colors">
-                      <td className="py-3 px-3 font-extrabold text-[#2D2620]">{ord.id}</td>
-                      <td className="py-3 px-3 font-semibold text-[#2D2620]">{ord.supplier}</td>
-                      <td className="py-3 px-3 text-[#666057]">{ord.product}</td>
-                      <td className="py-3 px-3 text-center text-[#2D2620] font-bold">{ord.qty}</td>
-                      <td className="py-3 px-3 text-right">
-                        {ord.status === 'Ready for Pickup' || ord.status === 'Confirmed' ? (
-                          <button
-                            onClick={() => {
-                              setActiveCustodyBatchId(ord.id);
-                              setIsAcceptShipmentOpen(true);
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-[#354424] text-white text-[10px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs whitespace-nowrap"
-                          >
-                            Accept 🚚
-                          </button>
-                        ) : ord.status === 'In Transit' ? (
-                          <button
-                            onClick={() => {
-                              setActiveCustodyBatchId(ord.id);
-                              setIsHandoffOpen(true);
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] text-[10px] font-bold hover:bg-[#E6E1D5] transition-colors cursor-pointer shadow-xs whitespace-nowrap"
-                          >
-                            Handoff 🏬
-                          </button>
-                        ) : (
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ord.badge}`}>
-                            {ord.status}
-                          </span>
-                        )}
+                  {filteredOrders.length > 0 ? (
+                    filteredOrders.map((ord, idx) => (
+                      <tr key={idx} className="hover:bg-[#FAF7F0]/60 transition-colors">
+                        <td className="py-3 px-3 font-extrabold text-[#2D2620]">{ord.id}</td>
+                        <td className="py-3 px-3 font-semibold text-[#2D2620]">{ord.supplier}</td>
+                        <td className="py-3 px-3 text-[#666057]">{ord.product}</td>
+                        <td className="py-3 px-3 text-center text-[#2D2620] font-bold">{ord.qty}</td>
+                        <td className="py-3 px-3 text-right">
+                          {ord.status === 'Ready for Pickup' || ord.status === 'Confirmed' ? (
+                            <button
+                              onClick={() => {
+                                setActiveCustodyBatchId(ord.id);
+                                setIsAcceptShipmentOpen(true);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-[#354424] text-white text-[10px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs whitespace-nowrap"
+                            >
+                              Accept 🚚
+                            </button>
+                          ) : ord.status === 'In Transit' ? (
+                            <button
+                              onClick={() => {
+                                setActiveCustodyBatchId(ord.id);
+                                setIsHandoffOpen(true);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] text-[10px] font-bold hover:bg-[#E6E1D5] transition-colors cursor-pointer shadow-xs whitespace-nowrap"
+                            >
+                              Handoff 🏬
+                            </button>
+                          ) : (
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${ord.badge}`}>
+                              {ord.status}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="py-6 text-center text-[#666057]">
+                        No procurement orders available in this filter.
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -279,7 +300,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h2 className="text-lg sm:text-xl font-extrabold text-[#2D2620]">Logistics Invoices & Transactions 📑</h2>
-                <p className="text-xs text-[#666057]">Total Monthly Volume: ₹ 2,45,680 | Freight & Storage Ledger</p>
+                <p className="text-xs text-[#666057]">Total Monthly Volume: ₹ {totalTxVolume.toLocaleString('en-IN')} | Freight & Storage Ledger</p>
               </div>
               <button 
                 onClick={() => alert('Financial ledger statement downloaded!')}
@@ -302,18 +323,26 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E6E1D5]/40">
-                  {txs.slice(0, 5).map((t, i) => (
-                    <tr key={i} className="hover:bg-[#FAF7F0]/60 transition-colors">
-                      <td className="py-3 px-3 font-bold text-[#2D2620]">{t.desc}</td>
-                      <td className="py-3 px-3 text-center text-[#8C8275]">{t.date}</td>
-                      <td className="py-3 px-3 text-right font-extrabold text-[#2D2620]">{t.amount}</td>
-                      <td className="py-3 px-3 text-right">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#556B2F]/15 text-[#556B2F]">
-                          {t.status}
-                        </span>
+                  {txs.length > 0 ? (
+                    txs.slice(0, 5).map((t, i) => (
+                      <tr key={i} className="hover:bg-[#FAF7F0]/60 transition-colors">
+                        <td className="py-3 px-3 font-bold text-[#2D2620]">{t.desc}</td>
+                        <td className="py-3 px-3 text-center text-[#8C8275]">{t.date}</td>
+                        <td className="py-3 px-3 text-right font-extrabold text-[#2D2620]">{t.amount}</td>
+                        <td className="py-3 px-3 text-right">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#556B2F]/15 text-[#556B2F]">
+                            {t.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="py-6 text-center text-[#666057]">
+                        No transactions recorded in custody ledger.
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -354,9 +383,9 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                 <ClipboardList className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xl sm:text-2xl font-extrabold text-[#2D2620] block">85</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-[#2D2620] block">{totalOrdersCount}</span>
                 <p className="text-[11px] font-bold text-[#2D2620] leading-tight">Total Orders</p>
-                <span className="text-[10px] text-[#666057]">This Month</span>
+                <span className="text-[10px] text-[#666057]">Live PO Count</span>
               </div>
             </div>
 
@@ -366,7 +395,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xl sm:text-2xl font-extrabold text-[#2D2620] block">18</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-[#2D2620] block">{pendingOrdersCount}</span>
                 <p className="text-[11px] font-bold text-[#2D2620] leading-tight">Pending Orders</p>
                 <span className="text-[10px] text-[#666057]">Awaiting Action</span>
               </div>
@@ -378,7 +407,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                 <Truck className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xl sm:text-2xl font-extrabold text-[#2D2620] block">32</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-[#2D2620] block">{inProgressOrdersCount}</span>
                 <p className="text-[11px] font-bold text-[#2D2620] leading-tight">In Progress Orders</p>
                 <span className="text-[10px] text-[#666057]">In Transit / Processing</span>
               </div>
@@ -390,7 +419,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                 <CheckCircle2 className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xl sm:text-2xl font-extrabold text-[#2D2620] block">35</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-[#2D2620] block">{completedOrdersCount}</span>
                 <p className="text-[11px] font-bold text-[#2D2620] leading-tight">Completed Orders</p>
                 <span className="text-[10px] text-[#666057]">Successfully Delivered</span>
               </div>
@@ -402,9 +431,9 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                 ₹
               </div>
               <div>
-                <span className="text-base sm:text-lg font-extrabold text-[#2D2620] block">₹ 2,45,680</span>
+                <span className="text-base sm:text-lg font-extrabold text-[#2D2620] block">₹ {totalProcurementVal.toLocaleString('en-IN')}</span>
                 <p className="text-[11px] font-bold text-[#2D2620] leading-tight">Total Procurement Value</p>
-                <span className="text-[10px] text-[#666057]">This Month</span>
+                <span className="text-[10px] text-[#666057]">Custody Ledger</span>
               </div>
             </div>
           </div>
@@ -417,7 +446,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
               </div>
               <div>
                 <p className="text-xs text-[#666057] font-semibold">Total Quantity Procured</p>
-                <span className="text-xl font-extrabold text-[#2D2620]">3,800 kg</span>
+                <span className="text-xl font-extrabold text-[#2D2620]">{totalQtyKg.toLocaleString('en-IN')} kg</span>
               </div>
             </div>
 
@@ -427,7 +456,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
               </div>
               <div>
                 <p className="text-xs text-[#666057] font-semibold">Total Suppliers</p>
-                <span className="text-xl font-extrabold text-[#2D2620]">12</span>
+                <span className="text-xl font-extrabold text-[#2D2620]">{totalSuppliersCount}</span>
               </div>
             </div>
           </div>
@@ -520,7 +549,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E6E1D5]/40">
-                  {orders
+                  {orderList
                     .filter(o => o.id.toLowerCase().includes(modalSearch.toLowerCase()) || o.supplier.toLowerCase().includes(modalSearch.toLowerCase()) || o.product.toLowerCase().includes(modalSearch.toLowerCase()))
                     .map((ord, idx) => (
                       <tr key={idx} className="hover:bg-[#FAF7F0]/60 transition-colors">

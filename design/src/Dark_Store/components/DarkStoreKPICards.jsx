@@ -12,12 +12,12 @@ export const DarkStoreKPICards = ({ onCardClick, kpis: externalKpis }) => {
   }, [externalKpis]);
 
   const kpis = externalKpis || internalKpis || {
-    inventoryValue: '₹ 18,75,600',
-    incomingToday: 12,
-    totalProducts: 186,
-    todaySales: '₹ 2,45,780',
-    expiryAlerts: 7,
-    revenueThisMonth: '₹ 11,28,450',
+    inventoryValue: '₹ 0',
+    incomingToday: 0,
+    totalProducts: 0,
+    todaySales: '₹ 0',
+    expiryAlerts: 0,
+    revenueThisMonth: '₹ 0',
   };
 
   return (

@@ -3,13 +3,13 @@ import { ArrowLeft, User, MapPin, Award, Phone, Mail, Settings, LogOut, CheckCir
 
 const defaultFarmerProfile = {
   name: "Rahul Patil",
-  phone: "+91 98765 43210",
+  phone: "+91 98220 12345",
   location: "Nashik, Maharashtra",
   verified: true,
   role: "Organic Producer",
-  rating: 4.8,
-  totalSales: "₹ 1,59,000",
-  activeLots: 12
+  rating: 5.0,
+  totalSales: "₹ 0",
+  activeLots: 0
 };
 
 export const ProfileView = ({ onBack, onLogout }) => {

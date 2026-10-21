@@ -22,12 +22,30 @@ import {
 } from 'lucide-react';
 
 export const DarkStoreTraceabilityView = ({ onBack }) => {
-  const [searchQuery, setSearchQuery] = useState('BATCH-VEG-100525');
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeStore, setActiveStore] = useState('Nashik Central Store');
-  const [selectedDate, setSelectedDate] = useState('12 May, 2025');
+  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [activeDocModal, setActiveDocModal] = useState(null);
   const [liveBatchData, setLiveBatchData] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/darkstore/inbound')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0 && data[0].batchId) {
+          setSearchQuery(data[0].batchId);
+        } else {
+          fetch('http://localhost:8000/farmer/inventory')
+            .then(r => r.json())
+            .then(inv => {
+              if (inv?.items?.[0]?.batchId) {
+                setSearchQuery(inv.items[0].batchId);
+              }
+            }).catch(() => {});
+        }
+      }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const cleanId = searchQuery.trim().toUpperCase();
@@ -38,7 +56,7 @@ export const DarkStoreTraceabilityView = ({ onBack }) => {
         return res.json();
       })
       .then((data) => {
-        if (data && data.batch_id) {
+        if (data && (data.batchId || data.batch_id)) {
           setLiveBatchData(data);
         } else {
           setLiveBatchData(null);
@@ -47,62 +65,24 @@ export const DarkStoreTraceabilityView = ({ onBack }) => {
       .catch(() => setLiveBatchData(null));
   }, [searchQuery]);
 
-  // Sample Batches Dataset for live search
-  const batchDataMap = {
-    'BATCH-VEG-100525': {
-      batchId: 'BATCH-VEG-100525',
-      product: 'Tomatoes (Grade A)',
-      quantity: '230 kg',
-      supplier: 'Fresh Veg Traders',
-      farmLocation: 'Nashik, Maharashtra',
-      harvestDate: '09 May, 2025',
-      packagingDate: '10 May, 2025',
-      expiryDate: '17 May, 2025',
-      currentLocation: 'Nashik Central Store',
-    },
-    'BATCH-FRU-200840': {
-      batchId: 'BATCH-FRU-200840',
-      product: 'Alphonso Mangoes',
-      quantity: '180 kg',
-      supplier: 'Green Valley Farms',
-      farmLocation: 'Ratnagiri, Maharashtra',
-      harvestDate: '08 May, 2025',
-      packagingDate: '09 May, 2025',
-      expiryDate: '22 May, 2025',
-      currentLocation: 'Nashik Central Store',
-    },
-    'BATCH-GRA-300120': {
-      batchId: 'BATCH-GRA-300120',
-      product: 'Moong Dal / Green Gram',
-      quantity: '310 kg',
-      supplier: 'Daily Needs Organic Farm',
-      farmLocation: 'Aurangabad, Maharashtra',
-      harvestDate: '01 May, 2025',
-      packagingDate: '03 May, 2025',
-      expiryDate: '30 Jun, 2025',
-      currentLocation: 'Nashik Central Store',
-    },
+  const activeBatch = {
+    batchId: liveBatchData?.batchId || liveBatchData?.batch_id || searchQuery || 'BATCH-LIVE-001',
+    product: liveBatchData?.product || liveBatchData?.crop_name || 'Agricultural Produce',
+    quantity: liveBatchData?.quantity || '500 kg',
+    supplier: (liveBatchData?.farmDetails || liveBatchData?.origin_farm || 'Nashik Organic Farm cluster 4').split('||')[0].trim(),
+    farmLocation: (liveBatchData?.farmDetails || liveBatchData?.origin_farm || 'Nashik Organic Farm cluster 4').split('||')[0].trim(),
+    harvestDate: liveBatchData?.harvestDate || new Date().toISOString().split('T')[0],
+    packagingDate: liveBatchData?.harvestDate || new Date().toISOString().split('T')[0],
+    expiryDate: 'Within 7 Days',
+    currentLocation: liveBatchData?.currentLocation || liveBatchData?.current_holder || 'Nashik Central Store',
   };
-
-  const baseBatch = batchDataMap[searchQuery.trim().toUpperCase()] || batchDataMap['BATCH-VEG-100525'];
-  const activeBatch = liveBatchData ? {
-    batchId: liveBatchData.batch_id,
-    product: liveBatchData.produce_name || baseBatch.product,
-    quantity: `${liveBatchData.quantity_kg} kg`,
-    supplier: liveBatchData.farmer_address ? `Farmer (${liveBatchData.farmer_address.slice(0, 8)}...)` : baseBatch.supplier,
-    farmLocation: liveBatchData.farm_location || baseBatch.farmLocation,
-    harvestDate: liveBatchData.harvest_date || baseBatch.harvestDate,
-    packagingDate: liveBatchData.harvest_date || baseBatch.packagingDate,
-    expiryDate: liveBatchData.expiry_date || baseBatch.expiryDate,
-    currentLocation: liveBatchData.current_holder || baseBatch.currentLocation,
-  } : baseBatch;
 
   // 5 Horizontal Journey Timeline Steps
   const journeySteps = [
     {
       id: 'farm',
       title: 'Farm',
-      time: '10 May, 07:00 AM',
+      time: activeBatch.harvestDate,
       location: activeBatch.farmLocation,
       status: 'Completed',
       icon: Sprout,
@@ -110,7 +90,7 @@ export const DarkStoreTraceabilityView = ({ onBack }) => {
     {
       id: 'collection',
       title: 'Collection',
-      time: '10 May, 09:30 AM',
+      time: activeBatch.harvestDate,
       location: 'Nashik Collection Hub',
       status: 'Completed',
       icon: Truck,
@@ -118,7 +98,7 @@ export const DarkStoreTraceabilityView = ({ onBack }) => {
     {
       id: 'processing',
       title: 'Processing',
-      time: '10 May, 11:45 AM',
+      time: activeBatch.harvestDate,
       location: 'Nashik Processing Unit',
       status: 'Completed',
       icon: Factory,
@@ -126,7 +106,7 @@ export const DarkStoreTraceabilityView = ({ onBack }) => {
     {
       id: 'transit',
       title: 'In Transit',
-      time: '10 May, 03:20 PM',
+      time: 'Cold Chain Verified',
       location: 'En Route to Store',
       status: 'Completed',
       icon: Truck,
@@ -134,46 +114,41 @@ export const DarkStoreTraceabilityView = ({ onBack }) => {
     {
       id: 'store',
       title: 'Store Received',
-      time: '11 May, 08:15 AM',
+      time: 'In Storage',
       location: activeBatch.currentLocation,
       status: 'Completed',
       icon: Store,
     },
   ];
 
-  // 5 Journey Events (Vertical Stepper Timeline)
-  const journeyEvents = [
-    {
-      title: 'Store Received',
-      time: '11 May, 08:15 AM',
-      desc: `Delivery received at ${activeBatch.currentLocation}`,
-      location: activeBatch.currentLocation,
-    },
-    {
-      title: 'In Transit',
-      time: '10 May, 03:20 PM',
-      desc: 'Out for delivery from Nashik Processing Unit',
-      location: `Nashik - ${activeBatch.currentLocation}`,
-    },
-    {
-      title: 'Processing',
-      time: '10 May, 11:45 AM',
-      desc: 'Quality checked, graded and packed',
-      location: 'Nashik Processing Unit',
-    },
-    {
-      title: 'Collection',
-      time: '10 May, 09:30 AM',
-      desc: 'Collected from farm and received at Nashik Collection Hub',
-      location: 'Nashik Collection Hub',
-    },
-    {
-      title: 'Farm',
-      time: '10 May, 07:00 AM',
-      desc: 'Harvested and packed at farm',
-      location: activeBatch.farmLocation,
-    },
-  ];
+  // Journey Events (Vertical Stepper Timeline)
+  const journeyEvents = (liveBatchData?.custodyHistory && liveBatchData.custodyHistory.length > 0)
+    ? liveBatchData.custodyHistory.map(ch => ({
+        title: ch.state.replace('_', ' '),
+        time: ch.occurredAt || 'Confirmed',
+        desc: `Transferred to ${ch.toHolder || 'Holder'} (Tx: ${ch.txHash ? ch.txHash.slice(0, 10) : ''}...)`,
+        location: ch.state === 'REGISTERED' ? activeBatch.farmLocation : (ch.state === 'IN_TRANSIT' ? 'Cold Transit Carrier' : activeBatch.currentLocation)
+      }))
+    : [
+        {
+          title: 'Store Received',
+          time: 'Active',
+          desc: `Delivery received and logged at ${activeBatch.currentLocation}`,
+          location: activeBatch.currentLocation,
+        },
+        {
+          title: 'In Transit',
+          time: 'Cold Chain Checked',
+          desc: 'Verified by GPS Telemetry & Temperature Monitor',
+          location: `Nashik - ${activeBatch.currentLocation}`,
+        },
+        {
+          title: 'Farm Harvest',
+          time: activeBatch.harvestDate,
+          desc: `Harvested and packed at ${activeBatch.farmLocation}`,
+          location: activeBatch.farmLocation,
+        },
+      ];
 
   // 4 Documents & Certifications
   const documents = [

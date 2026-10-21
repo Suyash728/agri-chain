@@ -2,13 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, ChevronRight } from 'lucide-react';
 import { cropIllustrationsMap, FruitsIllustration } from '../components/CropIllustrations';
 
-const defaultCrops = [
-  { id: 'cat-grains', name: 'Grains', count: '14 Lots', value: '₹48,200', change: '+12% this month' },
-  { id: 'cat-fruits', name: 'Fruits', count: '8 Lots', value: '₹34,500', change: '+5% this month' },
-  { id: 'cat-spices', name: 'Spices', count: '6 Lots', value: '₹22,100', change: '+18% this month' },
-  { id: 'cat-vegetables', name: 'Vegetables', count: '12 Lots', value: '₹28,700', change: '+8% this month' }
-];
-
 export const MyCropsView = ({ categories, onBack, onSelectCategory, onSearchClick }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [fetchedCategories, setFetchedCategories] = useState(null);
@@ -24,7 +17,7 @@ export const MyCropsView = ({ categories, onBack, onSelectCategory, onSearchClic
     }
   }, [categories]);
 
-  const list = categories && categories.length > 0 ? categories : (fetchedCategories || defaultCrops);
+  const list = categories && categories.length > 0 ? categories : (fetchedCategories || []);
   const filteredCategories = list.filter(cat => 
     cat.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -59,7 +52,12 @@ export const MyCropsView = ({ categories, onBack, onSelectCategory, onSearchClic
 
       {/* Single Column Vertical Stack List matching reference image */}
       <div className="flex flex-col gap-3.5 w-full relative z-10">
-        {filteredCategories.map((cat) => {
+        {filteredCategories.length === 0 ? (
+          <div className="p-8 text-center bg-white rounded-2xl border border-[#E6E1D5] text-sm text-[#666057] font-semibold">
+            No crop categories found.
+          </div>
+        ) : (
+          filteredCategories.map((cat) => {
           const Illustration = cropIllustrationsMap[cat.id] || FruitsIllustration;
           return (
             <div
@@ -87,7 +85,8 @@ export const MyCropsView = ({ categories, onBack, onSelectCategory, onSearchClic
               <ChevronRight className="w-5 h-5 text-[#3B3028] group-hover:translate-x-1 transition-transform" />
             </div>
           );
-        })}
+        })
+      )}
       </div>
 
       {/* Feathered Plant Sprout Image - Completely Un-selectable & Non-draggable */}

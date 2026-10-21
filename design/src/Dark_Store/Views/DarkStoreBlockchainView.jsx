@@ -21,13 +21,31 @@ import {
 } from 'lucide-react';
 
 export const DarkStoreBlockchainView = ({ onBack }) => {
-  const [searchQuery, setSearchQuery] = useState('BATCH-VEG-100525');
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeStore, setActiveStore] = useState('Nashik Central Store');
-  const [selectedDate, setSelectedDate] = useState('12 May, 2025');
+  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
   const [copiedHash, setCopiedHash] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [activeDocModal, setActiveDocModal] = useState(null);
   const [liveBatchData, setLiveBatchData] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/darkstore/inbound')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0 && data[0].batchId) {
+          setSearchQuery(data[0].batchId);
+        } else {
+          fetch('http://localhost:8000/farmer/inventory')
+            .then(r => r.json())
+            .then(inv => {
+              if (inv?.items?.[0]?.batchId) {
+                setSearchQuery(inv.items[0].batchId);
+              }
+            }).catch(() => {});
+        }
+      }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const cleanId = searchQuery.trim().toUpperCase();
@@ -38,7 +56,7 @@ export const DarkStoreBlockchainView = ({ onBack }) => {
         return res.json();
       })
       .then((data) => {
-        if (data && data.batch_id) {
+        if (data && (data.batchId || data.batch_id)) {
           setLiveBatchData(data);
         } else {
           setLiveBatchData(null);
@@ -47,63 +65,19 @@ export const DarkStoreBlockchainView = ({ onBack }) => {
       .catch(() => setLiveBatchData(null));
   }, [searchQuery]);
 
-  // Blockchain Ledger Record Data Map
-  const ledgerDataMap = {
-    'BATCH-VEG-100525': {
-      batchId: 'BATCH-VEG-100525',
-      product: 'Tomatoes (Grade A)',
-      quantity: '230 kg',
-      supplier: 'Fresh Veg Traders',
-      harvestDate: '09 May, 2025',
-      packagingDate: '10 May, 2025',
-      expiryDate: '17 May, 2025',
-      txHash: '0x8f7a6b3e2c4d9f1a7b6e8c2d9f4a7b6c8d2f5a7b9c6e1d0f2a7b9c6d4e2f1a8',
-      blockNumber: '# 5874521',
-      timestamp: '10 May, 2025, 06:45 PM',
-      network: 'AgriChain Network',
-    },
-    'BATCH-FRU-200840': {
-      batchId: 'BATCH-FRU-200840',
-      product: 'Alphonso Mangoes',
-      quantity: '180 kg',
-      supplier: 'Green Valley Farms',
-      harvestDate: '08 May, 2025',
-      packagingDate: '09 May, 2025',
-      expiryDate: '22 May, 2025',
-      txHash: '0x4c9e8a7b6c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6',
-      blockNumber: '# 5874410',
-      timestamp: '09 May, 2025, 04:15 PM',
-      network: 'AgriChain Network',
-    },
-    'BATCH-GRA-300120': {
-      batchId: 'BATCH-GRA-300120',
-      product: 'Moong Dal / Green Gram',
-      quantity: '310 kg',
-      supplier: 'Daily Needs Organic Farm',
-      harvestDate: '01 May, 2025',
-      packagingDate: '03 May, 2025',
-      expiryDate: '30 Jun, 2025',
-      txHash: '0x1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
-      blockNumber: '# 5873990',
-      timestamp: '03 May, 2025, 11:30 AM',
-      network: 'AgriChain Network',
-    },
-  };
-
-  const baseRecord = ledgerDataMap[searchQuery.trim().toUpperCase()] || ledgerDataMap['BATCH-VEG-100525'];
-  const activeRecord = liveBatchData ? {
-    batchId: liveBatchData.batch_id,
-    product: liveBatchData.produce_name || baseRecord.product,
-    quantity: `${liveBatchData.quantity_kg} kg`,
-    supplier: liveBatchData.farmer_address ? `Farmer (${liveBatchData.farmer_address.slice(0, 8)}...)` : baseRecord.supplier,
-    harvestDate: liveBatchData.harvest_date || baseRecord.harvestDate,
-    packagingDate: liveBatchData.harvest_date || baseRecord.packagingDate,
-    expiryDate: liveBatchData.expiry_date || baseRecord.expiryDate,
-    txHash: (liveBatchData.custody_events && liveBatchData.custody_events[0] && liveBatchData.custody_events[0].tx_hash) ? `0x${liveBatchData.custody_events[0].tx_hash}` : baseRecord.txHash,
-    blockNumber: '# 5874521',
-    timestamp: (liveBatchData.custody_events && liveBatchData.custody_events[0] && liveBatchData.custody_events[0].timestamp) ? new Date(liveBatchData.custody_events[0].timestamp * 1000).toLocaleString() : baseRecord.timestamp,
+  const activeRecord = {
+    batchId: liveBatchData?.batchId || liveBatchData?.batch_id || searchQuery || 'BATCH-LIVE-001',
+    product: liveBatchData?.product || liveBatchData?.crop_name || 'Agricultural Produce',
+    quantity: liveBatchData?.quantity || '500 kg',
+    supplier: (liveBatchData?.farmDetails || liveBatchData?.origin_farm || 'Nashik Organic Farm cluster 4').split('||')[0].trim(),
+    harvestDate: liveBatchData?.harvestDate || new Date().toISOString().split('T')[0],
+    packagingDate: liveBatchData?.harvestDate || new Date().toISOString().split('T')[0],
+    expiryDate: 'Within 7 Days',
+    txHash: (liveBatchData?.custodyHistory && liveBatchData.custodyHistory[0] && liveBatchData.custodyHistory[0].txHash) ? `0x${liveBatchData.custodyHistory[0].txHash}` : '0x8f7a6b3e2c4d9f1a7b6e8c2d9f4a7b6c8d2f5a7b9c6e1d0f2a7b9c6d4e2f1a8',
+    blockNumber: `# ${Math.abs((searchQuery || 'BATCH').split('').reduce((a,c) => a + c.charCodeAt(0), 5874000))}`,
+    timestamp: (liveBatchData?.custodyHistory && liveBatchData.custodyHistory[0] && liveBatchData.custodyHistory[0].occurredAt) ? liveBatchData.custodyHistory[0].occurredAt : new Date().toLocaleString(),
     network: 'AgriChain Local PoA Ledger',
-  } : baseRecord;
+  };
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(activeRecord.txHash);
@@ -111,40 +85,36 @@ export const DarkStoreBlockchainView = ({ onBack }) => {
     setTimeout(() => setCopiedHash(false), 2000);
   };
 
-  // 5 On-Chain Journey Milestones matching reference screenshot
-  const onChainJourney = [
-    {
-      title: 'Farm',
-      time: '10 May, 07:00 AM',
-      desc: 'Harvested and packed at farm',
-      supplier: activeRecord.supplier,
-      location: 'Nashik, Maharashtra',
-    },
-    {
-      title: 'Collection',
-      time: '10 May, 09:30 AM',
-      desc: 'Collected from farm and received',
-      location: 'Nashik Collection Hub',
-    },
-    {
-      title: 'Processing',
-      time: '10 May, 11:45 AM',
-      desc: 'Quality checked, graded and packed',
-      location: 'Nashik Processing Unit',
-    },
-    {
-      title: 'In Transit',
-      time: '10 May, 03:20 PM',
-      desc: 'Out for delivery from processing unit',
-      location: 'En Route to Store',
-    },
-    {
-      title: 'Store Received',
-      time: '11 May, 08:15 AM',
-      desc: 'Delivery received at Nashik Central Store',
-      location: 'Nashik Central Store',
-    },
-  ];
+  // On-Chain Journey Milestones derived from live custody history
+  const onChainJourney = (liveBatchData?.custodyHistory && liveBatchData.custodyHistory.length > 0)
+    ? liveBatchData.custodyHistory.map((ch) => ({
+        title: ch.state.replace('_', ' '),
+        time: ch.occurredAt || 'Confirmed',
+        desc: `Custody to ${ch.toHolder || 'Holder'} (Tx: ${ch.txHash ? ch.txHash.slice(0, 10) : ''}...)`,
+        supplier: ch.toHolder,
+        location: ch.state === 'REGISTERED' ? (activeRecord.supplier || 'Nashik Farm') : (ch.state === 'IN_TRANSIT' ? 'In Transit Cold Carrier' : 'Nashik Dark Store')
+      }))
+    : [
+        {
+          title: 'Farm Registration',
+          time: activeRecord.harvestDate || 'Registered',
+          desc: 'Harvested and registered on blockchain ledger',
+          supplier: activeRecord.supplier,
+          location: activeRecord.supplier || 'Farm Origin',
+        },
+        {
+          title: 'Dispatch & Transit',
+          time: activeRecord.timestamp || 'In Progress',
+          desc: 'Dispatched with certified cold-chain carrier',
+          location: 'Cold Carrier Transit',
+        },
+        {
+          title: 'Dark Store Gate In',
+          time: 'Active Verification',
+          desc: 'Verified by Smart Contract against AI Trust Oracle',
+          location: 'Nashik Central Dark Store',
+        }
+      ];
 
   // 4 On-Chain Record Documents
   const recordDocuments = [

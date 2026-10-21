@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 
 export const DarkStoreSalesView = ({ onBack }) => {
-  const [dateRange, setDateRange] = useState('May 01 – May 11, 2025');
+  const currentMonthFormatted = new Date().toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+  const [dateRange, setDateRange] = useState(currentMonthFormatted);
   const [chartMetric, setChartMetric] = useState('Amount (₹)');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [liveSales, setLiveSales] = useState(null);
@@ -28,9 +29,9 @@ export const DarkStoreSalesView = ({ onBack }) => {
       .catch(() => {});
   }, []);
 
-  const totalSalesVal = liveSales?.totalSales || '₹ 11,28,450';
-  const ordersCompletedVal = liveSales?.ordersCompleted || '243';
-  const quantitySoldVal = liveSales?.quantitySold || '4,250 kg';
+  const totalSalesVal = liveSales?.totalSales || '₹ 0';
+  const ordersCompletedVal = liveSales?.ordersCompleted || '0';
+  const quantitySoldVal = liveSales?.quantitySold || '0 kg';
 
   // 6 Top Colored KPI Cards
   const kpis = [
@@ -38,7 +39,7 @@ export const DarkStoreSalesView = ({ onBack }) => {
       id: 'total-sales',
       title: 'Total Sales',
       value: totalSalesVal,
-      subtext: '↑ 15% from last month',
+      subtext: '↑ Verified on-chain',
       isPositive: true,
       bg: 'bg-[#EFF4E9]',
       border: 'border-[#D9E6D3]',
@@ -48,7 +49,7 @@ export const DarkStoreSalesView = ({ onBack }) => {
       id: 'orders-completed',
       title: 'Orders Completed',
       value: ordersCompletedVal,
-      subtext: '↑ 12% from last month',
+      subtext: '↑ From verified checkouts',
       isPositive: true,
       bg: 'bg-[#FFF4EC]',
       border: 'border-[#FDE3D2]',
@@ -58,7 +59,7 @@ export const DarkStoreSalesView = ({ onBack }) => {
       id: 'total-qty',
       title: 'Total Quantity Sold',
       value: quantitySoldVal,
-      subtext: '↑ 10% from last month',
+      subtext: '↑ Physical produce delivered',
       isPositive: true,
       bg: 'bg-[#EEF4FB]',
       border: 'border-[#DCE9FE]',
@@ -69,8 +70,8 @@ export const DarkStoreSalesView = ({ onBack }) => {
       title: 'Average Order Value',
       value: liveSales?.ordersCompleted && parseInt(liveSales.ordersCompleted) > 0 
         ? `₹ ${(parseInt(liveSales.totalSales.replace(/[^0-9]/g, '')) / parseInt(liveSales.ordersCompleted)).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` 
-        : '₹ 4,642',
-      subtext: '↑ 8% from last month',
+        : '₹ 0',
+      subtext: '↑ Per consumer order',
       isPositive: true,
       bg: 'bg-[#F5EEF9]',
       border: 'border-[#E9D5FF]',
@@ -79,8 +80,8 @@ export const DarkStoreSalesView = ({ onBack }) => {
     {
       id: 'pending-orders',
       title: 'Pending Orders',
-      value: '18',
-      subtext: '↓ 5% from last month',
+      value: liveSales?.pendingOrders || '0',
+      subtext: 'Active in transit/storage',
       isPositive: false,
       bg: 'bg-[#FFF3E6]',
       border: 'border-[#FDE68A]',
@@ -89,8 +90,8 @@ export const DarkStoreSalesView = ({ onBack }) => {
     {
       id: 'returns',
       title: 'Return / Refunds',
-      value: '₹ 12,350',
-      subtext: '↓ 3% from last month',
+      value: '₹ 0',
+      subtext: 'Zero unresolved returns',
       isPositive: false,
       bg: 'bg-[#EFF4E9]',
       border: 'border-[#D9E6D3]',
@@ -98,68 +99,10 @@ export const DarkStoreSalesView = ({ onBack }) => {
     },
   ];
 
-  // Top Selling Products Data
-  const topProducts = [
-    { name: 'Tomatoes (Grade A)', qty: '1,250 kg', revenue: '₹ 3,12,500', image: '/images/tomato_only.png' },
-    { name: 'Green Peas', qty: '850 kg', revenue: '₹ 2,10,750', image: '/images/greengram_only.png' },
-    { name: 'Red Onions', qty: '720 kg', revenue: '₹ 1,68,400', image: '/images/spices_ref.png' },
-    { name: 'Potatoes', qty: '640 kg', revenue: '₹ 1,24,800', image: '/images/potato_only.png' },
-    { name: 'Spinach', qty: '520 kg', revenue: '₹ 1,11,000', image: '/images/vegetables_ref.png' },
-  ];
-
-  // Recent Orders Data
-  const defaultRecentOrders = [
-    {
-      id: 'ORD-78941',
-      buyer: 'Fresh Mart Retailers',
-      items: 'Tomatoes (Grade A)',
-      quantity: '120 kg',
-      amount: '₹ 2,880',
-      orderDate: '11 May, 09:30 AM',
-      status: 'Delivered',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-    },
-    {
-      id: 'ORD-78940',
-      buyer: 'GreenBasket Stores',
-      items: 'Green Peas',
-      quantity: '80 kg',
-      amount: '₹ 1,920',
-      orderDate: '11 May, 08:15 AM',
-      status: 'Delivered',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-    },
-    {
-      id: 'ORD-78939',
-      buyer: 'Daily Needs Store',
-      items: 'Potatoes',
-      quantity: '150 kg',
-      amount: '₹ 2,400',
-      orderDate: '11 May, 07:00 AM',
-      status: 'Processing',
-      badgeClass: 'bg-[#EFF6FF] text-[#2563EB] border border-[#2563EB]/30',
-    },
-    {
-      id: 'ORD-78938',
-      buyer: 'City Supermart',
-      items: 'Red Onions',
-      quantity: '100 kg',
-      amount: '₹ 2,200',
-      orderDate: '10 May, 06:45 PM',
-      status: 'Shipped',
-      badgeClass: 'bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30',
-    },
-    {
-      id: 'ORD-78937',
-      buyer: 'Organic Plaza',
-      items: 'Spinach',
-      quantity: '60 kg',
-      amount: '₹ 1,260',
-      orderDate: '10 May, 05:30 PM',
-      status: 'Delivered',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-    },
-  ];
+  // Top Selling Products Data from real database sales
+  const topProducts = (liveSales?.topProducts && liveSales.topProducts.length > 0)
+    ? liveSales.topProducts 
+    : [];
 
   const recentOrders = (liveSales?.recentOrders && liveSales.recentOrders.length > 0)
     ? liveSales.recentOrders.map((o) => ({
@@ -172,7 +115,7 @@ export const DarkStoreSalesView = ({ onBack }) => {
         status: o.status || 'Delivered',
         badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
       }))
-    : defaultRecentOrders;
+    : [];
 
   return (
     <div className="flex flex-col gap-5 animate-fade-in w-full">
@@ -396,12 +339,12 @@ export const DarkStoreSalesView = ({ onBack }) => {
 
               {/* X Axis Labels */}
               <div className="flex justify-between text-[10px] font-bold text-[#8C8275] pt-2">
-                <span>May 01</span>
-                <span>May 03</span>
-                <span>May 05</span>
-                <span>May 07</span>
-                <span>May 09</span>
-                <span>May 11</span>
+                <span>D-5</span>
+                <span>D-4</span>
+                <span>D-3</span>
+                <span>D-2</span>
+                <span>D-1</span>
+                <span>Today</span>
               </div>
             </div>
           </div>
@@ -417,21 +360,27 @@ export const DarkStoreSalesView = ({ onBack }) => {
           </div>
 
           <div className="divide-y divide-[#E6E1D5]/60 text-xs">
-            {topProducts.map((prod, idx) => (
-              <div key={idx} className="flex items-center justify-between py-2.5 hover:bg-[#FAF7F0]/60 transition-colors cursor-pointer rounded-xl px-1">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] p-1 flex items-center justify-center flex-shrink-0">
-                    <img src={prod.image} alt={prod.name} className="w-full h-full object-contain" />
-                  </div>
-                  <span className="font-extrabold text-[#2D2620]">{prod.name}</span>
-                </div>
-
-                <div className="flex items-center gap-6 text-right">
-                  <span className="font-semibold text-[#666057]">{prod.qty}</span>
-                  <span className="font-extrabold text-[#2D2620] min-w-[75px]">{prod.revenue}</span>
-                </div>
+            {topProducts.length === 0 ? (
+              <div className="py-6 text-center text-[#666057] font-semibold">
+                No produce sales recorded yet.
               </div>
-            ))}
+            ) : (
+              topProducts.map((prod, idx) => (
+                <div key={idx} className="flex items-center justify-between py-2.5 hover:bg-[#FAF7F0]/60 transition-colors cursor-pointer rounded-xl px-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] p-1 flex items-center justify-center flex-shrink-0">
+                      <img src={prod.image} alt={prod.name} className="w-full h-full object-contain" />
+                    </div>
+                    <span className="font-extrabold text-[#2D2620]">{prod.name}</span>
+                  </div>
+
+                  <div className="flex items-center gap-6 text-right">
+                    <span className="font-semibold text-[#666057]">{prod.qty}</span>
+                    <span className="font-extrabold text-[#2D2620] min-w-[75px]">{prod.revenue}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -462,34 +411,42 @@ export const DarkStoreSalesView = ({ onBack }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#E6E1D5]/70 text-xs font-semibold text-[#2D2620]">
-              {recentOrders.map((ord) => (
-                <tr key={ord.id} className="hover:bg-[#FAF7F0]/50 transition-colors">
-                  {/* Order ID */}
-                  <td className="py-4 px-5 font-extrabold text-[#2D2620]">{ord.id}</td>
-
-                  {/* Buyer / Customer */}
-                  <td className="py-4 px-5 font-bold text-[#2D2620]">{ord.buyer}</td>
-
-                  {/* Items */}
-                  <td className="py-4 px-5 text-[#2D2620]">{ord.items}</td>
-
-                  {/* Quantity */}
-                  <td className="py-4 px-5 font-extrabold text-[#2D2620]">{ord.quantity}</td>
-
-                  {/* Amount */}
-                  <td className="py-4 px-5 font-extrabold text-[#2D2620]">{ord.amount}</td>
-
-                  {/* Order Date */}
-                  <td className="py-4 px-5 text-[#666057] font-semibold">{ord.orderDate}</td>
-
-                  {/* Status Badge */}
-                  <td className="py-4 px-5">
-                    <span className={`px-3 py-1 rounded-full text-xs font-extrabold inline-block ${ord.badgeClass}`}>
-                      {ord.status}
-                    </span>
+              {recentOrders.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-6 text-sm text-[#666057]">
+                    No customer orders recorded yet.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentOrders.map((ord) => (
+                  <tr key={ord.id} className="hover:bg-[#FAF7F0]/50 transition-colors">
+                    {/* Order ID */}
+                    <td className="py-4 px-5 font-extrabold text-[#2D2620]">{ord.id}</td>
+
+                    {/* Buyer / Customer */}
+                    <td className="py-4 px-5 font-bold text-[#2D2620]">{ord.buyer}</td>
+
+                    {/* Items */}
+                    <td className="py-4 px-5 text-[#2D2620]">{ord.items}</td>
+
+                    {/* Quantity */}
+                    <td className="py-4 px-5 font-extrabold text-[#2D2620]">{ord.quantity}</td>
+
+                    {/* Amount */}
+                    <td className="py-4 px-5 font-extrabold text-[#2D2620]">{ord.amount}</td>
+
+                    {/* Order Date */}
+                    <td className="py-4 px-5 text-[#666057] font-semibold">{ord.orderDate}</td>
+
+                    {/* Status Badge */}
+                    <td className="py-4 px-5">
+                      <span className={`px-3 py-1 rounded-full text-xs font-extrabold inline-block ${ord.badgeClass}`}>
+                        {ord.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

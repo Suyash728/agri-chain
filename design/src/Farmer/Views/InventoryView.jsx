@@ -7,9 +7,10 @@ import {
 } from '../components/CropIllustrations';
 
 const defaultSummary = {
-  totalProduce: "33.50 Tonnes",
-  totalValue: "₹1,59,000",
-  storageHubs: "3 Hubs Active"
+  totalProduce: "0.00",
+  volumeUnit: "Tonnes",
+  totalValue: "₹0",
+  storageHubs: "0 Batches Active"
 };
 
 export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem, items }) => {
@@ -22,7 +23,13 @@ export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem,
       .catch(() => {});
   }, []);
 
-  const summary = liveInventory?.summary || defaultSummary;
+  const summary = liveInventory?.summary ? {
+    totalProduce: liveInventory.summary.totalVolume || '0.00',
+    volumeUnit: liveInventory.summary.volumeUnit || 'Tonnes',
+    totalValue: liveInventory.summary.totalValue || '₹0',
+    storageHubs: `${liveInventory.summary.totalBatches || 0} Batches Registered`
+  } : defaultSummary;
+
   const displayItems = (liveInventory?.items && liveInventory.items.length > 0)
     ? liveInventory.items
     : (items && items.length > 0 ? items : []);
@@ -88,45 +95,51 @@ export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem,
 
       {/* Inventory Items Stack with Warm Cream Card Backgrounds */}
       <div className="flex flex-col gap-3.5 w-full">
-        {displayItems.map((item) => {
-          const Illustration = individualCropIllustrationsMap[item.name] || (item.categoryId && cropIllustrationsMap[item.categoryId]) || FruitsIllustration;
-          return (
-            <div
-              key={item.id}
-              onClick={() => onSelectItem && onSelectItem(item)}
-              style={{ backgroundColor: '#FAF7F0' }}
-              className="border border-[#E8E2D5] rounded-2xl p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-[#7A8B52] transition-all duration-200 group w-full"
-            >
-              {/* Left Image & Details */}
-              <div className="flex items-center gap-4 sm:gap-6">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center group-hover:scale-105 transition-transform duration-200 flex-shrink-0">
-                  <Illustration className="w-full h-full object-contain" />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-extrabold text-[#3B3028] leading-tight">
-                    {item.name}
-                  </h3>
-                  <span className="text-xs sm:text-sm font-bold text-[#786E65] mt-0.5 block">
-                    {item.quantity}
-                  </span>
-                  {item.status && (
-                    <span className="text-[10px] font-bold text-[#556B2F] bg-[#EBF3E8] px-2 py-0.5 rounded-full inline-block mt-1">
-                      {item.status}
+        {displayItems.length === 0 ? (
+          <div className="p-8 text-center bg-white rounded-2xl border border-[#E6E1D5] text-sm text-[#666057] font-semibold">
+            No stock lots registered in inventory. Click below to add your first harvest batch.
+          </div>
+        ) : (
+          displayItems.map((item) => {
+            const Illustration = individualCropIllustrationsMap[item.name] || (item.categoryId && cropIllustrationsMap[item.categoryId]) || FruitsIllustration;
+            return (
+              <div
+                key={item.id}
+                onClick={() => onSelectItem && onSelectItem(item)}
+                style={{ backgroundColor: '#FAF7F0' }}
+                className="border border-[#E8E2D5] rounded-2xl p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:shadow-md hover:border-[#7A8B52] transition-all duration-200 group w-full"
+              >
+                {/* Left Image & Details */}
+                <div className="flex items-center gap-4 sm:gap-6">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center group-hover:scale-105 transition-transform duration-200 flex-shrink-0">
+                    <Illustration className="w-full h-full object-contain" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-extrabold text-[#3B3028] leading-tight">
+                      {item.name}
+                    </h3>
+                    <span className="text-xs sm:text-sm font-bold text-[#786E65] mt-0.5 block">
+                      {item.quantity}
                     </span>
-                  )}
+                    {item.status && (
+                      <span className="text-[10px] font-bold text-[#556B2F] bg-[#EBF3E8] px-2 py-0.5 rounded-full inline-block mt-1">
+                        {item.status}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Value & Chevron */}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm sm:text-base font-extrabold text-[#3B3028]">
+                    {item.value}
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-[#3B3028] group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
-
-              {/* Right Value & Chevron */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm sm:text-base font-extrabold text-[#3B3028]">
-                  {item.value}
-                </span>
-                <ChevronRight className="w-5 h-5 text-[#3B3028] group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       {/* Add New Stock Action Button */}

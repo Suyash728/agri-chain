@@ -57,7 +57,7 @@ export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount = 3 })
 
         {/* Date Selector Pill */}
         <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-[#E2DDD2] text-xs font-semibold text-[#3B3028] shadow-sm">
-          <span>12 May, 2025</span>
+          <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
           <Calendar className="w-4 h-4 text-[#7A8B52]" />
         </div>
       </div>

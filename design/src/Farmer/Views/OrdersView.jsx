@@ -65,50 +65,59 @@ export const OrdersView = ({ onBack }) => {
 
       {/* Order Cards List with Warm Cream Background */}
       <div className="flex flex-col gap-3.5 w-full">
-        {filteredOrders.map((ord) => (
-          <div 
-            key={ord.id}
-            style={{ backgroundColor: '#FAF7F0' }}
-            className="border border-[#E8E2D5] rounded-2xl p-4 sm:p-5 flex flex-col gap-3 cursor-pointer hover:shadow-md hover:border-[#7A8B52] transition-all duration-200 w-full"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-base sm:text-lg font-extrabold text-[#3B3028]">
-                {ord.id}
-              </span>
-              <span className={`text-xs font-bold px-3 py-1 rounded-full ${getBadgeStyle(ord.status)}`}>
-                {ord.status}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-1.5 text-xs sm:text-sm text-[#786E65]">
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-[#3B3028]">Buyer:</span>
-                <span className="font-extrabold text-[#3B3028]">{ord.buyer}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-[#3B3028]">Items:</span>
-                <span className="font-extrabold text-[#3B3028] text-right">{ord.items}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="font-bold text-[#3B3028]">Date:</span>
-                <span className="font-semibold text-[#3B3028]">{ord.date}</span>
-              </div>
-              <div className="flex justify-between items-center pt-1 border-t border-[#E8E2D5]/60 mt-1">
-                <span className="font-bold text-[#3B3028]">Total Amount:</span>
-                <span className="font-extrabold text-[#2E3A1F] text-sm sm:text-base">{ord.totalAmount}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-1">
-              <ChevronRight className="w-5 h-5 text-[#3B3028]" />
-            </div>
+        {filteredOrders.length === 0 ? (
+          <div className="p-8 text-center bg-white rounded-2xl border border-[#E6E1D5] text-sm text-[#666057] font-semibold">
+            No orders found matching '{activeTab}'.
           </div>
-        ))}
+        ) : (
+          filteredOrders.map((ord) => (
+            <div 
+              key={ord.id}
+              style={{ backgroundColor: '#FAF7F0' }}
+              className="border border-[#E8E2D5] rounded-2xl p-4 sm:p-5 flex flex-col gap-3 cursor-pointer hover:shadow-md hover:border-[#7A8B52] transition-all duration-200 w-full"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-base sm:text-lg font-extrabold text-[#3B3028]">
+                  {ord.id}
+                </span>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full ${getBadgeStyle(ord.status)}`}>
+                  {ord.status}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1.5 text-xs sm:text-sm text-[#786E65]">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-[#3B3028]">Buyer:</span>
+                  <span className="font-extrabold text-[#3B3028]">{ord.buyer}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-[#3B3028]">Items:</span>
+                  <span className="font-extrabold text-[#3B3028] text-right">{ord.items}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-[#3B3028]">Date:</span>
+                  <span className="font-semibold text-[#3B3028]">{ord.date}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-[#E8E2D5]/60 mt-1">
+                  <span className="font-bold text-[#3B3028]">Total Amount:</span>
+                  <span className="font-extrabold text-[#2E3A1F] text-sm sm:text-base">{ord.totalAmount}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <ChevronRight className="w-5 h-5 text-[#3B3028]" />
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* View All Orders Action Button */}
       <div className="mt-2">
-        <button className="w-full py-4 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all">
+        <button 
+          onClick={() => setActiveTab('All')}
+          className="w-full py-4 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm sm:text-base rounded-2xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+        >
           <span>View All Orders</span>
         </button>
       </div>

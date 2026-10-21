@@ -28,9 +28,10 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
   const [selectedDate, setSelectedDate] = useState('Select Date');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  // Calendar State (Default May 2025)
-  const [calMonth, setCalMonth] = useState(4); // 4 = May
-  const [calYear, setCalYear] = useState(2025);
+  // Calendar State (Dynamic Current Date)
+  const todayDateObj = new Date();
+  const [calMonth, setCalMonth] = useState(todayDateObj.getMonth());
+  const [calYear, setCalYear] = useState(todayDateObj.getFullYear());
   const monthsList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const firstDayOfWeek = new Date(calYear, calMonth, 1).getDay();
@@ -38,253 +39,15 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [activePage, setActivePage] = useState(1);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
-
-  // 12 Complete Deliveries Dataset for full 2-page pagination & date filtering
-  const defaultDeliveries = [
-    // Page 1 Items (1 to 6)
-    {
-      id: 'DLY #DLY7894',
-      po: 'PO: PO-20345',
-      supplier: 'Fresh Veg Traders',
-      location: 'Nashik, Maharashtra',
-      productCategory: 'Vegetables',
-      productSub: 'Tomato, Potato, Onion +2',
-      image: '/images/fruits_ref.png',
-      quantity: '230 kg',
-      weightKg: 230,
-      itemsCount: '5 Items',
-      expectedDate: '11 May, 09:30 AM',
-      dateTag: '11 May, 2025',
-      status: 'Received',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-      temp: '3.8°C',
-      qrSeal: 'SEAL-88901',
-      driver: 'Ramesh Shinde (MH-15-EG-4021)',
-    },
-    {
-      id: 'DLY #DLY7895',
-      po: 'PO: PO-20346',
-      supplier: 'Green Valley Farms',
-      location: 'Pune, Maharashtra',
-      productCategory: 'Fruits',
-      productSub: 'Mango, Banana, Apple +1',
-      image: '/images/mango_only.png',
-      quantity: '180 kg',
-      weightKg: 180,
-      itemsCount: '4 Items',
-      expectedDate: '11 May, 08:15 AM',
-      dateTag: '11 May, 2025',
-      status: 'In Transit',
-      badgeClass: 'bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30',
-      temp: '4.2°C',
-      qrSeal: 'SEAL-88902',
-      driver: 'Vikram Solanki (MH-12-QX-8812)',
-    },
-    {
-      id: 'DLY #DLY7896',
-      po: 'PO: PO-20347',
-      supplier: 'Daily Needs Store',
-      location: 'Aurangabad, Maharashtra',
-      productCategory: 'Grains',
-      productSub: 'Wheat, Rice, Tur Dal +1',
-      image: '/images/sack_kpi.png',
-      quantity: '300 kg',
-      weightKg: 300,
-      itemsCount: '3 Items',
-      expectedDate: '11 May, 07:00 AM',
-      dateTag: '11 May, 2025',
-      status: 'Processing',
-      badgeClass: 'bg-[#EFF6FF] text-[#2563EB] border border-[#2563EB]/30',
-      temp: '18.0°C',
-      qrSeal: 'SEAL-88903',
-      driver: 'Anand Gawli (MH-20-KT-1102)',
-    },
-    {
-      id: 'DLY #DLY7897',
-      po: 'PO: PO-20348',
-      supplier: 'Dairy Connect',
-      location: 'Nashik, Maharashtra',
-      productCategory: 'Dairy',
-      productSub: 'Milk, Paneer, Curd',
-      image: '/images/chickpea_only.png',
-      quantity: '150 L',
-      weightKg: 150,
-      itemsCount: '3 Items',
-      expectedDate: '10 May, 06:45 PM',
-      dateTag: '10 May, 2025',
-      status: 'Received',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-      temp: '2.4°C',
-      qrSeal: 'SEAL-88904',
-      driver: 'Suresh Kale (MH-15-DC-9090)',
-    },
-    {
-      id: 'DLY #DLY7898',
-      po: 'PO: PO-20349',
-      supplier: 'Organic World',
-      location: 'Nashik, Maharashtra',
-      productCategory: 'Leafy Greens',
-      productSub: 'Spinach, Coriander, Methi',
-      image: '/images/greengram_only.png',
-      quantity: '50 kg',
-      weightKg: 50,
-      itemsCount: '2 Items',
-      expectedDate: '12 May, 10:30 AM',
-      dateTag: '12 May, 2025',
-      status: 'Pending',
-      badgeClass: 'bg-[#FEF3C7] text-[#D97706] border border-[#D97706]/30',
-      temp: '3.5°C',
-      qrSeal: 'SEAL-88905',
-      driver: 'Prakash Patil (MH-15-OW-3301)',
-    },
-    {
-      id: 'DLY #DLY7899',
-      po: 'PO: PO-20350',
-      supplier: 'Farm Fresh Hub',
-      location: 'Jalgaon, Maharashtra',
-      productCategory: 'Root Vegetables',
-      productSub: 'Carrot, Beetroot, Radish',
-      image: '/images/potato_only.png',
-      quantity: '120 kg',
-      weightKg: 120,
-      itemsCount: '3 Items',
-      expectedDate: '12 May, 11:15 AM',
-      dateTag: '12 May, 2025',
-      status: 'In Transit',
-      badgeClass: 'bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30',
-      temp: '4.0°C',
-      qrSeal: 'SEAL-88906',
-      driver: 'Ganesh More (MH-19-FF-7720)',
-    },
-
-    // Page 2 Items (7 to 12)
-    {
-      id: 'DLY #DLY7900',
-      po: 'PO: PO-20351',
-      supplier: 'Sahyadri Agro',
-      location: 'Nashik, Maharashtra',
-      productCategory: 'Vegetables',
-      productSub: 'Capsicum, Cucumber, Cauliflower',
-      image: '/images/tomato_only.png',
-      quantity: '210 kg',
-      weightKg: 210,
-      itemsCount: '4 Items',
-      expectedDate: '12 May, 01:30 PM',
-      dateTag: '12 May, 2025',
-      status: 'Received',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-      temp: '3.6°C',
-      qrSeal: 'SEAL-88907',
-      driver: 'Nitin Kadam (MH-15-SA-5511)',
-    },
-    {
-      id: 'DLY #DLY7901',
-      po: 'PO: PO-20352',
-      supplier: 'Alphonso Orchards',
-      location: 'Ratnagiri, Maharashtra',
-      productCategory: 'Fruits',
-      productSub: 'Ratnagiri Alphonso Mangoes',
-      image: '/images/mango_only.png',
-      quantity: '350 kg',
-      weightKg: 350,
-      itemsCount: '6 Items',
-      expectedDate: '12 May, 03:00 PM',
-      dateTag: '12 May, 2025',
-      status: 'In Transit',
-      badgeClass: 'bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30',
-      temp: '4.8°C',
-      qrSeal: 'SEAL-88908',
-      driver: 'Sunil Pawar (MH-08-AO-9912)',
-    },
-    {
-      id: 'DLY #DLY7902',
-      po: 'PO: PO-20353',
-      supplier: 'Mahalaxmi Pulses',
-      location: 'Latur, Maharashtra',
-      productCategory: 'Grains',
-      productSub: 'Chana Dal, Toor Dal, Rajma',
-      image: '/images/chickpea_only.png',
-      quantity: '500 kg',
-      weightKg: 500,
-      itemsCount: '5 Items',
-      expectedDate: '11 May, 05:20 PM',
-      dateTag: '11 May, 2025',
-      status: 'Received',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-      temp: '17.5°C',
-      qrSeal: 'SEAL-88909',
-      driver: 'Akash Deshmukh (MH-24-MP-4402)',
-    },
-    {
-      id: 'DLY #DLY7903',
-      po: 'PO: PO-20354',
-      supplier: 'Amul Co-op Dairy',
-      location: 'Anand, Gujarat',
-      productCategory: 'Dairy',
-      productSub: 'Butter, Cheese, Flavored Milk',
-      image: '/images/chickpea_only.png',
-      quantity: '280 L',
-      weightKg: 280,
-      itemsCount: '4 Items',
-      expectedDate: '11 May, 02:45 PM',
-      dateTag: '11 May, 2025',
-      status: 'Received',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-      temp: '2.1°C',
-      qrSeal: 'SEAL-88910',
-      driver: 'Mahesh Shah (GJ-07-AC-8801)',
-    },
-    {
-      id: 'DLY #DLY7904',
-      po: 'PO: PO-20355',
-      supplier: 'Kisan Bio Farms',
-      location: 'Solapur, Maharashtra',
-      productCategory: 'Fruits',
-      productSub: 'Pomegranate, Watermelon',
-      image: '/images/banana_only.png',
-      quantity: '400 kg',
-      weightKg: 400,
-      itemsCount: '3 Items',
-      expectedDate: '10 May, 11:30 AM',
-      dateTag: '10 May, 2025',
-      status: 'Received',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-      temp: '5.2°C',
-      qrSeal: 'SEAL-88911',
-      driver: 'Vilam Shinde (MH-13-KB-2020)',
-    },
-    {
-      id: 'DLY #DLY7905',
-      po: 'PO: PO-20356',
-      supplier: 'Deccan Spices Hub',
-      location: 'Sangli, Maharashtra',
-      productCategory: 'Spices',
-      productSub: 'Turmeric Powder, Chilli Bales',
-      image: '/images/spices_ref.png',
-      quantity: '160 kg',
-      weightKg: 160,
-      itemsCount: '2 Items',
-      expectedDate: '10 May, 04:15 PM',
-      dateTag: '10 May, 2025',
-      status: 'Received',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-      temp: '19.0°C',
-      qrSeal: 'SEAL-88912',
-      driver: 'Deepak Thorat (MH-10-DS-1100)',
-    },
-  ];
-
-  const [deliveries, setDeliveries] = useState(defaultDeliveries);
+  const [deliveries, setDeliveries] = useState([]);
   const [receiving, setReceiving] = useState(false);
 
   const fetchInbound = () => {
     fetch('http://localhost:8000/darkstore/inbound')
       .then((res) => res.json())
       .then((data) => {
-        if (data && data.length > 0) {
-          const liveIds = new Set(data.map((d) => d.id));
-          const filteredDefaults = defaultDeliveries.filter((d) => !liveIds.has(d.id));
-          setDeliveries([...data, ...filteredDefaults]);
+        if (Array.isArray(data)) {
+          setDeliveries(data);
         }
       })
       .catch((err) => console.error('Error fetching inbound deliveries:', err));
@@ -460,7 +223,7 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
 
           {/* Date Pill */}
           <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-[#E6E1D5] shadow-xs text-xs font-bold text-[#2D2620]">
-            <span>12 May, 2025</span>
+            <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
             <Calendar className="w-4 h-4 text-[#666057]" />
           </div>
 
@@ -641,7 +404,8 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
                   {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                     const formattedOpt = `${monthsList[calMonth]} ${day}, ${calYear}`;
                     const isSelected = selectedDate === formattedOpt;
-                    const isToday = day === 12 && calMonth === 4 && calYear === 2025; // May 12, 2025
+                    const now = new Date();
+                    const isToday = day === now.getDate() && calMonth === now.getMonth() && calYear === now.getFullYear();
 
                     return (
                       <button
@@ -669,15 +433,17 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
                 <div className="pt-2 border-t border-[#E6E1D5] flex items-center justify-between text-xs">
                   <button 
                     onClick={() => {
-                      setCalMonth(4); // May
-                      setCalYear(2025);
-                      setSelectedDate('May 12, 2025');
+                      const today = new Date();
+                      setCalMonth(today.getMonth());
+                      setCalYear(today.getFullYear());
+                      const formatted = today.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                      setSelectedDate(formatted);
                       setIsDatePickerOpen(false);
                       setActivePage(1);
                     }}
                     className="text-[11px] font-bold text-[#556B2F] hover:underline cursor-pointer"
                   >
-                    Select Today (May 12, 2025)
+                    Select Today ({new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })})
                   </button>
 
                   <button 

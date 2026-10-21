@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 
 export const LogisticKPICards = ({ onCardClick }) => {
   const [kpis, setKpis] = useState({
-    totalShipments: 24,
-    pendingOrders: 8,
-    onTimeDelivery: '92%',
-    totalLogisticsCost: '₹ 45,680',
+    totalShipments: 0,
+    pendingOrders: 0,
+    onTimeDelivery: '100%',
+    totalLogisticsCost: '₹ 0',
   });
 
   useEffect(() => {

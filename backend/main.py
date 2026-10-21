@@ -1405,7 +1405,7 @@ def _resolve_category_id(crop_name: str, given_cat: str = ""):
 
 @app.get("/farmer/kpis")
 def get_farmer_kpis():
-    """Returns kpiMetrics computed from SQLite rows matching mockData.js shape."""
+    """Returns kpiMetrics computed dynamically from database rows."""
     conn = get_connection()
     try:
         batches = conn.execute("SELECT * FROM batches").fetchall()
@@ -1413,8 +1413,6 @@ def get_farmer_kpis():
             "SELECT count(DISTINCT batch_id) as cnt FROM custody_events WHERE state = 'IN_TRANSIT'"
         ).fetchone()["cnt"]
 
-        # Base inventory from mock baseline: 5.65 Tonnes
-        baseline_inv = 5.65
         added_inv = 0.0
         added_earnings = 0
 
@@ -1423,9 +1421,9 @@ def get_farmer_kpis():
             added_inv += qty
             added_earnings += int(price)
 
-        total_inv = baseline_inv + added_inv
-        total_orders = 13 + len(batches)
-        total_earnings = 28450 + added_earnings
+        total_inv = added_inv
+        total_orders = len(batches)
+        total_earnings = added_earnings
 
         return [
             {
@@ -1445,7 +1443,7 @@ def get_farmer_kpis():
             {
                 "id": "shipments",
                 "title": "Shipments",
-                "value": str(in_transit if in_transit > 0 else 5),
+                "value": str(in_transit),
                 "unit": "In Transit",
                 "type": "shipments",
             },
@@ -1463,7 +1461,7 @@ def get_farmer_kpis():
 
 @app.get("/farmer/crops")
 def get_farmer_crops():
-    """Returns cropCategories matching mockData.js shape with new registered stock reflected."""
+    """Returns cropCategories dynamically calculated from actual registered batches in DB."""
     conn = get_connection()
     try:
         batches = conn.execute("SELECT * FROM batches ORDER BY created_at DESC").fetchall()
@@ -1472,57 +1470,39 @@ def get_farmer_crops():
             "fruits": {
                 "id": "fruits",
                 "name": "Fruits",
-                "crops": [
-                    {"name": "Mango", "quantity": "0.75 Tonnes", "value": "₹7,500", "status": "In Stock", "quality": "Grade A Alphonso"},
-                    {"name": "Banana", "quantity": "0.50 Tonnes", "value": "₹5,000", "status": "In Stock", "quality": "Grade A Robusta"},
-                ],
+                "crops": [],
             },
             "vegetables": {
                 "id": "vegetables",
                 "name": "Vegetables",
-                "crops": [
-                    {"name": "Tomato", "quantity": "0.60 Tonnes", "value": "₹2,400", "status": "In Stock", "quality": "Fresh Red Hybrid"},
-                    {"name": "Potato", "quantity": "0.60 Tonnes", "value": "₹2,400", "status": "In Stock", "quality": "Jyoti Organic"},
-                ],
+                "crops": [],
             },
             "grains": {
                 "id": "grains",
                 "name": "Grains",
-                "crops": [
-                    {"name": "Wheat", "quantity": "0.80 Tonnes", "value": "₹6,400", "status": "In Stock", "quality": "Sharbati Golden"},
-                    {"name": "Rice", "quantity": "0.75 Tonnes", "value": "₹5,625", "status": "In Stock", "quality": "Basmati Extra Long"},
-                ],
+                "crops": [],
             },
             "pulses": {
                 "id": "pulses",
                 "name": "Pulses & Legumes",
-                "crops": [
-                    {"name": "Chickpea", "quantity": "0.50 Tonnes", "value": "₹4,500", "status": "In Stock", "quality": "Desi Brown"},
-                    {"name": "Green Gram", "quantity": "0.40 Tonnes", "value": "₹4,160", "status": "In Stock", "quality": "Shiny Moong"},
-                ],
+                "crops": [],
             },
             "spices": {
                 "id": "spices",
                 "name": "Spices",
-                "crops": [
-                    {"name": "Chilli", "quantity": "0.20 Tonnes", "value": "₹2,400", "status": "In Stock", "quality": "Guntur Red Hot"},
-                    {"name": "Turmeric", "quantity": "0.30 Tonnes", "value": "₹3,600", "status": "In Stock", "quality": "Salem Pure Yellow"},
-                ],
+                "crops": [],
             },
             "dryfruits": {
                 "id": "dryfruits",
                 "name": "Dry Fruits & Nuts",
-                "crops": [
-                    {"name": "Cashew", "quantity": "0.15 Tonnes", "value": "₹12,000", "status": "In Stock", "quality": "W240 Whole Kernel"},
-                    {"name": "Almond", "quantity": "0.10 Tonnes", "value": "₹9,000", "status": "In Stock", "quality": "Mamra Premium"},
-                ],
+                "crops": [],
             },
         }
 
         for b in batches:
             cat_tag, qty, price = _parse_batch_meta(b)
             cat_id = _resolve_category_id(b["crop_name"], cat_tag)
-            categories[cat_id]["crops"].insert(0, {
+            categories[cat_id]["crops"].append({
                 "name": b["crop_name"],
                 "quantity": f"{qty:.2f} Tonnes",
                 "value": f"₹{int(price):,}",
@@ -1890,15 +1870,19 @@ def get_logistics_kpis():
         transit_cost_paise = transit_cost_row["total"] if transit_cost_row and transit_cost_row["total"] else 0
         cost_rupees = transit_cost_paise // 100
 
-        display_shipments = total_in_transit if total_in_transit > 0 else len(rows)
-        display_cost = f"₹ {cost_rupees:,}" if cost_rupees > 0 else "₹ 45,680"
+        total_readings = conn.execute("SELECT COUNT(*) as cnt FROM readings").fetchone()["cnt"]
+        quarantine_cnt = conn.execute("SELECT COUNT(*) as cnt FROM quarantine").fetchone()["cnt"]
+        if total_readings > 0:
+            sla_pct = max(70, min(100, int(100 - (quarantine_cnt / total_readings * 100))))
+        else:
+            sla_pct = 98
 
         return {
-            "totalShipments": display_shipments,
+            "totalShipments": total_in_transit,
             "shipmentsInTransit": total_in_transit,
             "pendingOrders": pending_orders,
-            "onTimeDelivery": "94%",
-            "totalLogisticsCost": display_cost,
+            "onTimeDelivery": f"{sla_pct}%",
+            "totalLogisticsCost": f"₹ {cost_rupees:,}",
             "rawCostPaise": transit_cost_paise,
         }
     finally:
@@ -2090,25 +2074,37 @@ def get_darkstore_kpis():
         sold_paise = sold_rows["total_paise"] or 0
         sold_rupees = sold_paise // 100
 
-        # Format cards display values
-        inv_val_rupees = 1875600 + (in_storage_count * 25000)
-        display_incoming = inbound_count if inbound_count > 0 else 12
-        display_products = 186 + in_storage_count
-        display_sales = f"₹ {245780 + sold_rupees:,}" if sold_rupees > 0 else "₹ 2,45,780"
-        display_revenue = f"₹ {1128450 + sold_rupees:,}" if sold_rupees > 0 else "₹ 11,28,450"
+        # Calculate real dynamic values from database
+        inv_val_rows = conn.execute(
+            """
+            SELECT sum(c.price_paise) as total_paise
+            FROM batches b
+            JOIN custody_events c ON c.id = (
+                SELECT id FROM custody_events WHERE batch_id = b.batch_id ORDER BY id DESC LIMIT 1
+            )
+            WHERE c.state IN ('IN_STORAGE', 'AT_RETAIL')
+            """
+        ).fetchone()
+        in_storage_paise = inv_val_rows["total_paise"] or 0
+        inv_val_rupees = in_storage_paise // 100
+
+        # Count active incidents / alerts
+        expiry_alerts_cnt = conn.execute(
+            "SELECT COUNT(*) as cnt FROM spoilage_incidents WHERE status != 'RESOLVED'"
+        ).fetchone()["cnt"]
 
         return {
             "inventoryValue": f"₹ {inv_val_rupees:,}",
             "inventoryValueRaw": inv_val_rupees,
-            "incomingToday": display_incoming,
+            "incomingToday": inbound_count,
             "incomingCount": inbound_count,
-            "totalProducts": display_products,
-            "activeSKUs": display_products,
-            "todaySales": display_sales,
-            "todaySalesRaw": 245780 + sold_rupees,
-            "expiryAlerts": 7,
-            "revenueThisMonth": display_revenue,
-            "revenueRaw": 1128450 + sold_rupees,
+            "totalProducts": in_storage_count,
+            "activeSKUs": in_storage_count,
+            "todaySales": f"₹ {sold_rupees:,}",
+            "todaySalesRaw": sold_rupees,
+            "expiryAlerts": expiry_alerts_cnt,
+            "revenueThisMonth": f"₹ {sold_rupees:,}",
+            "revenueRaw": sold_rupees,
             "inStorageCount": in_storage_count,
             "soldCount": sold_count,
         }
@@ -2171,7 +2167,7 @@ def get_darkstore_inbound():
                 "weightKg": 500,
                 "itemsCount": "1 Batch",
                 "expectedDate": "Today, 05:00 PM",
-                "dateTag": "12 May, 2025",
+                "dateTag": str(r["occurred_at"])[:10],
                 "status": "In Transit",
                 "badgeClass": "bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30",
                 "temp": temp_str,
@@ -2179,50 +2175,6 @@ def get_darkstore_inbound():
                 "driver": "Vikram Solanki (MH-12-QX-8812)",
                 "txHash": r["tx_hash"],
             })
-
-        if not deliveries:
-            deliveries = [
-                {
-                    "id": "DLY #DLY7895",
-                    "batchId": "BATCH-001",
-                    "po": "PO: PO-20346",
-                    "supplier": "Green Valley Farms",
-                    "location": "Pune, Maharashtra",
-                    "productCategory": "Fruits",
-                    "productSub": "Mango, Banana, Apple +1",
-                    "image": "/images/mango_only.png",
-                    "quantity": "180 kg",
-                    "weightKg": 180,
-                    "itemsCount": "4 Items",
-                    "expectedDate": "11 May, 08:15 AM",
-                    "dateTag": "11 May, 2025",
-                    "status": "In Transit",
-                    "badgeClass": "bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30",
-                    "temp": "4.2°C",
-                    "qrSeal": "SEAL-88902",
-                    "driver": "Vikram Solanki (MH-12-QX-8812)",
-                },
-                {
-                    "id": "DLY #DLY7894",
-                    "batchId": "BATCH-DEMO-02",
-                    "po": "PO: PO-20345",
-                    "supplier": "Fresh Veg Traders",
-                    "location": "Nashik, Maharashtra",
-                    "productCategory": "Vegetables",
-                    "productSub": "Tomato, Potato, Onion +2",
-                    "image": "/images/fruits_ref.png",
-                    "quantity": "230 kg",
-                    "weightKg": 230,
-                    "itemsCount": "5 Items",
-                    "expectedDate": "11 May, 09:30 AM",
-                    "dateTag": "11 May, 2025",
-                    "status": "Received",
-                    "badgeClass": "bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30",
-                    "temp": "3.8°C",
-                    "qrSeal": "SEAL-88901",
-                    "driver": "Ramesh Shinde (MH-15-EG-4021)",
-                }
-            ]
 
         return deliveries
     finally:
@@ -2279,20 +2231,6 @@ def get_darkstore_inventory():
                 "pricePerKg": 40,
                 "txHash": r["tx_hash"],
             })
-
-        if len(bins) < 6:
-            default_bins = [
-                { "binId": 'Bin A-01', "bay": 'Bay A (Cold)', "item": 'Fresh Farm Tomatoes', "category": 'Vegetables', "stock": '240 kg', "capacity": '300 kg', "temp": '3.1°C', "humidity": '84%', "quality": 'Grade A', "expiry": '6 Days' },
-                { "binId": 'Bin A-04', "bay": 'Bay A (Cold)', "item": 'Organic Tomatoes', "category": 'Vegetables', "stock": '180 kg', "capacity": '250 kg', "temp": '2.8°C', "humidity": '85%', "quality": 'Grade A+', "expiry": '8 Days' },
-                { "binId": 'Bin B-01', "bay": 'Bay B (Ambient)', "item": 'Nashik Red Onions', "category": 'Grains & Roots', "stock": '500 kg', "capacity": '600 kg', "temp": '18.5°C', "humidity": '55%', "quality": 'Grade A', "expiry": '20 Days' },
-                { "binId": 'Bin B-12', "bay": 'Bay B (Ambient)', "item": 'Fresh Potatoes (5kg Bags)', "category": 'Roots', "stock": '420 kg', "capacity": '500 kg', "temp": '19.0°C', "humidity": '58%', "quality": 'Grade A', "expiry": '15 Days' },
-                { "binId": 'Bin C-02', "bay": 'Bay C (Cold)', "item": 'Green Gram / Moong Dal', "category": 'Pulses', "stock": '310 kg', "capacity": '400 kg', "temp": '2.2°C', "humidity": '78%', "quality": 'Grade A+', "expiry": '30 Days' },
-                { "binId": 'Bin C-08', "bay": 'Bay C (Cold)', "item": 'Turmeric Bales', "category": 'Spices', "stock": '150 kg', "capacity": '200 kg', "temp": '2.0°C', "humidity": '80%', "quality": 'Grade A', "expiry": '45 Days' },
-            ]
-            existing_bin_ids = {b["binId"] for b in bins}
-            for db in default_bins:
-                if db["binId"] not in existing_bin_ids:
-                    bins.append(db)
 
         return bins
     finally:
@@ -2495,6 +2433,313 @@ def get_batch_reviews(batch_id: str):
             "average_freshness": avg_freshness,
             "total_reviews": total_rev,
             "reviews": reviews,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/consumer/reviews")
+def get_all_consumer_reviews():
+    """Retrieves all verified reviews across batches, with rating breakdown and average."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT r.id, r.batch_id, r.rating, r.comment, r.freshness_score, r.reviewer_address, r.created_at, b.crop_name, b.origin_farm
+            FROM batch_reviews r
+            JOIN batches b ON r.batch_id = b.batch_id
+            ORDER BY r.id DESC
+            """
+        ).fetchall()
+
+        reviews = []
+        star_counts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+        total_rating = 0
+        for r in rows:
+            rating = max(1, min(5, int(r["rating"])))
+            star_counts[rating] += 1
+            total_rating += rating
+            addr = r["reviewer_address"] or "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+            short_addr = f"{addr[:6]}...{addr[-4:]}" if len(addr) >= 10 else addr
+            reviews.append({
+                "id": f"rev-{r['id']}",
+                "batchId": r["batch_id"],
+                "cropName": r["crop_name"],
+                "origin": r["origin_farm"],
+                "author": short_addr,
+                "badge": "Verified Buyer (On-Chain SOLD)",
+                "date": str(r["created_at"])[:10],
+                "comment": r["comment"] or "Verified cold-chain journey backed by cryptographic proof.",
+                "rating": rating,
+                "freshnessScore": r["freshness_score"] or 95,
+            })
+
+        total_rev = len(reviews)
+        avg_rating = round(total_rating / total_rev, 1) if total_rev else 5.0
+        breakdown = []
+        for s in [5, 4, 3, 2, 1]:
+            pct = round((star_counts[s] / total_rev) * 100) if total_rev else (100 if s == 5 else 0)
+            breakdown.append({"stars": s, "percentage": pct, "count": star_counts[s]})
+
+        return {
+            "totalReviews": total_rev,
+            "averageRating": avg_rating,
+            "breakdown": breakdown,
+            "reviews": reviews,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/darkstore/expiry-alerts")
+def get_darkstore_expiry_alerts():
+    """Dynamically evaluates batches in storage/transit for expiry risks and breach degradation."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT b.batch_id, b.crop_name, b.origin_farm, b.harvest_date, b.farmer_name,
+                   c.state, c.occurred_at
+            FROM batches b
+            JOIN custody_events c ON c.id = (
+                SELECT id FROM custody_events WHERE batch_id = b.batch_id ORDER BY id DESC LIMIT 1
+            )
+            ORDER BY b.created_at DESC
+            """
+        ).fetchall()
+
+        critical_items = []
+        high_items = []
+        medium_items = []
+        safe_items = []
+
+        crop_images = {
+            "tomato": "/images/tomato_only.png",
+            "potato": "/images/potato_only.png",
+            "mango": "/images/mango_only.png",
+            "wheat": "/images/wheat_only.png",
+            "rice": "/images/rice_only.png",
+        }
+
+        from datetime import datetime, date
+        today = date.today()
+
+        for idx, r in enumerate(rows):
+            batch_id = r["batch_id"]
+            crop = r["crop_name"]
+            crop_lower = crop.lower()
+
+            breach = conn.execute(
+                "SELECT COUNT(*) as cnt FROM readings WHERE batch_id = ? AND verdict = 'BREACH'",
+                (batch_id,)
+            ).fetchone()["cnt"]
+
+            try:
+                h_date = datetime.strptime(str(r["harvest_date"])[:10], "%Y-%m-%d").date()
+                days_old = (today - h_date).days
+            except Exception:
+                days_old = 1
+
+            if breach > 0 or days_old >= 7:
+                risk = "Critical"
+                left_str = "0-3 Days Left (Breach Action)"
+                badge_class = "bg-[#FEE2E2] text-[#991B1B]"
+                critical_items.append({
+                    "batchId": batch_id,
+                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "badge": "0-3 Days",
+                    "badgeClass": badge_class,
+                    "location": f"Clearance Bay 2 • Bin A-{idx+1:02d}",
+                    "qty": "500 kg",
+                    "left": left_str,
+                    "leftColor": "text-[#991B1B]",
+                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "risk": risk,
+                    "expiryDate": "Immediate Clearance",
+                    "breachDetected": (breach > 0),
+                })
+            elif days_old >= 4:
+                risk = "High"
+                left_str = f"{7 - days_old} Days Left"
+                badge_class = "bg-[#FFF3EB] text-[#B85C38]"
+                high_items.append({
+                    "batchId": batch_id,
+                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "badge": "4-7 Days",
+                    "badgeClass": badge_class,
+                    "location": f"Cold Bay A • Bin A-{idx+1:02d}",
+                    "qty": "500 kg",
+                    "left": left_str,
+                    "leftColor": "text-[#B85C38]",
+                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "risk": risk,
+                    "expiryDate": f"Expiring in {7 - days_old} Days",
+                    "breachDetected": False,
+                })
+            elif days_old >= 2:
+                risk = "Medium"
+                left_str = f"{15 - days_old} Days Left"
+                badge_class = "bg-[#FEF3C7] text-[#D97706]"
+                medium_items.append({
+                    "batchId": batch_id,
+                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "badge": "8-15 Days",
+                    "badgeClass": badge_class,
+                    "location": f"Cold Bay A • Bin A-{idx+1:02d}",
+                    "qty": "500 kg",
+                    "left": left_str,
+                    "leftColor": "text-[#D97706]",
+                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "risk": risk,
+                    "expiryDate": f"Expiring in {15 - days_old} Days",
+                    "breachDetected": False,
+                })
+            else:
+                risk = "Safe"
+                left_str = "15+ Days Left"
+                badge_class = "bg-[#EBF3E8] text-[#354424]"
+                safe_items.append({
+                    "batchId": batch_id,
+                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "badge": "Safe",
+                    "badgeClass": badge_class,
+                    "location": f"Cold Bay A • Bin A-{idx+1:02d}",
+                    "qty": "500 kg",
+                    "left": left_str,
+                    "leftColor": "text-[#354424]",
+                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "risk": risk,
+                    "expiryDate": "Fresh Stock",
+                    "breachDetected": False,
+                })
+
+        timeline = critical_items + high_items + medium_items + safe_items
+        return {
+            "criticalCount": len(critical_items),
+            "highCount": len(high_items),
+            "mediumCount": len(medium_items),
+            "safeCount": len(safe_items),
+            "totalCount": len(timeline),
+            "timelineItems": timeline,
+        }
+    finally:
+        conn.close()
+
+
+@app.get("/darkstore/revenue")
+def get_darkstore_revenue():
+    """Returns dynamic daily revenue summary table and chart metrics from sold batches."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT date(occurred_at) as sale_date, COUNT(*) as orders_count, SUM(price_paise) as total_paise
+            FROM custody_events
+            WHERE state = 'SOLD'
+            GROUP BY date(occurred_at)
+            ORDER BY sale_date DESC
+            LIMIT 15
+            """
+        ).fetchall()
+
+        table_data = []
+        daily_bar_data = []
+        max_gross = 1
+        raw_days = []
+        for r in rows:
+            orders = r["orders_count"]
+            gross_rupees = (r["total_paise"] or 0) // 100
+            if gross_rupees > max_gross:
+                max_gross = gross_rupees
+            discount_rupees = int(gross_rupees * 0.05)
+            net_rupees = gross_rupees - discount_rupees
+            profit_rupees = int(net_rupees * 0.30)
+            margin = "30.0%"
+            s_date = str(r["sale_date"])
+            table_data.append({
+                "date": s_date,
+                "orders": orders,
+                "grossRev": f"{gross_rupees:,}",
+                "discount": f"{discount_rupees:,}",
+                "netRev": f"{net_rupees:,}",
+                "profit": f"{profit_rupees:,}",
+                "margin": margin,
+            })
+            raw_days.append({
+                "day": s_date[5:] if len(s_date) >= 10 else s_date,
+                "gross": gross_rupees
+            })
+
+        for d in reversed(raw_days):
+            pct = int((d["gross"] / max_gross) * 80) + 15
+            daily_bar_data.append({
+                "day": d["day"],
+                "height": f"{min(pct, 95)}%"
+            })
+
+        # Sources from real batches
+        sources = conn.execute(
+            """
+            SELECT b.farmer_name, b.origin_farm, SUM(c.price_paise) as total_paise
+            FROM custody_events c
+            JOIN batches b ON c.batch_id = b.batch_id
+            WHERE c.state = 'SOLD'
+            GROUP BY b.farmer_name, b.origin_farm
+            ORDER BY total_paise DESC
+            LIMIT 6
+            """
+        ).fetchall()
+        source_bar_data = []
+        max_src_val = 1
+        for s in sources:
+            val = (s["total_paise"] or 0) // 100
+            if val > max_src_val:
+                max_src_val = val
+        for s in sources:
+            name = s["origin_farm"].split("||")[0].strip() if s["origin_farm"] else (s["farmer_name"] or "Local Farm")
+            val = (s["total_paise"] or 0) // 100
+            width_pct = int((val / max_src_val) * 85) + 10 if max_src_val > 0 else 50
+            source_bar_data.append({
+                "name": name,
+                "val": f"₹{val:,}",
+                "width": f"{min(width_pct, 100)}%"
+            })
+
+        # Category breakdown
+        cat_rows = conn.execute(
+            """
+            SELECT b.crop_name, SUM(c.price_paise) as total_paise
+            FROM custody_events c
+            JOIN batches b ON c.batch_id = b.batch_id
+            WHERE c.state = 'SOLD'
+            GROUP BY b.crop_name
+            ORDER BY total_paise DESC
+            """
+        ).fetchall()
+        total_cat_paise = sum((r["total_paise"] or 0) for r in cat_rows) or 1
+        category_breakdown = []
+        for cr in cat_rows:
+            paise = cr["total_paise"] or 0
+            share_pct = round((paise / total_cat_paise) * 100, 1)
+            category_breakdown.append({
+                "name": cr["crop_name"].capitalize(),
+                "percent": f"{share_pct}%",
+                "val": f"₹{paise // 100:,}"
+            })
+
+        total_orders = sum(r["orders_count"] for r in rows)
+        total_gross = sum((r["total_paise"] or 0) // 100 for r in rows)
+        avg_order = (total_gross // total_orders) if total_orders > 0 else 0
+
+        return {
+            "revenueTableData": table_data,
+            "dailyBarData": daily_bar_data,
+            "sourceBarData": source_bar_data,
+            "categoryBreakdown": category_breakdown,
+            "totalRevenue": f"₹{total_gross:,}",
+            "avgOrderValue": f"₹{avg_order:,}",
+            "totalOrders": total_orders,
+            "totalSoldDays": len(table_data),
         }
     finally:
         conn.close()
@@ -2938,11 +3183,19 @@ def get_darkstore_sales():
             """
         ).fetchall()
 
-        total_sales_paise = sum(r["price_paise"] for r in sold_rows) if sold_rows else 24578000
-        completed_orders = len(sold_rows) if sold_rows else 186
+        total_sales_paise = sum(r["price_paise"] for r in sold_rows) if sold_rows else 0
+        completed_orders = len(sold_rows)
         total_kg = completed_orders * 25
 
         recent_orders = []
+        crop_sales = {}
+        for r in sold_rows:
+            c = r["crop_name"].title()
+            if c not in crop_sales:
+                crop_sales[c] = {"qty": 0, "rev_paise": 0}
+            crop_sales[c]["qty"] += 25
+            crop_sales[c]["rev_paise"] += r["price_paise"] or 0
+
         for r in sold_rows[:15]:
             recent_orders.append({
                 "id": f"SO-{r['batch_id'][:8]}",
@@ -2956,10 +3209,33 @@ def get_darkstore_sales():
                 "txHash": r["tx_hash"],
             })
 
+        top_products = []
+        for crop, d in sorted(crop_sales.items(), key=lambda x: x[1]["rev_paise"], reverse=True)[:5]:
+            img = "/images/tomato_only.png" if "Tomato" in crop else ("/images/mango.png" if "Mango" in crop else "/images/vegetables_ref.png")
+            top_products.append({
+                "name": crop,
+                "qty": f"{d['qty']} kg",
+                "revenue": f"₹ {d['rev_paise'] // 100:,}",
+                "image": img
+            })
+
+        pending_row = conn.execute(
+            """
+            SELECT COUNT(*) as cnt FROM (
+                SELECT batch_id, MAX(id) as last_id FROM custody_events GROUP BY batch_id
+            ) latest
+            JOIN custody_events ce ON latest.last_id = ce.id
+            WHERE ce.state IN ('IN_TRANSIT', 'IN_STORAGE')
+            """
+        ).fetchone()
+        pending_orders = str(pending_row["cnt"]) if pending_row else "0"
+
         return {
             "totalSales": f"₹ {total_sales_paise // 100:,}",
             "ordersCompleted": str(completed_orders),
             "quantitySold": f"{total_kg:,} kg",
+            "pendingOrders": pending_orders,
+            "topProducts": top_products,
             "recentOrders": recent_orders,
         }
     finally:

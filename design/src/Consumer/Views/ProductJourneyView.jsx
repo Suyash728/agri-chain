@@ -66,13 +66,20 @@ export const ProductJourneyView = ({
       .catch(() => {});
   }, [displayBatchId, refreshKey]);
 
+  const today = new Date();
+  const formatDateOffset = (offsetDays) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - offsetDays);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
   const timelineSteps = [
-    { title: 'Harvested', date: '05 May, 2025', location: `${originCity} Farm`, pricePaise: 0 },
-    { title: 'Processed', date: '06 May, 2025', location: `${originCity} Packing Unit`, pricePaise: 0 },
-    { title: 'Transported', date: '07 May, 2025', location: 'Green Valley Logistics', pricePaise: 120000 },
-    { title: 'Received at Dark Store', date: '08 May, 2025', location: `${originCity} Central Store`, pricePaise: 155000 },
-    { title: 'Out for Delivery', date: '09 May, 2025', location: 'Local Courier Service', pricePaise: 185000 },
-    { title: 'Delivered', date: '10 May, 2025', location: 'Customer Doorstep', pricePaise: 220000 }
+    { title: 'Harvested', date: formatDateOffset(4), location: `${originCity} Farm Gate`, pricePaise: 0 },
+    { title: 'Processed & Inspected', date: formatDateOffset(3), location: `${originCity} Quality Hub`, pricePaise: 0 },
+    { title: 'Transported', date: formatDateOffset(2), location: 'Safexpress Reefer Fleet', pricePaise: 120000 },
+    { title: 'Received at Dark Store', date: formatDateOffset(1), location: `${originCity} Central Store`, pricePaise: 155000 },
+    { title: 'Out for Delivery', date: formatDateOffset(0), location: 'Last-Mile Courier', pricePaise: 185000 },
+    { title: 'Delivered', date: formatDateOffset(0), location: 'Customer Doorstep', pricePaise: 220000 }
   ];
 
   const stepsToRender = journeyData?.steps && journeyData.steps.length > 0
@@ -85,31 +92,10 @@ export const ProductJourneyView = ({
     : timelineSteps;
 
   // Dynamic reviews for the selected product
-  const fallbackReviews = {
-    reviewsCount: 12,
-    rating: 4.8,
-    reviews: [
-      {
-        id: 'rev-def-1',
-        author: '0x71C...3a89',
-        badge: 'On-Chain Verified',
-        date: 'Recent',
-        comment: 'Crisp and fresh! Zero cold chain breaches confirmed by QR scan.',
-        rating: 5,
-      }
-    ],
-    breakdown: [
-      { stars: 5, percentage: 85 },
-      { stars: 4, percentage: 15 },
-      { stars: 3, percentage: 0 },
-      { stars: 2, percentage: 0 },
-      { stars: 1, percentage: 0 }
-    ]
-  };
-  const reviewsCount = liveReviews ? liveReviews.total_reviews : fallbackReviews.reviewsCount;
-  const ratingScore = liveReviews ? liveReviews.average_rating : fallbackReviews.rating;
+  const reviewsCount = liveReviews ? liveReviews.total_reviews : 0;
+  const ratingScore = liveReviews ? liveReviews.average_rating : 5.0;
 
-  const displayReviewsList = liveReviews && liveReviews.reviews.length > 0
+  const displayReviewsList = liveReviews && liveReviews.reviews && liveReviews.reviews.length > 0
     ? liveReviews.reviews.map(r => ({
         id: r.id,
         author: r.reviewer_address ? `${r.reviewer_address.substring(0, 6)}...${r.reviewer_address.substring(r.reviewer_address.length - 4)}` : 'Verified Consumer',
@@ -118,15 +104,15 @@ export const ProductJourneyView = ({
         comment: r.comment,
         rating: r.rating,
       }))
-    : fallbackReviews.reviews;
+    : [];
 
-  const breakdownToRender = liveReviews && liveReviews.reviews.length > 0
+  const breakdownToRender = liveReviews && liveReviews.reviews && liveReviews.reviews.length > 0
     ? [5, 4, 3, 2, 1].map(stars => {
         const count = liveReviews.reviews.filter(r => r.rating === stars).length;
         const percentage = Math.round((count / liveReviews.reviews.length) * 100);
         return { stars, percentage };
       })
-    : fallbackReviews.breakdown;
+    : [5, 4, 3, 2, 1].map(stars => ({ stars, percentage: stars === 5 ? 100 : 0 }));
 
   return (
     <div className="flex flex-col gap-3 pb-20 md:pb-8 pt-2">
@@ -359,18 +345,13 @@ export const ProductJourneyView = ({
             </div>
 
             <div className="flex flex-col gap-3">
-              {(documents.length > 0 ? documents : [
-                {
-                  id: 1,
-                  doc_type: 'QUALITY_CERTIFICATE',
-                  file_name: 'organic_inspection_cert.pdf',
-                  ipfs_cid: 'ipfs://QmQeGWegKZ5dMbRT3mqWHDSN2L5pgjQ547WWB36coaNAkw',
-                  gateway_url: 'https://gateway.pinata.cloud/ipfs/QmQeGWegKZ5dMbRT3mqWHDSN2L5pgjQ547WWB36coaNAkw',
-                  uploaded_at: '2026-09-23 16:05:42',
-                  tx_hash: '0xe8f41072b78870bae8da94881c97d4098cfb4a365578ebaa6049be172c3103f2'
-                }
-              ]).map((doc, idx) => (
-                <div key={idx} className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-2xl p-4 flex flex-col gap-2">
+              {documents.length === 0 ? (
+                <div className="py-6 text-center text-xs text-[#666057] font-semibold bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5] p-4">
+                  No decentralized quality certificates attached to this batch yet.
+                </div>
+              ) : (
+                documents.map((doc, idx) => (
+                  <div key={idx} className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-2xl p-4 flex flex-col gap-2">
                   <div className="flex justify-between items-start">
                     <span className="px-2.5 py-0.5 rounded-full bg-[#354424] text-white text-[10px] font-extrabold uppercase">
                       {doc.doc_type || 'CERTIFICATE'}
@@ -404,7 +385,7 @@ export const ProductJourneyView = ({
                     </a>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
 
             <button

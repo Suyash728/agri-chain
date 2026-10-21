@@ -16,62 +16,9 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
   const [revenueFilter, setRevenueFilter] = useState('This Month');
   const [kpis, setKpis] = useState(null);
 
-  // Middle Card 2: Recent Incoming Deliveries Data
-  const defaultDeliveries = [
-    {
-      id: 'DLY #DLY7894',
-      supplier: 'Fresh Veg Traders',
-      details: 'Vegetables • 230 kg • Nashik Farm',
-      status: 'Received',
-      badgeStyle: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-      dateTime: '11 May, 09:30 AM',
-      image: '/images/vegetables_ref.png',
-    },
-    {
-      id: 'DLY #DLY7895',
-      supplier: 'Green Valley Farms',
-      details: 'Fruits • 180 kg • Pune Farm',
-      status: 'In Transit',
-      badgeStyle: 'bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30',
-      dateTime: '11 May, 08:15 AM',
-      image: '/images/fruits_ref.png',
-    },
-    {
-      id: 'DLY #DLY7896',
-      supplier: 'Daily Needs Store',
-      details: 'Grains • 300 kg • Aurangabad',
-      status: 'Processing',
-      badgeStyle: 'bg-[#EFF6FF] text-[#2563EB] border border-[#2563EB]/30',
-      dateTime: '11 May, 07:00 AM',
-      image: '/images/grains_ref.png',
-    },
-    {
-      id: 'DLY #DLY7897',
-      supplier: 'Dairy Connect',
-      details: 'Dairy • 150 L • Nashik',
-      status: 'Received',
-      badgeStyle: 'bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30',
-      dateTime: '10 May, 06:45 PM',
-      image: 'dairy',
-    },
-  ];
-
-  const [recentDeliveries, setRecentDeliveries] = useState(defaultDeliveries);
-
-  const defaultExpiryAlerts = [
-    { name: 'Spinach (200 g)', sub: 'Expires in 2 days • 15 May, 2025', qty: '15 kg', risk: 'High', badge: 'bg-[#FEE2E2] text-[#991B1B]', image: '/images/greengram_only.png' },
-    { name: 'Strawberry (Pack)', sub: 'Expires in 3 days • 16 May, 2025', qty: '8 Packs', risk: 'Medium', badge: 'bg-[#FEF3C7] text-[#D97706]', image: '/images/fruits_ref.png' },
-    { name: 'Paneer (200 g)', sub: 'Expires in 1 day • 14 May, 2025', qty: '6 Packs', risk: 'High', badge: 'bg-[#FEE2E2] text-[#991B1B]', image: '/images/chickpea_only.png' },
-  ];
-
-  const defaultBlockchainCerts = [
-    { batchId: 'WH-120525-01', crop: 'Wheat', origin: 'Verified • Nashik Farm', date: 'Verified on 10 May, 2025' },
-    { batchId: 'MN-120525-02', crop: 'Mango', origin: 'Verified • Pune Farm', date: 'Verified on 10 May, 2025' },
-    { batchId: 'TM-120525-03', crop: 'Tomato', origin: 'Verified • Chhattisgarh Farm', date: 'Verified on 11 May, 2025' },
-  ];
-
-  const [expiryAlerts, setExpiryAlerts] = useState(defaultExpiryAlerts);
-  const [blockchainCerts, setBlockchainCerts] = useState(defaultBlockchainCerts);
+  const [recentDeliveries, setRecentDeliveries] = useState([]);
+  const [expiryAlerts, setExpiryAlerts] = useState([]);
+  const [blockchainCerts, setBlockchainCerts] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:8000/darkstore/kpis')
@@ -300,46 +247,52 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
             </div>
 
             <div className="space-y-2.5">
-              {recentDeliveries.map((item) => (
-                <div 
-                  key={item.id}
-                  onClick={() => onSelectTab('incoming-deliveries')}
-                  className="p-2.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5]/70 flex items-center justify-between hover:bg-white hover:border-[#7A8B52] transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-white border border-[#E6E1D5] p-1 flex items-center justify-center flex-shrink-0">
-                      {item.image === 'dairy' ? (
-                        <svg viewBox="0 0 48 48" className="w-full h-full">
-                          <rect x="6" y="16" width="12" height="24" rx="3" fill="#60A5FA" opacity="0.85" />
-                          <rect x="9" y="10" width="6" height="6" rx="1" fill="#2563EB" />
-                          <rect x="22" y="12" width="18" height="28" rx="4" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
-                          <rect x="27" y="6" width="8" height="6" rx="1.5" fill="#3B82F6" />
-                          <circle cx="31" cy="24" r="5" fill="#93C5FD" opacity="0.4" />
-                        </svg>
-                      ) : (
-                        <img src={item.image} alt={item.supplier} className="w-full h-full object-contain" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-extrabold text-xs text-[#2D2620]">{item.id}</span>
-                        <span className="text-[11px] font-bold text-[#666057]">{item.supplier}</span>
-                      </div>
-                      <p className="text-[10px] text-[#666057] mt-0.5">{item.details}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-right">
-                    <div>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold block mb-0.5 ${item.badgeStyle}`}>
-                        {item.status}
-                      </span>
-                      <span className="text-[9px] text-[#8C8275] block font-medium">{item.dateTime}</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-[#8C8275] group-hover:translate-x-0.5 transition-transform" />
-                  </div>
+              {recentDeliveries.length === 0 ? (
+                <div className="p-4 text-center text-xs text-[#666057] font-semibold bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5]/70">
+                  No pending incoming deliveries today.
                 </div>
-              ))}
+              ) : (
+                recentDeliveries.map((item) => (
+                  <div 
+                    key={item.id}
+                    onClick={() => onSelectTab('incoming-deliveries')}
+                    className="p-2.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5]/70 flex items-center justify-between hover:bg-white hover:border-[#7A8B52] transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-[#E6E1D5] p-1 flex items-center justify-center flex-shrink-0">
+                        {item.image === 'dairy' ? (
+                          <svg viewBox="0 0 48 48" className="w-full h-full">
+                            <rect x="6" y="16" width="12" height="24" rx="3" fill="#60A5FA" opacity="0.85" />
+                            <rect x="9" y="10" width="6" height="6" rx="1" fill="#2563EB" />
+                            <rect x="22" y="12" width="18" height="28" rx="4" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5" />
+                            <rect x="27" y="6" width="8" height="6" rx="1.5" fill="#3B82F6" />
+                            <circle cx="31" cy="24" r="5" fill="#93C5FD" opacity="0.4" />
+                          </svg>
+                        ) : (
+                          <img src={item.image} alt={item.supplier} className="w-full h-full object-contain" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-extrabold text-xs text-[#2D2620]">{item.id}</span>
+                          <span className="text-[11px] font-bold text-[#666057]">{item.supplier}</span>
+                        </div>
+                        <p className="text-[10px] text-[#666057] mt-0.5">{item.details}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-right">
+                      <div>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold block mb-0.5 ${item.badgeStyle}`}>
+                          {item.status}
+                        </span>
+                        <span className="text-[9px] text-[#8C8275] block font-medium">{item.dateTime}</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-[#8C8275] group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -421,31 +374,37 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
             </div>
 
             <div className="space-y-2.5">
-              {expiryAlerts.map((item, idx) => (
-                <div 
-                  key={idx} 
-                  onClick={() => onSelectTab('expiry-alerts')}
-                  className="p-3 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5]/70 flex items-center justify-between hover:border-[#7A8B52] hover:bg-white transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <img src={item.image} alt={item.name} className="w-8 h-8 object-contain flex-shrink-0" />
-                    <div>
-                      <span className="font-extrabold text-xs text-[#2D2620] block">{item.name}</span>
-                      <span className="text-[10px] text-[#B85C38] font-semibold">{item.sub}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-right">
-                    <div>
-                      <span className="text-[10px] font-bold text-[#666057] block">Qty: {item.qty}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold inline-block mt-0.5 ${item.badge}`}>
-                        {item.risk}
-                      </span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-[#8C8275] group-hover:translate-x-0.5 transition-transform" />
-                  </div>
+              {expiryAlerts.length === 0 ? (
+                <div className="p-4 text-center text-xs text-[#666057] font-semibold bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5]/70">
+                  No active cold-chain risk alerts.
                 </div>
-              ))}
+              ) : (
+                expiryAlerts.map((item, idx) => (
+                  <div 
+                    key={idx} 
+                    onClick={() => onSelectTab('expiry-alerts')}
+                    className="p-3 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5]/70 flex items-center justify-between hover:border-[#7A8B52] hover:bg-white transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <img src={item.image} alt={item.name} className="w-8 h-8 object-contain flex-shrink-0" />
+                      <div>
+                        <span className="font-extrabold text-xs text-[#2D2620] block">{item.name}</span>
+                        <span className="text-[10px] text-[#B85C38] font-semibold">{item.sub}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-right">
+                      <div>
+                        <span className="text-[10px] font-bold text-[#666057] block">Qty: {item.qty}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold inline-block mt-0.5 ${item.badge}`}>
+                          {item.risk}
+                        </span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-[#8C8275] group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -464,29 +423,35 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
             </div>
 
             <div className="space-y-2.5">
-              {blockchainCerts.map((cert, idx) => (
-                <div 
-                  key={idx} 
-                  onClick={() => onSelectTab('blockchain-verification')}
-                  className="p-3 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5]/70 space-y-1 hover:border-[#7A8B52] hover:bg-white transition-all cursor-pointer"
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 font-extrabold text-[#2D2620]">
-                      <div className="w-5 h-5 rounded-full bg-[#EBF3E8] text-[#556B2F] flex items-center justify-center">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                      </div>
-                      <span>Batch ID: {cert.batchId}</span>
-                      <span className="text-[#666057] font-semibold">• {cert.crop}</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30">
-                      Verified
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-[#666057] font-medium pl-7">
-                    {cert.origin} | {cert.date}
-                  </p>
+              {blockchainCerts.length === 0 ? (
+                <div className="p-4 text-center text-xs text-[#666057] font-semibold bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5]/70">
+                  All inventory batches verified on-chain.
                 </div>
-              ))}
+              ) : (
+                blockchainCerts.map((cert, idx) => (
+                  <div 
+                    key={idx} 
+                    onClick={() => onSelectTab('blockchain-verification')}
+                    className="p-3 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5]/70 space-y-1 hover:border-[#7A8B52] hover:bg-white transition-all cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 font-extrabold text-[#2D2620]">
+                        <div className="w-5 h-5 rounded-full bg-[#EBF3E8] text-[#556B2F] flex items-center justify-center">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                        </div>
+                        <span>Batch ID: {cert.batchId}</span>
+                        <span className="text-[#666057] font-semibold">• {cert.crop}</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-[#EBF3E8] text-[#556B2F] border border-[#556B2F]/30">
+                        Verified
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#666057] font-medium pl-7">
+                      {cert.origin} | {cert.date}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

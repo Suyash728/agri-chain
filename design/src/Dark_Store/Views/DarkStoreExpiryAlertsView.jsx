@@ -30,11 +30,19 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
   const [selectedRowOptions, setSelectedRowOptions] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [spoilageData, setSpoilageData] = useState(null);
+  const [alertsData, setAlertsData] = useState(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/incidents/spoilage')
       .then((res) => res.json())
       .then((data) => setSpoilageData(data))
+      .catch(() => {});
+
+    fetch('http://localhost:8000/darkstore/expiry-alerts')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setAlertsData(data);
+      })
       .catch(() => {});
   }, []);
 
@@ -43,7 +51,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
     {
       id: 'Critical',
       title: 'Critical (0-3 Days)',
-      value: '12',
+      value: String(alertsData?.criticalCount ?? 0),
       subtext: 'Items need immediate action',
       bg: 'bg-[#FEE2E2]',
       border: 'border-[#FCA5A5]',
@@ -53,7 +61,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
     {
       id: 'High',
       title: 'High Risk (4-7 Days)',
-      value: '18',
+      value: String(alertsData?.highCount ?? 0),
       subtext: 'Items expiring soon',
       bg: 'bg-[#FFF3EB]',
       border: 'border-[#FDE3D2]',
@@ -63,7 +71,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
     {
       id: 'Medium',
       title: 'Medium Risk (8-15 Days)',
-      value: '24',
+      value: String(alertsData?.mediumCount ?? 0),
       subtext: 'Items to monitor',
       bg: 'bg-[#FEF3C7]',
       border: 'border-[#FDE68A]',
@@ -73,7 +81,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
     {
       id: 'Safe',
       title: 'Safe (15+ Days)',
-      value: '156',
+      value: String(alertsData?.safeCount ?? 0),
       subtext: 'Items are safe',
       bg: 'bg-[#EBF3E8]',
       border: 'border-[#D4E4CE]',
@@ -83,135 +91,25 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
   ];
 
   // Upcoming Expiry Timeline Data
-  const timelineItems = [
-    {
-      name: 'Tomatoes (Grade A)',
-      badge: '0-3 Days',
-      badgeClass: 'bg-[#FEE2E2] text-[#991B1B]',
-      location: 'Bay A (Cold) • Bin A-01',
-      qty: '240 kg',
-      left: '2 Days Left',
-      leftColor: 'text-[#991B1B]',
-      image: '/images/tomato_only.png',
-      risk: 'Critical',
-      expiryDate: '13 May 2025'
-    },
-    {
-      name: 'Fresh Potatoes (5kg Bags)',
-      badge: '4-7 Days',
-      badgeClass: 'bg-[#FFF3EB] text-[#B85C38]',
-      location: 'Bay B (Ambient) • Bin B-12',
-      qty: '420 kg',
-      left: '5 Days Left',
-      leftColor: 'text-[#B85C38]',
-      image: '/images/potato_only.png',
-      risk: 'High',
-      expiryDate: '16 May 2025'
-    },
-    {
-      name: 'Nashik Red Onions',
-      badge: '8-15 Days',
-      badgeClass: 'bg-[#FEF3C7] text-[#D97706]',
-      location: 'Bay B (Ambient) • Bin B-01',
-      qty: '500 kg',
-      left: '12 Days Left',
-      leftColor: 'text-[#D97706]',
-      image: '/images/spices_ref.png',
-      risk: 'Medium',
-      expiryDate: '23 May 2025'
-    },
-    {
-      name: 'Green Peas',
-      badge: '15+ Days',
-      badgeClass: 'bg-[#EBF3E8] text-[#556B2F]',
-      location: 'Bay C (Cold) • Bin C-02',
-      qty: '310 kg',
-      left: '18 Days Left',
-      leftColor: 'text-[#556B2F]',
-      image: '/images/greengram_only.png',
-      risk: 'Safe',
-      expiryDate: '31 May 2025'
-    },
-  ];
+  const timelineItems = alertsData?.timelineItems || [];
 
   // Expiry Alerts List Table Data
-  const alertsTable = [
-    {
-      id: 'ALT-101',
-      name: 'Tomatoes (Grade A)',
-      location: 'Bay A (Cold) / Bin A-01',
-      bayCategory: 'Bay A (Cold)',
-      qty: '240 kg',
-      expiryDate: '13 May 2025',
-      daysLeft: '2 Days',
-      daysColor: 'text-[#991B1B]',
-      risk: 'Critical',
-      riskBadge: 'bg-[#FEE2E2] text-[#991B1B]',
-      actionType: 'Take Action',
-      actionClass: 'bg-[#354424] text-white hover:bg-[#26321A]',
-      image: '/images/tomato_only.png',
-    },
-    {
-      id: 'ALT-102',
-      name: 'Fresh Potatoes (5kg Bags)',
-      location: 'Bay B (Ambient) / Bin B-12',
-      bayCategory: 'Bay B (Ambient)',
-      qty: '420 kg',
-      expiryDate: '16 May 2025',
-      daysLeft: '5 Days',
-      daysColor: 'text-[#B85C38]',
-      risk: 'High',
-      riskBadge: 'bg-[#FFF3EB] text-[#B85C38]',
-      actionType: 'Take Action',
-      actionClass: 'bg-[#354424] text-white hover:bg-[#26321A]',
-      image: '/images/potato_only.png',
-    },
-    {
-      id: 'ALT-103',
-      name: 'Nashik Red Onions',
-      location: 'Bay B (Ambient) / Bin B-01',
-      bayCategory: 'Bay B (Ambient)',
-      qty: '500 kg',
-      expiryDate: '23 May 2025',
-      daysLeft: '12 Days',
-      daysColor: 'text-[#D97706]',
-      risk: 'Medium',
-      riskBadge: 'bg-[#FEF3C7] text-[#D97706]',
-      actionType: 'Take Action',
-      actionClass: 'bg-[#354424] text-white hover:bg-[#26321A]',
-      image: '/images/spices_ref.png',
-    },
-    {
-      id: 'ALT-104',
-      name: 'Green Gram / Moong Dal',
-      location: 'Bay C (Cold) / Bin C-02',
-      bayCategory: 'Bay C (Cold)',
-      qty: '310 kg',
-      expiryDate: '31 May 2025',
-      daysLeft: '20 Days',
-      daysColor: 'text-[#556B2F]',
-      risk: 'Safe',
-      riskBadge: 'bg-[#EBF3E8] text-[#556B2F]',
-      actionType: 'Monitor',
-      actionClass: 'bg-white text-[#2D2620] border border-[#E6E1D5] hover:bg-[#FAF7F0]',
-      image: '/images/chickpea_only.png',
-    },
-    {
-      id: 'ALT-105',
-      name: 'Green Peas',
-      location: 'Bay C (Cold) / Bin C-02',
-      bayCategory: 'Bay C (Cold)',
-      qty: '180 kg',
-      expiryDate: '02 Jun 2025',
-      daysLeft: '22 Days',
-      daysColor: 'text-[#556B2F]',
-      risk: 'Safe',
-      riskBadge: 'bg-[#EBF3E8] text-[#556B2F]',
-      actionType: 'Monitor',
-      actionClass: 'bg-white text-[#2D2620] border border-[#E6E1D5] hover:bg-[#FAF7F0]',
-      image: '/images/greengram_only.png',
-    },
-  ];
+  const alertsTable = timelineItems.map((item, idx) => ({
+    id: `ALT-${idx + 101}`,
+    batchId: item.batchId,
+    name: item.name,
+    location: item.location,
+    bayCategory: item.location.split('•')[0].trim(),
+    qty: item.qty,
+    expiryDate: item.expiryDate,
+    daysLeft: item.left.split('(')[0].trim(),
+    daysColor: item.leftColor,
+    risk: item.risk,
+    riskBadge: item.badgeClass,
+    actionType: item.risk === 'Safe' ? 'Monitor' : 'Take Action',
+    actionClass: item.risk === 'Safe' ? 'bg-white text-[#2D2620] border border-[#E6E1D5] hover:bg-[#FAF7F0]' : 'bg-[#354424] text-white hover:bg-[#26321A]',
+    image: item.image,
+  }));
 
   // Filtering Logic
   const filteredTable = alertsTable.filter(item => {
@@ -487,7 +385,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
                       qty: '180 kg',
                       daysLeft: item.badge,
                       risk: item.badge.includes('0-3') ? 'Critical' : item.badge.includes('4-7') ? 'High' : 'Medium',
-                      expiryDate: '14 May 2025'
+                      expiryDate: new Date(Date.now() + 3*86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                     })}
                     className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] flex flex-col justify-between space-y-2 hover:border-[#354424] hover:shadow-xs transition-all cursor-pointer group"
                   >
@@ -627,7 +525,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
                   qty: '240 kg',
                   daysLeft: '2 Days',
                   risk: 'Critical',
-                  expiryDate: '13 May 2025'
+                  expiryDate: new Date(Date.now() + 2*86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                 })}
                 className="p-3.5 rounded-2xl bg-[#FFF3EB] border border-[#FDE3D2] flex items-center justify-between hover:border-[#B85C38] transition-colors cursor-pointer group"
               >
@@ -778,7 +676,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
                     qty: '240 kg',
                     daysLeft: '2 Days',
                     risk: 'Critical',
-                    expiryDate: '13 May 2025'
+                    expiryDate: new Date(Date.now() + 2*86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                   })}
                   className="w-full py-2 rounded-xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A]"
                 >
@@ -851,7 +749,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
                     qty: '40 kg',
                     daysLeft: '12 Hours',
                     risk: 'Critical',
-                    expiryDate: '11 May 2025'
+                    expiryDate: new Date(Date.now() + 1*86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                   })}
                   className="w-full py-2 rounded-xl bg-[#B85C38] text-white text-xs font-bold hover:bg-[#9E4A2A]"
                 >
@@ -906,7 +804,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
               <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] space-y-1.5">
                 <div className="flex justify-between"><span className="text-[#666057] font-semibold">Location:</span> <span className="font-bold text-[#2D2620]">{selectedItemAction.location}</span></div>
                 <div className="flex justify-between"><span className="text-[#666057] font-semibold">Current Stock:</span> <span className="font-extrabold text-[#2D2620]">{selectedItemAction.qty}</span></div>
-                <div className="flex justify-between"><span className="text-[#666057] font-semibold">Expiry Date:</span> <span className="font-bold text-[#2D2620]">{selectedItemAction.expiryDate || '13 May 2025'}</span></div>
+                <div className="flex justify-between"><span className="text-[#666057] font-semibold">Expiry Date:</span> <span className="font-bold text-[#2D2620]">{selectedItemAction.expiryDate || new Date(Date.now() + 2*86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
                 <div className="flex justify-between"><span className="text-[#666057] font-semibold">Days Remaining:</span> <span className="font-extrabold text-[#991B1B]">{selectedItemAction.daysLeft || '2 Days'}</span></div>
               </div>
 

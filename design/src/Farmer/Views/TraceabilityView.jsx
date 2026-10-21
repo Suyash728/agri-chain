@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Sprout, Wheat, Factory, Truck, Store } from 'lucide-react';
 
-const defaultBatch = {
-  batchId: "KC-2024-WHT-089",
-  product: "Sharbati Golden Wheat",
-  quantity: "500 kg",
-  harvestDate: "12 Oct 2024",
-  currentLocation: "Cold Storage Hub B, Pune",
-  farmDetails: "GreenField Farms, Nashik"
-};
-
 export const TraceabilityView = ({ onBack, onOpenFullJourney }) => {
   const [liveBatch, setLiveBatch] = useState(null);
 
@@ -17,19 +8,28 @@ export const TraceabilityView = ({ onBack, onOpenFullJourney }) => {
     fetch('http://localhost:8000/farmer/inventory')
       .then(r => r.json())
       .then(inv => {
-        const firstId = inv?.items?.[0]?.batchId;
-        if (firstId) {
-          fetch(`http://localhost:8000/batches/${firstId}/traceability`)
+        const firstItem = inv?.items?.[0];
+        if (firstItem && firstItem.batchId) {
+          setLiveBatch({
+            batchId: firstItem.batchId,
+            product: firstItem.name || 'Produce',
+            quantity: firstItem.quantity || '500 kg',
+            harvestDate: firstItem.harvestDate || new Date().toISOString().split('T')[0],
+            currentLocation: firstItem.status || 'In Transit',
+            farmDetails: (firstItem.farm || 'Nashik Organic Farm cluster 4').split('||')[0].trim(),
+          });
+
+          fetch(`http://localhost:8000/batches/${firstItem.batchId}/traceability`)
             .then(r => r.json())
             .then(data => {
-              if (data && data.batch_id) {
+              if (data && (data.batchId || data.batch_id)) {
                 setLiveBatch({
-                  batchId: data.batch_id,
-                  product: data.crop_name || 'Produce',
-                  quantity: '500 kg',
-                  harvestDate: data.timeline?.[0]?.date || 'Today',
-                  currentLocation: data.current_holder || 'In Transit',
-                  farmDetails: data.origin_farm || 'Nashik Organic Cluster #4',
+                  batchId: data.batchId || data.batch_id,
+                  product: data.product || data.crop_name || firstItem.name || 'Produce',
+                  quantity: data.quantity || firstItem.quantity || '500 kg',
+                  harvestDate: data.harvestDate || firstItem.harvestDate || 'Today',
+                  currentLocation: data.currentLocation || data.current_holder || firstItem.status || 'In Transit',
+                  farmDetails: (data.farmDetails || data.origin_farm || firstItem.farm || 'Nashik Organic Farm cluster 4').split('||')[0].trim(),
                 });
               }
             })
@@ -39,7 +39,14 @@ export const TraceabilityView = ({ onBack, onOpenFullJourney }) => {
       .catch(() => {});
   }, []);
 
-  const batchInfo = liveBatch || defaultBatch;
+  const batchInfo = liveBatch || {
+    batchId: "Loading...",
+    product: "Fetching on-chain batch...",
+    quantity: "...",
+    harvestDate: "...",
+    currentLocation: "...",
+    farmDetails: "..."
+  };
 
   return (
     <div className="bg-white border border-[#E6E1D5] rounded-2xl p-4 sm:p-6 shadow-xs max-w-xl mx-auto w-full">

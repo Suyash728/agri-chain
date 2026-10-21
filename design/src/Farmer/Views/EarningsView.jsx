@@ -2,18 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Wallet, TrendingUp, DollarSign, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 const defaultEarningsSummary = {
-  totalRevenue: "₹1,48,500",
-  totalThisMonth: "₹28,450",
-  growthPercentage: "+18.4%",
+  totalRevenue: "₹0",
+  totalThisMonth: "₹0",
+  growthPercentage: "0%",
   growthPeriod: "vs last month",
-  pendingPayouts: "₹15,400",
-  completedTxns: 18,
-  breakdown: [
-    { category: "Grains (Wheat & Rice)", amount: "₹12,025", percent: 42 },
-    { category: "Fruits (Mango & Banana)", amount: "₹7,500", percent: 26 },
-    { category: "Spices (Chilli & Turmeric)", amount: "₹4,200", percent: 15 },
-    { category: "Vegetables (Tomato & Potato)", amount: "₹4,725", percent: 17 }
-  ]
+  pendingPayouts: "₹0",
+  completedTxns: 0,
+  breakdown: []
 };
 
 export const EarningsView = ({ onBack, onOpenReport }) => {
@@ -135,26 +130,32 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
         </div>
 
         <div className="flex flex-col gap-3.5 pt-1">
-          {summary.breakdown.map((item, idx) => (
-            <div key={idx} className="flex flex-col gap-1.5 bg-white p-3.5 rounded-xl border border-[#E6E1D5]">
-              <div className="flex justify-between items-center text-xs sm:text-sm font-bold text-[#3B3028]">
-                <span>{item.category}</span>
-                <span className="font-extrabold text-[#2E3A1F]">{item.amount}</span>
-              </div>
-              <div className="w-full h-2 bg-[#E6E1D5] rounded-full overflow-hidden mt-1">
-                <div 
-                  className="h-full bg-[#3D4E2A] rounded-full transition-all duration-500" 
-                  style={{ width: `${item.percent}%` }}
-                ></div>
-              </div>
+          {summary.breakdown.length === 0 ? (
+            <div className="py-6 text-center text-xs text-[#666057] font-semibold bg-white rounded-xl border border-[#E6E1D5]">
+              No category earnings recorded yet.
             </div>
-          ))}
+          ) : (
+            summary.breakdown.map((item, idx) => (
+              <div key={idx} className="flex flex-col gap-1.5 bg-white p-3.5 rounded-xl border border-[#E6E1D5]">
+                <div className="flex justify-between items-center text-xs sm:text-sm font-bold text-[#3B3028]">
+                  <span>{item.category}</span>
+                  <span className="font-extrabold text-[#2E3A1F]">{item.amount}</span>
+                </div>
+                <div className="w-full h-2 bg-[#E6E1D5] rounded-full overflow-hidden mt-1">
+                  <div 
+                    className="h-full bg-[#3D4E2A] rounded-full transition-all duration-500" 
+                    style={{ width: `${item.percent}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
         {/* View Detailed Report Action Button */}
         <button 
-          onClick={onOpenReport}
-          className="w-full py-3.5 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all mt-2"
+          onClick={onOpenReport || (() => alert(`Summary Report Generated: Total Settled Revenue ${summary.totalRevenue} across ${summary.completedTxns} transactions.`))}
+          className="w-full py-3.5 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all mt-2 cursor-pointer"
         >
           View Full Earnings Report (PDF)
         </button>

@@ -37,7 +37,7 @@ export const LogisticHeader = ({ onOpenNotifications }) => {
         {/* Date Selector Badge */}
         <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-[#E6E1D5] bg-white text-[#2D2620] shadow-xs">
           <span className="text-xs sm:text-sm font-bold text-[#2D2620]">
-            12 May, 2025
+            {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
           </span>
           <Calendar className="w-4 h-4 text-[#666057]" />
         </div>
