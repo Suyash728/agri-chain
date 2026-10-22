@@ -146,7 +146,7 @@ export const TraceabilityView = ({ onBack, onOpenFullJourney }) => {
 
       {/* View Full Journey Action Button */}
       <button 
-        onClick={onOpenFullJourney}
+        onClick={() => onOpenFullJourney && onOpenFullJourney(batchInfo.batchId !== 'Loading...' ? batchInfo.batchId : 'TM1256')}
         className="w-full py-3.5 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm rounded-xl flex items-center justify-center shadow-md transition-all active:scale-[0.99]"
       >
         View Full Journey

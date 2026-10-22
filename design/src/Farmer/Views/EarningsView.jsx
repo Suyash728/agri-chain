@@ -29,6 +29,29 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
 
   const summary = liveEarnings || defaultEarningsSummary;
 
+  const handleExportReport = () => {
+    if (onOpenReport) {
+      onOpenReport();
+      return;
+    }
+    const rows = [
+      ['Category', 'Revenue Amount', 'Share Percentage'],
+      ...(summary.breakdown || []).map(b => [b.category, `"${b.amount}"`, `"${b.percent}%"`]),
+      [],
+      ['Total Monthly Revenue', `"${summary.totalThisMonth}"`],
+      ['Pending Payouts', `"${summary.pendingPayouts}"`],
+      ['Completed Transactions', summary.completedTxns]
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Farmer_Earnings_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Header Bar */}
@@ -154,7 +177,7 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
 
         {/* View Detailed Report Action Button */}
         <button 
-          onClick={onOpenReport || (() => alert(`Summary Report Generated: Total Settled Revenue ${summary.totalRevenue} across ${summary.completedTxns} transactions.`))}
+          onClick={handleExportReport}
           className="w-full py-3.5 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all mt-2 cursor-pointer"
         >
           View Full Earnings Report (PDF)

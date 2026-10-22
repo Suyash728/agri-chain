@@ -96,7 +96,10 @@ export const DarkStoreApp = () => {
         )}
 
         {(darkStoreTab === 'analytics' || darkStoreTab === 'revenue' || darkStoreTab === 'earnings') && (
-          <DarkStoreRevenueView onBack={() => handleSelectTab('dashboard')} />
+          <DarkStoreRevenueView 
+            onBack={() => handleSelectTab('dashboard')} 
+            onOpenNotifications={() => setIsNotificationsOpen(true)}
+          />
         )}
 
         {(darkStoreTab === 'dispatch' || darkStoreTab === 'shipments') && (

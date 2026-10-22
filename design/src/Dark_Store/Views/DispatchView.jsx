@@ -1,12 +1,45 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Bike, Truck, MapPin, CheckCircle2, PhoneCall, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Bike, Truck, MapPin, CheckCircle2, PhoneCall, ShieldCheck, X, Plus } from 'lucide-react';
 
 export const DispatchView = ({ onBack }) => {
-  const riders = [
+  const [riders, setRiders] = useState([
     { id: 'RIDER-104', name: 'Vikram Shinde', vehicle: 'EV Cargo Bike #04', order: 'PK-4021 (Blinkit)', destination: 'Dark Store #08 (2.4 km)', status: 'En Route', eta: '8 mins', podStatus: 'OTP Verified' },
     { id: 'RIDER-108', name: 'Rahul Gawli', vehicle: 'Reefer Van #12', order: 'PK-4022 (Zepto)', destination: 'Zepto Hub #12 (4.1 km)', status: 'Loading at Bay 01', eta: '15 mins', podStatus: 'Manifest Ready' },
     { id: 'RIDER-112', name: 'Amit Solanki', vehicle: 'EV Cargo Bike #09', order: 'PK-4023 (Swiggy)', destination: 'Instamart #03 (1.8 km)', status: 'Delivered', eta: 'Completed', podStatus: 'Delivered & Signed' },
-  ];
+  ]);
+
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
+  const [newRiderName, setNewRiderName] = useState('');
+  const [newRiderVehicle, setNewRiderVehicle] = useState('EV Cargo Bike #05');
+  const [newRiderOrder, setNewRiderOrder] = useState('PK-4024 (Zepto Quick)');
+  const [newRiderDest, setNewRiderDest] = useState('Zepto Station #04 (3.2 km)');
+  const [activeCallToast, setActiveCallToast] = useState(null);
+
+  const handleDispatchRider = (e) => {
+    e.preventDefault();
+    if (!newRiderName.trim()) return;
+    const newRider = {
+      id: `RIDER-${Math.floor(100 + Math.random() * 900)}`,
+      name: newRiderName.trim(),
+      vehicle: newRiderVehicle,
+      order: newRiderOrder,
+      destination: newRiderDest,
+      status: 'Loading at Bay 02',
+      eta: '12 mins',
+      podStatus: 'Assigned',
+    };
+    setRiders([newRider, ...riders]);
+    setIsDispatchModalOpen(false);
+    setNewRiderName('');
+  };
+
+  const handleCallRider = (rider) => {
+    setActiveCallToast(`Calling ${rider.name} (${rider.vehicle}) at +91 98765 43210...`);
+    setTimeout(() => setActiveCallToast(null), 4000);
+    try {
+      window.location.href = 'tel:+919876543210';
+    } catch (_) {}
+  };
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in w-full">
@@ -26,7 +59,10 @@ export const DispatchView = ({ onBack }) => {
           </div>
         </div>
 
-        <button className="px-4 py-2 rounded-xl bg-[#354424] text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-xs">
+        <button 
+          onClick={() => setIsDispatchModalOpen(true)}
+          className="px-4 py-2 rounded-xl bg-[#354424] text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 cursor-pointer shadow-xs hover:bg-[#26321A] transition-colors"
+        >
           <Bike className="w-4 h-4" />
           <span>Dispatch New Rider</span>
         </button>
@@ -73,13 +109,115 @@ export const DispatchView = ({ onBack }) => {
 
             <div className="flex items-center justify-between text-xs pt-1 border-t border-[#E6E1D5]">
               <span className="text-[#666057]">ETA: <strong className="text-[#2D2620]">{rider.eta}</strong></span>
-              <button className="flex items-center gap-1 text-xs font-bold text-[#354424] hover:underline cursor-pointer">
+              <button 
+                onClick={() => handleCallRider(rider)}
+                className="flex items-center gap-1 text-xs font-bold text-[#354424] hover:underline cursor-pointer"
+              >
                 <PhoneCall className="w-3.5 h-3.5" /> Call Rider
               </button>
             </div>
           </div>
         ))}
       </div>
+          {/* Call Rider Toast */}
+      {activeCallToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#354424] text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-fade-in text-xs font-bold border border-white/20">
+          <PhoneCall className="w-4 h-4 text-emerald-400 animate-pulse" />
+          <span>{activeCallToast}</span>
+        </div>
+      )}
+
+      {/* Dispatch Rider Modal */}
+      {isDispatchModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-[#E6E1D5] shadow-2xl space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E1D5]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#354424]">
+                  <Bike className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-[#2D2620]">Dispatch New Rider</h3>
+                  <p className="text-xs text-[#666057]">Assign fulfillment order to delivery agent</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsDispatchModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#666057] hover:text-[#2D2620] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleDispatchRider} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#666057] mb-1">Rider Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Mahesh Shinde"
+                  value={newRiderName}
+                  onChange={(e) => setNewRiderName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E6E1D5] bg-[#FAF7F0] text-xs text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#666057] mb-1">Vehicle Assignment</label>
+                <select
+                  value={newRiderVehicle}
+                  onChange={(e) => setNewRiderVehicle(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E6E1D5] bg-[#FAF7F0] text-xs text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                >
+                  <option value="EV Cargo Bike #05">EV Cargo Bike #05 (Refrigerated Box)</option>
+                  <option value="EV Cargo Bike #08">EV Cargo Bike #08 (Standard)</option>
+                  <option value="Reefer Van #14">Reefer Van #14 (Cold 2-4°C)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#666057] mb-1">Assigned Order ID</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. PK-4024"
+                  value={newRiderOrder}
+                  onChange={(e) => setNewRiderOrder(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E6E1D5] bg-[#FAF7F0] text-xs text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-extrabold text-[#666057] mb-1">Destination & Distance</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Zepto Station #04 (3.2 km)"
+                  value={newRiderDest}
+                  onChange={(e) => setNewRiderDest(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E6E1D5] bg-[#FAF7F0] text-xs text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDispatchModalOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-[#E6E1D5] text-[#666057] font-bold text-xs hover:bg-[#FAF7F0] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-[#354424] text-white font-extrabold text-xs hover:bg-[#26321A] transition-colors cursor-pointer"
+                >
+                  Confirm Dispatch
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

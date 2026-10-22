@@ -41,6 +41,9 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [deliveries, setDeliveries] = useState([]);
   const [receiving, setReceiving] = useState(false);
+  const [selectedStore, setSelectedStore] = useState('Nashik Central Store');
+  const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const fetchInbound = () => {
     fetch('http://localhost:8000/darkstore/inbound')
@@ -228,11 +231,35 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
           </div>
 
           {/* Store Selector Dropdown Pill */}
-          <button className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border border-[#E6E1D5] shadow-xs text-xs text-[#2D2620] font-medium cursor-pointer hover:bg-[#FAF7F0] transition-colors">
-            <span className="text-[#666057] font-semibold">Store:</span>
-            <span className="font-extrabold text-[#2D2620]">Nashik Central Store</span>
-            <ChevronDown className="w-4 h-4 text-[#666057] ml-1" />
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setIsStoreDropdownOpen(!isStoreDropdownOpen)}
+              className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border border-[#E6E1D5] shadow-xs text-xs text-[#2D2620] font-medium cursor-pointer hover:bg-[#FAF7F0] transition-colors"
+            >
+              <span className="text-[#666057] font-semibold">Store:</span>
+              <span className="font-extrabold text-[#2D2620]">{selectedStore}</span>
+              <ChevronDown className={`w-4 h-4 text-[#666057] ml-1 transition-transform ${isStoreDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isStoreDropdownOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-[#E6E1D5] rounded-2xl shadow-xl z-50 p-1.5 animate-scale-in">
+                {['Nashik Central Store', 'Pune Regional Hub', 'Mumbai Fulfillment Center'].map((store) => (
+                  <button
+                    key={store}
+                    onClick={() => {
+                      setSelectedStore(store);
+                      setIsStoreDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-between ${
+                      selectedStore === store ? 'bg-[#FAF7F0] text-[#354424]' : 'text-[#2D2620] hover:bg-[#FAF7F0]'
+                    }`}
+                  >
+                    <span>{store}</span>
+                    {selectedStore === store && <span className="w-2 h-2 rounded-full bg-[#556B2F]" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -677,7 +704,10 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
           </div>
         </div>
 
-        <button className="flex items-center gap-2 text-[#2D2620] font-extrabold hover:text-[#354424] cursor-pointer transition-colors">
+        <button 
+          onClick={() => setShowHelpModal(true)}
+          className="flex items-center gap-2 text-[#2D2620] font-extrabold hover:text-[#354424] cursor-pointer transition-colors"
+        >
           <BookOpen className="w-4 h-4 text-[#354424]" />
           <span>Help Center</span>
           <ArrowRight className="w-4 h-4" />
@@ -759,6 +789,52 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
         </div>
       )}
 
+          {/* Help Center Operations Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 border border-[#E6E1D5] shadow-2xl space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E1D5]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#354424]">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-[#2D2620]">Dark Store Operations Guide</h3>
+                  <p className="text-xs text-[#666057]">Inbound GRN, FEFO storage & cold-chain SOPs</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowHelpModal(false)}
+                className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#666057] hover:text-[#2D2620] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-[#2D2620]">
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] space-y-1">
+                <span className="font-extrabold text-[#354424] block">1. Goods Receipt Note (GRN) Verification</span>
+                <p className="text-[#666057]">Verify digital manifests against physical transporter pallets. Record lot count, weight and quality grade before smart-contract custody release.</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] space-y-1">
+                <span className="font-extrabold text-[#354424] block">2. Bay Allocation & FEFO Priority</span>
+                <p className="text-[#666057]">Produce with shorter shelf-life is automatically assigned to Bay A (Cold 2-4°C) with highest dispatch priority to prevent food waste.</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] space-y-1">
+                <span className="font-extrabold text-[#354424] block">3. 24x7 Operations Support Hotline</span>
+                <p className="text-[#666057]">Toll-Free: 1800-AGRI-DS (+91 1800 247 4786) | darkstore-support@agrichain.com</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowHelpModal(false)}
+              className="w-full py-3 rounded-xl bg-[#354424] text-white font-extrabold text-xs hover:bg-[#26321A] transition-colors cursor-pointer"
+            >
+              Close Help Center
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

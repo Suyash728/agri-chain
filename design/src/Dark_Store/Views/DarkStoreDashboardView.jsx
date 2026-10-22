@@ -8,7 +8,8 @@ import {
   ShieldCheck, 
   CheckCircle2, 
   HelpCircle, 
-  BookOpen 
+  BookOpen,
+  X
 } from 'lucide-react';
 
 export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpenGRN, onOpenRecordSale }) => {
@@ -19,6 +20,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
   const [recentDeliveries, setRecentDeliveries] = useState([]);
   const [expiryAlerts, setExpiryAlerts] = useState([]);
   const [blockchainCerts, setBlockchainCerts] = useState([]);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   useEffect(() => {
     fetch('http://localhost:8000/darkstore/kpis')
@@ -576,13 +578,62 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
           </div>
         </div>
 
-        <button className="flex items-center gap-2 text-[#2D2620] font-extrabold hover:text-[#354424] cursor-pointer transition-colors">
+        <button 
+          onClick={() => setShowHelpModal(true)}
+          className="flex items-center gap-2 text-[#2D2620] font-extrabold hover:text-[#354424] cursor-pointer transition-colors"
+        >
           <BookOpen className="w-4 h-4 text-[#354424]" />
           <span>Help Center</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
 
+          {/* Help Center Operations Modal */}
+      {showHelpModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 border border-[#E6E1D5] shadow-2xl space-y-5 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E1D5]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#354424]">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-[#2D2620]">Dark Store Operations Guide</h3>
+                  <p className="text-xs text-[#666057]">Standard procedures & station dispatch protocols</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowHelpModal(false)}
+                className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#666057] hover:text-[#2D2620] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-[#2D2620]">
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] space-y-1">
+                <span className="font-extrabold text-[#354424] block">1. Micro-Fulfillment & Inbound GRN</span>
+                <p className="text-[#666057]">Receive shipments from farmers and logistics partners. Inspect thermal logs and scan on-chain batch QR tags before accepting custody.</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] space-y-1">
+                <span className="font-extrabold text-[#354424] block">2. Cold-Chain Expiry & Spoilage Prevention</span>
+                <p className="text-[#666057]">Monitor automated alerts. Any produce entering critical expiry or temperature breach is automatically flagged for clearance or quarantine.</p>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] space-y-1">
+                <span className="font-extrabold text-[#354424] block">3. Operations Helpline</span>
+                <p className="text-[#666057]">Toll-Free: 1800-AGRI-DS (+91 1800 247 4786) | Available 24x7</p>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowHelpModal(false)}
+              className="w-full py-3 rounded-xl bg-[#354424] text-white font-extrabold text-xs hover:bg-[#26321A] transition-colors cursor-pointer"
+            >
+              Close Help Center
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

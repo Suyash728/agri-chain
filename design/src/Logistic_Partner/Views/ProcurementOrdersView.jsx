@@ -40,6 +40,30 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
   const [orderList, setOrderList] = useState([]);
   const [txs, setTxs] = useState([]);
 
+  const handleExportTxCSV = () => {
+    const filteredTxs = txs.filter(t => 
+      (t.desc || '').toLowerCase().includes(modalSearch.toLowerCase()) || 
+      (t.category || '').toLowerCase().includes(modalSearch.toLowerCase())
+    );
+    const headers = ['Tx ID', 'Transaction Description', 'Category', 'Date', 'Amount', 'Status'];
+    const rows = filteredTxs.map(t => [
+      t.id,
+      `"${(t.desc || '').replace(/"/g, '""')}"`,
+      `"${(t.category || '').replace(/"/g, '""')}"`,
+      t.date,
+      `"${(t.amount || '').replace(/"/g, '""')}"`,
+      t.status
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `agrichain_logistics_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const fetchOrders = useCallback(() => {
     fetch('http://localhost:8000/logistics/orders')
       .then((res) => res.json())
@@ -161,7 +185,21 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
   }, 0);
   const totalSuppliersCount = new Set(orderList.map(o => o.supplier).filter(Boolean)).size || (orderList.length > 0 ? 1 : 0);
 
-  const filteredOrders = filter === 'All' ? orderList.slice(0, 5) : orderList.filter(o => o.status === filter);
+  // Total Procurement Value from ledger transactions or orders fallback
+  const totalProcurementVal = totalTxVolume || orderList.reduce((acc, o) => {
+    const num = parseInt((o.price || '').replace(/[^0-9]/g, '')) || 0;
+    return acc + num;
+  }, 0);
+
+  const filteredOrders = filter === 'All' 
+    ? orderList.slice(0, 5) 
+    : orderList.filter(o => {
+        if (filter === 'Pending') return o.status === 'Pending' || o.status === 'Ready for Pickup';
+        if (filter === 'Confirmed') return o.status === 'Confirmed';
+        if (filter === 'In Progress') return o.status === 'In Progress' || o.status === 'In Transit';
+        if (filter === 'Completed') return o.status === 'Completed' || o.status === 'Delivered';
+        return o.status === filter;
+      });
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -611,7 +649,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                 />
               </div>
               <button 
-                onClick={() => alert('Exporting full ledger CSV...')}
+                onClick={handleExportTxCSV}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />

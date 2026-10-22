@@ -8,6 +8,7 @@ import {
 
 const defaultSummary = {
   totalProduce: "0.00",
+  totalVolume: "0.00",
   volumeUnit: "Tonnes",
   totalValue: "₹0",
   storageHubs: "0 Batches Active"
@@ -15,6 +16,7 @@ const defaultSummary = {
 
 export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem, items }) => {
   const [liveInventory, setLiveInventory] = useState(null);
+  const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
     fetch('http://localhost:8000/farmer/inventory')
@@ -24,15 +26,20 @@ export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem,
   }, []);
 
   const summary = liveInventory?.summary ? {
-    totalProduce: liveInventory.summary.totalVolume || '0.00',
+    totalProduce: liveInventory.summary.totalVolume || liveInventory.summary.totalProduce || '0.00',
+    totalVolume: liveInventory.summary.totalVolume || liveInventory.summary.totalProduce || '0.00',
     volumeUnit: liveInventory.summary.volumeUnit || 'Tonnes',
     totalValue: liveInventory.summary.totalValue || '₹0',
     storageHubs: `${liveInventory.summary.totalBatches || 0} Batches Registered`
   } : defaultSummary;
 
-  const displayItems = (liveInventory?.items && liveInventory.items.length > 0)
+  const rawItems = (liveInventory?.items && liveInventory.items.length > 0)
     ? liveInventory.items
     : (items && items.length > 0 ? items : []);
+
+  const displayItems = [...rawItems].sort((a, b) => {
+    return sortAsc ? (a.name || '').localeCompare(b.name || '') : (b.name || '').localeCompare(a.name || '');
+  });
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -50,7 +57,11 @@ export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem,
           </h1>
         </div>
 
-        <button className="w-9 h-9 rounded-full bg-[#FAF7F0] flex items-center justify-center text-[#3B3028] hover:bg-[#E6E1D5] transition-colors border border-[#E6E1D5]">
+        <button 
+          onClick={() => setSortAsc(!sortAsc)}
+          title={`Sort ${sortAsc ? 'Z to A' : 'A to Z'}`}
+          className="w-9 h-9 rounded-full bg-[#FAF7F0] flex items-center justify-center text-[#3B3028] hover:bg-[#E6E1D5] transition-colors border border-[#E6E1D5] cursor-pointer"
+        >
           <SlidersHorizontal className="w-4 h-4" />
         </button>
       </div>

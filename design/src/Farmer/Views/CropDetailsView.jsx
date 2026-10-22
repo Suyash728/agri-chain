@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, Search } from 'lucide-react';
 import { 
   FruitsIllustration, 
@@ -13,6 +13,8 @@ import {
 } from '../components/CropIllustrations';
 
 export const CropDetailsView = ({ category, onBack }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const cat = category || {
     name: "Produce Category",
     id: "produce",
@@ -33,6 +35,10 @@ export const CropDetailsView = ({ category, onBack }) => {
     return <DryFruitsIllustration className="w-14 h-14 sm:w-16 sm:h-16" />;
   };
 
+  const filteredCrops = (cat.crops || []).filter(c =>
+    !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Header */}
@@ -49,7 +55,11 @@ export const CropDetailsView = ({ category, onBack }) => {
           </h1>
         </div>
 
-        <button className="w-9 h-9 rounded-full bg-[#FAF7F0] flex items-center justify-center text-[#3B3028] hover:bg-[#E6E1D5] transition-colors border border-[#E6E1D5]">
+        <button 
+          onClick={() => setShowSearch(!showSearch)}
+          className="w-9 h-9 rounded-full bg-[#FAF7F0] flex items-center justify-center text-[#3B3028] hover:bg-[#E6E1D5] transition-colors border border-[#E6E1D5] cursor-pointer"
+          title="Filter crops"
+        >
           <Search className="w-4 h-4 text-[#556B2F]" />
         </button>
       </div>
@@ -72,12 +82,12 @@ export const CropDetailsView = ({ category, onBack }) => {
 
       {/* Crop List Cards with Warm Cream Background & Direct Isolated Artwork */}
       <div className="flex flex-col gap-3.5 w-full">
-        {(!cat.crops || cat.crops.length === 0) ? (
+        {filteredCrops.length === 0 ? (
           <div className="p-8 text-center bg-white rounded-2xl border border-[#E6E1D5] text-sm text-[#666057] font-semibold">
             No crops registered in this category yet.
           </div>
         ) : (
-          cat.crops.map((crop, index) => (
+          filteredCrops.map((crop, index) => (
           <div 
             key={index} 
             style={{ backgroundColor: '#FAF7F0' }}

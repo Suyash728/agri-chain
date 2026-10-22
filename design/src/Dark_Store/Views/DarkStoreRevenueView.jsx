@@ -15,7 +15,7 @@ import {
   PieChart
 } from 'lucide-react';
 
-export const DarkStoreRevenueView = ({ onBack }) => {
+export const DarkStoreRevenueView = ({ onBack, onOpenNotifications }) => {
   const currentDateFormatted = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   const [selectedDateRange, setSelectedDateRange] = useState(`${currentDateFormatted}`);
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
@@ -91,7 +91,7 @@ export const DarkStoreRevenueView = ({ onBack }) => {
         <div className="flex flex-wrap items-center gap-3">
           {/* Bell Notification Button */}
           <button 
-            onClick={() => alert('Revenue target reached! Monthly net margin at 31.2%.')}
+            onClick={onOpenNotifications || (() => alert('Revenue target reached! Monthly net margin at 31.2%.'))}
             className="relative p-2.5 rounded-2xl bg-white border border-[#E6E1D5] text-[#2D2620] hover:bg-[#FAF7F0] cursor-pointer shadow-xs"
           >
             <Bell className="w-4 h-4 text-[#2D2620]" />

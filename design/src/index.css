@@ -58,6 +58,11 @@ img {
   color: #3D5220;
 }
 
+.badge-completed {
+  background-color: #E2ECE5;
+  color: #1F513B;
+}
+
 .badge-intransit {
   background-color: #FCEAD8;
   color: #A3521E;

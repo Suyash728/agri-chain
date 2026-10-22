@@ -18,9 +18,9 @@ export const ConsumerHeader = ({
   ];
 
   return (
-    <header className="bg-[#FAF7F0] pt-16 sm:pt-20 md:pt-16 pb-0 z-30 border-b border-[#E6E1D5] flex flex-col gap-2.5 flex-shrink-0">
-      {/* 1. Top Consumer Greeting Row */}
-      <div className="px-4 md:px-8 flex justify-between items-center">
+    <header className="bg-[#FAF7F0] pt-3.5 sm:pt-4 md:pt-4 pb-0 z-30 border-b border-[#E6E1D5] flex flex-col gap-3 flex-shrink-0">
+      {/* 1. Top Consumer Greeting Row - Vertically balanced with Role Switcher */}
+      <div className="px-4 md:px-8 flex justify-between items-center min-h-[42px] pr-4 md:pr-[470px]">
         <div>
           <span className="text-xs font-semibold text-[#666057]">Good morning,</span>
           <h2 className="text-lg md:text-xl font-black text-[#2D2620] flex items-center gap-1.5 leading-tight">
@@ -29,12 +29,12 @@ export const ConsumerHeader = ({
         </div>
       </div>
 
-      {/* 2. Search & Location Row */}
-      <div className="px-4 md:px-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+      {/* 2. Search & Location Row - Consistently Spaced & Aligned */}
+      <div className="px-4 md:px-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Delivery Address Pill */}
         <div 
           onClick={onAddressClick}
-          className="self-start inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-[#E6E1D5] text-xs font-bold text-[#2D2620] shadow-2xs cursor-pointer hover:bg-[#F4F5E6] transition-colors"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white border border-[#E6E1D5] text-xs font-bold text-[#2D2620] shadow-2xs cursor-pointer hover:bg-[#F4F5E6] transition-colors"
         >
           <MapPin className="w-3.5 h-3.5 text-[#354424]" />
           <span>Deliver to</span>
@@ -42,28 +42,9 @@ export const ConsumerHeader = ({
           <ChevronDown className="w-3.5 h-3.5 text-[#666057]" />
         </div>
 
-        {/* Search Bar Area: Search Bar -> Favorite Heart -> Cart */}
-        <div className="flex items-center gap-2 flex-1 max-w-lg">
-          {/* Search Bar Input */}
-          <div className="flex-1 relative">
-            <Search className="w-4 h-4 text-[#666057] absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search farm fresh produce, fruits, vegetables..."
-              className="w-full pl-10 pr-4 py-1.5 bg-white rounded-full border border-[#E6E1D5] text-xs font-semibold text-[#2D2620] placeholder-[#666057] focus:outline-none focus:border-[#354424] shadow-2xs"
-            />
-          </div>
-
-          {/* Favorites Heart Icon Button */}
-          <button 
-            onClick={() => onNavigate && onNavigate('favorites')}
-            className="w-9 h-9 rounded-full bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] shadow-xs hover:bg-[#F4F5E6] transition-colors cursor-pointer flex-shrink-0"
-            title="My Favorites"
-          >
-            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-          </button>
-
-          {/* Cart/Trolley Icon Button */}
+        {/* Right Action Icons & Search Bar Area */}
+        <div className="flex items-center gap-2.5 flex-1 max-w-xl">
+          {/* Cart Icon */}
           <button 
             onClick={() => onNavigate && onNavigate('cart')}
             className="relative w-9 h-9 rounded-full bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] shadow-xs hover:bg-[#F4F5E6] transition-colors cursor-pointer flex-shrink-0"
@@ -76,11 +57,42 @@ export const ConsumerHeader = ({
               </span>
             )}
           </button>
+
+          {/* Favorites Heart Icon */}
+          <button 
+            onClick={() => onNavigate && onNavigate('favorites')}
+            className="w-9 h-9 rounded-full bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] shadow-xs hover:bg-[#F4F5E6] transition-colors cursor-pointer flex-shrink-0"
+            title="My Favorites"
+          >
+            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+          </button>
+
+          {/* Notification Bell */}
+          <button 
+            onClick={onNotificationClick}
+            className="relative w-9 h-9 rounded-full bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] shadow-xs hover:bg-[#F4F5E6] transition-colors cursor-pointer flex-shrink-0"
+            title="Notifications"
+          >
+            <Bell className="w-4 h-4 text-[#354424]" />
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#354424] text-white text-[10px] font-extrabold flex items-center justify-center border border-white">
+              3
+            </span>
+          </button>
+
+          {/* Search Bar Input */}
+          <div className="flex-1 relative">
+            <Search className="w-4 h-4 text-[#666057] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search farm fresh produce, fruits, vegetables..."
+              className="w-full pl-10 pr-4 py-2 bg-white rounded-full border border-[#E6E1D5] text-xs font-semibold text-[#2D2620] placeholder-[#666057] focus:outline-none focus:border-[#354424] shadow-2xs"
+            />
+          </div>
         </div>
       </div>
 
       {/* 3. Horizontal Navigation Row (Zepto-style positioning directly below search/header area) */}
-      <div className="px-4 md:px-8 pt-1.5 pb-2.5 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar border-t border-[#E6E1D5]/60 bg-white/60 backdrop-blur-xs">
+      <div className="px-4 md:px-8 py-2.5 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar border-t border-[#E6E1D5]/60 bg-white/60 backdrop-blur-xs">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
@@ -106,17 +118,7 @@ export const ConsumerHeader = ({
           );
         })}
 
-        {/* Notification Bell Button - Positioned immediately after Profile button */}
-        <button 
-          onClick={onNotificationClick}
-          className="relative w-9 h-9 rounded-full bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] shadow-xs hover:bg-[#F4F5E6] transition-colors cursor-pointer flex-shrink-0 ml-1"
-          title="Notifications"
-        >
-          <Bell className="w-4 h-4 text-[#354424]" />
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#354424] text-white text-[10px] font-extrabold flex items-center justify-center border border-white">
-            3
-          </span>
-        </button>
+
       </div>
     </header>
   );

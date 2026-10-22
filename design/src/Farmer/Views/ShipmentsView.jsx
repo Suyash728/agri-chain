@@ -9,6 +9,7 @@ export const ShipmentsView = ({ onBack, onViewJourney }) => {
   // Shipments filter state & data
   const [activeTab, setActiveTab] = useState('All');
   const [shipments, setShipments] = useState([]);
+  const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
     fetch('http://localhost:8000/farmer/shipments')
@@ -24,6 +25,10 @@ export const ShipmentsView = ({ onBack, onViewJourney }) => {
     if (activeTab === 'In Transit') return ship.status === 'In Transit';
     if (activeTab === 'Delivered') return ship.status === 'Delivered';
     return true;
+  });
+
+  const displayShipments = [...filteredShipments].sort((a, b) => {
+    return sortAsc ? (a.id || '').localeCompare(b.id || '') : (b.id || '').localeCompare(a.id || '');
   });
 
   return (
@@ -42,7 +47,11 @@ export const ShipmentsView = ({ onBack, onViewJourney }) => {
           </h1>
         </div>
 
-        <button className="w-9 h-9 rounded-full bg-[#FAF7F0] flex items-center justify-center text-[#3B3028] hover:bg-[#E6E1D5] transition-colors border border-[#E6E1D5] cursor-pointer">
+        <button 
+          onClick={() => setSortAsc(!sortAsc)}
+          title={`Sort ${sortAsc ? 'Ascending' : 'Descending'}`}
+          className="w-9 h-9 rounded-full bg-[#FAF7F0] flex items-center justify-center text-[#3B3028] hover:bg-[#E6E1D5] transition-colors border border-[#E6E1D5] cursor-pointer"
+        >
           <SlidersHorizontal className="w-4 h-4 text-[#556B2F]" />
         </button>
       </div>
@@ -115,12 +124,12 @@ export const ShipmentsView = ({ onBack, onViewJourney }) => {
 
           {/* Shipments List with Warm Cream Card Backgrounds */}
           <div className="flex flex-col gap-3.5 w-full">
-            {filteredShipments.length === 0 ? (
+            {displayShipments.length === 0 ? (
               <div className="p-8 text-center bg-white rounded-2xl border border-[#E6E1D5] text-sm text-[#666057] font-semibold">
                 No shipments recorded for this filter.
               </div>
             ) : (
-              filteredShipments.map((ship) => (
+              displayShipments.map((ship) => (
                 <div 
                   key={ship.id}
                   onClick={() => onViewJourney && onViewJourney(ship.batchId || ship.id || 'TM1256')}

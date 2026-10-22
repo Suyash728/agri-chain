@@ -71,15 +71,18 @@ export default function App() {
   const [farmerKpis, setFarmerKpis] = useState([]);
   const [farmerCrops, setFarmerCrops] = useState([]);
   const [farmerActivities, setFarmerActivities] = useState([]);
+  const [farmerTrust, setFarmerTrust] = useState(null);
   const [farmerLoading, setFarmerLoading] = useState(true);
+  const [selectedBatchId, setSelectedBatchId] = useState('TM1256');
 
   const fetchFarmerData = useCallback(async () => {
     try {
-      const [kpiRes, cropsRes, actRes, invRes] = await Promise.allSettled([
+      const [kpiRes, cropsRes, actRes, invRes, trustRes] = await Promise.allSettled([
         fetch('http://localhost:8000/farmer/kpis').then(r => r.json()),
         fetch('http://localhost:8000/farmer/crops').then(r => r.json()),
         fetch('http://localhost:8000/farmer/activity').then(r => r.json()),
-        fetch('http://localhost:8000/farmer/inventory').then(r => r.json())
+        fetch('http://localhost:8000/farmer/inventory').then(r => r.json()),
+        fetch('http://localhost:8000/farmer/ai-trust').then(r => r.json())
       ]);
 
       if (kpiRes.status === 'fulfilled' && Array.isArray(kpiRes.value)) {
@@ -93,6 +96,9 @@ export default function App() {
       }
       if (invRes.status === 'fulfilled' && invRes.value && Array.isArray(invRes.value.items)) {
         setInventoryList(invRes.value.items);
+      }
+      if (trustRes.status === 'fulfilled' && trustRes.value && trustRes.value.score !== undefined) {
+        setFarmerTrust(trustRes.value);
       }
     } catch (err) {
       console.error('Error fetching farmer data from backend:', err);
@@ -116,6 +122,11 @@ export default function App() {
   const [isAddStockOpen, setIsAddStockOpen] = useState(false);
   const [isJourneyOpen, setIsJourneyOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  const handleViewJourney = (batchId) => {
+    if (batchId) setSelectedBatchId(batchId);
+    setIsJourneyOpen(true);
+  };
 
   const handleSelectFarmerTab = (tabId) => {
     setFarmerTab(tabId);
@@ -308,7 +319,7 @@ export default function App() {
               <AvailableProduceView onProcure={() => handleSelectLogisticTab('procurement-orders')} />
             )}
             {logisticTab === 'procurement-orders' && (
-              <ProcurementOrdersView />
+              <ProcurementOrdersView onNavigate={(tab) => handleSelectLogisticTab(tab)} />
             )}
             {logisticTab === 'transportation' && (
               <TransportationView />
@@ -329,7 +340,10 @@ export default function App() {
               <TransactionsView />
             )}
             {logisticTab === 'profile' && (
-              <LogisticProfileView />
+              <LogisticProfileView 
+                onLogout={handleLogout} 
+                onBack={() => handleSelectLogisticTab('dashboard')} 
+              />
             )}
           </main>
 
@@ -447,22 +461,22 @@ export default function App() {
                       <div className="p-4 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] space-y-2 text-xs">
                         <div className="flex items-center justify-between">
                           <span className="text-[#666057] font-semibold">Product</span>
-                          <span className="font-extrabold text-[#2D2620]">Wheat</span>
+                          <span className="font-extrabold text-[#2D2620]">{inventoryList[0]?.name || 'Wheat'}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-[#666057] font-semibold">Batch ID</span>
-                          <span className="font-extrabold text-[#2D2620]">WH-120525-01</span>
+                          <span className="font-extrabold text-[#2D2620]">{inventoryList[0]?.batchId || inventoryList[0]?.id || 'WH-120525-01'}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-[#666057] font-semibold">Current Location</span>
-                          <span className="font-extrabold text-[#2D2620]">On the way to Dark Store</span>
+                          <span className="font-extrabold text-[#2D2620]">{inventoryList[0]?.status || 'On the way to Dark Store'}</span>
                         </div>
                       </div>
                     </div>
 
                     {/* View Full Journey Action Button */}
                     <button 
-                      onClick={() => setIsJourneyOpen(true)}
+                      onClick={() => handleViewJourney(inventoryList[0]?.batchId || inventoryList[0]?.id || 'TM1256')}
                       className="w-full py-3.5 rounded-xl bg-[#3D4E2A] text-white text-xs sm:text-sm font-extrabold hover:bg-[#2A371B] transition-all cursor-pointer shadow-xs"
                     >
                       View Full Journey
@@ -491,11 +505,11 @@ export default function App() {
                           </div>
                           <div>
                             <div className="flex items-baseline gap-1">
-                              <span className="text-2xl sm:text-3xl font-extrabold text-[#2D2620]">92</span>
+                              <span className="text-2xl sm:text-3xl font-extrabold text-[#2D2620]">{farmerTrust?.score ?? 92}</span>
                               <span className="text-sm font-bold text-[#666057]">/100</span>
-                              <span className="text-sm font-extrabold text-[#3D4E2A] ml-1.5">High Trust</span>
+                              <span className="text-sm font-extrabold text-[#3D4E2A] ml-1.5">{farmerTrust?.level || 'High Trust'}</span>
                             </div>
-                            <p className="text-xs text-[#666057] mt-0.5">Your produce is safe and trustworthy.</p>
+                            <p className="text-xs text-[#666057] mt-0.5">{farmerTrust?.status ? `Your produce is ${farmerTrust.status.toLowerCase()}.` : 'Your produce is safe and trustworthy.'}</p>
                           </div>
                         </div>
 
@@ -554,28 +568,28 @@ export default function App() {
                             <span className="flex items-center gap-2 font-bold text-[#2D2620]">
                               <span className="text-[#556B2F] font-extrabold">✓</span> Cold Chain Integrity
                             </span>
-                            <span className="font-extrabold text-[#354424]">100% Compliant (16–20°C Range)</span>
+                            <span className="font-extrabold text-[#354424]">{farmerTrust?.aiVerificationDetails?.[0]?.status || '100% Compliant (16–20°C Range)'}</span>
                           </div>
 
                           <div className="p-3 rounded-xl bg-[#FAF7F0]/80 border border-[#E6E1D5]/60 flex items-center justify-between">
                             <span className="flex items-center gap-2 font-bold text-[#2D2620]">
                               <span className="text-[#556B2F] font-extrabold">✓</span> GPS Telemetry Validation
                             </span>
-                            <span className="font-extrabold text-[#354424]">Route Verified & Continuous</span>
+                            <span className="font-extrabold text-[#354424]">{farmerTrust?.aiVerificationDetails?.[1]?.status || 'Route Verified & Continuous'}</span>
                           </div>
 
                           <div className="p-3 rounded-xl bg-[#FAF7F0]/80 border border-[#E6E1D5]/60 flex items-center justify-between">
                             <span className="flex items-center gap-2 font-bold text-[#2D2620]">
                               <span className="text-[#556B2F] font-extrabold">✓</span> Tamper Prevention
                             </span>
-                            <span className="font-extrabold text-[#354424]">Smart Seal Intact</span>
+                            <span className="font-extrabold text-[#354424]">{farmerTrust?.aiVerificationDetails?.[2]?.status || 'Smart Seal Intact'}</span>
                           </div>
 
                           <div className="p-3 rounded-xl bg-[#FAF7F0]/80 border border-[#E6E1D5]/60 flex items-center justify-between">
                             <span className="flex items-center gap-2 font-bold text-[#2D2620]">
                               <span className="text-[#556B2F] font-extrabold">✓</span> Anomaly Check
                             </span>
-                            <span className="font-extrabold text-[#354424]">0 Deviations Flagged</span>
+                            <span className="font-extrabold text-[#354424]">{farmerTrust?.aiVerificationDetails?.[3]?.status || '0 Deviations Flagged'}</span>
                           </div>
                         </div>
                       </div>
@@ -605,24 +619,26 @@ export default function App() {
                 onBack={() => handleSelectFarmerTab('dashboard')} 
                 onAddItem={() => setIsAddStockOpen(true)} 
                 onOpenAddStock={() => setIsAddStockOpen(true)} 
+                onSelectItem={(item) => handleViewJourney(item.batchId || item.id)} 
               />
             )}
             {farmerTab === 'orders' && (
               <FarmerOrdersView 
                 onBack={() => handleSelectFarmerTab('dashboard')} 
+                onSelectOrder={(ord) => handleViewJourney(ord.batchId || 'TM1256')} 
               />
             )}
             {farmerTab === 'shipments' && (
               <FarmerShipmentsView 
                 onBack={() => handleSelectFarmerTab('dashboard')} 
-                onViewJourney={() => setIsJourneyOpen(true)} 
+                onViewJourney={handleViewJourney} 
               />
             )}
             {farmerTab === 'traceability' && (
               <FarmerTraceabilityView 
                 onBack={() => handleSelectFarmerTab('dashboard')} 
-                onOpenFullJourney={() => setIsJourneyOpen(true)} 
-                onViewJourney={() => setIsJourneyOpen(true)} 
+                onOpenFullJourney={handleViewJourney} 
+                onViewJourney={handleViewJourney} 
               />
             )}
             {farmerTab === 'ai-trust' && (
@@ -689,9 +705,9 @@ export default function App() {
       )}
 
       {/* Shared Modals */}
-      <MoreMenuSheet isOpen={isMoreOpen} onClose={() => setIsMoreOpen(false)} onSelectTab={handleSelectFarmerTab} currentTab={farmerTab} />
+      <MoreMenuSheet isOpen={isMoreOpen} onClose={() => setIsMoreOpen(false)} onSelectTab={handleSelectFarmerTab} currentTab={farmerTab} onLogout={handleLogout} />
       <AddStockModal isOpen={isAddStockOpen} onClose={() => setIsAddStockOpen(false)} onAddStock={handleAddStock} />
-      <ViewJourneyModal isOpen={isJourneyOpen} onClose={() => setIsJourneyOpen(false)} />
+      <ViewJourneyModal isOpen={isJourneyOpen} onClose={() => setIsJourneyOpen(false)} batchId={selectedBatchId} />
       <NotificationsModal isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} role={activeRole} />
 
       {/* Showcase & Demo Drawer */}

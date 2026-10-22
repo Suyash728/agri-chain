@@ -1,31 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 
-export const OrdersView = ({ onBack }) => {
+export const OrdersView = ({ onBack, onSelectOrder }) => {
   const [activeTab, setActiveTab] = useState('All');
   const [orders, setOrders] = useState([]);
+  const [confirmingId, setConfirmingId] = useState(null);
 
-  useEffect(() => {
+  const fetchOrders = () => {
     fetch('http://localhost:8000/farmer/orders')
       .then(res => res.json())
       .then(data => {
-        if (data && data.length > 0) setOrders(data);
+        if (data && Array.isArray(data)) setOrders(data);
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchOrders();
   }, []);
 
-  const filteredOrders = orders.filter(order => {
+  const handleConfirmOrder = async (ord) => {
+    const targetId = ord.batchId || ord.id;
+    try {
+      setConfirmingId(targetId);
+      const res = await fetch(`http://localhost:8000/farmer/orders/${targetId}/confirm`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        setOrders(prev => prev.map(o => (o.batchId === targetId || o.id === targetId) ? { ...o, status: 'Confirmed', statusType: 'confirmed' } : o));
+        fetchOrders();
+      }
+    } catch (err) {
+      console.error('Failed to confirm order:', err);
+    } finally {
+      setConfirmingId(null);
+    }
+  };
+
+  // Deduplicate orders by unique batchId or id so every order appears exactly once
+  const uniqueOrders = useMemo(() => {
+    const seen = new Set();
+    return orders.filter(order => {
+      const key = order.batchId || order.id;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [orders]);
+
+  const filteredOrders = uniqueOrders.filter(order => {
     if (activeTab === 'All') return true;
     if (activeTab === 'Pending') return order.status === 'Pending';
     if (activeTab === 'Confirmed') return order.status === 'Confirmed';
-    if (activeTab === 'Completed') return order.status === 'Completed' || order.status === 'In Progress';
-    return true;
+    if (activeTab === 'Completed') return order.status === 'Completed';
+    return false;
   });
 
   const getBadgeStyle = (status) => {
     if (status === 'Confirmed') return 'badge-confirmed';
+    if (status === 'Completed') return 'badge-completed';
     if (status === 'Pending') return 'badge-pending';
-    if (status === 'In Progress') return 'badge-inprogress';
     return 'badge-confirmed';
   };
 
@@ -73,6 +107,7 @@ export const OrdersView = ({ onBack }) => {
           filteredOrders.map((ord) => (
             <div 
               key={ord.id}
+              onClick={() => onSelectOrder && onSelectOrder(ord)}
               style={{ backgroundColor: '#FAF7F0' }}
               className="border border-[#E8E2D5] rounded-2xl p-4 sm:p-5 flex flex-col gap-3 cursor-pointer hover:shadow-md hover:border-[#7A8B52] transition-all duration-200 w-full"
             >
@@ -104,7 +139,23 @@ export const OrdersView = ({ onBack }) => {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-1">
+              <div className="flex items-center justify-between pt-1">
+                {ord.status === 'Pending' ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleConfirmOrder(ord);
+                    }}
+                    disabled={confirmingId === (ord.batchId || ord.id)}
+                    className="px-4 py-1.5 bg-[#3D4E2A] hover:bg-[#2A371B] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{confirmingId === (ord.batchId || ord.id) ? 'Confirming...' : 'Accept Order'}</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
                 <ChevronRight className="w-5 h-5 text-[#3B3028]" />
               </div>
             </div>

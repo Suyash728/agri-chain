@@ -19,6 +19,11 @@ export const DarkStoreSalesView = ({ onBack }) => {
   const [chartMetric, setChartMetric] = useState('Amount (₹)');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [liveSales, setLiveSales] = useState(null);
+  const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
+  const [showSalesBreakdownModal, setShowSalesBreakdownModal] = useState(false);
+  const [showTopProductsModal, setShowTopProductsModal] = useState(false);
+  const [showAllOrdersModal, setShowAllOrdersModal] = useState(false);
+  const [orderSearchModal, setOrderSearchModal] = useState('');
 
   useEffect(() => {
     fetch('http://localhost:8000/darkstore/sales')
@@ -143,11 +148,33 @@ export const DarkStoreSalesView = ({ onBack }) => {
 
         {/* Date Range Selector Pill */}
         <div className="relative">
-          <button className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white border border-[#E6E1D5] shadow-xs text-xs font-bold text-[#2D2620] hover:bg-[#FAF7F0] transition-colors cursor-pointer">
+          <button 
+            onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
+            className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-white border border-[#E6E1D5] shadow-xs text-xs font-bold text-[#2D2620] hover:bg-[#FAF7F0] transition-colors cursor-pointer"
+          >
             <Calendar className="w-4 h-4 text-[#666057]" />
             <span>{dateRange}</span>
-            <ChevronDown className="w-4 h-4 text-[#666057] ml-1" />
+            <ChevronDown className={`w-4 h-4 text-[#666057] ml-1 transition-transform ${isDateDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
+          {isDateDropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-[#E6E1D5] rounded-2xl shadow-xl z-50 p-1.5 animate-scale-in">
+              {['Today', 'This Week', currentMonthFormatted, 'Last 90 Days'].map((range) => (
+                <button
+                  key={range}
+                  onClick={() => {
+                    setDateRange(range);
+                    setIsDateDropdownOpen(false);
+                  }}
+                  className={`w-full text-left px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-between ${
+                    dateRange === range ? 'bg-[#FAF7F0] text-[#354424]' : 'text-[#2D2620] hover:bg-[#FAF7F0]'
+                  }`}
+                >
+                  <span>{range}</span>
+                  {dateRange === range && <span className="w-2 h-2 rounded-full bg-[#556B2F]" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -261,7 +288,10 @@ export const DarkStoreSalesView = ({ onBack }) => {
                 <ChevronDown className="w-3.5 h-3.5 text-[#666057] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
 
-              <button className="text-xs font-bold text-[#556B2F] hover:underline cursor-pointer">
+              <button 
+                onClick={() => setShowSalesBreakdownModal(true)}
+                className="text-xs font-bold text-[#556B2F] hover:underline cursor-pointer"
+              >
                 View All
               </button>
             </div>
@@ -354,7 +384,10 @@ export const DarkStoreSalesView = ({ onBack }) => {
         <div className="lg:col-span-5 bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs flex flex-col justify-between space-y-3">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-base font-extrabold text-[#2D2620]">Top Selling Products</h2>
-            <button className="text-xs font-bold text-[#556B2F] hover:underline cursor-pointer">
+            <button 
+              onClick={() => setShowTopProductsModal(true)}
+              className="text-xs font-bold text-[#556B2F] hover:underline cursor-pointer"
+            >
               View All
             </button>
           </div>
@@ -392,7 +425,10 @@ export const DarkStoreSalesView = ({ onBack }) => {
       <div className="bg-white rounded-3xl border border-[#E6E1D5] shadow-xs overflow-hidden w-full">
         <div className="p-4 sm:p-5 border-b border-[#E6E1D5] flex items-center justify-between">
           <h2 className="text-base font-extrabold text-[#2D2620]">Recent Orders</h2>
-          <button className="text-xs font-bold text-[#556B2F] hover:underline cursor-pointer">
+          <button 
+            onClick={() => setShowAllOrdersModal(true)}
+            className="text-xs font-bold text-[#556B2F] hover:underline cursor-pointer"
+          >
             View All
           </button>
         </div>
@@ -452,6 +488,168 @@ export const DarkStoreSalesView = ({ onBack }) => {
         </div>
       </div>
 
+          {/* 1. Sales Performance Breakdown Modal */}
+      {showSalesBreakdownModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 border border-[#E6E1D5] shadow-2xl space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E1D5]">
+              <div>
+                <h3 className="text-lg font-extrabold text-[#2D2620]">Sales Performance Ledger</h3>
+                <p className="text-xs text-[#666057]">Revenue and order volume metrics breakdown</p>
+              </div>
+              <button 
+                onClick={() => setShowSalesBreakdownModal(false)}
+                className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#666057] hover:text-[#2D2620] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-2.5 text-xs">
+              <div className="flex justify-between p-3 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                <span className="font-bold text-[#666057]">Gross Merchandise Value (GMV)</span>
+                <span className="font-extrabold text-[#2D2620]">{totalSalesVal}</span>
+              </div>
+              <div className="flex justify-between p-3 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                <span className="font-bold text-[#666057]">Total Orders Fulfilled</span>
+                <span className="font-extrabold text-[#2D2620]">{ordersCompletedVal}</span>
+              </div>
+              <div className="flex justify-between p-3 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                <span className="font-bold text-[#666057]">Total Produce Volume Delivered</span>
+                <span className="font-extrabold text-[#2D2620]">{quantitySoldVal}</span>
+              </div>
+              <div className="flex justify-between p-3 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                <span className="font-bold text-[#666057]">Average Order Value (AOV)</span>
+                <span className="font-extrabold text-[#556B2F]">₹ 1,420</span>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowSalesBreakdownModal(false)}
+              className="w-full py-2.5 rounded-xl bg-[#354424] text-white font-extrabold text-xs hover:bg-[#26321A] transition-colors cursor-pointer"
+            >
+              Close Ledger
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Top Products Modal */}
+      {showTopProductsModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 border border-[#E6E1D5] shadow-2xl space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E1D5]">
+              <div>
+                <h3 className="text-lg font-extrabold text-[#2D2620]">All Top Selling Produce</h3>
+                <p className="text-xs text-[#666057]">Volume and revenue generated by produce SKU</p>
+              </div>
+              <button 
+                onClick={() => setShowTopProductsModal(false)}
+                className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#666057] hover:text-[#2D2620] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="max-h-80 overflow-y-auto space-y-2">
+              {topProducts.map((prod, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-xs">
+                  <div className="flex items-center gap-3">
+                    <img src={prod.image} alt={prod.name} className="w-8 h-8 object-contain rounded-lg bg-white p-0.5 border border-[#E6E1D5]" />
+                    <div>
+                      <span className="font-extrabold text-[#2D2620] block">{prod.name}</span>
+                      <span className="text-[11px] text-[#666057] font-semibold">{prod.qty} fulfilled</span>
+                    </div>
+                  </div>
+                  <span className="font-extrabold text-[#354424]">{prod.revenue}</span>
+                </div>
+              ))}
+            </div>
+            <button 
+              onClick={() => setShowTopProductsModal(false)}
+              className="w-full py-2.5 rounded-xl bg-[#354424] text-white font-extrabold text-xs hover:bg-[#26321A] transition-colors cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 3. All Orders Full Modal */}
+      {showAllOrdersModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-4xl w-full p-6 border border-[#E6E1D5] shadow-2xl space-y-4 animate-scale-in max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E1D5]">
+              <div>
+                <h3 className="text-xl font-extrabold text-[#2D2620]">Complete Dark Store Orders Ledger</h3>
+                <p className="text-xs text-[#666057]">Full list of retail store & quick-commerce dispatches</p>
+              </div>
+              <button 
+                onClick={() => setShowAllOrdersModal(false)}
+                className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#666057] hover:text-[#2D2620] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search className="w-4 h-4 text-[#8C8275] absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search orders by buyer, produce, ID..."
+                value={orderSearchModal}
+                onChange={(e) => setOrderSearchModal(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-xl border border-[#E6E1D5] bg-[#FAF7F0] text-xs text-[#2D2620] focus:outline-none focus:border-[#354424]"
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5] text-[#666057] font-semibold sticky top-0">
+                  <tr>
+                    <th className="p-3">Order ID</th>
+                    <th className="p-3">Buyer / Hub</th>
+                    <th className="p-3">Produce</th>
+                    <th className="p-3">Quantity</th>
+                    <th className="p-3">Amount</th>
+                    <th className="p-3">Date</th>
+                    <th className="p-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E6E1D5]/40">
+                  {recentOrders
+                    .filter(o => 
+                      o.id.toLowerCase().includes(orderSearchModal.toLowerCase()) || 
+                      o.buyer.toLowerCase().includes(orderSearchModal.toLowerCase()) || 
+                      o.produce.toLowerCase().includes(orderSearchModal.toLowerCase())
+                    )
+                    .map((o, idx) => (
+                      <tr key={idx} className="hover:bg-[#FAF7F0]/60 transition-colors">
+                        <td className="p-3 font-extrabold text-[#354424]">{o.id}</td>
+                        <td className="p-3 font-bold text-[#2D2620]">{o.buyer}</td>
+                        <td className="p-3 text-[#2D2620]">{o.produce}</td>
+                        <td className="p-3 text-[#666057]">{o.qty}</td>
+                        <td className="p-3 font-extrabold text-[#2D2620]">{o.amount}</td>
+                        <td className="p-3 text-[#8C8275]">{o.date}</td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#EBF3E8] text-[#556B2F]">
+                            {o.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="pt-2 border-t border-[#E6E1D5] flex justify-end">
+              <button 
+                onClick={() => setShowAllOrdersModal(false)}
+                className="px-4 py-2 rounded-xl bg-[#354424] text-white font-extrabold text-xs hover:bg-[#26321A] transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

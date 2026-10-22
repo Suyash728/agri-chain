@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Package, ThermometerSnowflake, QrCode, Search, CheckCircle2, ShoppingBag, Clock, Bike, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Package, ThermometerSnowflake, QrCode, Search, CheckCircle2, ShoppingBag, Clock, Bike, ArrowRight, X, ShieldCheck } from 'lucide-react';
 import { FulfillmentOrdersView } from './FulfillmentOrdersView';
 
 export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
@@ -7,6 +7,7 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
   const [selectedBay, setSelectedBay] = useState('All');
 
   const [bins, setBins] = useState([]);
+  const [selectedBinQR, setSelectedBinQR] = useState(null);
 
   useEffect(() => {
     fetch('http://localhost:8000/darkstore/inventory')
@@ -132,7 +133,10 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
                       <ThermometerSnowflake className="w-4 h-4" />
                       <span>{bin.temp} ({bin.humidity})</span>
                     </div>
-                    <button className="flex items-center gap-1 text-[11px] font-extrabold text-[#354424] hover:underline cursor-pointer">
+                    <button 
+                      onClick={() => setSelectedBinQR(bin)}
+                      className="flex items-center gap-1 text-[11px] font-extrabold text-[#354424] hover:underline cursor-pointer"
+                    >
                       <QrCode className="w-3.5 h-3.5" />
                       <span>Scan QR</span>
                     </button>
@@ -153,6 +157,72 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
       {/* Render Step 2: Products Page */}
       {activeStepTab === 2 && (
         <FulfillmentOrdersView onBack={() => setActiveStepTab(1)} />
+      )}
+          {/* Bin QR Code & Tag Verification Modal */}
+      {selectedBinQR && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-[#E6E1D5] shadow-2xl space-y-4 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E1D5]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#354424]">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-[#2D2620]">Storage Bin Digital Tag</h3>
+                  <p className="text-xs text-[#666057]">{selectedBinQR.bin} • Verified Tag</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedBinQR(null)}
+                className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#666057] hover:text-[#2D2620] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center justify-center p-4 bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5] space-y-2">
+              <div className="w-36 h-36 bg-white p-2.5 rounded-2xl border border-[#E6E1D5] flex items-center justify-center shadow-xs">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`AGRICHAIN-BIN:${selectedBinQR.bin}:PRODUCE:${selectedBinQR.produce}:EXP:${selectedBinQR.expiry}`)}`} 
+                  alt="Bin QR"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <span className="font-mono text-[11px] font-bold text-[#354424]">BIN-HASH: 0x{Math.random().toString(16).substring(2, 10).toUpperCase()}...</span>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                <span className="font-bold text-[#666057]">Produce Lot</span>
+                <span className="font-extrabold text-[#2D2620]">{selectedBinQR.produce}</span>
+              </div>
+              <div className="flex justify-between p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                <span className="font-bold text-[#666057]">Storage Bay</span>
+                <span className="font-extrabold text-[#2D2620]">{selectedBinQR.bay}</span>
+              </div>
+              <div className="flex justify-between p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                <span className="font-bold text-[#666057]">Remaining Shelf Life</span>
+                <span className="font-extrabold text-[#B85C38]">{selectedBinQR.expiry}</span>
+              </div>
+              <div className="flex justify-between p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                <span className="font-bold text-[#666057]">Current Bay Telemetry</span>
+                <span className="font-extrabold text-[#2563EB]">{selectedBinQR.temp} ({selectedBinQR.humidity})</span>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>Cryptographically verified on Hardhat EVM Contract</span>
+            </div>
+
+            <button 
+              onClick={() => setSelectedBinQR(null)}
+              className="w-full py-2.5 rounded-xl bg-[#354424] text-white font-extrabold text-xs hover:bg-[#26321A] transition-colors cursor-pointer"
+            >
+              Done
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

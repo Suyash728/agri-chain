@@ -30,6 +30,24 @@ export const TransactionsView = () => {
   const txList = liveTransactions;
   const totalVolumeRupees = liveTransactions.reduce((acc, t) => acc + (parseInt((t.amount || '0').replace(/[^0-9]/g, '')) || 0), 0);
 
+  const handleExportLedgerCSV = () => {
+    const headers = ['Description', 'Date', 'Amount', 'Status'];
+    const rows = liveTransactions.map(t => [
+      `"${(t.desc || '').replace(/"/g, '""')}"`,
+      t.date,
+      `"${(t.amount || '').replace(/"/g, '""')}"`,
+      t.status
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `agrichain_logistics_ledger_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       <div className="bg-white p-5 rounded-2xl border border-[#E6E1D5] shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -40,7 +58,7 @@ export const TransactionsView = () => {
           </p>
         </div>
         <button 
-          onClick={() => alert(`Financial ledger statement exported! Total settlement: ₹ ${totalVolumeRupees.toLocaleString('en-IN')}`)} 
+          onClick={handleExportLedgerCSV} 
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer"
         >
           <Download className="w-4 h-4" />

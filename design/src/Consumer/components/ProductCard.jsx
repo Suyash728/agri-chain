@@ -23,8 +23,19 @@ export const ProductCard = ({ product, onAddToCart, onProductClick, onToggleFavo
       {/* Product Image - Off-white background preserved, inner square box removed */}
       <div className="w-full h-28 bg-[#F8F5EE] rounded-xl p-2.5 flex items-center justify-center overflow-hidden mb-2.5">
         <img 
-          src={product.image} 
+          src={product.image || '/images/vegetables_ref.png'} 
           alt={product.name} 
+          onError={(e) => {
+            e.target.onerror = null;
+            const cat = (product.category || '').toLowerCase();
+            if (cat.includes('fruit')) e.target.src = '/images/fruits_ref.png';
+            else if (cat.includes('veg')) e.target.src = '/images/vegetables_ref.png';
+            else if (cat.includes('grain')) e.target.src = '/images/grains_ref.png';
+            else if (cat.includes('pulse')) e.target.src = '/images/pulses_ref.png';
+            else if (cat.includes('spice')) e.target.src = '/images/spices_ref.png';
+            else if (cat.includes('dry')) e.target.src = '/images/dryfruits_ref.png';
+            else e.target.src = '/images/vegetables_ref.png';
+          }}
           className="max-h-full max-w-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform" 
         />
       </div>

@@ -37,7 +37,12 @@ export const FavoritesView = ({ onAddToCart, onToggleFavorite, onProductClick })
               >
                 {/* Product Image - Off-white background preserved, inner square box removed */}
                 <div className="w-20 md:w-full h-20 md:h-32 bg-[#F8F5EE] rounded-xl p-2 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+                  <img 
+                    src={product.image || '/images/vegetables_ref.png'} 
+                    alt={product.name} 
+                    onError={(e) => { e.target.onerror = null; e.target.src = '/images/vegetables_ref.png'; }}
+                    className="max-h-full max-w-full object-contain mix-blend-multiply" 
+                  />
                 </div>
 
                 {/* Title & Weight */}

@@ -3,6 +3,7 @@ import { Bell, Calendar, ChevronDown } from 'lucide-react';
 
 export const DarkStoreHeader = ({ onOpenNotifications }) => {
   const [selectedStore, setSelectedStore] = useState('Nashik Central Store');
+  const [isStoreOpen, setIsStoreOpen] = useState(false);
 
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full pt-1 pb-2">
@@ -43,11 +44,34 @@ export const DarkStoreHeader = ({ onOpenNotifications }) => {
 
         {/* Store Selector Dropdown Pill */}
         <div className="relative">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border border-[#E6E1D5] shadow-xs text-xs text-[#2D2620] font-medium cursor-pointer hover:bg-[#FAF7F0] transition-colors">
+          <button 
+            onClick={() => setIsStoreOpen(!isStoreOpen)}
+            className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white border border-[#E6E1D5] shadow-xs text-xs text-[#2D2620] font-medium cursor-pointer hover:bg-[#FAF7F0] transition-colors"
+          >
             <span className="text-[#666057] font-semibold">Store:</span>
             <span className="font-extrabold text-[#2D2620]">{selectedStore}</span>
-            <ChevronDown className="w-4 h-4 text-[#666057] ml-1" />
+            <ChevronDown className={`w-4 h-4 text-[#666057] ml-1 transition-transform ${isStoreOpen ? 'rotate-180' : ''}`} />
           </button>
+
+          {isStoreOpen && (
+            <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-[#E6E1D5] rounded-2xl shadow-xl z-50 p-1.5 animate-scale-in">
+              {['Nashik Central Store', 'Pune Regional Hub', 'Mumbai Fulfillment Center'].map((store) => (
+                <button
+                  key={store}
+                  onClick={() => {
+                    setSelectedStore(store);
+                    setIsStoreOpen(false);
+                  }}
+                  className={`w-full text-left px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-between ${
+                    selectedStore === store ? 'bg-[#FAF7F0] text-[#354424]' : 'text-[#2D2620] hover:bg-[#FAF7F0]'
+                  }`}
+                >
+                  <span>{store}</span>
+                  {selectedStore === store && <span className="w-2 h-2 rounded-full bg-[#556B2F]" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -209,7 +209,7 @@ export const MoreMenuSheet = ({ isOpen, onClose, onSelectTab, onLogout }) => {
         <div className="p-4 bg-[#FAF7F0] border-t border-[#E6E1D5]">
           <button
             onClick={() => {
-              onLogout();
+              if (onLogout) onLogout();
               onClose();
             }}
             className="w-full py-3 bg-[#FAF7F0] hover:bg-[#FBE8E8] text-[#8B3A3A] border border-[#E8C5C5] font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors"

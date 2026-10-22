@@ -11,7 +11,9 @@ export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'a
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setProducts(data);
+          // Deduplicate by product name so each product appears only once
+          const uniqueList = Array.from(new Map(data.map(p => [p.name, p])).values());
+          setProducts(uniqueList);
         }
       })
       .catch(() => {});
@@ -88,8 +90,19 @@ export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'a
               {/* Product Thumbnail - Off-white background preserved, inner square box removed */}
               <div className="w-20 md:w-full h-20 md:h-32 bg-[#F8F5EE] rounded-xl p-2 flex items-center justify-center flex-shrink-0 overflow-hidden">
                 <img 
-                  src={product.image} 
+                  src={product.image || '/images/vegetables_ref.png'} 
                   alt={product.name} 
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    const cat = (product.category || '').toLowerCase();
+                    if (cat.includes('fruit')) e.target.src = '/images/fruits_ref.png';
+                    else if (cat.includes('veg')) e.target.src = '/images/vegetables_ref.png';
+                    else if (cat.includes('grain')) e.target.src = '/images/grains_ref.png';
+                    else if (cat.includes('pulse')) e.target.src = '/images/pulses_ref.png';
+                    else if (cat.includes('spice')) e.target.src = '/images/spices_ref.png';
+                    else if (cat.includes('dry')) e.target.src = '/images/dryfruits_ref.png';
+                    else e.target.src = '/images/vegetables_ref.png';
+                  }}
                   className="max-h-full max-w-full object-contain mix-blend-multiply transition-transform hover:scale-105" 
                 />
               </div>

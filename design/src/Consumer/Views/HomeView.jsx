@@ -23,7 +23,9 @@ export const HomeView = ({
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          setProducts(data);
+          // Deduplicate by product name so each product appears only once
+          const uniqueList = Array.from(new Map(data.map(p => [p.name, p])).values());
+          setProducts(uniqueList);
         }
       })
       .catch(() => {});
