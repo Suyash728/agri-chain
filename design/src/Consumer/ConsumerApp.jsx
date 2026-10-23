@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MobileContainer } from './components/MobileContainer';
 import { ConsumerHeader } from './components/ConsumerHeader';
 import { ConsumerBottomNav } from './components/ConsumerBottomNav';

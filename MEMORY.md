@@ -1701,3 +1701,23 @@ still static UI with no data flow. Specifically:
 - CORS LAN check: `curl -s -X GET -H "Origin: http://192.168.1.102:3000" -i http://192.168.1.102:8000/network/info` verified returning HTTP 200 with `access-control-allow-origin: http://192.168.1.102:3000`.
 - LAN Frontend check: `curl -s -I http://192.168.1.102:3000` verified returning HTTP 200 OK.
 - QR Deep Link verification: `http://192.168.1.102:3000/?role=consumer&tab=journey&batch=QTRA-1792779221` loads the exact batch provenance on mobile.
+
+---
+
+## [Frontend Runtime Bugfix — Missing useEffect Import in ConsumerApp] — 2026-10-24
+
+**What was done:**
+- Fixed a client-side runtime crash causing a blank white page on `http://localhost:3000/`.
+- Root cause: `ConsumerApp.jsx` utilized `useEffect` for batch discovery and QR parameter deep linking without importing `useEffect` from `react` (only `useState` was imported), which resulted in an uncaught `ReferenceError: useEffect is not defined` when mounting the initial default Consumer role.
+- Added `useEffect` to `import React, { useState, useEffect } from 'react'` in `ConsumerApp.jsx`.
+- Verified whole codebase with AST/regex scanner: zero missing hook imports remaining across `design/src`.
+
+**Files changed:**
+- `design/src/Consumer/ConsumerApp.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Static hook verification scanner: 0 missing React hook imports across all files in `design/src/`.
+- Vite Production Build: 1,814 modules transformed in 3.13s with 0 errors (`cd design && npm run build`).
+- Pytest Suite: 12/12 tests in `tests/` passing cleanly.
+- Dev server running on `0.0.0.0:3000` (Local: `http://localhost:3000/`, Network: `http://192.168.1.102:3000/`).
