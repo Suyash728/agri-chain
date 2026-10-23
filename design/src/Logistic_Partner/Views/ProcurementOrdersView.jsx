@@ -219,7 +219,8 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                 <button
                   type="button"
                   onClick={() => {
-                    setActiveCustodyBatchId('BATCH-PO-2026-001');
+                    const targetBatchId = orderList.length > 0 ? orderList[0].id : '';
+                    setActiveCustodyBatchId(targetBatchId);
                     setIsAcceptShipmentOpen(true);
                   }}
                   className="px-2.5 py-1.5 rounded-xl bg-[#354424] text-white text-[11px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
@@ -230,7 +231,8 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                 <button
                   type="button"
                   onClick={() => {
-                    setActiveCustodyBatchId('BATCH-PO-2026-001');
+                    const targetBatchId = orderList.length > 0 ? orderList[0].id : '';
+                    setActiveCustodyBatchId(targetBatchId);
                     setIsHandoffOpen(true);
                   }}
                   className="px-2.5 py-1.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] text-[11px] font-bold hover:bg-[#E6E1D5] transition-colors cursor-pointer flex items-center gap-1 shadow-xs"

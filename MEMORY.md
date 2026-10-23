@@ -1931,3 +1931,52 @@ still static UI with no data flow. Specifically:
 **Verified (DONE WHEN checks that actually passed):**
 - Vite Production Build: 1,815 modules built in 3.88s with 0 errors (`npm run build`).
 - Full Pytest Suite: 159/159 passed in 80.95s (`pytest tests/ trust-layer/tests/`).
+
+
+## [Logistics Partner — Dynamic Traceability, Fleet Transport & Shipment Tracking] — 2026-10-24
+
+**What was done:**
+- Fixed hardcoded and poorly coded screens identified in screenshots 012941, 012954, and 013004:
+  1. **Traceability Passport (`TraceabilityView.jsx`)**:
+     - Replaced the static, single 5-box row with a full-fledged Farm-to-Fork Traceability Passport.
+     - Added dynamic 5-stage lifecycle progression (`Farm Origin → Harvest Log → Custody Handoff → Reefer Transit → Retail/Hub`) where stage statuses (`Completed`, `Active`, `Pending`) are dynamically computed from the on-chain `currentState`.
+     - Added an Origin & Custody Credentials Card displaying produce crop, clean farm origin, harvest date, batch quantity, current custody holder, and location.
+     - Added a Quality & Environmental Verification Card displaying quality grade, AI freshness score, reefer storage temp, humidity, and anomaly detection verdict.
+     - Added an On-Chain Custody Audit Trail Table displaying the immutable transaction ledger with state, from/to holders, transfer values, tx hashes, and timestamps.
+  2. **Live Shipment GPS Tracking (`ShipmentTrackingView.jsx`)**:
+     - Removed hardcoded, fabricated milestone times (`formatTime(4)`, `formatTime(1)`, `formatEta(3)`).
+     - Connected the Milestone Audit Log to live batch custody records from `/batches/{id}/traceability` so that milestones display actual on-chain timestamps.
+     - Made the simulated corridor window dynamically adapt to the batch's custody state (Farm Gate Staging for `REGISTERED`, Highway Transit with live coordinates and speed for `IN_TRANSIT`, Cold Storage Hub Arrival for `IN_STORAGE`/`AT_RETAIL`).
+     - Added a 4-card Quick Telemetry Grid (Produce, Reefer Temp, Quantity, Route Status).
+  3. **Fleet & Transport Management (`TransportationView.jsx`)**:
+     - Fixed field name mismatches (`item.vehicle || item.number`, `item.produce || item.product`, `item.quantity`, `item.coords`).
+     - Added a top Fleet Overview KPI row: Active Fleet Trucks, Average Reefer Temp, Total Produce Freight (kg), and Cold-Chain Compliance.
+     - Added batch banners (`Batch #{v.batchId} • {v.produce} ({v.quantity})`) and clean status badges to each vehicle card.
+  4. **Backend Endpoints (`backend/main.py`)**:
+     - In `/logistics/shipments`: Returned consistent field aliases (`vehicle` & `number`, `produce` & `product`, `quantity`, `coords`), clean origin farm names, and dynamic custody-aware status labels (`Awaiting Pickup`, `In Transit`, `In Cold Storage`, etc.).
+     - In `/logistics/orders`: Cleaned `supplier` string by stripping unparsed `||cat=...` metadata leakage.
+  5. **Procurement Orders View (`ProcurementOrdersView.jsx`)**:
+     - Replaced hardcoded fallback batch ID `'BATCH-PO-2026-001'` in modal action buttons with dynamic active order IDs.
+
+**Files changed:**
+- `backend/main.py`
+- `design/src/Logistic_Partner/Views/TraceabilityView.jsx`
+- `design/src/Logistic_Partner/Views/ShipmentTrackingView.jsx`
+- `design/src/Logistic_Partner/Views/TransportationView.jsx`
+- `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`
+- `MEMORY.md`
+
+**Decisions made (and why):**
+- Screenshots corresponded to the 3 consecutive Logistics Partner navigation views: Traceability, Shipment Tracking, and Transportation.
+- Previously, `TransportationView` rendered empty blanks because frontend expected `vehicle`, `produce`, `coords` while backend sent `number`, `product`, `latitude`/`longitude`. Aligning the data contracts on both backend and frontend completely resolved the empty fields.
+- Hardcoded milestones in `ShipmentTrackingView` falsely claimed batches in `REGISTERED` state were already on highway transit. The audit log and corridor view now dynamically key off `state` (`REGISTERED` = Farm Staging Bay, `IN_TRANSIT` = Highway Corridor, `IN_STORAGE`/`AT_RETAIL` = Warehouse Hub).
+- `TraceabilityView` was 80% blank white space with static boxes; replacing it with a complete provenance passport provides farmers, consumers, and logistics partners with full audit trail visibility.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Backend Unit Tests: 12/12 passed (`pytest tests/`).
+- Smart Contract Suite: 22/22 passed (`npx hardhat test`).
+- Vite Production Build: 1,815 modules built in 3.19s with 0 errors (`npm run build`).
+- Live Endpoints Verified:
+  - `GET /logistics/shipments`: returns clean `vehicle`, `produce`, `quantity`, `coords`, `state`.
+  - `GET /logistics/orders`: returns clean `supplier` without unparsed metadata.
+  - `GET /batches/{id}/traceability`: fully renders dynamic 5-stage lifecycle, credentials, and custody ledger.

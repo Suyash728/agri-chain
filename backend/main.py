@@ -2260,7 +2260,9 @@ def get_logistics_shipments():
 
         for idx, r in enumerate(rows):
             batch_id = r["batch_id"]
-            state = r["state"]
+            state = (r["state"] or "").strip().upper()
+            _, qty, price = _parse_batch_meta(r)
+            qty_kg = int(qty * 1000)
 
             reading = conn.execute(
                 "SELECT temp_c, humidity_pct, verdict FROM readings WHERE batch_id = ? ORDER BY id DESC LIMIT 1",
@@ -2280,17 +2282,30 @@ def get_logistics_shipments():
 
             driver_info = drivers[idx % len(drivers)]
 
+            clean_origin = r["origin_farm"].split("||")[0].strip()
+            dest = "Pune Fresh DarkStore Hub"
+            if state in ("IN_STORAGE", "AT_RETAIL"):
+                dest = "Pune Fresh Retail DarkStore"
+            elif state == "SOLD":
+                dest = "Consumer Doorstep (Delivered)"
+
             if state == "IN_TRANSIT":
                 status_label = "In Transit"
-                badge = "bg-[#556B2F]/15 text-[#556B2F]"
-            elif state == "REGISTERED":
-                status_label = "Loading"
-                badge = "bg-[#B85C38]/15 text-[#B85C38]"
-            elif state in ("IN_STORAGE", "AT_RETAIL"):
-                status_label = "Arrived at Hub"
                 badge = "bg-[#2B6CB0]/15 text-[#2B6CB0]"
+            elif state in ("REGISTERED", "PENDING"):
+                status_label = "Awaiting Pickup"
+                badge = "bg-[#B85C38]/15 text-[#B85C38]"
+            elif state in ("CONFIRMED", "ACCEPTED"):
+                status_label = "Scheduled for Dispatch"
+                badge = "bg-[#556B2F]/15 text-[#556B2F]"
+            elif state == "IN_STORAGE":
+                status_label = "In Cold Storage"
+                badge = "bg-[#556B2F]/15 text-[#556B2F]"
+            elif state == "AT_RETAIL":
+                status_label = "At Retail DarkStore"
+                badge = "bg-[#354424]/15 text-[#354424]"
             elif state == "SOLD":
-                status_label = "Delivered"
+                status_label = "Delivered & Sold"
                 badge = "bg-gray-100 text-gray-700"
             else:
                 status_label = state
@@ -2299,19 +2314,24 @@ def get_logistics_shipments():
             shipments.append({
                 "batchId": batch_id,
                 "product": r["crop_name"].capitalize(),
+                "produce": r["crop_name"].capitalize(),
+                "vehicle": driver_info[2],
                 "number": driver_info[2],
                 "driver": driver_info[0],
                 "phone": driver_info[1],
+                "quantity": f"{qty_kg} kg",
+                "state": state,
                 "status": status_label,
                 "badge": badge,
                 "temp": f"{temp_c:.1f}°C (Reefer Chilled)",
                 "tempValue": temp_c,
                 "humidityValue": hum_pct,
-                "from": r["origin_farm"].split("||")[0].strip(),
-                "to": "Pune Fresh DarkStore Hub",
-                "eta": "Today, 06:00 PM",
+                "from": clean_origin,
+                "to": dest,
+                "eta": "Today, 06:00 PM" if state in ("IN_TRANSIT", "CONFIRMED") else ("Awaiting Dispatch" if state == "REGISTERED" else "Completed"),
                 "latitude": lat,
                 "longitude": lon,
+                "coords": f"{lat:.4f}, {lon:.4f}",
                 "priceRupees": r["price_paise"] // 100,
                 "txHash": r["tx_hash"],
                 "occurredAt": r["occurred_at"],
@@ -2357,10 +2377,11 @@ def get_logistics_orders():
 
             _, qty, price = _parse_batch_meta(r)
             price_str = f"₹ {int(price):,}" if price else "₹ 1,000"
+            clean_origin = r["origin_farm"].split("||")[0].strip()
 
             orders.append({
                 "id": r["batch_id"],
-                "supplier": f"{r['farmer_name']} ({r['origin_farm']})",
+                "supplier": f"{r['farmer_name']} ({clean_origin})",
                 "produce": f"{r['crop_name'].capitalize()} ({int(qty * 1000)} kg)",
                 "cropName": r["crop_name"],
                 "quantity": f"{int(qty * 1000)} kg",
