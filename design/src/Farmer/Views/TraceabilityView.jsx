@@ -15,6 +15,7 @@ import {
   Inbox
 } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
+import { getBatchQRCodeImageUrl, getBatchConsumerPassportUrl } from '../../utils/qrHelper';
 
 export const TraceabilityView = ({ onBack, onOpenFullJourney, onViewJourney }) => {
   const [batches, setBatches] = useState([]);
@@ -326,13 +327,19 @@ export const TraceabilityView = ({ onBack, onOpenFullJourney, onViewJourney }) =
                   <span className="font-bold text-[#786E65]">On-Chain QR Passport</span>
                   <span className="text-[11px] text-[#556B2F] font-semibold">Physical produce packaging label</span>
                 </div>
-                <div className="w-13 h-13 bg-white p-0.5 rounded-xl border border-[#E8E2D5] flex items-center justify-center shadow-2xs flex-shrink-0">
+                <a
+                  href={getBatchConsumerPassportUrl(batchData.batchId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Scan with phone camera or click to open URL directly"
+                  className="w-13 h-13 bg-white p-0.5 rounded-xl border border-[#E8E2D5] flex items-center justify-center shadow-2xs flex-shrink-0 cursor-pointer hover:border-[#3D4E2A] transition-colors"
+                >
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(`http://localhost:3000/?role=consumer&batch=${batchData.batchId}`)}`}
+                    src={getBatchQRCodeImageUrl(batchData.batchId, 90)}
                     alt={`QR #${batchData.batchId}`}
                     className="w-12 h-12 object-contain"
                   />
-                </div>
+                </a>
               </div>
             </div>
           )}

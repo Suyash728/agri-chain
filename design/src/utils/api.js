@@ -6,7 +6,9 @@
 
 export const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL)
   ? import.meta.env.VITE_API_BASE_URL
-  : 'http://localhost:8000';
+  : (typeof window !== 'undefined' && window.location && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+    ? `http://${window.location.hostname}:8000`
+    : 'http://localhost:8000';
 
 /**
  * Safe fetch wrapper with default timeout and unified error parsing.

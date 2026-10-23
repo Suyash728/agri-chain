@@ -23,6 +23,7 @@ import {
 
 import { useNotificationCount } from '../../utils/useNotificationCount';
 import { API_BASE_URL } from '../../utils/api';
+import { getBatchQRCodeImageUrl } from '../../utils/qrHelper';
 
 export const DarkStoreTraceabilityView = ({ onBack, onOpenNotifications }) => {
   const { count } = useNotificationCount('darkstore');
@@ -485,7 +486,7 @@ export const DarkStoreTraceabilityView = ({ onBack, onOpenNotifications }) => {
               {availableBatches.length > 0 ? (
                 <div className="w-28 h-28 bg-white p-1 rounded-xl shadow-lg border border-emerald-400 flex items-center justify-center">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(`http://localhost:3000/?batch=${availableBatches[0].batch_id}`)}`}
+                    src={getBatchQRCodeImageUrl(availableBatches[0].batch_id, 110)}
                     alt="Traceability QR"
                     className="w-full h-full object-contain"
                   />

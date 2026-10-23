@@ -1,6 +1,7 @@
 import pathlib
 import uuid
 import math
+import socket
 from typing import Optional, List, Union
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Response
@@ -97,26 +98,45 @@ async def lifespan(app_instance: FastAPI):
 
 app = FastAPI(title="AgriChain API", version="1.0.0", lifespan=lifespan)
 
-# Enable CORS for frontend communication (Vite on localhost:3000 or 5173)
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
+# Enable CORS for frontend communication (Vite on localhost, LAN IP, and mobile devices)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"^https?://.*$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+def get_local_lan_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception:
+            return "127.0.0.1"
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/network/info")
+def network_info():
+    ip = get_local_lan_ip()
+    return {
+        "lan_ip": ip,
+        "frontend_port": 3000,
+        "backend_port": 8000,
+        "client_url": f"http://{ip}:3000",
+        "api_url": f"http://{ip}:8000"
+    }
 
 
 # ---------------- Telemetry Models & Route ----------------

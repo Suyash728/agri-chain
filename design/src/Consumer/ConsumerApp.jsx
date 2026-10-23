@@ -28,7 +28,7 @@ import { API_BASE_URL } from '../utils/api';
 // Initial Data
 import { CheckCircle2 } from 'lucide-react';
 
-export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
+export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab, initialBatchId = null }) => {
   const [internalView, setInternalView] = useState('home');
   const activeView = onSelectTab ? currentTab : internalView;
   const setActiveView = (view) => {
@@ -43,7 +43,9 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [selectedJourneyProduct, setSelectedJourneyProduct] = useState(null);
+  const [selectedJourneyProduct, setSelectedJourneyProduct] = useState(
+    initialBatchId ? { batchId: initialBatchId, name: 'Produce Batch' } : null
+  );
 
   // Modals state
   const [isCouponOpen, setIsCouponOpen] = useState(false);
@@ -62,6 +64,30 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
       })
       .catch(() => {});
   };
+
+  useEffect(() => {
+    if (initialBatchId) {
+      const match = availableBatches.find(b => b.batch_id === initialBatchId);
+      if (match) {
+        const isFruit = ['mango', 'banana', 'apple'].some(f => (match.crop_name || match.name || '').toLowerCase().includes(f));
+        const cleanOrigin = (match.origin_farm || match.origin || 'Nashik, Maharashtra').split('||')[0].trim();
+        setSelectedJourneyProduct({
+          name: match.crop_name || match.name || 'Organic Produce',
+          batchId: match.batch_id,
+          origin: cleanOrigin,
+          image: isFruit ? '/images/fruits_ref.png' : '/images/vegetables_ref.png'
+        });
+      } else {
+        setSelectedJourneyProduct({
+          name: 'Organic Produce',
+          batchId: initialBatchId,
+          origin: 'Nashik, Maharashtra',
+          image: '/images/vegetables_ref.png'
+        });
+      }
+      setActiveView('journey');
+    }
+  }, [initialBatchId, availableBatches]);
 
   useEffect(() => {
     fetchBatches();

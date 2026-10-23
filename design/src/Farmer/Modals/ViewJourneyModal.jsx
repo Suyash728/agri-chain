@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, QrCode, CheckCircle2, Truck, Factory, Sprout, Store, RefreshCw, Hash, Inbox } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
+import { getBatchQRCodeImageUrl, getBatchConsumerPassportUrl } from '../../utils/qrHelper';
 
 export const ViewJourneyModal = ({ isOpen, onClose, batchId }) => {
   const [availableBatches, setAvailableBatches] = useState([]);
@@ -158,14 +159,20 @@ export const ViewJourneyModal = ({ isOpen, onClose, batchId }) => {
                   )}
                 </div>
 
-                <div className="w-20 h-20 bg-white p-1 rounded-xl border border-[#E6E1D5] flex flex-col items-center justify-center shadow-xs flex-shrink-0">
+                <a
+                  href={getBatchConsumerPassportUrl(journeyData.batchId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Scan with phone camera or click to open URL directly"
+                  className="w-20 h-20 bg-white p-1 rounded-xl border border-[#E6E1D5] flex flex-col items-center justify-center shadow-xs flex-shrink-0 cursor-pointer hover:border-[#7A8B52] transition-colors"
+                >
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`http://localhost:3000/?role=consumer&batch=${journeyData.batchId}`)}`}
+                    src={getBatchQRCodeImageUrl(journeyData.batchId, 100)}
                     alt={`QR #${journeyData.batchId}`}
                     className="w-13 h-13 object-contain"
                   />
                   <span className="text-[7px] font-extrabold text-[#7A8B52] mt-0.5">SCAN BATCH QR</span>
-                </div>
+                </a>
               </div>
 
               {/* Timeline steps */}

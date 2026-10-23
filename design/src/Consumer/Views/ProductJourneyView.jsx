@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, ShieldCheck, Star, CheckCircle, FileText, ExternalLink, X, QrCode } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
+import { getBatchQRCodeImageUrl, getBatchConsumerPassportUrl } from '../../utils/qrHelper';
 
 export const ProductJourneyView = ({ 
   selectedProduct, 
@@ -64,6 +65,16 @@ export const ProductJourneyView = ({
       .then(data => {
         setJourneyData(data);
         setLoading(false);
+        if (data && (!liveProduct?.name || liveProduct.name === 'Produce Batch')) {
+          const isFruit = ['mango', 'banana', 'apple'].some(f => (data.product || '').toLowerCase().includes(f));
+          setLiveProduct(prev => ({
+            ...prev,
+            name: data.product || prev?.name || 'Organic Produce',
+            batchId: data.batchId,
+            origin: data.farmDetails || data.currentLocation || prev?.origin || 'Nashik, Maharashtra',
+            image: isFruit ? '/images/fruits_ref.png' : '/images/vegetables_ref.png'
+          }));
+        }
       })
       .catch(err => {
         console.error('Error fetching batch traceability:', err);
@@ -178,14 +189,20 @@ export const ProductJourneyView = ({
               </div>
 
               {displayBatchId && (
-                <div className="w-16 h-16 rounded-xl bg-[#FAF7F0] p-1 border border-[#E6E1D5] flex flex-col items-center justify-center flex-shrink-0 shadow-2xs">
+                <a
+                  href={getBatchConsumerPassportUrl(displayBatchId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Scan with phone camera or click to open URL directly"
+                  className="w-16 h-16 rounded-xl bg-[#FAF7F0] p-1 border border-[#E6E1D5] flex flex-col items-center justify-center flex-shrink-0 shadow-2xs cursor-pointer hover:border-[#556B2F] transition-colors"
+                >
                   <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`http://localhost:3000/?role=consumer&batch=${displayBatchId}`)}`}
+                    src={getBatchQRCodeImageUrl(displayBatchId, 100)}
                     alt={`Batch QR #${displayBatchId}`}
                     className="w-10 h-10 object-contain"
                   />
                   <span className="text-[7px] font-black text-[#556B2F] mt-0.5">PACKAGE QR</span>
-                </div>
+                </a>
               )}
             </div>
 

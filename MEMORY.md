@@ -1652,3 +1652,52 @@ still static UI with no data flow. Specifically:
 - Vite Production Build: 1,813 modules transformed cleanly in 3.16s with 0 errors (`cd design && npm run build`).
 - Pytest Suite: All 11 tests in `tests/` passed cleanly in 5.40s (`.venv/bin/pytest tests/`).
 - QR verification: Real batch IDs (`FRESH-LOT-1792777531`, `QTRA-1792777531`) verified scannable and returning live on-chain provenance across Consumer and Dark Store.
+
+---
+
+## [Cross-Device Mobile QR Code Scanning on Local Network] — 2026-10-24
+
+**What was done:**
+- Enabled direct, cross-device physical mobile QR code scanning over local Wi-Fi / LAN:
+  1. **Network Binding (`design/vite.config.js`)**:
+     - Configured Vite dev server to bind to `0.0.0.0:3000` (`host: '0.0.0.0'`), making the frontend directly reachable from external devices on the local area network (`http://192.168.1.102:3000/`).
+  2. **FastAPI CORS & Dynamic Network Discovery (`backend/main.py`)**:
+     - Updated FastAPI CORSMiddleware with `allow_origin_regex=r"^https?://.*$"` to permit cross-device LAN origins while maintaining `allow_credentials=True`.
+     - Added `GET /network/info` endpoint returning dynamic host LAN IPv4 (`192.168.1.102`), ports (`3000`, `8000`), and formatted client and API URLs.
+  3. **Transparent Mobile API Proxy Interceptor (`design/src/main.jsx` & `api.js`)**:
+     - Wrapped `window.fetch` at the application entrypoint to automatically intercept any hardcoded `localhost:8000` or `127.0.0.1:8000` calls from external mobile devices (`window.location.hostname !== 'localhost'`) and rewrite them to `http://${window.location.hostname}:8000`.
+     - Updated `API_BASE_URL` in `utils/api.js` to dynamically bind to `window.location.hostname`.
+  4. **Universal QR Helper (`design/src/utils/qrHelper.js`)**:
+     - Created `getLanClientBaseUrl()`, `getBatchConsumerPassportUrl()`, and `getBatchQRCodeImageUrl()`.
+     - QR codes dynamically encode the full LAN URL `http://192.168.1.102:3000/?role=consumer&tab=journey&batch=${batchId}` so that when scanned by a phone camera, the phone loads the PC's web server rather than failing on local loopback.
+  5. **Deep Linking & Query Parameter Synchronization (`App.jsx` & `ConsumerApp.jsx`)**:
+     - Added URL parameter parsing (`?role=consumer&tab=journey&batch=...`) in `App.jsx` and `ConsumerApp.jsx`.
+     - Scanning the QR code immediately opens the Consumer portal, switches to the `journey` tab, and fetches the exact batch's on-chain provenance passport.
+  6. **Interactive QR Elements across Farmer & Dark Store**:
+     - Updated QR codes in `ScanProductView.jsx`, `ProductJourneyView.jsx`, `TraceabilityView.jsx`, `ViewJourneyModal.jsx`, `DarkStoreBlockchainView.jsx`, and `DarkStoreTraceabilityView.jsx`.
+     - Wrapped QR images in accessible links allowing both mobile scanning and direct desktop click-to-preview.
+
+**Files changed:**
+- `backend/main.py`
+- `design/vite.config.js`
+- `design/src/main.jsx`
+- `design/src/utils/api.js`
+- `design/src/utils/qrHelper.js`
+- `design/src/App.jsx`
+- `design/src/Consumer/ConsumerApp.jsx`
+- `design/src/Consumer/Views/ScanProductView.jsx`
+- `design/src/Consumer/Views/ProductJourneyView.jsx`
+- `design/src/Farmer/Views/TraceabilityView.jsx`
+- `design/src/Farmer/Modals/ViewJourneyModal.jsx`
+- `design/src/Dark_Store/Views/DarkStoreBlockchainView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreTraceabilityView.jsx`
+- `tests/test_network_info.py`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build: 1,814 modules transformed cleanly in 3.06s with 0 errors (`cd design && npm run build`).
+- Pytest Suite: All 12 backend tests passed cleanly (`.venv/bin/pytest tests/`).
+- Network Endpoint: `curl -s http://127.0.0.1:8000/network/info` verified returning `lan_ip: 192.168.1.102`.
+- CORS LAN check: `curl -s -X GET -H "Origin: http://192.168.1.102:3000" -i http://192.168.1.102:8000/network/info` verified returning HTTP 200 with `access-control-allow-origin: http://192.168.1.102:3000`.
+- LAN Frontend check: `curl -s -I http://192.168.1.102:3000` verified returning HTTP 200 OK.
+- QR Deep Link verification: `http://192.168.1.102:3000/?role=consumer&tab=journey&batch=QTRA-1792779221` loads the exact batch provenance on mobile.

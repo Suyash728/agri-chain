@@ -58,14 +58,30 @@ import { PresenterWalkthroughBanner } from './components/PresenterWalkthroughBan
 import { GodModeHub } from './components/GodModeHub';
 
 export default function App() {
+  // Read URL query parameters (e.g. from mobile QR scan: ?role=consumer&tab=journey&batch=BATCH-001)
+  const getInitialUrlState = () => {
+    if (typeof window === 'undefined') return { role: 'consumer', tab: 'home', batch: null };
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const role = params.get('role') || 'consumer';
+      const batch = params.get('batch') || null;
+      const tab = params.get('tab') || (batch ? 'journey' : 'home');
+      return { role, tab, batch };
+    } catch (_) {
+      return { role: 'consumer', tab: 'home', batch: null };
+    }
+  };
+
+  const initialUrlState = getInitialUrlState();
+
   // Role Portal State: 'consumer' (default launch role), 'farmer', 'logistics', or 'darkstore'
-  const [activeRole, setActiveRole] = useState('consumer');
+  const [activeRole, setActiveRole] = useState(initialUrlState.role);
   const [adminTab, setAdminTab] = useState('all');
   const [isShowcaseDrawerOpen, setIsShowcaseDrawerOpen] = useState(false);
   const [isGodMode, setIsGodMode] = useState(false);
 
   // Tab state for Farmer portal
-  const [farmerTab, setFarmerTab] = useState('dashboard');
+  const [farmerTab, setFarmerTab] = useState(initialUrlState.role === 'farmer' ? initialUrlState.tab : 'dashboard');
   const [selectedCropCategory, setSelectedCropCategory] = useState(null);
   const [inventoryList, setInventoryList] = useState([]);
   const [farmerKpis, setFarmerKpis] = useState([]);
@@ -73,7 +89,7 @@ export default function App() {
   const [farmerActivities, setFarmerActivities] = useState([]);
   const [farmerTrust, setFarmerTrust] = useState(null);
   const [farmerLoading, setFarmerLoading] = useState(true);
-  const [selectedBatchId, setSelectedBatchId] = useState(null);
+  const [selectedBatchId, setSelectedBatchId] = useState(initialUrlState.batch);
 
   const fetchFarmerData = useCallback(async () => {
     try {
@@ -126,10 +142,25 @@ export default function App() {
   }, [fetchFarmerData]);
 
   // Tab state for Logistics Partner portal
-  const [logisticTab, setLogisticTab] = useState('dashboard');
+  const [logisticTab, setLogisticTab] = useState(initialUrlState.role === 'logistics' ? initialUrlState.tab : 'dashboard');
 
   // Tab state for Consumer portal
-  const [consumerTab, setConsumerTab] = useState('home');
+  const [consumerTab, setConsumerTab] = useState(initialUrlState.role === 'consumer' ? initialUrlState.tab : 'home');
+  const [consumerBatchId, setConsumerBatchId] = useState(initialUrlState.batch);
+
+  // Sync state if user navigates with browser history / URL
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const { role, tab, batch } = getInitialUrlState();
+      if (role) setActiveRole(role);
+      if (role === 'consumer') {
+        setConsumerTab(tab);
+        setConsumerBatchId(batch);
+      }
+    };
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
 
   // Shared Modals state
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -691,6 +722,7 @@ export default function App() {
         <div key={`consumer-${resetKey}`} className="w-full min-h-screen flex-1 bg-[#FAF7F0]">
           <ConsumerApp 
             currentTab={consumerTab}
+            initialBatchId={consumerBatchId}
             onSelectTab={setConsumerTab}
             onLogout={(role) => {
               if (role) setActiveRole(role);

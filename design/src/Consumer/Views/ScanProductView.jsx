@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Image, Keyboard, Scan, QrCode, Sparkles } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
+import { getBatchQRCodeImageUrl } from '../../utils/qrHelper';
 
 export const ScanProductView = ({ onBack, onScanSuccess, onEnterCodeClick, batches = [] }) => {
   const [liveBatches, setLiveBatches] = useState(batches);
@@ -68,7 +69,7 @@ export const ScanProductView = ({ onBack, onScanSuccess, onEnterCodeClick, batch
               <div className="flex flex-col items-center gap-2">
                 <div className="w-24 h-24 bg-white p-1.5 rounded-xl shadow-lg border border-emerald-400/50 flex items-center justify-center">
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`http://localhost:3000/?role=consumer&batch=${currentBatch.batch_id}`)}`}
+                    src={getBatchQRCodeImageUrl(currentBatch.batch_id, 100)}
                     alt="Active Batch QR"
                     className="w-full h-full object-contain"
                   />
