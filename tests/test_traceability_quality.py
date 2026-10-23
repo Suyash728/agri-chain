@@ -49,7 +49,25 @@ def test_batch_traceability_quality_scoring(client):
     assert "qualityScore" in data
     assert "freshnessPct" in data
     assert "qualityGrade" in data
+    assert "||" not in data["currentLocation"]
+    assert "||" not in data["farmDetails"]
+    assert len(data["steps"]) >= 1
+
 
     assert 0 <= data["freshnessPct"] <= 100
     assert 0.0 <= data["qualityScore"] <= 100.0
     assert data["qualityGrade"] in ("A+", "A", "B", "C (Degraded)")
+
+
+def test_batches_endpoint_clean_metadata(client):
+    res = client.get("/batches")
+    assert res.status_code == 200
+    batches = res.json()
+    assert isinstance(batches, list)
+    for b in batches:
+        assert "batch_id" in b
+        assert "crop_name" in b
+        assert "origin_farm" in b
+        assert "||" not in b["origin_farm"]
+        assert "current_state" in b
+        assert "current_holder" in b

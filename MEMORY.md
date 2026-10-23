@@ -1571,3 +1571,43 @@ still static UI with no data flow. Specifically:
 - Pytest Suite: All 157 unit & integration tests passed cleanly in 164.37s (`.venv/bin/pytest tests/ trust-layer/tests/`).
 - Frontend Production Build: Transformed 1,813 modules cleanly in 3.54s with 0 errors (`cd design && npm run build`).
 - Live API verification: `GET /notifications/count` and `GET /notifications/all-users` tested via cURL across all 4 roles.
+
+---
+
+## [Dynamic Farmer Traceability & Live Supply Chain Stepper] — 2026-10-23
+
+**What was done:**
+- Replaced hardcoded farmer traceability and journey modal with fully dynamic, live-database driven components:
+  1. **Cleaned Metadata & Traceability Backend (`backend/main.py`)**:
+     - Stripped unparsed metadata strings (`||cat=||qty=0.5||price=2500.0`) from `origin_farm`, `currentLocation`, and `farmDetails` in `/batches/{batch_id}/traceability`.
+     - Added support for `CONFIRMED`, `ACCEPTED`, and `READY_FOR_PICKUP` states in journey audit steps.
+     - Returned `currentState` and `currentHolder` so frontend can dynamically determine custody progress.
+     - Added `GET /batches` endpoint returning clean list of all registered batches, their current state, and location.
+  2. **Dynamic 5-Stage Stepper & Batch Selector (`design/src/Farmer/Views/TraceabilityView.jsx`)**:
+     - Removed static 5-step diagram that previously hardcoded "Transport In Transit, Store Pending" regardless of state.
+     - Dynamically computes the 5 stages (`Farm Origin`, `Harvest`, `Procurement Order`, `Logistics Transport`, `Dark Store Hub / Retail`) from real on-chain state (`REGISTERED`, `CONFIRMED`, `IN_TRANSIT`, `IN_STORAGE`, `AT_RETAIL`, `SOLD`).
+     - Added dynamic batch switcher allowing farmers to switch between all registered crops.
+     - Added clean zero-state card ("No Registered Batches") when the database is empty.
+     - Removed hardcoded `'TM1256'` fallback when clicking "View Full Journey".
+  3. **Dynamic Journey Modal (`design/src/Farmer/Modals/ViewJourneyModal.jsx`)**:
+     - Removed hardcoded batch switcher array `['BATCH-PO-2026-001', 'TM1256', 'DEMO-BATCH-001']` and default prop `'BATCH-PO-2026-001'`.
+     - Dynamically loads active batches from `GET /batches` and populates switcher buttons with real batch IDs.
+     - Prevents "Batch #BATCH-PO-2026-001 not found" errors after clean slate resets.
+  4. **Updated App Root Batch Binding (`design/src/App.jsx`)**:
+     - Removed hardcoded initial `selectedBatchId = 'TM1256'`.
+     - Automatically selects first real batch from live inventory.
+  5. **Automated Tests (`tests/test_traceability_quality.py`)**:
+     - Added verification that `GET /batches` and `GET /batches/{id}/traceability` return clean location and farm details with zero unparsed metadata pipes (`||`).
+
+**Files changed:**
+- `backend/main.py`
+- `design/src/Farmer/Views/TraceabilityView.jsx`
+- `design/src/Farmer/Modals/ViewJourneyModal.jsx`
+- `design/src/App.jsx`
+- `tests/test_traceability_quality.py`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build: 1,813 modules transformed cleanly in 2.90s with 0 errors (`cd design && npm run build`).
+- Pytest Suite: All 11 tests in `tests/` passed cleanly in 5.22s (`.venv/bin/pytest tests/`).
+- Live curl checks against running backend: `GET /batches` returns clean list and `GET /batches/{id}/traceability` returns clean locations without `||` metadata pipes.

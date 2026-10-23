@@ -73,7 +73,7 @@ export default function App() {
   const [farmerActivities, setFarmerActivities] = useState([]);
   const [farmerTrust, setFarmerTrust] = useState(null);
   const [farmerLoading, setFarmerLoading] = useState(true);
-  const [selectedBatchId, setSelectedBatchId] = useState('TM1256');
+  const [selectedBatchId, setSelectedBatchId] = useState(null);
 
   const fetchFarmerData = useCallback(async () => {
     try {
@@ -96,6 +96,9 @@ export default function App() {
       }
       if (invRes.status === 'fulfilled' && invRes.value && Array.isArray(invRes.value.items)) {
         setInventoryList(invRes.value.items);
+        if (invRes.value.items.length > 0 && !selectedBatchId) {
+          setSelectedBatchId(invRes.value.items[0].batchId);
+        }
       }
       if (trustRes.status === 'fulfilled' && trustRes.value && trustRes.value.score !== undefined) {
         setFarmerTrust(trustRes.value);

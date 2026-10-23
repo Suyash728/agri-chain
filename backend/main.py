@@ -1845,6 +1845,52 @@ def get_farmer_activity():
 
 # ---------------- Traceability Endpoints ----------------
 
+@app.get("/batches")
+def list_all_batches():
+    """Return all registered batches with current status, custodian, and clean metadata."""
+    conn = get_connection()
+    try:
+        rows = conn.execute("SELECT * FROM batches ORDER BY rowid DESC").fetchall()
+        result = []
+        for r in rows:
+            raw_farm = r["origin_farm"] or ""
+            clean_farm = raw_farm.split("||")[0].strip()
+
+            ev = conn.execute(
+                "SELECT * FROM custody_events WHERE batch_id = ? ORDER BY id DESC LIMIT 1",
+                (r["batch_id"],)
+            ).fetchone()
+            current_state = ev["state"] if ev else "REGISTERED"
+            current_holder = ev["to_holder"] if ev else r["farmer_name"]
+            price_inr = (ev["price_paise"] / 100.0) if (ev and ev["price_paise"]) else 2500.0
+
+            # Parse quantity
+            qty_str = "500 kg"
+            if "||qty=" in raw_farm:
+                for part in raw_farm.split("||"):
+                    if part.startswith("qty="):
+                        try:
+                            q = float(part.replace("qty=", "").strip())
+                            qty_str = f"{int(q * 1000)} kg" if q < 10 else f"{int(q)} kg"
+                        except Exception:
+                            pass
+
+            result.append({
+                "batch_id": r["batch_id"],
+                "crop_name": r["crop_name"],
+                "farmer_name": r["farmer_name"],
+                "origin_farm": clean_farm,
+                "harvest_date": r["harvest_date"],
+                "current_state": current_state,
+                "current_holder": current_holder,
+                "quantity": qty_str,
+                "price_inr": price_inr,
+            })
+        return result
+    finally:
+        conn.close()
+
+
 @app.get("/batches/{batch_id}/traceability")
 def get_batch_traceability(batch_id: str):
     """Returns traceabilityBatch matching mockData.js shape, populated from custody_events and on-chain ConditionRecorded events."""
@@ -1853,6 +1899,20 @@ def get_batch_traceability(batch_id: str):
         batch_row = conn.execute("SELECT * FROM batches WHERE batch_id = ?", (batch_id,)).fetchone()
         if not batch_row:
             raise HTTPException(status_code=404, detail=f"Batch {batch_id} not found")
+
+        raw_farm = batch_row["origin_farm"] or ""
+        clean_farm = raw_farm.split("||")[0].strip()
+
+        # Parse quantity string
+        qty_str = "500 kg"
+        if "||qty=" in raw_farm:
+            for part in raw_farm.split("||"):
+                if part.startswith("qty="):
+                    try:
+                        q = float(part.replace("qty=", "").strip())
+                        qty_str = f"{int(q * 1000)} kg" if q < 10 else f"{int(q)} kg"
+                    except Exception:
+                        pass
 
         events = conn.execute(
             "SELECT * FROM custody_events WHERE batch_id = ? ORDER BY id ASC",
@@ -1868,24 +1928,42 @@ def get_batch_traceability(batch_id: str):
             "name": "Farm Registration",
             "status": "Completed",
             "timestamp": reg_time,
-            "location": f"{batch_row['origin_farm']}",
+            "location": clean_farm,
             "holder": batch_row["farmer_name"],
             "pricePaise": 0,
         })
         step_num += 1
 
+        latest_state = "REGISTERED"
+        latest_holder = batch_row["farmer_name"]
+
         for ev in events:
             st = ev["state"]
             t_str = str(ev["occurred_at"])[:16]
+            latest_state = st
+            if ev["to_holder"]:
+                latest_holder = ev["to_holder"]
+
             if st == "REGISTERED":
                 continue
+            elif st in ("CONFIRMED", "ACCEPTED", "READY_FOR_PICKUP"):
+                steps.append({
+                    "step": step_num,
+                    "name": "Procurement Confirmed",
+                    "status": "Ready for Pickup",
+                    "timestamp": t_str,
+                    "location": f"Farm gate pickup with {ev['to_holder']}",
+                    "holder": ev["to_holder"],
+                    "pricePaise": ev["price_paise"],
+                })
+                step_num += 1
             elif st == "IN_TRANSIT":
                 steps.append({
                     "step": step_num,
                     "name": "Transport Dispatch",
                     "status": "In Transit",
                     "timestamp": t_str,
-                    "location": f"Transit with {ev['to_holder']}",
+                    "location": f"In Transit with {ev['to_holder']}",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
                 })
@@ -1893,10 +1971,10 @@ def get_batch_traceability(batch_id: str):
             elif st == "IN_STORAGE":
                 steps.append({
                     "step": step_num,
-                    "name": "Dark Store Arrival",
+                    "name": "Dark Store Intake (GRN)",
                     "status": "In Storage",
                     "timestamp": t_str,
-                    "location": f"{ev['to_holder']}",
+                    "location": f"{ev['to_holder']} (Cold Storage Bay)",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
                 })
@@ -1915,19 +1993,19 @@ def get_batch_traceability(batch_id: str):
             elif st == "SOLD":
                 steps.append({
                     "step": step_num,
-                    "name": "Consumer Purchase",
+                    "name": "Consumer Doorstep Delivery",
                     "status": "Delivered",
                     "timestamp": t_str,
-                    "location": "Consumer Hub",
+                    "location": "Consumer Doorstep",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
                 })
                 step_num += 1
 
-        if steps:
+        if len(steps) > 1:
             current_location = steps[-1]["location"]
         else:
-            current_location = batch_row["origin_farm"]
+            current_location = clean_farm
 
         condition_log = []
         try:
@@ -1985,10 +2063,12 @@ def get_batch_traceability(batch_id: str):
         return {
             "batchId": batch_row["batch_id"],
             "product": batch_row["crop_name"],
-            "quantity": "500 kg",
+            "quantity": qty_str,
             "harvestDate": batch_row["harvest_date"],
             "currentLocation": current_location,
-            "farmDetails": f"{batch_row['origin_farm']}, {batch_row['farmer_name']}",
+            "currentHolder": latest_holder,
+            "currentState": latest_state,
+            "farmDetails": f"{clean_farm}, {batch_row['farmer_name']}",
             "steps": steps,
             "conditionLog": condition_log,
             "custodyHistory": custody_history,
