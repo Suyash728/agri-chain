@@ -1908,3 +1908,26 @@ still static UI with no data flow. Specifically:
 - Vite Production Build: 1,815 modules compiled in 3.75s with 0 errors (`npm run build`).
 - Pytest Suite: All 12 tests passed (`pytest tests/`).
 - Hardhat Contract Suite: All 22 tests passed (`npx hardhat test`).
+
+
+## [Farmer Dashboard — Recent Activity Timeline & Icon Alignment] — 2026-10-24
+
+**What was done:**
+- Fixed icon and timeline misalignment in `design/src/Farmer/components/RecentActivity.jsx`:
+  - Repositioned vertical connecting line from `before:left-4` (16px) to `before:left-[25px]` (26px center) so that it connects directly through the geometric center of each 32px circular bag icon (`10px pl-2.5 + 16px radius = 26px`).
+  - Added `flex-shrink-0 relative z-10` to icon circles so icons remain crisp, circular, and visually layered on top of the vertical timeline line.
+  - Added `min-w-0 flex-1` and `truncate` to activity titles so long batch IDs (e.g. `Batch Registered #FRESH-LOT-1792785009`) do not awkwardly wrap onto multiple lines and vertically displace icons unevenly across timeline rows.
+  - Added `flex-shrink-0 ml-3` to the status badge column to guarantee badge shapes and text never compress.
+  - Added an empty state message ("No recent activity recorded yet") and conditional rendering of the vertical timeline line (`(activities || []).length > 1`) so no lone line is rendered when activity history is empty.
+
+**Files changed:**
+- `design/src/Farmer/components/RecentActivity.jsx`
+- `MEMORY.md`
+
+**Decisions made (and why):**
+- Line offset was 10px off-center because `p-2.5` on the row container adds 10px padding, making the 32px icon circle's center 26px from the list left edge, while `before:left-4` was only 16px. Setting `before:left-[25px]` with `before:w-0.5` (2px) places the line at 25px..27px (center 26px), achieving sub-pixel alignment.
+- Titles with long batch IDs caused inconsistent row heights when wrapped, pushing the second row's bag icon down into the middle of the text block. Applying `truncate` ensures uniform row heights and perfectly aligned icon rows.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build: 1,815 modules built in 3.88s with 0 errors (`npm run build`).
+- Full Pytest Suite: 159/159 passed in 80.95s (`pytest tests/ trust-layer/tests/`).
