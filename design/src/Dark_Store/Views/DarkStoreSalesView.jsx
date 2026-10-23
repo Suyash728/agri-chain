@@ -297,87 +297,146 @@ export const DarkStoreSalesView = ({ onBack }) => {
             </div>
           </div>
 
-          {/* SVG Line Chart with Node Dots matching reference screenshot */}
-          <div className="h-64 w-full relative pt-2">
-            <div className="absolute left-0 top-0 bottom-6 w-10 flex flex-col justify-between text-[10px] font-bold text-[#8C8275] text-right pr-2">
-              <span>200K</span>
-              <span>150K</span>
-              <span>100K</span>
-              <span>50K</span>
-              <span>0</span>
-            </div>
+          {/* Dynamic SVG Line Chart with Node Dots */}
+          {(() => {
+            const timelineData = (liveSales?.timeline && liveSales.timeline.length > 0)
+              ? liveSales.timeline
+              : [
+                  { day: 'D-5', amount: 0, orders: 0, volumeKg: 0 },
+                  { day: 'D-4', amount: 0, orders: 0, volumeKg: 0 },
+                  { day: 'D-3', amount: 0, orders: 0, volumeKg: 0 },
+                  { day: 'D-2', amount: 0, orders: 0, volumeKg: 0 },
+                  { day: 'D-1', amount: 0, orders: 0, volumeKg: 0 },
+                  { day: 'Today', amount: 0, orders: 0, volumeKg: 0 },
+                ];
 
-            <div className="ml-10 h-56 relative border-b border-l border-[#E6E1D5]/70">
-              <svg viewBox="0 0 500 200" className="w-full h-full overflow-visible">
-                <defs>
-                  <linearGradient id="salesGreenGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#556B2F" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#556B2F" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
+            const getMetricValue = (item) => {
+              if (chartMetric === 'Orders Count') return item.orders || 0;
+              if (chartMetric === 'Volume (kg)') return item.volumeKg || 0;
+              return item.amount || 0;
+            };
 
-                {/* Horizontal Gridlines */}
-                <line x1="0" y1="0" x2="500" y2="0" stroke="#E6E1D5" strokeDasharray="3 3" opacity="0.5" />
-                <line x1="0" y1="50" x2="500" y2="50" stroke="#E6E1D5" strokeDasharray="3 3" opacity="0.5" />
-                <line x1="0" y1="100" x2="500" y2="100" stroke="#E6E1D5" strokeDasharray="3 3" opacity="0.5" />
-                <line x1="0" y1="150" x2="500" y2="150" stroke="#E6E1D5" strokeDasharray="3 3" opacity="0.5" />
+            const metricValues = timelineData.map(getMetricValue);
+            const rawMax = Math.max(...metricValues, 0);
+            const isAllZero = rawMax === 0;
+            const maxVal = isAllZero ? (chartMetric === 'Amount (₹)' ? 50000 : 10) : rawMax;
 
-                {/* Filled Area below Line */}
-                <path 
-                  d="M 10 115 L 50 78 L 90 68 L 130 38 L 175 75 L 215 125 L 255 98 L 295 70 L 335 110 L 375 108 L 415 88 L 455 128 L 490 102 L 490 200 L 10 200 Z" 
-                  fill="url(#salesGreenGradient)" 
-                />
+            const xStep = (485 - 15) / Math.max(1, timelineData.length - 1);
+            const chartPoints = timelineData.map((item, idx) => {
+              const val = getMetricValue(item);
+              const x = Math.round(15 + idx * xStep);
+              const y = isAllZero ? 185 : Math.round(185 - (val / maxVal) * 155);
+              return {
+                x,
+                y,
+                val,
+                day: item.day,
+                formattedVal: chartMetric === 'Amount (₹)' 
+                  ? `₹ ${val.toLocaleString('en-IN')}` 
+                  : (chartMetric === 'Volume (kg)' ? `${val} kg` : `${val} orders`),
+              };
+            });
 
-                {/* Smooth Chart Line */}
-                <path 
-                  d="M 10 115 L 50 78 L 90 68 L 130 38 L 175 75 L 215 125 L 255 98 L 295 70 L 335 110 L 375 108 L 415 88 L 455 128 L 490 102" 
-                  fill="none" 
-                  stroke="#556B2F" 
-                  strokeWidth="2.5" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                />
+            const pathD = `M ${chartPoints.map((p) => `${p.x} ${p.y}`).join(' L ')}`;
+            const areaD = `${pathD} L ${chartPoints[chartPoints.length - 1].x} 200 L ${chartPoints[0].x} 200 Z`;
 
-                {/* Plotted Node Dots matching reference screenshot */}
-                {[
-                  { x: 10, y: 115 },
-                  { x: 50, y: 78 },
-                  { x: 90, y: 68 },
-                  { x: 130, y: 38 }, // Peak at May 04
-                  { x: 175, y: 75 },
-                  { x: 215, y: 125 },
-                  { x: 255, y: 98 },
-                  { x: 295, y: 70 },
-                  { x: 335, y: 110 },
-                  { x: 375, y: 108 },
-                  { x: 415, y: 88 },
-                  { x: 455, y: 128 },
-                  { x: 490, y: 102 },
-                ].map((pt, i) => (
-                  <circle 
-                    key={i} 
-                    cx={pt.x} 
-                    cy={pt.y} 
-                    r="4" 
-                    fill="#556B2F" 
-                    stroke="white" 
-                    strokeWidth="2" 
-                    className="hover:r-6 transition-all cursor-pointer"
-                  />
-                ))}
-              </svg>
+            const yLabels = [
+              chartMetric === 'Amount (₹)' ? (maxVal >= 1000 ? `${Math.round(maxVal / 1000)}K` : `${maxVal}`) : `${maxVal}`,
+              chartMetric === 'Amount (₹)' ? (maxVal >= 1000 ? `${Math.round((maxVal * 0.75) / 1000)}K` : `${Math.round(maxVal * 0.75)}`) : `${Math.round(maxVal * 0.75)}`,
+              chartMetric === 'Amount (₹)' ? (maxVal >= 1000 ? `${Math.round((maxVal * 0.5) / 1000)}K` : `${Math.round(maxVal * 0.5)}`) : `${Math.round(maxVal * 0.5)}`,
+              chartMetric === 'Amount (₹)' ? (maxVal >= 1000 ? `${Math.round((maxVal * 0.25) / 1000)}K` : `${Math.round(maxVal * 0.25)}`) : `${Math.round(maxVal * 0.25)}`,
+              '0',
+            ];
 
-              {/* X Axis Labels */}
-              <div className="flex justify-between text-[10px] font-bold text-[#8C8275] pt-2">
-                <span>D-5</span>
-                <span>D-4</span>
-                <span>D-3</span>
-                <span>D-2</span>
-                <span>D-1</span>
-                <span>Today</span>
+            return (
+              <div className="h-64 w-full relative pt-2">
+                <div className="absolute left-0 top-0 bottom-6 w-10 flex flex-col justify-between text-[10px] font-bold text-[#8C8275] text-right pr-2">
+                  {yLabels.map((lbl, idx) => (
+                    <span key={idx}>{lbl}</span>
+                  ))}
+                </div>
+
+                <div className="ml-10 h-56 relative border-b border-l border-[#E6E1D5]/70">
+                  <svg viewBox="0 0 500 200" className="w-full h-full overflow-visible">
+                    <defs>
+                      <linearGradient id="salesGreenGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#556B2F" stopOpacity="0.25" />
+                        <stop offset="100%" stopColor="#556B2F" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Horizontal Gridlines */}
+                    <line x1="0" y1="0" x2="500" y2="0" stroke="#E6E1D5" strokeDasharray="3 3" opacity="0.5" />
+                    <line x1="0" y1="50" x2="500" y2="50" stroke="#E6E1D5" strokeDasharray="3 3" opacity="0.5" />
+                    <line x1="0" y1="100" x2="500" y2="100" stroke="#E6E1D5" strokeDasharray="3 3" opacity="0.5" />
+                    <line x1="0" y1="150" x2="500" y2="150" stroke="#E6E1D5" strokeDasharray="3 3" opacity="0.5" />
+
+                    {isAllZero ? (
+                      /* Zero state clean baseline */
+                      <>
+                        <path 
+                          d="M 15 185 L 485 185" 
+                          fill="none" 
+                          stroke="#E6E1D5" 
+                          strokeWidth="2" 
+                          strokeDasharray="4 4" 
+                        />
+                        <text x="250" y="95" textAnchor="middle" fontSize="11" fontWeight="bold" fill="#8C8275">
+                          No sales recorded in this period. Graph displays live baseline at 0.
+                        </text>
+                        {chartPoints.map((pt, i) => (
+                          <circle 
+                            key={i} 
+                            cx={pt.x} 
+                            cy={pt.y} 
+                            r="3.5" 
+                            fill="#CBC7BC" 
+                            stroke="white" 
+                            strokeWidth="1.5" 
+                          />
+                        ))}
+                      </>
+                    ) : (
+                      /* Filled Area below dynamic Line */
+                      <>
+                        <path d={areaD} fill="url(#salesGreenGradient)" />
+                        <path 
+                          d={pathD} 
+                          fill="none" 
+                          stroke="#556B2F" 
+                          strokeWidth="2.5" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                        />
+                        {/* Dynamic Plotted Node Dots */}
+                        {chartPoints.map((pt, i) => (
+                          <circle 
+                            key={i} 
+                            cx={pt.x} 
+                            cy={pt.y} 
+                            r="4.5" 
+                            fill="#556B2F" 
+                            stroke="white" 
+                            strokeWidth="2" 
+                            className="hover:r-6 transition-all cursor-pointer"
+                          >
+                            <title>{`${pt.day}: ${pt.formattedVal}`}</title>
+                          </circle>
+                        ))}
+                      </>
+                    )}
+                  </svg>
+
+                  {/* Dynamic X Axis Labels */}
+                  <div className="flex justify-between text-[10px] font-bold text-[#8C8275] pt-2">
+                    {timelineData.map((item, idx) => (
+                      <span key={idx}>{item.day}</span>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         {/* RIGHT CARD: Top Selling Products */}

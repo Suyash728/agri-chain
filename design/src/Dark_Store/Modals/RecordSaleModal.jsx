@@ -1,13 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShoppingBag, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2, IndianRupee } from 'lucide-react';
 
-export const RecordSaleModal = ({ isOpen, onClose, onSuccess, defaultBatchId = 'BATCH-PO-2026-001' }) => {
+export const RecordSaleModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '' }) => {
   const [batchId, setBatchId] = useState(defaultBatchId);
+  const [availableBatches, setAvailableBatches] = useState([]);
   const [consumerRef, setConsumerRef] = useState('Consumer Quick Delivery (Doorstep)');
   const [salePriceInr, setSalePriceInr] = useState(2200);
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/batches')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setAvailableBatches(data);
+          if (!defaultBatchId) {
+            setBatchId(data[0].batch_id);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   useEffect(() => {
     if (defaultBatchId) setBatchId(defaultBatchId);
@@ -106,14 +121,29 @@ export const RecordSaleModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
               {/* Batch ID */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-[#2D2620]">Batch Identifier</label>
-                <input
-                  type="text"
-                  value={batchId}
-                  onChange={(e) => setBatchId(e.target.value)}
-                  placeholder="e.g. BATCH-PO-2026-001"
-                  required
-                  className="px-3 py-2 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl text-xs font-mono font-bold text-[#2D2620] focus:outline-none focus:border-[#354424]"
-                />
+                {availableBatches.length > 0 ? (
+                  <select
+                    value={batchId}
+                    onChange={(e) => setBatchId(e.target.value)}
+                    required
+                    className="px-3 py-2 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl text-xs font-mono font-bold text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                  >
+                    {availableBatches.map((b) => (
+                      <option key={b.batch_id} value={b.batch_id}>
+                        {b.batch_id} ({b.crop_name})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={batchId}
+                    onChange={(e) => setBatchId(e.target.value)}
+                    placeholder="Enter registered Batch ID"
+                    required
+                    className="px-3 py-2 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl text-xs font-mono font-bold text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                  />
+                )}
               </div>
 
               {/* Consumer / Channel */}

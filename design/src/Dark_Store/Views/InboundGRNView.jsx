@@ -210,7 +210,7 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
           {/* Confirm Inbound GRN Action Button */}
           <button 
             type="button"
-            onClick={() => onOpenGRN && onOpenGRN('BATCH-PO-2026-001')}
+            onClick={() => onOpenGRN && onOpenGRN(deliveries[0]?.id || '')}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
           >
             <span>📋 Confirm Inbound GRN</span>

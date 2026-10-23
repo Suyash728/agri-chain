@@ -42,14 +42,23 @@ export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
         if (Array.isArray(data) && data.length > 0) {
           setAvailableBatches(data);
           setSearchQuery(data[0].batch_id);
+        } else {
+          setAvailableBatches([]);
+          setSearchQuery('');
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setAvailableBatches([]);
+        setSearchQuery('');
+      });
   }, []);
 
   useEffect(() => {
     const cleanId = searchQuery.trim().toUpperCase();
-    if (!cleanId) return;
+    if (!cleanId) {
+      setLiveBatchData(null);
+      return;
+    }
     fetch(`http://localhost:8000/batches/${cleanId}/traceability`)
       .then((res) => {
         if (!res.ok) return null;
@@ -65,24 +74,36 @@ export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
       .catch(() => setLiveBatchData(null));
   }, [searchQuery]);
 
+  const hasRecord = !!liveBatchData;
+
+  const rawTxHash = (liveBatchData?.custodyHistory && liveBatchData.custodyHistory.length > 0 && liveBatchData.custodyHistory[0].txHash)
+    ? liveBatchData.custodyHistory[0].txHash
+    : (liveBatchData?.registrationTxHash || '');
+
+  const displayTxHash = rawTxHash
+    ? (rawTxHash.startsWith('0x') ? rawTxHash : `0x${rawTxHash}`)
+    : '0x0000000000000000000000000000000000000000';
+
   const activeRecord = {
-    batchId: liveBatchData?.batchId || liveBatchData?.batch_id || searchQuery || 'BATCH-LIVE-001',
-    product: liveBatchData?.product || liveBatchData?.crop_name || 'Agricultural Produce',
-    quantity: liveBatchData?.quantity || '500 kg',
-    supplier: (liveBatchData?.farmDetails || liveBatchData?.origin_farm || 'Nashik Organic Farm cluster 4').split('||')[0].trim(),
+    batchId: liveBatchData?.batchId || liveBatchData?.batch_id || searchQuery,
+    product: liveBatchData?.product || liveBatchData?.crop_name || 'Produce',
+    quantity: liveBatchData?.quantity || '25 kg',
+    supplier: (liveBatchData?.farmDetails || liveBatchData?.origin_farm || 'Origin Farm').split('||')[0].trim(),
     harvestDate: liveBatchData?.harvestDate || new Date().toISOString().split('T')[0],
     packagingDate: liveBatchData?.harvestDate || new Date().toISOString().split('T')[0],
     expiryDate: 'Within 7 Days',
-    txHash: (liveBatchData?.custodyHistory && liveBatchData.custodyHistory[0] && liveBatchData.custodyHistory[0].txHash) ? `0x${liveBatchData.custodyHistory[0].txHash}` : '0x8f7a6b3e2c4d9f1a7b6e8c2d9f4a7b6c8d2f5a7b9c6e1d0f2a7b9c6d4e2f1a8',
-    blockNumber: `# ${Math.abs((searchQuery || 'BATCH').split('').reduce((a,c) => a + c.charCodeAt(0), 5874000))}`,
-    timestamp: (liveBatchData?.custodyHistory && liveBatchData.custodyHistory[0] && liveBatchData.custodyHistory[0].occurredAt) ? liveBatchData.custodyHistory[0].occurredAt : new Date().toLocaleString(),
-    network: 'AgriChain Local PoA Ledger',
+    txHash: displayTxHash,
+    blockNumber: liveBatchData?.custodyHistory?.[0]?.blockNumber ? `# ${liveBatchData.custodyHistory[0].blockNumber}` : `# 1`,
+    timestamp: (liveBatchData?.custodyHistory && liveBatchData.custodyHistory[0] && liveBatchData.custodyHistory[0].occurredAt) ? liveBatchData.custodyHistory[0].occurredAt : 'Confirmed On-Chain',
+    network: 'AgriChain Local PoA Ledger (Hardhat)',
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(activeRecord.txHash);
-    setCopiedHash(true);
-    setTimeout(() => setCopiedHash(false), 2000);
+    if (activeRecord.txHash) {
+      navigator.clipboard.writeText(activeRecord.txHash);
+      setCopiedHash(true);
+      setTimeout(() => setCopiedHash(false), 2000);
+    }
   };
 
   // On-Chain Journey Milestones derived from live custody history
@@ -92,29 +113,11 @@ export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
         time: ch.occurredAt || 'Confirmed',
         desc: `Custody to ${ch.toHolder || 'Holder'} (Tx: ${ch.txHash ? ch.txHash.slice(0, 10) : ''}...)`,
         supplier: ch.toHolder,
-        location: ch.state === 'REGISTERED' ? (activeRecord.supplier || 'Nashik Farm') : (ch.state === 'IN_TRANSIT' ? 'In Transit Cold Carrier' : 'Nashik Dark Store')
+        location: ch.state === 'REGISTERED' 
+          ? (activeRecord.supplier || 'Farm Origin') 
+          : (ch.state === 'IN_TRANSIT' ? 'Reefer Cold Transport' : 'Dark Store Logistics Hub')
       }))
-    : [
-        {
-          title: 'Farm Registration',
-          time: activeRecord.harvestDate || 'Registered',
-          desc: 'Harvested and registered on blockchain ledger',
-          supplier: activeRecord.supplier,
-          location: activeRecord.supplier || 'Farm Origin',
-        },
-        {
-          title: 'Dispatch & Transit',
-          time: activeRecord.timestamp || 'In Progress',
-          desc: 'Dispatched with certified cold-chain carrier',
-          location: 'Cold Carrier Transit',
-        },
-        {
-          title: 'Dark Store Gate In',
-          time: 'Active Verification',
-          desc: 'Verified by Smart Contract against AI Trust Oracle',
-          location: 'Nashik Central Dark Store',
-        }
-      ];
+    : [];
 
   // 4 On-Chain Record Documents
   const recordDocuments = [
@@ -234,15 +237,41 @@ export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
         
         {/* Left Card: Search by Batch / Product / Transaction ID */}
         <div className="lg:col-span-7 bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs flex flex-col justify-between space-y-4">
-          <h2 className="text-base font-extrabold text-[#2D2620]">Search by Batch / Product / Transaction ID</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-extrabold text-[#2D2620]">Search by Batch / Product / Transaction ID</h2>
+            {availableBatches.length > 0 && (
+              <span className="text-xs font-bold text-[#556B2F]">
+                {availableBatches.length} Verified Batches
+              </span>
+            )}
+          </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Quick Batch Selector Dropdown */}
+            {availableBatches.length > 0 && (
+              <div className="relative min-w-[190px]">
+                <select
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full appearance-none bg-[#FAF7F0] border border-[#E6E1D5] rounded-2xl px-3.5 py-2.5 pr-8 text-xs font-bold text-[#2D2620] cursor-pointer focus:outline-none focus:border-[#354424] transition-colors"
+                >
+                  {availableBatches.map((b) => (
+                    <option key={b.batch_id} value={b.batch_id}>
+                      {b.batch_id} • {b.crop_name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-[#666057] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            )}
+
+            {/* Custom Input */}
             <div className="relative flex-1">
               <input 
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Enter Batch ID, Product Name or Transaction ID"
+                placeholder="Enter Batch ID, Product or Tx Hash"
                 className="w-full pl-9 pr-4 py-2.5 text-xs font-semibold rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] placeholder-[#8C8275] focus:outline-none focus:border-[#354424] transition-colors"
               />
               <Search className="w-4 h-4 text-[#8C8275] absolute left-3 top-1/2 -translate-y-1/2" />
@@ -250,11 +279,20 @@ export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
 
             <button 
               onClick={() => {
-                if (!ledgerDataMap[searchQuery.trim().toUpperCase()]) {
-                  alert(`Transaction ID / Batch "${searchQuery}" not found. Try BATCH-VEG-100525, BATCH-FRU-200840, or BATCH-GRA-300120.`);
-                }
+                const cleanId = searchQuery.trim().toUpperCase();
+                if (!cleanId) return;
+                fetch(`http://localhost:8000/batches/${cleanId}/traceability`)
+                  .then((res) => (res.ok ? res.json() : null))
+                  .then((data) => {
+                    if (data && (data.batchId || data.batch_id)) {
+                      setLiveBatchData(data);
+                    } else {
+                      setLiveBatchData(null);
+                    }
+                  })
+                  .catch(() => setLiveBatchData(null));
               }}
-              className="px-5 py-2.5 rounded-2xl bg-[#354424] text-white text-xs font-extrabold flex items-center gap-2 hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
+              className="px-5 py-2.5 rounded-2xl bg-[#354424] text-white text-xs font-extrabold flex items-center justify-center gap-2 hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
             >
               <Search className="w-4 h-4" />
               <span>Verify Now</span>
@@ -288,179 +326,212 @@ export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
       </div>
 
       {/* ========================================== */}
-      {/* ROW 2: VERIFICATION RESULT CARD            */}
+      {/* CONDITIONAL BODY: VERIFIED / NOT FOUND     */}
       {/* ========================================== */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs w-full space-y-4">
-        <h2 className="text-base font-extrabold text-[#2D2620]">Verification Result</h2>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
-          
-          {/* Left Details Block */}
-          <div className="lg:col-span-8 space-y-4">
-            
-            {/* Record Verified Banner */}
-            <div className="flex items-center gap-2 text-[#15803D]">
-              <div className="w-6 h-6 rounded-full bg-[#DCFCE7] flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4 text-[#15803D]" />
-              </div>
-              <span className="text-base font-extrabold tracking-tight">Record Verified on Blockchain</span>
-            </div>
-
-            {/* Transaction Hash */}
-            <div>
-              <span className="text-[11px] font-bold text-[#666057] block mb-1">Transaction Hash</span>
-              <div className="flex items-center gap-2 bg-[#FAF7F0] p-2.5 rounded-2xl border border-[#E6E1D5]">
-                <code className="text-xs font-mono font-bold text-[#2D2620] break-all select-all flex-1">
-                  {activeRecord.txHash}
-                </code>
-                <button 
-                  onClick={copyToClipboard}
-                  title="Copy Hash"
-                  className="p-1.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] hover:bg-[#E6E1D5] transition-colors cursor-pointer flex-shrink-0"
-                >
-                  {copiedHash ? <Check className="w-4 h-4 text-[#15803D]" /> : <Copy className="w-4 h-4 text-[#666057]" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Block Info Badges */}
-            <div className="grid grid-cols-3 gap-4 pt-1 text-xs">
-              <div>
-                <span className="text-[10px] font-bold text-[#666057] block">Block Number</span>
-                <span className="font-extrabold text-[#2D2620]">{activeRecord.blockNumber}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-[#666057] block">Timestamp</span>
-                <span className="font-extrabold text-[#2D2620]">{activeRecord.timestamp}</span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-[#666057] block">Network</span>
-                <span className="font-extrabold text-[#2D2620]">{activeRecord.network}</span>
-              </div>
-            </div>
-
+      {availableBatches.length === 0 ? (
+        <div className="bg-white rounded-3xl p-8 border border-[#E6E1D5] shadow-xs text-center space-y-3">
+          <div className="w-14 h-14 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#8C8275] mx-auto">
+            <ShieldCheck className="w-7 h-7" />
           </div>
-
-          {/* Right Green Authentic Box matching reference screenshot */}
-          <div className="lg:col-span-4 bg-[#F3F7F0] border border-[#D9E6D3] rounded-3xl p-6 flex flex-col items-center justify-center text-center space-y-3 h-full min-h-[150px]">
-            <div className="w-14 h-14 rounded-full bg-white border border-[#D9E6D3] flex items-center justify-center text-[#556B2F] shadow-2xs">
-              <ShieldCheck className="w-7 h-7 text-[#556B2F]" />
-            </div>
-            <p className="text-xs font-extrabold text-[#2D2620] leading-tight max-w-[160px]">
-              Data is authentic and tamper-proof
-            </p>
-          </div>
-
+          <h2 className="text-base font-extrabold text-[#2D2620]">No Batches Registered for Blockchain Verification</h2>
+          <p className="text-xs text-[#666057] max-w-md mx-auto">
+            Produce batches must be registered on-chain first by a farmer to view cryptographic proofs, immutable transaction hashes, and smart contract custody milestones.
+          </p>
         </div>
-      </div>
-
-      {/* ========================================== */}
-      {/* ROW 3: BATCH DETAILS & ON-CHAIN JOURNEY    */}
-      {/* ========================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full">
-        
-        {/* Left Card: Product / Batch Details */}
-        <div className="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs space-y-4">
-          <h2 className="text-base font-extrabold text-[#2D2620]">Product / Batch Details</h2>
-
-          <div className="divide-y divide-[#E6E1D5]/60 text-xs">
-            <div className="flex justify-between py-2.5">
-              <span className="text-[#666057] font-semibold">Batch ID</span>
-              <span className="font-extrabold text-[#2D2620]">{activeRecord.batchId}</span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-[#666057] font-semibold">Product</span>
-              <span className="font-extrabold text-[#2D2620]">{activeRecord.product}</span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-[#666057] font-semibold">Quantity</span>
-              <span className="font-extrabold text-[#2D2620]">{activeRecord.quantity}</span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-[#666057] font-semibold">Farmer / Supplier</span>
-              <span className="font-extrabold text-[#2D2620]">{activeRecord.supplier}</span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-[#666057] font-semibold">Harvest Date</span>
-              <span className="font-extrabold text-[#2D2620]">{activeRecord.harvestDate}</span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-[#666057] font-semibold">Packaging Date</span>
-              <span className="font-extrabold text-[#2D2620]">{activeRecord.packagingDate}</span>
-            </div>
-            <div className="flex justify-between py-2.5">
-              <span className="text-[#666057] font-semibold">Expiry Date</span>
-              <span className="font-extrabold text-[#2D2620]">{activeRecord.expiryDate}</span>
-            </div>
+      ) : !hasRecord ? (
+        <div className="bg-white rounded-3xl p-8 border border-[#E6E1D5] shadow-xs text-center space-y-3">
+          <div className="w-14 h-14 rounded-full bg-[#FFF4EC] border border-[#FDE3D2] flex items-center justify-center text-[#B85C38] mx-auto">
+            <Search className="w-7 h-7" />
           </div>
+          <h2 className="text-base font-extrabold text-[#2D2620]">Batch Not Found on Blockchain</h2>
+          <p className="text-xs text-[#666057] max-w-md mx-auto">
+            No on-chain ledger record was found for "{searchQuery}". Select an active batch from the dropdown above to view cryptographic proofs.
+          </p>
         </div>
+      ) : (
+        <>
+          {/* ========================================== */}
+          {/* ROW 2: VERIFICATION RESULT CARD            */}
+          {/* ========================================== */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs w-full space-y-4">
+            <h2 className="text-base font-extrabold text-[#2D2620]">Verification Result</h2>
 
-        {/* Right Card: On-Chain Journey Vertical Timeline */}
-        <div className="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs space-y-4">
-          <h2 className="text-base font-extrabold text-[#2D2620]">On-Chain Journey</h2>
-
-          <div className="relative pl-6 space-y-5 text-xs before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:border-l-2 before:border-dashed before:border-[#88A070]/60">
-            {onChainJourney.map((item, idx) => (
-              <div key={idx} className="relative group">
-                {/* Green Timeline Dot */}
-                <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full bg-[#556B2F] ring-4 ring-white" />
-
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-[#556B2F]">{item.title}</span>
-                      <span className="text-[10px] font-semibold text-[#8C8275]">{item.time}</span>
-                    </div>
-                    <p className="text-[#2D2620] font-medium mt-1">{item.desc}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+              
+              {/* Left Details Block */}
+              <div className="lg:col-span-8 space-y-4">
+                
+                {/* Record Verified Banner */}
+                <div className="flex items-center gap-2 text-[#15803D]">
+                  <div className="w-6 h-6 rounded-full bg-[#DCFCE7] flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 text-[#15803D]" />
                   </div>
-
-                  <div className="text-right flex-shrink-0 ml-2">
-                    {item.supplier && (
-                      <span className="font-bold text-[#2563EB] block text-[11px]">{item.supplier}</span>
-                    )}
-                    <span className="text-[11px] font-semibold text-[#666057] flex items-center justify-end gap-1">
-                      <MapPin className="w-3 h-3 text-[#8C8275]" />
-                      <span>{item.location}</span>
-                    </span>
-                  </div>
+                  <span className="text-base font-extrabold tracking-tight">Record Verified on Blockchain</span>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
-      </div>
-
-      {/* ========================================== */}
-      {/* ROW 4: RECORD DOCUMENTS (ON-CHAIN)         */}
-      {/* ========================================== */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs w-full space-y-4">
-        <h2 className="text-base font-extrabold text-[#2D2620]">Record Documents (On-Chain)</h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {recordDocuments.map((doc) => (
-            <div 
-              key={doc.id}
-              onClick={() => setActiveDocModal(doc)}
-              className={`${doc.bg} p-4 rounded-2xl border ${doc.border} shadow-2xs flex items-center justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all group`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl ${doc.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
-                  <FileText className="w-5 h-5" />
-                </div>
+                {/* Transaction Hash */}
                 <div>
-                  <h3 className="font-extrabold text-xs text-[#2D2620]">{doc.title}</h3>
-                  <span className={`text-[11px] font-bold block mt-0.5 ${doc.subtextColor || 'text-[#666057]'}`}>
-                    {doc.subtext}
-                  </span>
+                  <span className="text-[11px] font-bold text-[#666057] block mb-1">Transaction Hash</span>
+                  <div className="flex items-center gap-2 bg-[#FAF7F0] p-2.5 rounded-2xl border border-[#E6E1D5]">
+                    <code className="text-xs font-mono font-bold text-[#2D2620] break-all select-all flex-1">
+                      {activeRecord.txHash}
+                    </code>
+                    <button 
+                      onClick={copyToClipboard}
+                      title="Copy Hash"
+                      className="p-1.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] hover:bg-[#E6E1D5] transition-colors cursor-pointer flex-shrink-0"
+                    >
+                      {copiedHash ? <Check className="w-4 h-4 text-[#15803D]" /> : <Copy className="w-4 h-4 text-[#666057]" />}
+                    </button>
+                  </div>
                 </div>
+
+                {/* Block Info Badges */}
+                <div className="grid grid-cols-3 gap-4 pt-1 text-xs">
+                  <div>
+                    <span className="text-[10px] font-bold text-[#666057] block">Block Number</span>
+                    <span className="font-extrabold text-[#2D2620]">{activeRecord.blockNumber}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-[#666057] block">Timestamp</span>
+                    <span className="font-extrabold text-[#2D2620]">{activeRecord.timestamp}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-[#666057] block">Network</span>
+                    <span className="font-extrabold text-[#2D2620]">{activeRecord.network}</span>
+                  </div>
+                </div>
+
               </div>
 
-              <ChevronDown className="w-4 h-4 text-[#666057] -rotate-90 group-hover:translate-x-1 transition-transform" />
+              {/* Right Green Authentic Box */}
+              <div className="lg:col-span-4 bg-[#F3F7F0] border border-[#D9E6D3] rounded-3xl p-6 flex flex-col items-center justify-center text-center space-y-3 h-full min-h-[150px]">
+                <div className="w-14 h-14 rounded-full bg-white border border-[#D9E6D3] flex items-center justify-center text-[#556B2F] shadow-2xs">
+                  <ShieldCheck className="w-7 h-7 text-[#556B2F]" />
+                </div>
+                <p className="text-xs font-extrabold text-[#2D2620] leading-tight max-w-[160px]">
+                  Data is authentic and tamper-proof
+                </p>
+              </div>
+
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+
+          {/* ========================================== */}
+          {/* ROW 3: BATCH DETAILS & ON-CHAIN JOURNEY    */}
+          {/* ========================================== */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 w-full">
+            
+            {/* Left Card: Product / Batch Details */}
+            <div className="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs space-y-4">
+              <h2 className="text-base font-extrabold text-[#2D2620]">Product / Batch Details</h2>
+
+              <div className="divide-y divide-[#E6E1D5]/60 text-xs">
+                <div className="flex justify-between py-2.5">
+                  <span className="text-[#666057] font-semibold">Batch ID</span>
+                  <span className="font-extrabold text-[#2D2620]">{activeRecord.batchId}</span>
+                </div>
+                <div className="flex justify-between py-2.5">
+                  <span className="text-[#666057] font-semibold">Product</span>
+                  <span className="font-extrabold text-[#2D2620]">{activeRecord.product}</span>
+                </div>
+                <div className="flex justify-between py-2.5">
+                  <span className="text-[#666057] font-semibold">Quantity</span>
+                  <span className="font-extrabold text-[#2D2620]">{activeRecord.quantity}</span>
+                </div>
+                <div className="flex justify-between py-2.5">
+                  <span className="text-[#666057] font-semibold">Farmer / Supplier</span>
+                  <span className="font-extrabold text-[#2D2620]">{activeRecord.supplier}</span>
+                </div>
+                <div className="flex justify-between py-2.5">
+                  <span className="text-[#666057] font-semibold">Harvest Date</span>
+                  <span className="font-extrabold text-[#2D2620]">{activeRecord.harvestDate}</span>
+                </div>
+                <div className="flex justify-between py-2.5">
+                  <span className="text-[#666057] font-semibold">Packaging Date</span>
+                  <span className="font-extrabold text-[#2D2620]">{activeRecord.packagingDate}</span>
+                </div>
+                <div className="flex justify-between py-2.5">
+                  <span className="text-[#666057] font-semibold">Expiry Date</span>
+                  <span className="font-extrabold text-[#2D2620]">{activeRecord.expiryDate}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Card: On-Chain Journey Vertical Timeline */}
+            <div className="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs space-y-4">
+              <h2 className="text-base font-extrabold text-[#2D2620]">On-Chain Journey</h2>
+
+              {onChainJourney.length === 0 ? (
+                <div className="p-6 text-center text-xs text-[#666057] bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5]/70">
+                  Batch registered at farm origin. Custody transitions will be timestamped here.
+                </div>
+              ) : (
+                <div className="relative pl-6 space-y-5 text-xs before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:border-l-2 before:border-dashed before:border-[#88A070]/60">
+                  {onChainJourney.map((item, idx) => (
+                    <div key={idx} className="relative group">
+                      {/* Green Timeline Dot */}
+                      <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full bg-[#556B2F] ring-4 ring-white" />
+
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-[#556B2F]">{item.title}</span>
+                            <span className="text-[10px] font-semibold text-[#8C8275]">{item.time}</span>
+                          </div>
+                          <p className="text-[#2D2620] font-medium mt-1">{item.desc}</p>
+                        </div>
+
+                        <div className="text-right flex-shrink-0 ml-2">
+                          {item.supplier && (
+                            <span className="font-bold text-[#2563EB] block text-[11px]">{item.supplier}</span>
+                          )}
+                          <span className="text-[11px] font-semibold text-[#666057] flex items-center justify-end gap-1">
+                            <MapPin className="w-3 h-3 text-[#8C8275]" />
+                            <span>{item.location}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* ========================================== */}
+          {/* ROW 4: RECORD DOCUMENTS (ON-CHAIN)         */}
+          {/* ========================================== */}
+          <div className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs w-full space-y-4">
+            <h2 className="text-base font-extrabold text-[#2D2620]">Record Documents (On-Chain)</h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {recordDocuments.map((doc) => (
+                <div 
+                  key={doc.id}
+                  onClick={() => setActiveDocModal({ ...doc, blockHash: activeRecord.txHash.slice(0, 14) + '...' })}
+                  className={`${doc.bg} p-4 rounded-2xl border ${doc.border} shadow-2xs flex items-center justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all group`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl ${doc.iconBg} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-xs text-[#2D2620]">{doc.title}</h3>
+                      <span className={`text-[11px] font-bold block mt-0.5 ${doc.subtextColor || 'text-[#666057]'}`}>
+                        {doc.subtext}
+                      </span>
+                    </div>
+                  </div>
+
+                  <ChevronDown className="w-4 h-4 text-[#666057] -rotate-90 group-hover:translate-x-1 transition-transform" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* SIMULATED QR SCANNER MODAL */}
       {isScannerOpen && (

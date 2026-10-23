@@ -22,6 +22,13 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
   const [blockchainCerts, setBlockchainCerts] = useState([]);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
+  // Dynamic live datasets for inventory, sales, revenue & custody actions
+  const [topSellingProducts, setTopSellingProducts] = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [revenueData, setRevenueData] = useState(null);
+  const [availableBatches, setAvailableBatches] = useState([]);
+  const [selectedBatchId, setSelectedBatchId] = useState('');
+
   useEffect(() => {
     fetch('http://localhost:8000/darkstore/kpis')
       .then((res) => res.json())
@@ -77,16 +84,103 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
         }
       })
       .catch(() => {});
+
+    fetch('http://localhost:8000/batches')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setAvailableBatches(data);
+          setSelectedBatchId(data[0].batch_id);
+        }
+      })
+      .catch(() => {});
+
+    fetch('http://localhost:8000/darkstore/inventory')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setInventoryItems(data);
+        }
+      })
+      .catch(() => {});
+
+    fetch('http://localhost:8000/darkstore/sales')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.topProducts)) {
+          setTopSellingProducts(data.topProducts);
+        }
+      })
+      .catch(() => {});
+
+    fetch('http://localhost:8000/darkstore/revenue')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setRevenueData(data);
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  // Middle Card 3: Top Selling Products Data
-  const topSellingProducts = [
-    { name: 'Mango (Alphonso)', sold: '520 kg', revenue: '₹ 1,25,000', image: '/images/mango_only.png' },
-    { name: 'Tomato', sold: '480 kg', revenue: '₹ 92,400', image: '/images/tomato_only.png' },
-    { name: 'Potato', sold: '600 kg', revenue: '₹ 66,000', image: '/images/potato_only.png' },
-    { name: 'Wheat (Premium)', sold: '350 kg', revenue: '₹ 63,000', image: '/images/wheat_only.png' },
-    { name: 'Banana', sold: '310 kg', revenue: '₹ 48,500', image: '/images/banana_only.png' },
-  ];
+  // Compute dynamic inventory categories and percentages
+  const totalInvCount = (kpis && kpis.totalProducts !== undefined) ? kpis.totalProducts : inventoryItems.length;
+  
+  const categoryCounts = {
+    Fruits: 0,
+    Vegetables: 0,
+    Grains: 0,
+    Dairy: 0,
+    Others: 0,
+  };
+
+  inventoryItems.forEach((item) => {
+    const cat = item.category || 'Vegetables';
+    if (categoryCounts[cat] !== undefined) {
+      categoryCounts[cat]++;
+    } else {
+      categoryCounts.Others++;
+    }
+  });
+
+  const categoryPcts = {
+    Fruits: totalInvCount > 0 ? Math.round((categoryCounts.Fruits / totalInvCount) * 100) : 0,
+    Vegetables: totalInvCount > 0 ? Math.round((categoryCounts.Vegetables / totalInvCount) * 100) : 0,
+    Grains: totalInvCount > 0 ? Math.round((categoryCounts.Grains / totalInvCount) * 100) : 0,
+    Dairy: totalInvCount > 0 ? Math.round((categoryCounts.Dairy / totalInvCount) * 100) : 0,
+    Others: totalInvCount > 0 ? Math.max(0, 100 - (
+      Math.round((categoryCounts.Fruits / totalInvCount) * 100) +
+      Math.round((categoryCounts.Vegetables / totalInvCount) * 100) +
+      Math.round((categoryCounts.Grains / totalInvCount) * 100) +
+      Math.round((categoryCounts.Dairy / totalInvCount) * 100)
+    )) : 0,
+  };
+
+  // Dynamic stock breakdown
+  const freshStockCount = Math.max(0, totalInvCount - expiryAlerts.length);
+  const blockedStockCount = expiryAlerts.length;
+  const freshStockPct = totalInvCount > 0 ? Math.round((freshStockCount / totalInvCount) * 100) : 0;
+  const blockedStockPct = totalInvCount > 0 ? Math.round((blockedStockCount / totalInvCount) * 100) : 0;
+
+  // Compute SVG Donut segments (Circumference: 2 * PI * 38 = 238.76)
+  const CIRCUMFERENCE = 238.76;
+  let strokeAccumulator = 0;
+  const donutSegments = [
+    { name: 'Fruits', pct: categoryPcts.Fruits, color: '#4D6E38' },
+    { name: 'Vegetables', pct: categoryPcts.Vegetables, color: '#EAB308' },
+    { name: 'Grains', pct: categoryPcts.Grains, color: '#C3D49C' },
+    { name: 'Dairy', pct: categoryPcts.Dairy, color: '#4A7AA5' },
+    { name: 'Others', pct: categoryPcts.Others, color: '#CBC7BC' },
+  ].map((seg) => {
+    const dashLength = (seg.pct / 100) * CIRCUMFERENCE;
+    const offset = -strokeAccumulator;
+    strokeAccumulator += dashLength;
+    return {
+      ...seg,
+      dashArray: `${dashLength.toFixed(1)} ${(CIRCUMFERENCE - dashLength).toFixed(1)}`,
+      offset: offset.toFixed(1),
+    };
+  });
 
   return (
     <div className="flex flex-col gap-5 animate-fade-in w-full">
@@ -96,24 +190,66 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
       {/* 6 Top KPI Summary Cards (All Clickable) */}
       <DarkStoreKPICards onCardClick={(tab) => onSelectTab(tab)} kpis={kpis} />
 
-      {/* On-Chain Custody Action Bar (Phase 11) */}
-      <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+      {/* On-Chain Custody Action Bar */}
+      <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-2xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
         <div>
           <span className="text-xs font-extrabold text-[#2D2620] block">On-Chain Custody Actions</span>
           <span className="text-[11px] text-[#666057]">Transition incoming batches to AT_RETAIL (GRN) or complete sale to consumer (SOLD)</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Dynamic Batch Selector */}
+          <div className="relative">
+            <select
+              value={selectedBatchId}
+              onChange={(e) => setSelectedBatchId(e.target.value)}
+              className="appearance-none bg-white border border-[#E6E1D5] rounded-xl px-3 py-1.5 pr-7 text-xs font-bold text-[#2D2620] cursor-pointer focus:outline-none focus:border-[#354424] shadow-xs"
+            >
+              {availableBatches.length === 0 ? (
+                <option value="">No Batches Registered</option>
+              ) : (
+                availableBatches.map((b) => (
+                  <option key={b.batch_id} value={b.batch_id}>
+                    {b.batch_id} ({b.crop_name})
+                  </option>
+                ))
+              )}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-[#666057] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+
           <button
             type="button"
-            onClick={() => onOpenGRN && onOpenGRN('BATCH-PO-2026-001')}
-            className="px-3.5 py-1.5 rounded-xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+            disabled={!selectedBatchId}
+            onClick={() => {
+              if (!selectedBatchId) {
+                alert('No batch available to confirm GRN. Please register a batch first.');
+                return;
+              }
+              onOpenGRN && onOpenGRN(selectedBatchId);
+            }}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs ${
+              selectedBatchId
+                ? 'bg-[#354424] text-white hover:bg-[#26321A] cursor-pointer'
+                : 'bg-[#E6E1D5] text-[#8C8275] cursor-not-allowed'
+            }`}
           >
             <span>📋 Confirm Inbound GRN</span>
           </button>
           <button
             type="button"
-            onClick={() => onOpenRecordSale && onOpenRecordSale('BATCH-PO-2026-001')}
-            className="px-3.5 py-1.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] text-xs font-bold hover:bg-[#FAF7F0] transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+            disabled={!selectedBatchId}
+            onClick={() => {
+              if (!selectedBatchId) {
+                alert('No batch available to record sale. Please register a batch first.');
+                return;
+              }
+              onOpenRecordSale && onOpenRecordSale(selectedBatchId);
+            }}
+            className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-colors flex items-center gap-1.5 shadow-xs ${
+              selectedBatchId
+                ? 'bg-white border-[#E6E1D5] text-[#2D2620] hover:bg-[#FAF7F0] cursor-pointer'
+                : 'bg-[#FAF7F0] border-[#E6E1D5] text-[#8C8275] cursor-not-allowed'
+            }`}
           >
             <span>🛒 Record Sale to Consumer</span>
           </button>
@@ -143,94 +279,105 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
               onClick={() => onSelectTab('inventory')}
               className="flex items-center justify-between px-2 py-3 cursor-pointer group"
             >
-              {/* SVG Donut Ring matching reference image angles & colors */}
+              {/* Dynamic SVG Donut Ring */}
               <div className="relative w-36 h-36 flex-shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform">
                 <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                  {/* Segment 1: Fruits 32% (Dark Green #4D6E38) */}
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#4D6E38" strokeWidth="18" strokeDasharray="74.4 164.36" strokeDashoffset="0" />
-                  {/* Segment 2: Grains 14% (Sage Beige #C3D49C) */}
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#C3D49C" strokeWidth="18" strokeDasharray="31.4 207.36" strokeDashoffset="-76.4" />
-                  {/* Segment 3: Vegetables 28% (Yellow #EAB308) */}
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#EAB308" strokeWidth="18" strokeDasharray="64.8 173.96" strokeDashoffset="-109.8" />
-                  {/* Segment 4: Dairy 10% (Blue #4A7AA5) */}
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#4A7AA5" strokeWidth="18" strokeDasharray="21.8 216.96" strokeDashoffset="-176.6" />
-                  {/* Segment 5: Others 16% (Light Gray #CBC7BC) */}
-                  <circle cx="50" cy="50" r="38" fill="none" stroke="#CBC7BC" strokeWidth="18" strokeDasharray="36.2 202.56" strokeDashoffset="-200.4" />
+                  {totalInvCount === 0 ? (
+                    /* Clean Neutral Ring When 0 Items */
+                    <circle cx="50" cy="50" r="38" fill="none" stroke="#E6E1D5" strokeWidth="18" strokeDasharray="238.76 0" strokeDashoffset="0" />
+                  ) : (
+                    /* Real Segments Based on Storage Batches */
+                    donutSegments.map((seg, idx) => (
+                      seg.pct > 0 && (
+                        <circle 
+                          key={idx}
+                          cx="50" 
+                          cy="50" 
+                          r="38" 
+                          fill="none" 
+                          stroke={seg.color} 
+                          strokeWidth="18" 
+                          strokeDasharray={seg.dashArray} 
+                          strokeDashoffset={seg.offset} 
+                        />
+                      )
+                    ))
+                  )}
                 </svg>
 
                 {/* Inner Center Circle with Text */}
                 <div className="absolute w-[82px] h-[82px] rounded-full bg-white flex flex-col items-center justify-center text-center leading-tight shadow-2xs border border-[#E6E1D5]/40">
                   <span className="text-[10px] font-bold text-[#666057]">Total</span>
-                  <span className="text-xl font-black text-[#1A1A1A]">{kpis ? kpis.totalProducts : 186}</span>
+                  <span className="text-xl font-black text-[#1A1A1A]">{totalInvCount}</span>
                   <span className="text-[10px] font-bold text-[#666057]">Products</span>
                 </div>
               </div>
 
-              {/* Legend List matching exact reference order & colors */}
+              {/* Legend List dynamically derived from real batches */}
               <div className="space-y-2 text-xs font-semibold pl-2 flex-1 max-w-[160px]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="w-3 h-3 rounded-full bg-[#4D6E38] flex-shrink-0"></span>
                     <span className="text-[#2D2620] font-bold">Fruits</span>
                   </div>
-                  <span className="font-extrabold text-[#2D2620]">32%</span>
+                  <span className="font-extrabold text-[#2D2620]">{categoryPcts.Fruits}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="w-3 h-3 rounded-full bg-[#EAB308] flex-shrink-0"></span>
                     <span className="text-[#2D2620] font-bold">Vegetables</span>
                   </div>
-                  <span className="font-extrabold text-[#2D2620]">28%</span>
+                  <span className="font-extrabold text-[#2D2620]">{categoryPcts.Vegetables}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="w-3 h-3 rounded-full bg-[#C3D49C] flex-shrink-0"></span>
                     <span className="text-[#2D2620] font-bold">Grains</span>
                   </div>
-                  <span className="font-extrabold text-[#2D2620]">14%</span>
+                  <span className="font-extrabold text-[#2D2620]">{categoryPcts.Grains}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="w-3 h-3 rounded-full bg-[#4A7AA5] flex-shrink-0"></span>
                     <span className="text-[#2D2620] font-bold">Dairy</span>
                   </div>
-                  <span className="font-extrabold text-[#2D2620]">10%</span>
+                  <span className="font-extrabold text-[#2D2620]">{categoryPcts.Dairy}%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <span className="w-3 h-3 rounded-full bg-[#CBC7BC] flex-shrink-0"></span>
                     <span className="text-[#2D2620] font-bold">Others</span>
                   </div>
-                  <span className="font-extrabold text-[#2D2620]">16%</span>
+                  <span className="font-extrabold text-[#2D2620]">{categoryPcts.Others}%</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Bottom 4-Stat Stock Breakdown matching exact layout & color styling */}
+          {/* Bottom 4-Stat Stock Breakdown dynamically computed */}
           <div 
             onClick={() => onSelectTab('inventory')}
             className="grid grid-cols-4 divide-x divide-[#E6E1D5]/70 pt-3 border-t border-[#E6E1D5] text-center text-xs cursor-pointer hover:bg-[#FAF7F0]/60 transition-colors rounded-2xl p-1"
           >
             <div className="px-1">
               <span className="text-[10px] font-bold text-[#666057] block mb-0.5">Fresh Stock</span>
-              <span className="text-base font-black text-[#2D4F1E] block">132</span>
-              <span className="text-[10px] font-bold text-[#666057]">(71%)</span>
+              <span className="text-base font-black text-[#2D4F1E] block">{freshStockCount}</span>
+              <span className="text-[10px] font-bold text-[#666057]">({freshStockPct}%)</span>
             </div>
             <div className="px-1">
               <span className="text-[10px] font-bold text-[#E0982D] block mb-0.5">Low Stock</span>
-              <span className="text-base font-black text-[#E0982D] block">18</span>
-              <span className="text-[10px] font-bold text-[#666057]">(10%)</span>
+              <span className="text-base font-black text-[#E0982D] block">0</span>
+              <span className="text-[10px] font-bold text-[#666057]">(0%)</span>
             </div>
             <div className="px-1">
               <span className="text-[10px] font-bold text-[#666057] block mb-0.5">Out of Stock</span>
-              <span className="text-base font-black text-[#B93627] block">5</span>
-              <span className="text-[10px] font-bold text-[#666057]">(3%)</span>
+              <span className="text-base font-black text-[#B93627] block">0</span>
+              <span className="text-[10px] font-bold text-[#666057]">(0%)</span>
             </div>
             <div className="px-1">
-              <span className="text-[10px] font-bold text-[#666057] block mb-0.5">Blocked/Expired</span>
-              <span className="text-base font-black text-[#B93627] block">3</span>
-              <span className="text-[10px] font-bold text-[#666057]">(2%)</span>
+              <span className="text-[10px] font-bold text-[#666057] block mb-0.5">Blocked/Alerts</span>
+              <span className="text-base font-black text-[#B93627] block">{blockedStockCount}</span>
+              <span className="text-[10px] font-bold text-[#666057]">({blockedStockPct}%)</span>
             </div>
           </div>
         </div>
@@ -327,20 +474,27 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
 
             {/* Table Rows (Clickable -> Products page) */}
             <div className="divide-y divide-[#E6E1D5]/60 text-xs">
-              {topSellingProducts.map((prod, idx) => (
-                <div 
-                  key={idx} 
-                  onClick={() => onSelectTab('products')}
-                  className="grid grid-cols-12 items-center py-2 hover:bg-[#FAF7F0]/80 transition-colors cursor-pointer"
-                >
-                  <div className="col-span-6 flex items-center gap-2">
-                    <img src={prod.image} alt={prod.name} className="w-6 h-6 object-contain" />
-                    <span className="font-bold text-[#2D2620] truncate">{prod.name}</span>
-                  </div>
-                  <span className="col-span-3 text-center font-semibold text-[#666057]">{prod.sold}</span>
-                  <span className="col-span-3 text-right font-extrabold text-[#2D2620]">{prod.revenue}</span>
+              {topSellingProducts.length === 0 ? (
+                <div className="py-7 text-center text-xs text-[#666057] font-semibold bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5]/70 my-2 px-3">
+                  <span className="font-extrabold text-[#2D2620] block mb-1">No sales recorded yet</span>
+                  <span className="text-[11px]">Completed consumer sales will appear here automatically.</span>
                 </div>
-              ))}
+              ) : (
+                topSellingProducts.map((prod, idx) => (
+                  <div 
+                    key={idx} 
+                    onClick={() => onSelectTab('products')}
+                    className="grid grid-cols-12 items-center py-2 hover:bg-[#FAF7F0]/80 transition-colors cursor-pointer"
+                  >
+                    <div className="col-span-6 flex items-center gap-2">
+                      <img src={prod.image} alt={prod.name} className="w-6 h-6 object-contain" />
+                      <span className="font-bold text-[#2D2620] truncate">{prod.name}</span>
+                    </div>
+                    <span className="col-span-3 text-center font-semibold text-[#666057]">{prod.sold || prod.qty}</span>
+                    <span className="col-span-3 text-right font-extrabold text-[#2D2620]">{prod.revenue}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -492,52 +646,66 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
               className="mb-2 cursor-pointer group"
             >
               <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-[#2D2620] group-hover:text-[#354424] transition-colors">{kpis ? kpis.revenueThisMonth : "₹ 11,28,450"}</span>
+                <span className="text-2xl font-extrabold text-[#2D2620] group-hover:text-[#354424] transition-colors">
+                  {revenueData?.totalRevenue || kpis?.revenueThisMonth || "₹ 0"}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-[#666057] font-semibold">Total Revenue</span>
-                <span className="text-[#556B2F] font-bold">+ 15% vs last month</span>
+                <span className={(!revenueData?.totalRevenue || revenueData?.totalRevenue === '₹0' || revenueData?.totalRevenue === '₹ 0') ? "text-[#8C8275] font-semibold" : "text-[#556B2F] font-bold"}>
+                  {(!revenueData?.totalRevenue || revenueData?.totalRevenue === '₹0' || revenueData?.totalRevenue === '₹ 0') ? "Awaiting settled sales" : "+ 15% vs last month"}
+                </span>
               </div>
             </div>
 
-            {/* Smooth Green Area Line Chart (Clickable -> Revenue) */}
+            {/* Green Area Line Chart (Clickable -> Revenue) */}
             <div 
               onClick={() => onSelectTab('revenue')}
               className="h-28 w-full relative pt-2 cursor-pointer group"
             >
-              <svg viewBox="0 0 300 90" className="w-full h-full overflow-visible">
-                <defs>
-                  <linearGradient id="revenueGreenGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#556B2F" stopOpacity="0.30" />
-                    <stop offset="100%" stopColor="#556B2F" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
+              {(!revenueData?.totalRevenue || revenueData?.totalRevenue === '₹0' || revenueData?.totalRevenue === '₹ 0') ? (
+                /* Dynamic Flat Baseline when Zero Sales */
+                <svg viewBox="0 0 300 90" className="w-full h-full overflow-visible">
+                  <line x1="10" y1="70" x2="290" y2="70" stroke="#E6E1D5" strokeWidth="2" strokeDasharray="4 4" />
+                  <text x="150" y="44" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#8C8275">
+                    No sales recorded in this period
+                  </text>
+                </svg>
+              ) : (
+                <svg viewBox="0 0 300 90" className="w-full h-full overflow-visible">
+                  <defs>
+                    <linearGradient id="revenueGreenGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#556B2F" stopOpacity="0.30" />
+                      <stop offset="100%" stopColor="#556B2F" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
 
-                {/* Filled Area Below Curve */}
-                <path 
-                  d="M 10 70 C 40 65, 70 55, 100 58 C 130 62, 160 40, 190 48 C 220 30, 250 20, 290 12 L 290 85 L 10 85 Z" 
-                  fill="url(#revenueGreenGrad)" 
-                />
+                  {/* Filled Area Below Curve */}
+                  <path 
+                    d="M 10 70 C 40 65, 70 55, 100 58 C 130 62, 160 40, 190 48 C 220 30, 250 20, 290 12 L 290 85 L 10 85 Z" 
+                    fill="url(#revenueGreenGrad)" 
+                  />
 
-                {/* Main Stroke Line */}
-                <path 
-                  d="M 10 70 C 40 65, 70 55, 100 58 C 130 62, 160 40, 190 48 C 220 30, 250 20, 290 12" 
-                  fill="none" 
-                  stroke="#556B2F" 
-                  strokeWidth="2.5" 
-                  strokeLinecap="round" 
-                />
-              </svg>
+                  {/* Main Stroke Line */}
+                  <path 
+                    d="M 10 70 C 40 65, 70 55, 100 58 C 130 62, 160 40, 190 48 C 220 30, 250 20, 290 12" 
+                    fill="none" 
+                    stroke="#556B2F" 
+                    strokeWidth="2.5" 
+                    strokeLinecap="round" 
+                  />
+                </svg>
+              )}
 
               {/* X Axis Date Labels */}
               <div className="flex justify-between text-[9px] text-[#8C8275] font-semibold pt-1 border-t border-[#E6E1D5]/60">
-                <span>1 May</span>
-                <span>6 May</span>
-                <span>11 May</span>
-                <span>16 May</span>
-                <span>21 May</span>
-                <span>26 May</span>
-                <span>31 May</span>
+                <span>D-6</span>
+                <span>D-5</span>
+                <span>D-4</span>
+                <span>D-3</span>
+                <span>D-2</span>
+                <span>D-1</span>
+                <span>Today</span>
               </div>
             </div>
           </div>
@@ -549,15 +717,23 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
           >
             <div className="p-2 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] hover:bg-[#EBF3E8] transition-colors">
               <span className="text-[10px] text-[#666057] font-semibold block">Gross Profit</span>
-              <span className="font-extrabold text-[#2D2620] text-xs">₹ 3,45,200</span>
+              <span className="font-extrabold text-[#2D2620] text-xs">
+                {revenueData?.totalRevenue || kpis?.revenueThisMonth || '₹ 0'}
+              </span>
             </div>
             <div className="p-2 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] hover:bg-[#EBF3E8] transition-colors">
               <span className="text-[10px] text-[#666057] font-semibold block">Net Profit</span>
-              <span className="font-extrabold text-[#556B2F] text-xs">₹ 2,12,800</span>
+              <span className="font-extrabold text-[#556B2F] text-xs">
+                {(!revenueData?.totalRevenue || revenueData?.totalRevenue === '₹0' || revenueData?.totalRevenue === '₹ 0')
+                  ? '₹ 0'
+                  : `₹ ${Math.round(parseInt((revenueData.totalRevenue || '0').replace(/[^0-9]/g, '')) * 0.3).toLocaleString('en-IN')}`}
+              </span>
             </div>
             <div className="p-2 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] hover:bg-[#EBF3E8] transition-colors">
               <span className="text-[10px] text-[#666057] font-semibold block">Avg. Order Value</span>
-              <span className="font-extrabold text-[#2D2620] text-xs">₹ 1,480</span>
+              <span className="font-extrabold text-[#2D2620] text-xs">
+                {revenueData?.avgOrderValue || '₹ 0'}
+              </span>
             </div>
           </div>
         </div>

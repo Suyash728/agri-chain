@@ -32,15 +32,15 @@ export const DarkStoreApp = () => {
   // Custody Action Modals State
   const [isGRNOpen, setIsGRNOpen] = useState(false);
   const [isRecordSaleOpen, setIsRecordSaleOpen] = useState(false);
-  const [activeBatchId, setActiveBatchId] = useState('BATCH-PO-2026-001');
+  const [activeBatchId, setActiveBatchId] = useState('');
 
   const handleOpenGRN = (bId) => {
-    setActiveBatchId(bId || 'BATCH-PO-2026-001');
+    setActiveBatchId(bId || '');
     setIsGRNOpen(true);
   };
 
   const handleOpenRecordSale = (bId) => {
-    setActiveBatchId(bId || 'BATCH-PO-2026-001');
+    setActiveBatchId(bId || '');
     setIsRecordSaleOpen(true);
   };
 

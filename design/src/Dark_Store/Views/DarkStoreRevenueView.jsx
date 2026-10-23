@@ -51,20 +51,14 @@ export const DarkStoreRevenueView = ({ onBack, onOpenNotifications }) => {
   const totalPages = Math.max(1, Math.ceil(revenueTableData.length / pageSize));
   const paginatedData = revenueTableData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  // Revenue Over Time Vertical Bars Data
-  const dailyBarData = revenueData?.dailyBarData && revenueData.dailyBarData.length > 0
-    ? revenueData.dailyBarData
-    : [
-        { day: 'D-1', height: '30%' },
-        { day: 'Today', height: '70%' },
-      ];
+  // Revenue Over Time Vertical Bars Data from live API (no fake fallback bars)
+  const dailyBarData = revenueData?.dailyBarData || [];
 
-  // Revenue by Source Horizontal Bars Data
-  const sourceBarData = revenueData?.sourceBarData && revenueData.sourceBarData.length > 0
-    ? revenueData.sourceBarData
-    : [
-        { name: 'Direct Farm Hub', val: revenueData?.totalRevenue || '₹ 0', width: '80%' },
-      ];
+  // Revenue by Source Horizontal Bars Data from live API (no fake fallback bars)
+  const sourceBarData = revenueData?.sourceBarData || [];
+
+  const categoryBreakdown = revenueData?.categoryBreakdown || [];
+  const paymentBreakdown = revenueData?.paymentBreakdown || [];
 
   return (
     <div className="flex flex-col gap-5 animate-fade-in w-full">
@@ -164,32 +158,38 @@ export const DarkStoreRevenueView = ({ onBack, onOpenNotifications }) => {
           <h2 className="text-xs font-extrabold text-[#2D2620]">Revenue Over Time</h2>
 
           {/* Bar Chart Grid */}
-          <div className="h-24 w-full relative pt-1 my-auto">
-            {/* Y-Axis Labels */}
-            <div className="absolute left-0 top-0 bottom-5 w-7 flex flex-col justify-between text-[9px] font-semibold text-[#8C8275] text-right pr-1">
-              <span>80K</span>
-              <span>60K</span>
-              <span>40K</span>
-              <span>20K</span>
-              <span>0</span>
+          {dailyBarData.length === 0 ? (
+            <div className="h-20 w-full flex items-center justify-center my-auto bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5]/60 text-xs font-semibold text-[#8C8275]">
+              No daily revenue recorded yet
             </div>
+          ) : (
+            <div className="h-24 w-full relative pt-1 my-auto">
+              {/* Y-Axis Labels */}
+              <div className="absolute left-0 top-0 bottom-5 w-7 flex flex-col justify-between text-[9px] font-semibold text-[#8C8275] text-right pr-1">
+                <span>80K</span>
+                <span>60K</span>
+                <span>40K</span>
+                <span>20K</span>
+                <span>0</span>
+              </div>
 
-            {/* Bars Area */}
-            <div className="ml-7 h-20 border-b border-[#E6E1D5]/70 flex items-end justify-between px-1 gap-1 sm:gap-1.5">
-              {dailyBarData.map((bar, idx) => (
-                <div key={idx} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group cursor-pointer">
-                  <div 
-                    style={{ height: bar.height }}
-                    className="w-full max-w-[14px] sm:max-w-[16px] bg-[#4F6D38] rounded-t-sm hover:bg-[#354424] transition-all group-hover:scale-y-105"
-                    title={`${bar.day}: ${bar.height}`}
-                  />
-                  <span className="text-[8px] sm:text-[9px] font-medium text-[#8C8275] truncate w-full text-center">
-                    {bar.day}
-                  </span>
-                </div>
-              ))}
+              {/* Bars Area */}
+              <div className="ml-7 h-20 border-b border-[#E6E1D5]/70 flex items-end justify-between px-1 gap-1 sm:gap-1.5">
+                {dailyBarData.map((bar, idx) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group cursor-pointer">
+                    <div 
+                      style={{ height: bar.height }}
+                      className="w-full max-w-[14px] sm:max-w-[16px] bg-[#4F6D38] rounded-t-sm hover:bg-[#354424] transition-all group-hover:scale-y-105"
+                      title={`${bar.day}: ${bar.height}`}
+                    />
+                    <span className="text-[8px] sm:text-[9px] font-medium text-[#8C8275] truncate w-full text-center">
+                      {bar.day}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Bottom Chart Legend */}
           <div className="flex items-center justify-center gap-1.5 text-[9px] font-extrabold text-[#666057]">
@@ -230,66 +230,73 @@ export const DarkStoreRevenueView = ({ onBack, onOpenNotifications }) => {
         <div className="lg:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs flex flex-col justify-between space-y-4">
           <h2 className="text-xs font-extrabold text-[#2D2620]">Revenue by Category</h2>
 
-          <div className="flex items-center justify-between gap-2 py-2 my-auto">
-            {/* SVG Donut Ring matching reference screenshot */}
-            <div className="relative w-32 h-32 flex-shrink-0 flex items-center justify-center">
-              <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                {/* Vegetables 45.2% (Dark Green #3D4E2A) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#3D4E2A" strokeWidth="18" strokeDasharray="107.9 130.8" strokeDashoffset="0" />
-                {/* Fruits 28.1% (Yellow #EAB308) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#EAB308" strokeWidth="18" strokeDasharray="67.0 171.7" strokeDashoffset="-107.9" />
-                {/* Dairy 12.4% (Blue #4A7AA5) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#4A7AA5" strokeWidth="18" strokeDasharray="29.6 209.1" strokeDashoffset="-174.9" />
-                {/* Grains 8.7% (Beige #C3D49C) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#C3D49C" strokeWidth="18" strokeDasharray="20.7 218.0" strokeDashoffset="-204.5" />
-                {/* Others 5.6% (Gray #CBC7BC) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#CBC7BC" strokeWidth="18" strokeDasharray="13.3 225.4" strokeDashoffset="-225.2" />
-              </svg>
+          {categoryBreakdown.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center text-xs text-[#666057] my-auto">
+              <div className="w-24 h-24 rounded-full border-8 border-[#E6E1D5] flex items-center justify-center mb-3">
+                <span className="text-[10px] font-bold text-[#8C8275]">0%</span>
+              </div>
+              <span className="font-semibold text-[#8C8275]">No category sales recorded yet</span>
             </div>
+          ) : (
+            (() => {
+              const CIRCUMFERENCE = 238.76;
+              let catAcc = 0;
+              const catSegments = categoryBreakdown.map((c, i) => {
+                const pct = parseFloat(c.percent) || 0;
+                const dash = (pct / 100) * CIRCUMFERENCE;
+                const offset = -catAcc;
+                catAcc += dash;
+                return {
+                  name: c.name,
+                  percent: c.percent,
+                  val: c.val,
+                  color: ['#3D4E2A', '#EAB308', '#4A7AA5', '#C3D49C', '#CBC7BC'][i % 5],
+                  dashArray: `${dash.toFixed(1)} ${(CIRCUMFERENCE - dash).toFixed(1)}`,
+                  offset: offset.toFixed(1),
+                };
+              });
 
-            {/* Legend List */}
-            <div className="space-y-2 text-xs font-semibold flex-1 pl-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#3D4E2A] flex-shrink-0"></span>
-                  <span className="text-[#2D2620] font-bold">Vegetables</span>
+              return (
+                <div className="flex items-center justify-between gap-2 py-2 my-auto">
+                  {/* SVG Donut Ring */}
+                  <div className="relative w-32 h-32 flex-shrink-0 flex items-center justify-center">
+                    <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                      {catSegments.map((seg, idx) => (
+                        <circle 
+                          key={idx}
+                          cx="50" 
+                          cy="50" 
+                          r="38" 
+                          fill="none" 
+                          stroke={seg.color} 
+                          strokeWidth="18" 
+                          strokeDasharray={seg.dashArray} 
+                          strokeDashoffset={seg.offset} 
+                        />
+                      ))}
+                    </svg>
+                  </div>
+
+                  {/* Legend List */}
+                  <div className="space-y-2 text-xs font-semibold flex-1 pl-2">
+                    {catSegments.map((seg, idx) => (
+                      <div key={idx} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: seg.color }}></span>
+                          <span className="text-[#2D2620] font-bold truncate max-w-[90px]">{seg.name}</span>
+                        </div>
+                        <span className="font-extrabold text-[#2D2620]">{seg.percent}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <span className="font-extrabold text-[#2D2620]">45.2%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#EAB308] flex-shrink-0"></span>
-                  <span className="text-[#2D2620] font-bold">Fruits</span>
-                </div>
-                <span className="font-extrabold text-[#2D2620]">28.1%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#4A7AA5] flex-shrink-0"></span>
-                  <span className="text-[#2D2620] font-bold">Dairy</span>
-                </div>
-                <span className="font-extrabold text-[#2D2620]">12.4%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#C3D49C] flex-shrink-0"></span>
-                  <span className="text-[#2D2620] font-bold">Grains</span>
-                </div>
-                <span className="font-extrabold text-[#2D2620]">8.7%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#CBC7BC] flex-shrink-0"></span>
-                  <span className="text-[#2D2620] font-bold">Others</span>
-                </div>
-                <span className="font-extrabold text-[#2D2620]">5.6%</span>
-              </div>
-            </div>
-          </div>
+              );
+            })()
+          )}
 
           <div className="pt-2 border-t border-[#E6E1D5]/60 text-xs font-semibold text-[#666057] flex justify-between">
             <span>Total</span>
-            <span className="font-extrabold text-[#2D2620]">{liveKpis?.revenueThisMonth || '₹2,48,750'}</span>
+            <span className="font-extrabold text-[#2D2620]">{revenueData?.totalRevenue || liveKpis?.revenueThisMonth || '₹ 0'}</span>
           </div>
         </div>
 
@@ -298,22 +305,28 @@ export const DarkStoreRevenueView = ({ onBack, onOpenNotifications }) => {
           <h2 className="text-xs font-extrabold text-[#2D2620]">Revenue by Source (Supplier/Farm)</h2>
 
           {/* Horizontal Bar Chart */}
-          <div className="space-y-2.5 text-xs py-1">
-            {sourceBarData.map((src, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="flex justify-between text-[11px] font-bold text-[#2D2620]">
-                  <span className="truncate max-w-[140px]">{src.name}</span>
-                  <span>{src.val}</span>
+          {sourceBarData.length === 0 ? (
+            <div className="py-8 text-center text-xs font-semibold text-[#8C8275] bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5]/60 my-auto">
+              No farm supplier revenue recorded yet
+            </div>
+          ) : (
+            <div className="space-y-2.5 text-xs py-1">
+              {sourceBarData.map((src, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex justify-between text-[11px] font-bold text-[#2D2620]">
+                    <span className="truncate max-w-[140px]">{src.name}</span>
+                    <span>{src.val}</span>
+                  </div>
+                  <div className="h-3 w-full bg-[#FAF7F0] rounded-full overflow-hidden border border-[#E6E1D5]/50">
+                    <div 
+                      style={{ width: src.width }}
+                      className="h-full bg-[#3D4E2A] rounded-full transition-all hover:bg-[#556B2F]"
+                    />
+                  </div>
                 </div>
-                <div className="h-3 w-full bg-[#FAF7F0] rounded-full overflow-hidden border border-[#E6E1D5]/50">
-                  <div 
-                    style={{ width: src.width }}
-                    className="h-full bg-[#3D4E2A] rounded-full transition-all hover:bg-[#556B2F]"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* X Axis Scale & Legend */}
           <div>
@@ -336,57 +349,73 @@ export const DarkStoreRevenueView = ({ onBack, onOpenNotifications }) => {
         <div className="lg:col-span-4 bg-white rounded-3xl p-5 sm:p-6 border border-[#E6E1D5] shadow-xs flex flex-col justify-between space-y-4">
           <h2 className="text-xs font-extrabold text-[#2D2620]">Revenue by Payment Mode</h2>
 
-          <div className="flex items-center justify-between gap-2 py-2 my-auto">
-            {/* SVG Donut Ring matching reference screenshot */}
-            <div className="relative w-32 h-32 flex-shrink-0 flex items-center justify-center">
-              <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                {/* UPI 62.3% (Dark Green #3D4E2A) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#3D4E2A" strokeWidth="18" strokeDasharray="148.7 90.0" strokeDashoffset="0" />
-                {/* Card 21.8% (Yellow #EAB308) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#EAB308" strokeWidth="18" strokeDasharray="52.0 186.7" strokeDashoffset="-148.7" />
-                {/* Cash 15.2% (Blue #4A7AA5) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#4A7AA5" strokeWidth="18" strokeDasharray="36.2 202.5" strokeDashoffset="-200.7" />
-                {/* Other 0.7% (Gray #CBC7BC) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#CBC7BC" strokeWidth="18" strokeDasharray="1.8 236.9" strokeDashoffset="-236.9" />
-              </svg>
+          {paymentBreakdown.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center text-xs text-[#666057] my-auto">
+              <div className="w-24 h-24 rounded-full border-8 border-[#E6E1D5] flex items-center justify-center mb-3">
+                <span className="text-[10px] font-bold text-[#8C8275]">0 Txns</span>
+              </div>
+              <span className="font-semibold text-[#8C8275]">No consumer transactions recorded yet</span>
             </div>
+          ) : (
+            (() => {
+              const CIRCUMFERENCE = 238.76;
+              let payAcc = 0;
+              const paySegments = paymentBreakdown.map((p, i) => {
+                const pct = parseFloat(p.percent) || p.pct || 0;
+                const dash = (pct / 100) * CIRCUMFERENCE;
+                const offset = -payAcc;
+                payAcc += dash;
+                return {
+                  mode: p.mode,
+                  percent: p.percent,
+                  val: p.val,
+                  color: ['#3D4E2A', '#EAB308', '#4A7AA5', '#CBC7BC'][i % 4],
+                  dashArray: `${dash.toFixed(1)} ${(CIRCUMFERENCE - dash).toFixed(1)}`,
+                  offset: offset.toFixed(1),
+                };
+              });
 
-            {/* Legend List */}
-            <div className="space-y-2 text-xs font-semibold flex-1 pl-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#3D4E2A] flex-shrink-0"></span>
-                  <span className="text-[#2D2620] font-bold">UPI</span>
+              return (
+                <div className="flex items-center justify-between gap-2 py-2 my-auto">
+                  {/* SVG Donut Ring */}
+                  <div className="relative w-32 h-32 flex-shrink-0 flex items-center justify-center">
+                    <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                      {paySegments.map((seg, idx) => (
+                        <circle 
+                          key={idx}
+                          cx="50" 
+                          cy="50" 
+                          r="38" 
+                          fill="none" 
+                          stroke={seg.color} 
+                          strokeWidth="18" 
+                          strokeDasharray={seg.dashArray} 
+                          strokeDashoffset={seg.offset} 
+                        />
+                      ))}
+                    </svg>
+                  </div>
+
+                  {/* Legend List */}
+                  <div className="space-y-2 text-xs font-semibold flex-1 pl-2">
+                    {paySegments.map((seg, idx) => (
+                      <div key={idx} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: seg.color }}></span>
+                          <span className="text-[#2D2620] font-bold truncate max-w-[90px]">{seg.mode}</span>
+                        </div>
+                        <span className="font-extrabold text-[#2D2620]">{seg.percent}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <span className="font-extrabold text-[#2D2620]">62.3%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#EAB308] flex-shrink-0"></span>
-                  <span className="text-[#2D2620] font-bold">Card</span>
-                </div>
-                <span className="font-extrabold text-[#2D2620]">21.8%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#4A7AA5] flex-shrink-0"></span>
-                  <span className="text-[#2D2620] font-bold">Cash</span>
-                </div>
-                <span className="font-extrabold text-[#2D2620]">15.2%</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#CBC7BC] flex-shrink-0"></span>
-                  <span className="text-[#2D2620] font-bold">Other</span>
-                </div>
-                <span className="font-extrabold text-[#2D2620]">0.7%</span>
-              </div>
-            </div>
-          </div>
+              );
+            })()
+          )}
 
           <div className="pt-2 border-t border-[#E6E1D5]/60 text-xs font-semibold text-[#666057] flex justify-between">
             <span>Total</span>
-            <span className="font-extrabold text-[#2D2620]">{liveKpis?.revenueThisMonth || '₹2,48,750'}</span>
+            <span className="font-extrabold text-[#2D2620]">{revenueData?.totalRevenue || liveKpis?.revenueThisMonth || '₹ 0'}</span>
           </div>
         </div>
 
