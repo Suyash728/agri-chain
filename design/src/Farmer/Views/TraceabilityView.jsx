@@ -321,6 +321,19 @@ export const TraceabilityView = ({ onBack, onOpenFullJourney, onViewJourney }) =
                   </span>
                 </span>
               </div>
+              <div className="flex justify-between items-center pt-2 border-t border-[#E8E2D5]">
+                <div className="flex flex-col">
+                  <span className="font-bold text-[#786E65]">On-Chain QR Passport</span>
+                  <span className="text-[11px] text-[#556B2F] font-semibold">Physical produce packaging label</span>
+                </div>
+                <div className="w-13 h-13 bg-white p-0.5 rounded-xl border border-[#E8E2D5] flex items-center justify-center shadow-2xs flex-shrink-0">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(`http://localhost:3000/?role=consumer&batch=${batchData.batchId}`)}`}
+                    alt={`QR #${batchData.batchId}`}
+                    className="w-12 h-12 object-contain"
+                  />
+                </div>
+              </div>
             </div>
           )}
 

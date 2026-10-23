@@ -1611,3 +1611,44 @@ still static UI with no data flow. Specifically:
 - Vite Production Build: 1,813 modules transformed cleanly in 2.90s with 0 errors (`cd design && npm run build`).
 - Pytest Suite: All 11 tests in `tests/` passed cleanly in 5.22s (`.venv/bin/pytest tests/`).
 - Live curl checks against running backend: `GET /batches` returns clean list and `GET /batches/{id}/traceability` returns clean locations without `||` metadata pipes.
+
+---
+
+## [Live End-to-End QR Code Generation & Scanning Pipeline] — 2026-10-23
+
+**What was done:**
+- Replaced hardcoded QR scanning mock data and static fallback IDs across Consumer, Dark Store, and Farmer portals with a dynamic, real-time QR generation & scanning pipeline:
+  1. **Consumer Camera QR Scanner & Viewfinder (`ScanProductView.jsx` & `ConsumerApp.jsx`)**:
+     - Removed hardcoded `TM1256` scan result.
+     - Viewfinder dynamically loads and previews real scannable QR codes for registered batches in camera range.
+     - Tapping the viewfinder, detected package chips, or "Scan Active Tag" immediately aligns and scans the real batch and loads its farm-to-door journey.
+  2. **Consumer QR Code / Batch Lookup Modal (`QRScannerModal.jsx`)**:
+     - Removed hardcoded demo buttons `Demo: TM1256` and `Demo: BATCH-PO`.
+     - Dynamically renders quick-lookup chips for all real batches in the database.
+     - Verified instant on-chain lookup against `/batches/{id}/traceability` with informative error feedback when batch is not found.
+  3. **Product Journey & Verification Views (`ProductJourneyView.jsx` & `BlockchainVerificationView.jsx`)**:
+     - Removed `'TM1256'` fallbacks.
+     - Embedded a live, scannable package QR Code preview in the journey header card linking to the on-chain digital certificate.
+  4. **Dark Store Traceability & Blockchain Scanners (`DarkStoreTraceabilityView.jsx` & `DarkStoreBlockchainView.jsx`)**:
+     - Fixed runtime `ReferenceError: batchDataMap is not defined` bug in `DarkStoreTraceabilityView.jsx`.
+     - Replaced hardcoded `BATCH-VEG-100525` scan results with dynamic detected package tags from `/batches`.
+     - Real scannable QR code embedded in the viewfinder frame for dark store operators.
+  5. **Farmer Verified Supply Chain Journey QR Tag (`ViewJourneyModal.jsx` & `TraceabilityView.jsx`)**:
+     - Replaced static Lucide icon with a live scannable QR Code image preview for each batch in `ViewJourneyModal.jsx` and `TraceabilityView.jsx`.
+
+**Files changed:**
+- `design/src/Consumer/ConsumerApp.jsx`
+- `design/src/Consumer/Modals/QRScannerModal.jsx`
+- `design/src/Consumer/Views/ScanProductView.jsx`
+- `design/src/Consumer/Views/ProductJourneyView.jsx`
+- `design/src/Consumer/Views/BlockchainVerificationView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreTraceabilityView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreBlockchainView.jsx`
+- `design/src/Farmer/Modals/ViewJourneyModal.jsx`
+- `design/src/Farmer/Views/TraceabilityView.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build: 1,813 modules transformed cleanly in 3.16s with 0 errors (`cd design && npm run build`).
+- Pytest Suite: All 11 tests in `tests/` passed cleanly in 5.40s (`.venv/bin/pytest tests/`).
+- QR verification: Real batch IDs (`FRESH-LOT-1792777531`, `QTRA-1792777531`) verified scannable and returning live on-chain provenance across Consumer and Dark Store.

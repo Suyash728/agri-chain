@@ -1,16 +1,38 @@
-import React, { useState } from 'react';
-import { ShieldCheck, Copy, Check, Blocks, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, Copy, Check, Blocks, ArrowLeft, QrCode } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/api';
 
 export const BlockchainVerificationView = ({ selectedProduct, onBack }) => {
   const [copied, setCopied] = useState(false);
+  const [activeProduct, setActiveProduct] = useState(selectedProduct);
+
+  useEffect(() => {
+    if (selectedProduct) {
+      setActiveProduct(selectedProduct);
+    } else {
+      fetch(`${API_BASE_URL}/batches`)
+        .then((res) => (res.ok ? res.json() : []))
+        .then((batches) => {
+          if (Array.isArray(batches) && batches.length > 0) {
+            const b = batches[0];
+            setActiveProduct({
+              name: b.crop_name,
+              batchId: b.batch_id,
+              origin: b.origin_farm
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [selectedProduct]);
   
-  const product = selectedProduct || {
-    name: 'Organic Tomato',
-    batchId: 'TM1256',
-    origin: 'Nashik, Maharashtra'
+  const product = activeProduct || {
+    name: 'Verified Farm Produce',
+    batchId: 'BATCH-001',
+    origin: 'Maharashtra, India'
   };
 
-  const batchId = product.batchId ? product.batchId : 'TM1256';
+  const batchId = product.batchId || 'BATCH-001';
   const realTxHash = product.txHash || 
     (product.journeyData?.custodyHistory && product.journeyData.custodyHistory.length > 0
       ? product.journeyData.custodyHistory[product.journeyData.custodyHistory.length - 1].txHash
@@ -22,7 +44,7 @@ export const BlockchainVerificationView = ({ selectedProduct, onBack }) => {
 
   const hashString = realTxHash 
     ? `${fullHash.slice(0, 10)}...${fullHash.slice(-8)}`
-    : `0x7f5e...${batchId.toLowerCase()}8etf4`;
+    : `0x7f5e...${batchId.toLowerCase().slice(-6)}8etf4`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullHash);

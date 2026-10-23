@@ -23,6 +23,7 @@ import { WriteReviewModal } from './Modals/WriteReviewModal';
 import { QRScannerModal } from './Modals/QRScannerModal';
 import { AddressModal } from './Modals/AddressModal';
 import { NotificationsModal } from './Modals/NotificationsModal';
+import { API_BASE_URL } from '../utils/api';
 
 // Initial Data
 import { CheckCircle2 } from 'lucide-react';
@@ -34,6 +35,7 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
     if (onSelectTab) onSelectTab(view);
     else setInternalView(view);
   };
+  const [availableBatches, setAvailableBatches] = useState([]);
   const [cartItems, setCartItems] = useState([]);
   const [appliedCoupon, setAppliedCoupon] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
@@ -52,15 +54,38 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
 
+  const fetchBatches = () => {
+    fetch(`${API_BASE_URL}/batches`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) setAvailableBatches(data);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchBatches();
+    const handleReset = () => {
+      fetchBatches();
+      setSelectedJourneyProduct(null);
+    };
+    window.addEventListener('agrichain-data-reset', handleReset);
+    window.addEventListener('agrichain-data-updated', fetchBatches);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', handleReset);
+      window.removeEventListener('agrichain-data-updated', fetchBatches);
+    };
+  }, []);
+
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 2500);
   };
 
   const handleReviewSubmit = async (review) => {
-    const batchId = selectedJourneyProduct?.batchId || 'TM1256';
+    const batchId = selectedJourneyProduct?.batchId || availableBatches[0]?.batch_id || 'BATCH-001';
     try {
-      const res = await fetch(`http://localhost:8000/batches/${batchId}/reviews`, {
+      const res = await fetch(`${API_BASE_URL}/batches/${batchId}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -287,14 +312,23 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
         {activeView === 'scan' && (
           <ScanProductView
             onBack={() => setActiveView('home')}
-            onScanSuccess={() => {
-              setSelectedJourneyProduct({
-                name: 'Organic Tomato',
-                batchId: 'TM1256',
-                origin: 'Nashik, Maharashtra',
-                image: '/images/vegetables_ref.png'
-              });
-              setActiveView('journey');
+            batches={availableBatches}
+            onScanSuccess={(scannedBatch) => {
+              const target = scannedBatch || (availableBatches.length > 0 ? availableBatches[0] : null);
+              if (target) {
+                const isFruit = ['mango', 'banana', 'apple'].some(f => (target.crop_name || target.name || '').toLowerCase().includes(f));
+                const cleanOrigin = (target.origin_farm || target.origin || 'Nashik, Maharashtra').split('||')[0].trim();
+                setSelectedJourneyProduct({
+                  name: target.crop_name || target.name || 'Organic Produce',
+                  batchId: target.batch_id || target.batchId,
+                  origin: cleanOrigin,
+                  image: isFruit ? '/images/fruits_ref.png' : '/images/vegetables_ref.png'
+                });
+                showToast(`Scanned QR Code for ${target.crop_name || target.name || 'Produce'}!`);
+                setActiveView('journey');
+              } else {
+                setIsQRModalOpen(true);
+              }
             }}
             onEnterCodeClick={() => setIsQRModalOpen(true)}
           />
@@ -376,18 +410,20 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
       <QRScannerModal
         isOpen={isQRModalOpen}
         onClose={() => setIsQRModalOpen(false)}
+        batches={availableBatches}
         onFindBatch={(found) => {
           if (found && typeof found === 'object' && found.batchId) {
             handleProductClickForJourney(found);
-          } else {
-            const code = typeof found === 'string' ? found : 'TM1256';
+            showToast(`Batch #${found.batchId} verified on blockchain!`);
+          } else if (found && typeof found === 'string') {
             const matched = {
-              name: code === 'TM1256' ? 'Organic Tomato' : 'Alphonso Mango',
-              batchId: code,
-              origin: code === 'TM1256' ? 'Nashik, Maharashtra' : 'Ratnagiri, Maharashtra',
-              image: code === 'TM1256' ? '/images/vegetables_ref.png' : '/images/fruits_ref.png'
+              name: 'Organic Produce',
+              batchId: found,
+              origin: 'Nashik, Maharashtra',
+              image: '/images/vegetables_ref.png'
             };
             handleProductClickForJourney(matched);
+            showToast(`Batch #${found} loaded!`);
           }
         }}
       />

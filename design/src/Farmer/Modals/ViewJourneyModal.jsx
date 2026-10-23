@@ -158,9 +158,13 @@ export const ViewJourneyModal = ({ isOpen, onClose, batchId }) => {
                   )}
                 </div>
 
-                <div className="w-16 h-16 bg-white p-1.5 rounded-xl border border-[#E6E1D5] flex flex-col items-center justify-center shadow-xs flex-shrink-0">
-                  <QrCode className="w-10 h-10 text-[#3D4E2A]" />
-                  <span className="text-[8px] font-bold text-[#7A8B52]">BLOCKCHAIN QR</span>
+                <div className="w-20 h-20 bg-white p-1 rounded-xl border border-[#E6E1D5] flex flex-col items-center justify-center shadow-xs flex-shrink-0">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`http://localhost:3000/?role=consumer&batch=${journeyData.batchId}`)}`}
+                    alt={`QR #${journeyData.batchId}`}
+                    className="w-13 h-13 object-contain"
+                  />
+                  <span className="text-[7px] font-extrabold text-[#7A8B52] mt-0.5">SCAN BATCH QR</span>
                 </div>
               </div>
 

@@ -21,9 +21,11 @@ import {
 } from 'lucide-react';
 
 import { useNotificationCount } from '../../utils/useNotificationCount';
+import { API_BASE_URL } from '../../utils/api';
 
 export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
   const { count } = useNotificationCount('darkstore');
+  const [availableBatches, setAvailableBatches] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStore, setActiveStore] = useState('Nashik Central Store');
   const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
@@ -33,21 +35,15 @@ export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
   const [liveBatchData, setLiveBatchData] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:8000/darkstore/inbound')
-      .then(r => r.json())
+    fetch(`${API_BASE_URL}/batches`)
+      .then(r => r.ok ? r.json() : [])
       .then(data => {
-        if (Array.isArray(data) && data.length > 0 && data[0].batchId) {
-          setSearchQuery(data[0].batchId);
-        } else {
-          fetch('http://localhost:8000/farmer/inventory')
-            .then(r => r.json())
-            .then(inv => {
-              if (inv?.items?.[0]?.batchId) {
-                setSearchQuery(inv.items[0].batchId);
-              }
-            }).catch(() => {});
+        if (Array.isArray(data) && data.length > 0) {
+          setAvailableBatches(data);
+          setSearchQuery(data[0].batch_id);
         }
-      }).catch(() => {});
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -471,22 +467,53 @@ export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
               <button onClick={() => setIsScannerOpen(false)} className="text-[#666057]"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="relative w-48 h-48 mx-auto rounded-2xl bg-[#1E293B] border-2 border-[#556B2F] flex items-center justify-center overflow-hidden">
-              <Camera className="w-12 h-12 text-white/40 animate-pulse" />
+            <div className="relative w-48 h-48 mx-auto rounded-2xl bg-[#1E293B] border-2 border-[#556B2F] flex flex-col items-center justify-center overflow-hidden p-3">
+              {availableBatches.length > 0 ? (
+                <div className="w-28 h-28 bg-white p-1 rounded-xl shadow-lg border border-emerald-400 flex items-center justify-center">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(`http://localhost:3000/?batch=${availableBatches[0].batch_id}`)}`}
+                    alt="Blockchain QR"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <Camera className="w-12 h-12 text-white/40 animate-pulse" />
+              )}
               <div className="absolute inset-x-0 top-0 h-1 bg-[#556B2F] animate-bounce" />
             </div>
 
             <p className="text-xs text-[#666057] font-medium">Position product QR code inside frame to verify on-chain ledger</p>
 
+            {availableBatches.length > 0 && (
+              <div className="flex flex-col gap-1.5 text-left">
+                <span className="text-[10px] font-bold text-[#666057]">Detected On-Chain Packages:</span>
+                <div className="flex flex-wrap gap-1">
+                  {availableBatches.map(b => (
+                    <button
+                      key={b.batch_id}
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery(b.batch_id);
+                        setIsScannerOpen(false);
+                      }}
+                      className="text-[10px] font-bold px-2 py-1 bg-[#FAF7F0] border border-[#E6E1D5] rounded-lg hover:border-[#354424] cursor-pointer"
+                    >
+                      {b.crop_name} (#{b.batch_id.slice(-6)})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button 
               onClick={() => {
-                setSearchQuery('BATCH-VEG-100525');
+                const target = availableBatches[0]?.batch_id || searchQuery;
+                setSearchQuery(target);
                 setIsScannerOpen(false);
-                alert('QR Code Scanned! On-Chain Verification successful for BATCH-VEG-100525.');
               }}
-              className="w-full py-2.5 rounded-xl bg-[#354424] text-white text-xs font-extrabold hover:bg-[#26321A]"
+              className="w-full py-2.5 rounded-xl bg-[#354424] text-white text-xs font-extrabold hover:bg-[#26321A] cursor-pointer shadow-xs"
             >
-              Simulate Instant QR Verification
+              Simulate Instant QR Verification {availableBatches[0] && `(#${availableBatches[0].batch_id.slice(-6)})`}
             </button>
           </div>
         </div>

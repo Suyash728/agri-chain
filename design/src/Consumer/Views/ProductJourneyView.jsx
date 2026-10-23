@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, ShieldCheck, Star, CheckCircle, FileText, ExternalLink, X } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Star, CheckCircle, FileText, ExternalLink, X, QrCode } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/api';
 
 export const ProductJourneyView = ({ 
   selectedProduct, 
@@ -7,16 +8,39 @@ export const ProductJourneyView = ({
   onWriteReviewClick,
   refreshKey 
 }) => {
-  // Use selectedProduct if passed, otherwise fallback to default
-  const product = selectedProduct || {
-    name: 'Organic Tomato',
-    batchId: 'TM1256',
-    origin: 'Nashik, Maharashtra',
+  const [liveProduct, setLiveProduct] = useState(selectedProduct);
+
+  useEffect(() => {
+    if (selectedProduct) {
+      setLiveProduct(selectedProduct);
+    } else {
+      fetch(`${API_BASE_URL}/batches`)
+        .then((res) => (res.ok ? res.json() : []))
+        .then((batches) => {
+          if (Array.isArray(batches) && batches.length > 0) {
+            const b = batches[0];
+            const isFruit = ['mango', 'banana', 'apple'].some(f => (b.crop_name || '').toLowerCase().includes(f));
+            setLiveProduct({
+              name: b.crop_name || 'Farm Fresh Produce',
+              batchId: b.batch_id,
+              origin: b.origin_farm || 'Nashik, Maharashtra',
+              image: isFruit ? '/images/fruits_ref.png' : '/images/vegetables_ref.png'
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [selectedProduct]);
+
+  const product = liveProduct || {
+    name: 'Farm Fresh Produce',
+    batchId: null,
+    origin: 'Maharashtra, India',
     image: '/images/vegetables_ref.png'
   };
 
-  const originCity = product.origin ? product.origin.split(',')[0] : 'Nashik';
-  const displayBatchId = product.batchId ? product.batchId : 'TM1256';
+  const originCity = product.origin ? product.origin.split(',')[0].split('||')[0].trim() : 'Nashik';
+  const displayBatchId = product.batchId;
 
   const [journeyData, setJourneyData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +50,13 @@ export const ProductJourneyView = ({
   const [batchIncident, setBatchIncident] = useState(null);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/batches/${displayBatchId}/traceability`)
+    if (!displayBatchId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    fetch(`${API_BASE_URL}/batches/${displayBatchId}/traceability`)
       .then(res => {
         if (!res.ok) throw new Error('Traceability not found');
         return res.json();
@@ -40,7 +70,7 @@ export const ProductJourneyView = ({
         setLoading(false);
       });
 
-    fetch(`http://localhost:8000/incidents/spoilage?batch_id=${displayBatchId}`)
+    fetch(`${API_BASE_URL}/incidents/spoilage?batch_id=${displayBatchId}`)
       .then(res => res.json())
       .then(data => {
         if (data && data.incidents && data.incidents.length > 0) {
@@ -51,12 +81,12 @@ export const ProductJourneyView = ({
       })
       .catch(() => setBatchIncident(null));
 
-    fetch(`http://localhost:8000/batches/${displayBatchId}/documents`)
+    fetch(`${API_BASE_URL}/batches/${displayBatchId}/documents`)
       .then(res => res.json())
       .then(docs => setDocuments(Array.isArray(docs) ? docs : []))
       .catch(() => {});
 
-    fetch(`http://localhost:8000/batches/${displayBatchId}/reviews`)
+    fetch(`${API_BASE_URL}/batches/${displayBatchId}/reviews`)
       .then(res => res.json())
       .then(data => {
         if (data && data.reviews && data.reviews.length > 0) {
@@ -123,24 +153,40 @@ export const ProductJourneyView = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
           {/* Left Column: Product Info Card, Trust Card, AND Product-Specific Reviews */}
           <div className="flex flex-col gap-4">
-            <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex items-center gap-4">
-              <div className="w-16 h-16 rounded-xl bg-[#F8F5EE] p-2 flex items-center justify-center flex-shrink-0 border border-[#E6E1D5] overflow-hidden">
-                <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
-              </div>
+            <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="w-16 h-16 rounded-xl bg-[#F8F5EE] p-2 flex items-center justify-center flex-shrink-0 border border-[#E6E1D5] overflow-hidden">
+                  <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain mix-blend-multiply" />
+                </div>
 
-              <div className="flex-1 flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-black text-sm sm:text-base text-[#2D2620]">
-                    {product.name} <span className="text-[#666057] font-semibold text-xs">(Batch #{displayBatchId})</span>
-                  </h3>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#EBF3E8] text-[#556B2F] text-[10px] font-extrabold">
-                    Verified
+                <div className="flex-1 flex flex-col gap-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-black text-sm sm:text-base text-[#2D2620] truncate">
+                      {product.name}
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#EBF3E8] text-[#556B2F] text-[10px] font-extrabold flex-shrink-0">
+                      Verified
+                    </span>
+                  </div>
+                  <span className="text-xs font-semibold text-[#666057] truncate">
+                    Origin: {product.origin || 'Nashik, Maharashtra'}
+                  </span>
+                  <span className="text-[11px] font-mono text-[#3D4E2A] font-bold">
+                    Batch: #{displayBatchId || 'Pending'}
                   </span>
                 </div>
-                <span className="text-xs font-semibold text-[#666057]">
-                  Origin: {product.origin || 'Nashik, Maharashtra'}
-                </span>
               </div>
+
+              {displayBatchId && (
+                <div className="w-16 h-16 rounded-xl bg-[#FAF7F0] p-1 border border-[#E6E1D5] flex flex-col items-center justify-center flex-shrink-0 shadow-2xs">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`http://localhost:3000/?role=consumer&batch=${displayBatchId}`)}`}
+                    alt={`Batch QR #${displayBatchId}`}
+                    className="w-10 h-10 object-contain"
+                  />
+                  <span className="text-[7px] font-black text-[#556B2F] mt-0.5">PACKAGE QR</span>
+                </div>
+              )}
             </div>
 
             {/* Supply Chain Spoilage & Quality Recall Warning if incident recorded */}
