@@ -2036,3 +2036,39 @@ still static UI with no data flow. Specifically:
   - `GET /darkstore/sales`: returns live `totalSales`, `topProducts`, `recentOrders`, and dynamic 6-point `timeline`.
   - `GET /darkstore/revenue`: returns live `revenueTableData`, `dailyBarData`, `sourceBarData`, `categoryBreakdown`, and `paymentBreakdown`.
   - `GET /batches/{id}/traceability`: returns live cryptographic transaction hashes, block numbers, and custody timeline.
+
+
+## [UI / Layout — Persistent Top Navigation & Overlay Fix] — 2026-10-24
+
+**What was done:**
+- Fixed the issue where the role switcher and Web3 wallet bar was floating over other screen buttons and cards (reported in screenshot `/home/suyash/Desktop/Screenshot_20261024_021550.png`):
+  1. **Persistent Sticky Top Header**:
+     - Refactored `design/src/App.jsx` to replace the floating `fixed top-3 right-4 sm:right-6 z-50` bar with a dedicated `<header className="sticky top-0 z-40 bg-[#FAF7F0]/95 backdrop-blur-md border-b border-[#E6E1D5] px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3 shadow-2xs ...">`.
+     - Properly aligned for desktop layouts with `${activeRole === 'consumer' ? 'w-full ml-0' : 'w-full md:w-[calc(100%-16rem)] md:ml-64'}` so it sits neatly adjacent to the left-fixed sidebars (`md:w-64`) without covering them or main content.
+     - Added an active portal indicator on the left (`🚛 SafeXpress Logistics`, `🌿 Farmer Portal`, `🏬 Dark Store Hub`, `🛒 Consumer Marketplace`, `⚡ Master Governance`) and kept all role buttons & Web3 `WalletConnect` neatly organized on the right.
+     - Root layout changed from conflicting `md:flex-row` to `flex flex-col` so the top sticky header remains above the scrolling page content.
+  2. **Content Padding Across All Portals**:
+     - Replaced legacy `p-4 sm:p-6 lg:p-8 max-w-7xl pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16` padding in `<main>` with `px-4 sm:px-6 lg:px-8 max-w-7xl pb-24 md:pb-8 pt-4 sm:pt-6` across:
+       - `design/src/App.jsx` (Logistics Portal & Farmer Portal)
+       - `design/src/Dark_Store/DarkStoreApp.jsx` (Dark Store Hub)
+       - `design/src/components/AdminPortalView.jsx` (Master Admin & Security Console)
+     - Headers, buttons (e.g. notifications bell, add stock, confirm GRN, date pickers) and profile cards are now positioned with natural whitespace below the sticky header.
+  3. **Presenter Walkthrough Banner Flow Alignment**:
+     - Converted `design/src/components/PresenterWalkthroughBanner.jsx` from floating `fixed top-[70px] left-1/2 -translate-x-1/2 z-40` to a document flow container: `${currentRole === 'consumer' ? 'w-full ml-0' : 'w-full md:w-[calc(100%-16rem)] md:ml-64'} max-w-7xl mx-auto`.
+     - When active, the walkthrough banner renders in normal flow below the sticky header and above main content, preventing it from overlaying action buttons or cards.
+
+**Files changed:**
+- `design/src/App.jsx`
+- `design/src/Dark_Store/DarkStoreApp.jsx`
+- `design/src/components/AdminPortalView.jsx`
+- `design/src/components/PresenterWalkthroughBanner.jsx`
+- `MEMORY.md`
+
+**Decisions made (and why):**
+- Converted floating fixed positioning to a clean sticky header that accounts for the fixed sidebar width (`md:ml-64`), ensuring the navigation controls stay accessible while never obscuring top-right page action buttons or cards.
+- Normal flow for `PresenterWalkthroughBanner` guarantees that tour prompts and action buttons respect the page's responsive container and never obstruct interactive dashboard controls.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build: 1,815 modules built in 3.19s with 0 errors (`npm run build`).
+- Full Backend Test Suite: 12/12 passed in 5.08s (`pytest tests/`).
+- Smart Contract Suite: 22/22 passed in 711ms (`npx hardhat test`).
