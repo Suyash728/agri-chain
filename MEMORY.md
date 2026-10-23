@@ -1764,3 +1764,33 @@ still static UI with no data flow. Specifically:
 - Vite Production Build: 1,815 modules transformed in 3.03s with 0 errors (`cd design && npm run build`).
 - Pytest Suite: All 12 backend tests passed cleanly (`.venv/bin/pytest tests/`).
 - Mobile Scan Distance: High-res 260px–320px QR codes verified readable by mobile cameras across all views.
+
+---
+
+## [Farmer My Crops Deep Search & Real-Time Sync] — 2026-10-24
+
+**What was done:**
+- Fixed crop searching in the Farmer portal (`MyCropsView.jsx`):
+  1. **Crop-Level Deep Filtering**:
+     - Previously, the search input only matched `cat.name` (the category titles "Fruits", "Vegetables", etc.), causing searches for specific crop names (e.g., "Tomato", "Mango", "Wheat") to return "No crop categories found".
+     - Updated search logic to search both category names and individual crop records (`c.name`, `c.batch_id`, `c.quality`, `c.status`) inside each category.
+  2. **Direct Matching Produce Results**:
+     - When a user searches for a crop (e.g., "Tomato"), a prominent "Matching Produce & Batches" grid displays above the categories, showing matching crop cards with name, category, quantity, value, batch ID, and one-tap category navigation.
+     - Categories containing matching crops show a highlighted `Matches: <crop_names>` pill alongside their count.
+  3. **Event-Driven Auto Refresh & Real-Time Sync**:
+     - Added `agrichain-data-updated` event dispatching in `AddStockModal.jsx` and `App.jsx`.
+     - Added event listeners in `MyCropsView.jsx` to immediately refetch `/farmer/crops` when new stock is registered, ensuring newly added items appear in search results without manual page reloads.
+  4. **CropDetailsView Search Upgrade (`CropDetailsView.jsx`)**:
+     - Expanded the search filter in `CropDetailsView` to match crop name, batch ID, quality description, and status.
+
+**Files changed:**
+- `design/src/Farmer/Views/MyCropsView.jsx`
+- `design/src/Farmer/Views/CropDetailsView.jsx`
+- `design/src/Farmer/Modals/AddStockModal.jsx`
+- `design/src/App.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build: 1,815 modules transformed in 3.28s with 0 errors (`cd design && npm run build`).
+- Pytest Suite: All 12 backend tests passed cleanly (`.venv/bin/pytest tests/`).
+- Verified search reactivity for both category and crop names (e.g. "Tomato", "Mango", "Wheat", "Organic").

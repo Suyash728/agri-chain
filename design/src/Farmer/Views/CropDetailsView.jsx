@@ -35,9 +35,16 @@ export const CropDetailsView = ({ category, onBack }) => {
     return <DryFruitsIllustration className="w-14 h-14 sm:w-16 sm:h-16" />;
   };
 
-  const filteredCrops = (cat.crops || []).filter(c =>
-    !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCrops = (cat.crops || []).filter(c => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      (c.name && c.name.toLowerCase().includes(q)) ||
+      (c.batch_id && c.batch_id.toLowerCase().includes(q)) ||
+      (c.quality && c.quality.toLowerCase().includes(q)) ||
+      (c.status && c.status.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <div className="flex flex-col gap-4 w-full">

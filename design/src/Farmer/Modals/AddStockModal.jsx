@@ -91,6 +91,7 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
 
       const registered = await res.json();
       const finalTxHash = clientTxHash || registered.tx_hash;
+      window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
 
       setSuccessMsg(true);
       setTimeout(() => {

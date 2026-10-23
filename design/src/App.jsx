@@ -217,6 +217,7 @@ export default function App() {
     };
     setFarmerActivities((prev) => [newAct, ...prev]);
     fetchFarmerData();
+    window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
     if (selectedCropCategory) {
       setSelectedCropCategory((prev) => {
         if (!prev) return prev;
