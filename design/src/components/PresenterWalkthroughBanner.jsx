@@ -87,8 +87,8 @@ export const PresenterWalkthroughBanner = ({
   };
 
   return (
-    <div className="fixed top-[70px] left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-3xl animate-fade-in transition-all">
-      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-lg p-2.5 sm:p-3 flex items-center justify-between gap-3 text-xs">
+    <div className={`w-full transition-all animate-fade-in ${currentRole === 'consumer' ? 'w-full ml-0' : 'w-full md:w-[calc(100%-16rem)] md:ml-64'} px-4 sm:px-6 lg:px-8 pt-3 pb-1`}>
+      <div className="max-w-7xl mx-auto bg-white/95 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-xs p-2.5 sm:p-3 flex items-center justify-between gap-3 text-xs">
         
         {/* Left: Step Badge & Title */}
         <div className="flex items-center gap-2.5 flex-1 min-w-0">

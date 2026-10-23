@@ -259,85 +259,102 @@ export default function App() {
 
   return (
     <WalletProvider>
-      <div className="min-h-screen bg-[#FAF7F0] text-[#3B3028] font-sans antialiased flex flex-col md:flex-row select-none">
+      <div className="min-h-screen bg-[#FAF7F0] text-[#3B3028] font-sans antialiased flex flex-col select-none">
         
-        {/* Role Switcher & Web3 Wallet Floating Control Bar */}
-        <div className="fixed top-3 right-4 sm:right-6 z-50 h-11 flex items-center gap-1.5 p-1 bg-white/90 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-sm max-w-[calc(100vw-1.5rem)] overflow-x-auto no-scrollbar whitespace-nowrap flex-shrink-0">
-          <button
-            onClick={() => setActiveRole('farmer')}
-            className={`px-3 h-[34px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
-              activeRole === 'farmer' 
-                ? 'bg-[#3D4E2A] text-white shadow-xs' 
-                : 'text-[#666057] hover:text-[#2D2620]'
-            }`}
-          >
-            <span>🌿</span>
-            <span>Farmer</span>
-          </button>
-          <button
-            onClick={() => setActiveRole('logistics')}
-            className={`px-3 h-[34px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
-              activeRole === 'logistics' 
-                ? 'bg-[#354424] text-white shadow-xs' 
-                : 'text-[#666057] hover:text-[#2D2620]'
-            }`}
-          >
-            <span>🚛</span>
-            <span>Logistics Partner</span>
-          </button>
-          <button
-            onClick={() => setActiveRole('darkstore')}
-            className={`px-3 h-[34px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
-              activeRole === 'darkstore' 
-                ? 'bg-[#3D4E2A] text-white shadow-xs' 
-                : 'text-[#666057] hover:text-[#2D2620]'
-            }`}
-          >
-            <span>🏬</span>
-            <span>Dark Store</span>
-          </button>
-          <button
-            onClick={() => {
-              setActiveRole('consumer');
-              if (consumerTab === 'onboarding') setConsumerTab('home');
-            }}
-            className={`px-3 h-[34px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
-              activeRole === 'consumer' 
-                ? 'bg-[#354424] text-white shadow-xs' 
-                : 'text-[#666057] hover:text-[#2D2620]'
-            }`}
-          >
-            <span>🛒</span>
-            <span>Consumer</span>
-          </button>
-          <button
-            onClick={() => setActiveRole('admin')}
-            className={`px-3 h-[34px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
-              activeRole === 'admin' 
-                ? 'bg-[#5B21B6] text-white shadow-xs' 
-                : 'text-[#666057] hover:text-[#2D2620]'
-            }`}
-          >
-            <span>⚡</span>
-            <span>Admin</span>
-          </button>
+        {/* Persistent Top Navigation Bar (Role Switcher & Web3 Wallet) */}
+        <header className={`sticky top-0 z-40 bg-[#FAF7F0]/95 backdrop-blur-md border-b border-[#E6E1D5] px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3 shadow-2xs transition-all ${
+          activeRole === 'consumer' ? 'w-full ml-0' : 'w-full md:w-[calc(100%-16rem)] md:ml-64'
+        }`}>
+          {/* Left: Active Portal Indicator */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#354424] animate-pulse" />
+            <span className="text-xs font-black text-[#2D2620] uppercase tracking-wider hidden sm:inline">
+              {activeRole === 'logistics' && '🚛 SafeXpress Logistics'}
+              {activeRole === 'farmer' && '🌿 Farmer Portal'}
+              {activeRole === 'darkstore' && '🏬 Dark Store Hub'}
+              {activeRole === 'consumer' && '🛒 Consumer Marketplace'}
+              {activeRole === 'admin' && '⚡ Master Governance'}
+            </span>
+          </div>
 
-          <button
-            onClick={() => setIsGodMode(!isGodMode)}
-            className={`px-3 h-[34px] rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
-              isGodMode 
-                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md ring-2 ring-amber-300' 
-                : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'
-            }`}
-            title="Omniscient 4-Party Real-Time Synchronized View"
-          >
-            <span className="text-amber-500">✨</span>
-            <span>God Mode</span>
-          </button>
+          {/* Right: Role Switcher & Web3 Wallet Control Bar */}
+          <div className="flex items-center gap-1.5 p-1 bg-white/95 rounded-2xl border border-[#E6E1D5] shadow-xs max-w-full overflow-x-auto no-scrollbar whitespace-nowrap flex-shrink-0">
+            <button
+              onClick={() => setActiveRole('farmer')}
+              className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                activeRole === 'farmer' 
+                  ? 'bg-[#3D4E2A] text-white shadow-xs' 
+                  : 'text-[#666057] hover:text-[#2D2620]'
+              }`}
+            >
+              <span>🌿</span>
+              <span>Farmer</span>
+            </button>
+            <button
+              onClick={() => setActiveRole('logistics')}
+              className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                activeRole === 'logistics' 
+                  ? 'bg-[#354424] text-white shadow-xs' 
+                  : 'text-[#666057] hover:text-[#2D2620]'
+              }`}
+            >
+              <span>🚛</span>
+              <span>Logistics</span>
+            </button>
+            <button
+              onClick={() => setActiveRole('darkstore')}
+              className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                activeRole === 'darkstore' 
+                  ? 'bg-[#3D4E2A] text-white shadow-xs' 
+                  : 'text-[#666057] hover:text-[#2D2620]'
+              }`}
+            >
+              <span>🏬</span>
+              <span>Dark Store</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveRole('consumer');
+                if (consumerTab === 'onboarding') setConsumerTab('home');
+              }}
+              className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                activeRole === 'consumer' 
+                  ? 'bg-[#354424] text-white shadow-xs' 
+                  : 'text-[#666057] hover:text-[#2D2620]'
+              }`}
+            >
+              <span>🛒</span>
+              <span>Consumer</span>
+            </button>
+            <button
+              onClick={() => setActiveRole('admin')}
+              className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                activeRole === 'admin' 
+                  ? 'bg-[#5B21B6] text-white shadow-xs' 
+                  : 'text-[#666057] hover:text-[#2D2620]'
+              }`}
+            >
+              <span>⚡</span>
+              <span>Admin</span>
+            </button>
 
-          <div className="h-5 w-px bg-[#E6E1D5] mx-1 flex-shrink-0" />
-          <WalletConnect activeRole={activeRole} />
-        </div>
+            <button
+              onClick={() => setIsGodMode(!isGodMode)}
+              className={`px-3 h-[32px] rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+                isGodMode 
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md ring-2 ring-amber-300' 
+                  : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'
+              }`}
+              title="Omniscient 4-Party Real-Time Synchronized View"
+            >
+              <span className="text-amber-500">✨</span>
+              <span>God Mode</span>
+            </button>
+
+            <div className="h-5 w-px bg-[#E6E1D5] mx-1 flex-shrink-0" />
+            <WalletConnect activeRole={activeRole} />
+          </div>
+        </header>
 
         {/* Presenter Guided Walkthrough Banner */}
         <PresenterWalkthroughBanner 
@@ -358,7 +375,7 @@ export default function App() {
             onLogout={handleLogout}
           />
 
-          <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] p-4 sm:p-6 lg:p-8 max-w-7xl pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16">
+          <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] px-4 sm:px-6 lg:px-8 max-w-7xl pb-24 md:pb-8 pt-4 sm:pt-6">
             {logisticTab === 'dashboard' && (
               <LogisticDashboardView 
                 onSelectTab={handleSelectLogisticTab} 
@@ -415,7 +432,7 @@ export default function App() {
             onLogout={handleLogout}
           />
 
-          <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] p-4 sm:p-6 lg:p-8 max-w-7xl pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16">
+          <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] px-4 sm:px-6 lg:px-8 max-w-7xl pb-24 md:pb-8 pt-4 sm:pt-6">
             {farmerTab === 'dashboard' && (
               <div className="flex flex-col gap-6 animate-fade-in">
                 <FarmerHeader 

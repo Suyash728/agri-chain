@@ -161,7 +161,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
   };
 
   return (
-    <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] p-4 sm:p-6 lg:p-8 max-w-7xl pb-24 md:pb-8 pt-16 sm:pt-20 md:pt-16">
+    <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] px-4 sm:px-6 lg:px-8 max-w-7xl pb-24 md:pb-8 pt-4 sm:pt-6">
       {/* Header Banner */}
       <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-3xl p-6 sm:p-8 mb-8 relative overflow-hidden shadow-xs">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
