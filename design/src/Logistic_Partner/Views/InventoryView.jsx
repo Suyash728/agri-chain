@@ -18,45 +18,62 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
 
   const [produceItems, setProduceItems] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
+  const [categoryAllocations, setCategoryAllocations] = useState([]);
 
-  useEffect(() => {
+  const loadData = () => {
     fetch('http://localhost:8000/logistics/available-produce')
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped = data.map((d, i) => ({
             id: d.id || i,
             name: d.name || d.crop,
             category: d.category || 'Produce',
-            qty: d.quantity || '500 kg',
+            qty: d.qty || d.quantity || '500 kg',
             price: d.price || '₹ 2,000 / Quintal',
             farm: d.farm || 'Verified Organic Farm',
             status: 'In Stock',
             icon: d.icon || '/images/tomato_only.png',
           }));
           setProduceItems(mapped);
+        } else {
+          setProduceItems([]);
         }
       })
-      .catch(() => {});
+      .catch(() => setProduceItems([]));
 
     fetch('http://localhost:8000/logistics/storage')
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setWarehouses(data);
+        } else {
+          setWarehouses([]);
         }
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => setWarehouses([]));
 
-  // Logistics Central Inventory Category Allocations Data (Step 3)
-  const categoryAllocations = [
-    { name: 'Grains (Wheat & Rice)', qty: '3,200 Tonnes', val: '₹67,200', pct: 40 },
-    { name: 'Pulses & Legumes (Chickpea, Moong)', qty: '2,100 Tonnes', val: '₹38,500', pct: 27 },
-    { name: 'Fruits & Vegetables (Tomato, Potato)', qty: '1,500 Tonnes', val: '₹15,000', pct: 19 },
-    { name: 'Spices (Chilli, Turmeric)', qty: '550 Tonnes', val: '₹4,900', pct: 7 },
-    { name: 'Dry Fruits & Nuts (Cashew, Almond)', qty: '500 Tonnes', val: '₹8,000', pct: 7 },
-  ];
+    fetch('http://localhost:8000/logistics/category-allocations')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCategoryAllocations(data);
+        } else {
+          setCategoryAllocations([]);
+        }
+      })
+      .catch(() => setCategoryAllocations([]));
+  };
+
+  useEffect(() => {
+    loadData();
+    window.addEventListener('agrichain-data-reset', loadData);
+    window.addEventListener('agrichain-data-updated', loadData);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', loadData);
+      window.removeEventListener('agrichain-data-updated', loadData);
+    };
+  }, []);
 
   const filteredProduce = produceItems.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.farm.toLowerCase().includes(searchTerm.toLowerCase());
@@ -249,22 +266,32 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
           {/* Warehouse Category Allocations Card */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E6E1D5] shadow-xs space-y-6">
             <h3 className="text-lg sm:text-xl font-extrabold text-[#2D2620]">Warehouse Category Allocations</h3>
-            <div className="space-y-6">
-              {categoryAllocations.map((c, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="font-extrabold text-[#2D2620]">{c.name}</span>
-                    <div className="flex items-center gap-3 sm:gap-6">
-                      <span className="text-[#666057] font-medium">{c.qty} ({c.val})</span>
-                      <span className="font-extrabold text-[#556B2F] w-10 text-right">{c.pct}%</span>
+            {categoryAllocations.length === 0 ? (
+              <div className="p-8 text-center bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5] flex flex-col items-center justify-center">
+                <Building2 className="w-8 h-8 text-[#8C8275] mb-2 opacity-60" />
+                <h4 className="text-sm font-bold text-[#2D2620]">No Category Allocations in Storage</h4>
+                <p className="text-xs text-[#666057] mt-1 max-w-sm">
+                  Produce batches accepted into logistics warehouses will be dynamically aggregated and catalogued here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {categoryAllocations.map((c, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="font-extrabold text-[#2D2620]">{c.name}</span>
+                      <div className="flex items-center gap-3 sm:gap-6">
+                        <span className="text-[#666057] font-medium">{c.qty} ({c.val})</span>
+                        <span className="font-extrabold text-[#556B2F] w-10 text-right">{c.pct}%</span>
+                      </div>
+                    </div>
+                    <div className="w-full bg-[#FAF7F0] h-3.5 rounded-full overflow-hidden border border-[#E6E1D5]/60">
+                      <div className="bg-[#556B2F] h-full rounded-full transition-all duration-500" style={{ width: `${c.pct}%` }}></div>
                     </div>
                   </div>
-                  <div className="w-full bg-[#FAF7F0] h-3.5 rounded-full overflow-hidden border border-[#E6E1D5]/60">
-                    <div className="bg-[#556B2F] h-full rounded-full transition-all duration-500" style={{ width: `${c.pct}%` }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

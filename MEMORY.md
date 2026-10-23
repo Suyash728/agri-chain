@@ -1844,3 +1844,67 @@ still static UI with no data flow. Specifically:
 - Trust-Layer Pytest Suite: All 147 tests passed (`pytest trust-layer/tests/`).
 - Hardhat Contract Tests: All 22 tests passed (`npx hardhat test`).
 - Clean Slate Live Verification: `curl http://localhost:8000/farmer/ai-trust` verified returning `score: 0` and `level: "Awaiting Telemetry"`.
+
+
+---
+
+## [Logistics Partner Dynamic Views & Farmer Earnings Clean Slate Fix] — 2026-10-24
+
+**What was done:**
+1. **Farmer Category Revenue Breakdown Fix (`EarningsView.jsx` & `backend/main.py`)**:
+   - Fixed `get_farmer_earnings()` in `backend/main.py`: Removed hardcoded fallback `breakdown or [{"category": "Grains", "amount": "₹12,025", "percent": 42}, {"category": "Vegetables", "amount": "₹7,500", "percent": 26}]`.
+   - When the system is reset (0 batches), `breakdown` is strictly `[]` and `growthPercentage` is `"0%"`.
+   - Updated `EarningsView.jsx`: Wired event listeners for `agrichain-data-reset` and `agrichain-data-updated` to reload financials live; displays clean empty state "No category earnings recorded yet" with no hardcoded progress bars when reset.
+2. **Logistics Storage & Warehouse Dynamic Occupancy (`InventoryView.jsx`, `StorageView.jsx`, `backend/main.py`)**:
+   - Fixed `get_logistics_storage()` in `backend/main.py`: When 0 batches exist, all storage facilities strictly report `0 Tonnes (0%)` occupancy and `"Awaiting Telemetry"` status. When batches exist, occupancy dynamically scales based on actual tonnage registered across facilities.
+   - Connected `StorageView.jsx` and `InventoryView.jsx` Step 2 to `agrichain-data-reset` and `agrichain-data-updated` events.
+3. **Logistics Warehouse Category Allocations (`InventoryView.jsx`, `backend/main.py`)**:
+   - Replaced hardcoded static array in `InventoryView.jsx` Step 3 with dynamic state fetched from new endpoint `GET /logistics/category-allocations`.
+   - Aggregates live batches by category (tonnage, value, and share percentage). If 0 batches exist, returns `[]` and displays clean empty state "No Category Allocations in Storage".
+4. **Logistics Fleet & Transport Management (`TransportationView.jsx`)**:
+   - Removed `initialFleet` containing 4 hardcoded fake trucks from May 14.
+   - Starts with `fleet = []` and fetches live shipments from `GET /logistics/shipments`.
+   - When empty, renders clean empty state "No Active Fleet Dispatches".
+   - Cleaned `origin_farm` metadata encoding in `GET /logistics/shipments` so routes display pure location names (`Nashik Valley Orchards → Pune Fresh DarkStore Hub`).
+5. **Logistics Live Shipment GPS Tracking (`ShipmentTrackingView.jsx`)**:
+   - Removed hardcoded initial state `SHP5678`.
+   - Fetches live shipments from `/logistics/shipments`. When empty, renders clean empty state "No Active Shipments in Transit".
+   - When shipments exist, provides a shipment selector dropdown to track any active batch, displaying live GPS coordinates, temperature, driver details, and status-driven milestone audit log.
+6. **Logistics Farm-to-Fork Traceability Passport (`TraceabilityView.jsx`)**:
+   - Removed hardcoded fallback `Batch #LIVE-001` and static Patil Farm/MH12 nodes.
+   - Loads registered batches from `/batches`. If none exist, displays clean empty state "No Batches Available for Traceability".
+   - When batches exist, enables batch selection, live provenance querying against `/batches/{id}/traceability`, and integrates `LargeQRModal` for scannable QR verification.
+7. **Logistics Available Produce Catalogue (`AvailableProduceView.jsx`)**:
+   - Removed hardcoded 8-produce mock fallback. Strictly uses live batches from `/logistics/available-produce` and renders clean empty state when no produce is awaiting procurement.
+8. **Logistics Dashboard Integration (`LogisticDashboardView.jsx`)**:
+   - Updated Card 4 (Category Allocations) to use live `/logistics/category-allocations`.
+   - Updated Card 5 (Shipment Tracking) to stream active fleet vehicle info or show "No active shipments currently en route".
+   - Updated Card 6 (AI Trust Score) to fetch live trust score; shows "Awaiting Telemetry" (0%) on clean slate.
+   - Made 5-stage node journey bar dynamically reflect active fleet vehicle route and status.
+
+**Files changed:**
+- `backend/main.py`
+- `design/src/Farmer/Views/EarningsView.jsx`
+- `design/src/Logistic_Partner/Views/InventoryView.jsx`
+- `design/src/Logistic_Partner/Views/StorageView.jsx`
+- `design/src/Logistic_Partner/Views/AvailableProduceView.jsx`
+- `design/src/Logistic_Partner/Views/TransportationView.jsx`
+- `design/src/Logistic_Partner/Views/ShipmentTrackingView.jsx`
+- `design/src/Logistic_Partner/Views/TraceabilityView.jsx`
+- `design/src/Logistic_Partner/Views/LogisticDashboardView.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- System Reset Clean Slate Verification:
+  - `POST /admin/system-reset`: Cleared records successfully.
+  - `GET /farmer/earnings`: `totalRevenue="₹0"`, `breakdown=[]` (0 completed txns, no hardcoded bars).
+  - `GET /logistics/storage`: All warehouses report `0 Tonnes (0%)` and `"Awaiting Telemetry"`.
+  - `GET /logistics/category-allocations`: Returns `[]` (empty state shown in UI).
+  - `GET /logistics/shipments`: Returns `[]` (empty state shown in UI).
+  - `GET /logistics/available-produce`: Returns `[]` (empty state shown in UI).
+- Fresh Batch Registration Verification:
+  - `POST /batches`: Created batch `BATCH-DEMO-01` (2.5 tonnes Organic Tomatoes, ₹12,500).
+  - All logistics and earnings endpoints dynamically updated with real 2.5T / ₹12,500 allocations and live vehicle assignment.
+- Vite Production Build: 1,815 modules compiled in 3.75s with 0 errors (`npm run build`).
+- Pytest Suite: All 12 tests passed (`pytest tests/`).
+- Hardhat Contract Suite: All 22 tests passed (`npx hardhat test`).

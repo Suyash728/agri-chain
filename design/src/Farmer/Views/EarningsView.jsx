@@ -15,7 +15,7 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
   const [spoilageData, setSpoilageData] = useState(null);
   const [liveEarnings, setLiveEarnings] = useState(null);
 
-  useEffect(() => {
+  const loadData = () => {
     fetch('http://localhost:8000/incidents/spoilage')
       .then((res) => res.json())
       .then((data) => setSpoilageData(data))
@@ -25,6 +25,16 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
       .then((res) => res.json())
       .then((data) => setLiveEarnings(data))
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadData();
+    window.addEventListener('agrichain-data-reset', loadData);
+    window.addEventListener('agrichain-data-updated', loadData);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', loadData);
+      window.removeEventListener('agrichain-data-updated', loadData);
+    };
   }, []);
 
   const summary = liveEarnings || defaultEarningsSummary;

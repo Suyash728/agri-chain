@@ -4,13 +4,24 @@ import { Building2, Thermometer, ShieldCheck } from 'lucide-react';
 export const StorageView = () => {
   const [liveWarehouses, setLiveWarehouses] = useState([]);
 
-  useEffect(() => {
+  const loadWarehouses = () => {
     fetch('http://localhost:8000/logistics/storage')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) setLiveWarehouses(data);
+        if (Array.isArray(data)) setLiveWarehouses(data);
+        else setLiveWarehouses([]);
       })
-      .catch(err => console.error('Error fetching logistics storage:', err));
+      .catch(() => setLiveWarehouses([]));
+  };
+
+  useEffect(() => {
+    loadWarehouses();
+    window.addEventListener('agrichain-data-reset', loadWarehouses);
+    window.addEventListener('agrichain-data-updated', loadWarehouses);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', loadWarehouses);
+      window.removeEventListener('agrichain-data-updated', loadWarehouses);
+    };
   }, []);
 
   const warehouses = liveWarehouses;

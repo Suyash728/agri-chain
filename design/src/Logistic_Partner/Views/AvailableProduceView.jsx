@@ -6,27 +6,27 @@ export const AvailableProduceView = ({ onProcure }) => {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [liveProduce, setLiveProduce] = useState([]);
 
-  useEffect(() => {
+  const loadProduce = () => {
     fetch('http://localhost:8000/logistics/available-produce')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) setLiveProduce(data);
+        if (Array.isArray(data)) setLiveProduce(data);
+        else setLiveProduce([]);
       })
-      .catch(err => console.error('Error fetching available produce:', err));
+      .catch(() => setLiveProduce([]));
+  };
+
+  useEffect(() => {
+    loadProduce();
+    window.addEventListener('agrichain-data-reset', loadProduce);
+    window.addEventListener('agrichain-data-updated', loadProduce);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', loadProduce);
+      window.removeEventListener('agrichain-data-updated', loadProduce);
+    };
   }, []);
 
-  const produceItems = [
-    { id: 1, name: 'Premium Basmati Wheat', category: 'Grains', qty: '500 Tonnes', price: '₹ 2,100 / Quintal', farm: 'Patil Organic Farm, Nashik', status: 'In Stock', icon: '/images/wheat_only.png' },
-    { id: 2, name: 'Basmati Long Grain Rice', category: 'Grains', qty: '300 Tonnes', price: '₹ 2,800 / Quintal', farm: 'Godavari Delta Fields', status: 'In Stock', icon: '/images/rice_only.png' },
-    { id: 3, name: 'Fresh Organic Tomatoes', category: 'Vegetables', qty: '200 Tonnes', price: '₹ 1,200 / Quintal', farm: 'Sahyadri Agri Hub, Pune', status: 'Limited', icon: '/images/tomato_only.png' },
-    { id: 4, name: 'Cold-Stored Potatoes', category: 'Vegetables', qty: '400 Tonnes', price: '₹ 1,000 / Quintal', farm: 'Satara Valley Orchards', status: 'In Stock', icon: '/images/potato_only.png' },
-    { id: 5, name: 'Red Nashik Onions', category: 'Vegetables', qty: '250 Tonnes', price: '₹ 900 / Quintal', farm: 'Nashik Mandi Direct', status: 'In Stock', icon: '/images/potato_only.png' },
-    { id: 6, name: 'Organic Chickpeas (Garbanzo)', category: 'Pulses', qty: '180 Tonnes', price: '₹ 4,500 / Quintal', farm: 'Malwa Agriculture Cooperative', status: 'In Stock', icon: '/images/chickpea_only.png' },
-    { id: 7, name: 'Green Gram (Moong Dal)', category: 'Pulses', qty: '150 Tonnes', price: '₹ 5,200 / Quintal', farm: 'Vidarbha Farmer Producer Co.', status: 'In Stock', icon: '/images/greengram_only.png' },
-    { id: 8, name: 'Guntur Red Chillies', category: 'Spices', qty: '80 Tonnes', price: '₹ 12,000 / Quintal', farm: 'Deccan Spice Estate', status: 'In Stock', icon: '/images/chilli_only.png' },
-  ];
-
-  const items = liveProduce.length > 0 ? liveProduce : produceItems;
+  const items = liveProduce;
 
   const filtered = items.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.farm.toLowerCase().includes(searchTerm.toLowerCase());
@@ -72,33 +72,43 @@ export const AvailableProduceView = ({ onProcure }) => {
 
       {/* Produce Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {filtered.map(item => (
-          <div key={item.id} className="bg-white rounded-2xl p-4 border border-[#E6E1D5] shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-12 h-12 rounded-xl bg-[#FAF7F0] p-1.5 border border-[#E6E1D5] flex items-center justify-center">
-                  <img src={item.icon} alt={item.name} className="w-full h-full object-contain" />
-                </div>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'In Stock' ? 'bg-[#556B2F]/15 text-[#556B2F]' : 'bg-[#B85C38]/15 text-[#B85C38]'}`}>
-                  {item.status}
-                </span>
-              </div>
-              <h3 className="font-extrabold text-sm text-[#2D2620] mb-1">{item.name}</h3>
-              <p className="text-xs text-[#666057] font-medium">{item.farm}</p>
-              <div className="mt-3 pt-3 border-t border-[#E6E1D5]/60 flex items-center justify-between text-xs">
-                <span className="text-[#666057]">Qty: <strong className="text-[#2D2620]">{item.qty}</strong></span>
-                <span className="font-extrabold text-[#556B2F]">{item.price}</span>
-              </div>
-            </div>
-            <button 
-              onClick={() => onProcure && onProcure()}
-              className="mt-4 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
-            >
-              <span>Initiate Procurement</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+        {filtered.length === 0 ? (
+          <div className="col-span-full p-12 text-center bg-white rounded-2xl border border-[#E6E1D5] flex flex-col items-center justify-center">
+            <Sprout className="w-10 h-10 text-[#8C8275] mb-2 opacity-50" />
+            <h3 className="text-sm font-bold text-[#2D2620]">No Produce Available for Procurement</h3>
+            <p className="text-xs text-[#666057] mt-1 max-w-sm">
+              When farmers register new harvests ready for dispatch, they will appear here in real time.
+            </p>
           </div>
-        ))}
+        ) : (
+          filtered.map(item => (
+            <div key={item.id} className="bg-white rounded-2xl p-4 border border-[#E6E1D5] shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-[#FAF7F0] p-1.5 border border-[#E6E1D5] flex items-center justify-center">
+                    <img src={item.icon} alt={item.name} className="w-full h-full object-contain" />
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'In Stock' ? 'bg-[#556B2F]/15 text-[#556B2F]' : 'bg-[#B85C38]/15 text-[#B85C38]'}`}>
+                    {item.status}
+                  </span>
+                </div>
+                <h3 className="font-extrabold text-sm text-[#2D2620] mb-1">{item.name}</h3>
+                <p className="text-xs text-[#666057] font-medium">{item.farm}</p>
+                <div className="mt-3 pt-3 border-t border-[#E6E1D5]/60 flex items-center justify-between text-xs">
+                  <span className="text-[#666057]">Qty: <strong className="text-[#2D2620]">{item.qty}</strong></span>
+                  <span className="font-extrabold text-[#556B2F]">{item.price}</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => onProcure && onProcure()}
+                className="mt-4 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
+              >
+                <span>Initiate Procurement</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

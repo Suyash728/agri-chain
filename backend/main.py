@@ -2307,7 +2307,7 @@ def get_logistics_shipments():
                 "temp": f"{temp_c:.1f}°C (Reefer Chilled)",
                 "tempValue": temp_c,
                 "humidityValue": hum_pct,
-                "from": r["origin_farm"],
+                "from": r["origin_farm"].split("||")[0].strip(),
                 "to": "Pune Fresh DarkStore Hub",
                 "eta": "Today, 06:00 PM",
                 "latitude": lat,
@@ -3493,14 +3493,11 @@ def get_farmer_earnings():
         return {
             "totalRevenue": f"₹{total_rev:,}",
             "totalThisMonth": f"₹{int(total_rev * 0.35):,}",
-            "growthPercentage": "+18.4%",
+            "growthPercentage": "+18.4%" if total_rev > 0 else "0%",
             "growthPeriod": "vs last month",
             "pendingPayouts": f"₹{int(total_rev * 0.15):,}",
             "completedTxns": len(batches),
-            "breakdown": breakdown or [
-                {"category": "Grains", "amount": "₹12,025", "percent": 42},
-                {"category": "Vegetables", "amount": "₹7,500", "percent": 26},
-            ],
+            "breakdown": breakdown,
         }
     finally:
         conn.close()
@@ -3583,43 +3580,149 @@ def get_logistics_storage():
     conn = get_connection()
     try:
         latest_reading = conn.execute("SELECT temp_c FROM readings ORDER BY id DESC LIMIT 1").fetchone()
-        current_temp = f"{latest_reading['temp_c']:.1f}°C (Active Telemetry)" if latest_reading else "4.5°C (Cold-Chain Reefer)"
-        active_cnt = conn.execute("SELECT count(*) as cnt FROM custody_events WHERE state IN ('IN_TRANSIT', 'RECEIVED')").fetchone()["cnt"]
+        readings_cnt = conn.execute("SELECT count(*) as cnt FROM readings").fetchone()["cnt"]
+        batches_cnt = conn.execute("SELECT count(*) as cnt FROM batches").fetchone()["cnt"]
+
+        if readings_cnt > 0 and latest_reading:
+            current_temp = f"{latest_reading['temp_c']:.1f}°C (Active Telemetry)"
+        else:
+            current_temp = "Awaiting Telemetry"
+
+        # Calculate actual inventory tonnage in transit or storage
+        total_tonnes = 0.0
+        if batches_cnt > 0:
+            batches = conn.execute("SELECT origin_farm FROM batches").fetchall()
+            for b in batches:
+                _, qty, _ = _parse_batch_meta(b)
+                total_tonnes += qty
+
+        # If system is reset / empty, utilization is strictly 0
+        if batches_cnt == 0:
+            return [
+                {
+                    "name": "Nashik Warehouse Silo #1",
+                    "capacity": "3,000 Tonnes",
+                    "utilized": "0 Tonnes",
+                    "pct": 0,
+                    "temp": "18.2°C (Ambient Grain Silo)" if readings_cnt > 0 else "Awaiting Telemetry",
+                    "location": "MIDC Ambad, Nashik",
+                },
+                {
+                    "name": "Pune Cold Storage Reefer Hub",
+                    "capacity": "2,500 Tonnes",
+                    "utilized": "0 Tonnes",
+                    "pct": 0,
+                    "temp": current_temp,
+                    "location": "Chakan Industrial Corridor, Pune",
+                },
+                {
+                    "name": "Nagpur Central Transit Facility",
+                    "capacity": "2,000 Tonnes",
+                    "utilized": "0 Tonnes",
+                    "pct": 0,
+                    "temp": "19.5°C (Dry Storage)" if readings_cnt > 0 else "Awaiting Telemetry",
+                    "location": "Kalamna Market, Nagpur",
+                },
+                {
+                    "name": "Raipur Climate Controlled Hub",
+                    "capacity": "2,500 Tonnes",
+                    "utilized": "0 Tonnes",
+                    "pct": 0,
+                    "temp": "16.0°C (Humidity Controlled)" if readings_cnt > 0 else "Awaiting Telemetry",
+                    "location": "Tatibandh, Raipur",
+                },
+            ]
+
+        # Scaled realistic allocation across facilities when batches exist
+        nashik_u = min(round(total_tonnes * 0.40, 2), 2900)
+        pune_u = min(round(total_tonnes * 0.35, 2), 2400)
+        nagpur_u = min(round(total_tonnes * 0.15, 2), 1900)
+        raipur_u = min(round(total_tonnes * 0.10, 2), 2400)
 
         return [
             {
                 "name": "Nashik Warehouse Silo #1",
                 "capacity": "3,000 Tonnes",
-                "utilized": f"{min(2400 + active_cnt * 10, 2900)} Tonnes",
-                "pct": min(80 + (active_cnt % 15), 95),
+                "utilized": f"{nashik_u:.2f} Tonnes",
+                "pct": max(1, round(nashik_u / 3000 * 100)),
                 "temp": "18.2°C (Ambient Grain Silo)",
                 "location": "MIDC Ambad, Nashik",
             },
             {
                 "name": "Pune Cold Storage Reefer Hub",
                 "capacity": "2,500 Tonnes",
-                "utilized": f"{min(1500 + active_cnt * 15, 2400)} Tonnes",
-                "pct": min(60 + (active_cnt % 20), 92),
+                "utilized": f"{pune_u:.2f} Tonnes",
+                "pct": max(1, round(pune_u / 2500 * 100)),
                 "temp": current_temp,
                 "location": "Chakan Industrial Corridor, Pune",
             },
             {
                 "name": "Nagpur Central Transit Facility",
                 "capacity": "2,000 Tonnes",
-                "utilized": "1,500 Tonnes",
-                "pct": 75,
+                "utilized": f"{nagpur_u:.2f} Tonnes",
+                "pct": max(1, round(nagpur_u / 2000 * 100)),
                 "temp": "19.5°C (Dry Storage)",
                 "location": "Kalamna Market, Nagpur",
             },
             {
                 "name": "Raipur Climate Controlled Hub",
                 "capacity": "2,500 Tonnes",
-                "utilized": "1,000 Tonnes",
-                "pct": 40,
+                "utilized": f"{raipur_u:.2f} Tonnes",
+                "pct": max(1, round(raipur_u / 2500 * 100)),
                 "temp": "16.0°C (Humidity Controlled)",
                 "location": "Tatibandh, Raipur",
             },
         ]
+    finally:
+        conn.close()
+
+
+@app.get("/logistics/category-allocations")
+def get_logistics_category_allocations():
+    """Returns warehouse category allocations dynamically calculated from registered batches."""
+    conn = get_connection()
+    try:
+        batches = conn.execute("SELECT * FROM batches").fetchall()
+        if not batches:
+            return []
+
+        cat_data = {}
+        total_tonnes = 0.0
+
+        for b in batches:
+            cat, qty, price = _parse_batch_meta(b)
+            c_name = _resolve_category_id(b["crop_name"], cat).capitalize()
+
+            if "Fruit" in c_name or "Veg" in c_name:
+                display_name = "Fruits & Vegetables (Tomato, Potato, Mango)"
+            elif "Grain" in c_name:
+                display_name = "Grains (Wheat & Rice)"
+            elif "Pulse" in c_name or "Legume" in c_name:
+                display_name = "Pulses & Legumes (Chickpea, Moong)"
+            elif "Spice" in c_name:
+                display_name = "Spices (Chilli, Turmeric)"
+            else:
+                display_name = f"{c_name} (Specialty Produce)"
+
+            if display_name not in cat_data:
+                cat_data[display_name] = {"qty_tonnes": 0.0, "val_inr": 0.0}
+
+            cat_data[display_name]["qty_tonnes"] += qty
+            cat_data[display_name]["val_inr"] += price
+            total_tonnes += qty
+
+        allocations = []
+        for name, data in cat_data.items():
+            pct = round((data["qty_tonnes"] / total_tonnes * 100)) if total_tonnes > 0 else 0
+            allocations.append({
+                "name": name,
+                "qty": f"{data['qty_tonnes']:.2f} Tonnes",
+                "val": f"₹{int(data['val_inr']):,}",
+                "pct": pct,
+            })
+
+        allocations.sort(key=lambda x: x["pct"], reverse=True)
+        return allocations
     finally:
         conn.close()
 
