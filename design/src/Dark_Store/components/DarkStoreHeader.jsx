@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Bell, Calendar, ChevronDown } from 'lucide-react';
+import { useNotificationCount } from '../../utils/useNotificationCount';
 
-export const DarkStoreHeader = ({ onOpenNotifications }) => {
+export const DarkStoreHeader = ({ onOpenNotifications, unreadCount }) => {
   const [selectedStore, setSelectedStore] = useState('Nashik Central Store');
   const [isStoreOpen, setIsStoreOpen] = useState(false);
+  const { count: dynamicCount } = useNotificationCount('darkstore');
+  const count = unreadCount !== undefined ? unreadCount : dynamicCount;
 
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full pt-1 pb-2">
@@ -29,11 +32,14 @@ export const DarkStoreHeader = ({ onOpenNotifications }) => {
         <button 
           onClick={onOpenNotifications}
           className="relative w-10 h-10 rounded-2xl bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] hover:bg-[#FAF7F0] transition-colors cursor-pointer shadow-xs"
+          title="Notifications"
         >
           <Bell className="w-5 h-5 text-[#2D2620]" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#354424] text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow-xs">
-            3
-          </span>
+          {count > 0 && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#354424] text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow-xs">
+              {count}
+            </span>
+          )}
         </button>
 
         {/* Date Pill */}
@@ -54,20 +60,19 @@ export const DarkStoreHeader = ({ onOpenNotifications }) => {
           </button>
 
           {isStoreOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-[#E6E1D5] rounded-2xl shadow-xl z-50 p-1.5 animate-scale-in">
-              {['Nashik Central Store', 'Pune Regional Hub', 'Mumbai Fulfillment Center'].map((store) => (
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-[#E6E1D5] shadow-xl py-2 z-30">
+              {['Nashik Central Store', 'Pune Hub - DS-402', 'Mumbai Express - DS-108'].map((store) => (
                 <button
                   key={store}
                   onClick={() => {
                     setSelectedStore(store);
                     setIsStoreOpen(false);
                   }}
-                  className={`w-full text-left px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center justify-between ${
-                    selectedStore === store ? 'bg-[#FAF7F0] text-[#354424]' : 'text-[#2D2620] hover:bg-[#FAF7F0]'
+                  className={`w-full text-left px-4 py-2 text-xs font-semibold hover:bg-[#FAF7F0] transition-colors cursor-pointer ${
+                    selectedStore === store ? 'text-[#354424] font-black bg-[#FAF7F0]' : 'text-[#2D2620]'
                   }`}
                 >
-                  <span>{store}</span>
-                  {selectedStore === store && <span className="w-2 h-2 rounded-full bg-[#556B2F]" />}
+                  {store}
                 </button>
               ))}
             </div>

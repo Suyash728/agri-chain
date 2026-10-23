@@ -107,11 +107,17 @@ export const DarkStoreApp = () => {
         )}
 
         {darkStoreTab === 'traceability' && (
-          <DarkStoreTraceabilityView onBack={() => handleSelectTab('dashboard')} />
+          <DarkStoreTraceabilityView 
+            onBack={() => handleSelectTab('dashboard')} 
+            onOpenNotifications={() => setIsNotificationsOpen(true)}
+          />
         )}
 
         {darkStoreTab === 'blockchain-verification' && (
-          <DarkStoreBlockchainView onBack={() => handleSelectTab('dashboard')} />
+          <DarkStoreBlockchainView 
+            onBack={() => handleSelectTab('dashboard')} 
+            onOpenNotifications={() => setIsNotificationsOpen(true)}
+          />
         )}
 
         {darkStoreTab === 'profile' && (

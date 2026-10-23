@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, CheckCircle2, AlertTriangle, Truck, RefreshCw, ShieldAlert, ShoppingBag } from 'lucide-react';
+import { X, Bell, CheckCircle2, AlertTriangle, Truck, RefreshCw, ShieldAlert, ShoppingBag, Inbox } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/api';
 
 export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
   const [notifications, setNotifications] = useState([]);
@@ -9,10 +10,15 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
     if (!isOpen) return;
 
     setLoading(true);
-    Promise.allSettled([
-      fetch(`http://localhost:8000/notifications/all-users?role=${role}`).then((r) => r.json()),
-      fetch('http://localhost:8000/farmer/activity').then((r) => r.json())
-    ])
+    const fetchPromises = [
+      fetch(`${API_BASE_URL}/notifications/all-users?role=${role}`).then((r) => r.json())
+    ];
+
+    if (role === 'farmer') {
+      fetchPromises.push(fetch(`${API_BASE_URL}/farmer/activity`).then((r) => r.json()));
+    }
+
+    Promise.allSettled(fetchPromises)
       .then(([allUsersRes, actRes]) => {
         const items = [];
 
@@ -21,8 +27,9 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
           allUsersRes.value.forEach((n) => {
             let IconComponent = AlertTriangle;
             if (n.icon === 'Truck') IconComponent = Truck;
-            else if (n.icon === 'ShieldCheck') IconComponent = CheckCircle2;
-            else if (n.icon === 'AlertCircle') IconComponent = ShieldAlert;
+            else if (n.icon === 'ShieldCheck' || n.icon === 'CheckCircle2') IconComponent = CheckCircle2;
+            else if (n.icon === 'AlertCircle' || n.icon === 'ShieldAlert') IconComponent = ShieldAlert;
+            else if (n.icon === 'ShoppingBag') IconComponent = ShoppingBag;
 
             items.push({
               id: n.id,
@@ -34,13 +41,13 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
               bgColor: n.bgColor || 'bg-red-50 border-red-200',
               lossKg: n.loss_goods_kg,
               lossInr: n.loss_money_inr,
-              isFailureLoss: true,
+              isFailureLoss: Boolean(n.loss_goods_kg || n.loss_money_inr),
             });
           });
         }
 
-        // 2. Real activity milestones
-        if (actRes.status === 'fulfilled' && Array.isArray(actRes.value)) {
+        // 2. Real activity milestones (only for farmer role)
+        if (actRes && actRes.status === 'fulfilled' && Array.isArray(actRes.value)) {
           actRes.value.slice(0, 4).forEach((act) => {
             let Icon = CheckCircle2;
             let color = 'text-[#3D5220]';
@@ -66,16 +73,11 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
           });
         }
 
-        if (items.length > 0) {
-          setNotifications(items);
-        } else {
-          setNotifications([
-            { id: 'def-1', title: "Order Confirmed", desc: "Batch #TM1256 purchased by Retailer.", time: "10 mins ago", icon: CheckCircle2, color: "text-[#3D5220]", bgColor: 'bg-[#FAF7F0] border-[#E6E1D5]' },
-            { id: 'def-2', title: "AI Cold-Chain Audit Passed", desc: "Shipment #SHP5678 temperature maintained at 4.2°C.", time: "2 hours ago", icon: Truck, color: "text-[#B85C38]", bgColor: 'bg-[#FAF7F0] border-[#E6E1D5]' }
-          ]);
-        }
+        setNotifications(items);
       })
-      .catch(() => {})
+      .catch(() => {
+        setNotifications([]);
+      })
       .finally(() => setLoading(false));
   }, [isOpen, role]);
 
@@ -88,7 +90,9 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
         <div className="p-4 bg-[#FAF7F0] border-b border-[#E6E1D5] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-[#3D4E2A]" />
-            <h3 className="text-base font-extrabold text-[#3B3028]">Live System Notifications</h3>
+            <h3 className="text-base font-extrabold text-[#3B3028]">
+              Live System Notifications {notifications.length > 0 && `(${notifications.length})`}
+            </h3>
           </div>
           <button 
             onClick={onClose}
@@ -104,6 +108,16 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
             <div className="py-8 flex flex-col items-center justify-center gap-2 text-[#666057]">
               <RefreshCw className="w-5 h-5 animate-spin text-[#556B2F]" />
               <span className="text-xs font-semibold">Loading live alerts...</span>
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="py-12 px-6 flex flex-col items-center justify-center text-center">
+              <div className="w-12 h-12 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#786E65] mb-3">
+                <Inbox className="w-6 h-6 text-[#786E65]" />
+              </div>
+              <h4 className="text-sm font-bold text-[#3B3028]">No Notifications</h4>
+              <p className="text-xs text-[#786E65] mt-1 max-w-xs leading-relaxed">
+                Live cold-chain telemetry breaches, custody transfers, and system alerts will appear here as produce moves through the supply chain.
+              </p>
             </div>
           ) : (
             notifications.map((item) => {
@@ -137,4 +151,3 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
     </div>
   );
 };
-

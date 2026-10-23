@@ -1,16 +1,20 @@
 import React from 'react';
 import { Bell, MapPin, ChevronDown, Search, Heart, ShoppingBag } from 'lucide-react';
+import { useNotificationCount } from '../../utils/useNotificationCount';
 
 export const ConsumerHeader = ({ 
   onNotificationClick, 
   onAddressClick, 
   onNavigate,
   activeTab = 'home',
-  cartCount = 3,
+  cartCount = 0,
   deliveryAddress = 'Nashik, Maharashtra',
   searchQuery = '',
-  onSearchChange
+  onSearchChange,
+  unreadCount
 }) => {
+  const { count: dynamicCount } = useNotificationCount('consumer');
+  const count = unreadCount !== undefined ? unreadCount : dynamicCount;
   const navItems = [
     { id: 'home', label: 'Home', emoji: '🏠' },
     { id: 'products', label: 'Products', emoji: '📦' },
@@ -77,9 +81,11 @@ export const ConsumerHeader = ({
             title="Notifications"
           >
             <Bell className="w-4 h-4 text-[#354424]" />
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#354424] text-white text-[10px] font-extrabold flex items-center justify-center border border-white">
-              3
-            </span>
+            {count > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#354424] text-white text-[10px] font-extrabold flex items-center justify-center border border-white">
+                {count}
+              </span>
+            )}
           </button>
 
           {/* Search Bar Input */}

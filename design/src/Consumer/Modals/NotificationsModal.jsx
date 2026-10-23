@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Package, ShieldCheck, Tag, AlertTriangle, RefreshCw } from 'lucide-react';
+import { X, Bell, Package, ShieldCheck, Tag, AlertTriangle, RefreshCw, CheckCircle2, Truck, Inbox } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/api';
 
 export const NotificationsModal = ({ isOpen, onClose }) => {
   const [notifications, setNotifications] = useState([]);
@@ -9,81 +10,54 @@ export const NotificationsModal = ({ isOpen, onClose }) => {
     if (!isOpen) return;
 
     setLoading(true);
-    fetch('http://localhost:8000/notifications/all-users?role=consumer')
+    fetch(`${API_BASE_URL}/notifications/all-users?role=consumer`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch consumer alerts');
         return res.json();
       })
       .then((data) => {
-        const items = [];
+        if (Array.isArray(data)) {
+          const items = data.map((n) => {
+            let IconComponent = ShieldCheck;
+            let bg = 'bg-[#FAF7F0] text-[#2D2620]';
 
-        // 1. Spoilage & Quality Recall notices
-        if (Array.isArray(data) && data.length > 0) {
-          data.forEach((n) => {
-            items.push({
+            if (n.icon === 'Truck') {
+              IconComponent = Truck;
+              bg = 'bg-[#FAF7F0] text-[#B85C38]';
+            } else if (n.icon === 'CheckCircle2') {
+              IconComponent = CheckCircle2;
+              bg = 'bg-emerald-100 text-[#354424]';
+            } else if (n.icon === 'AlertCircle' || n.icon === 'AlertTriangle') {
+              IconComponent = AlertTriangle;
+              bg = 'bg-rose-100 text-rose-700';
+            } else if (n.icon === 'Package') {
+              IconComponent = Package;
+              bg = 'bg-[#EBF3E8] text-[#354424]';
+            } else if (n.category === 'SAFETY_RECALL_REFUND') {
+              IconComponent = ShieldCheck;
+              bg = 'bg-emerald-100 text-emerald-800';
+            }
+
+            return {
               id: n.id,
               title: n.title,
               desc: n.desc,
-              time: n.time || 'Today',
-              icon: ShieldCheck,
-              bg: 'bg-emerald-100 text-emerald-800',
+              time: n.time || 'Recent',
+              icon: IconComponent,
+              bg,
               refundInr: n.refund_inr,
               lossKg: n.loss_goods_kg,
-              isRecall: true,
-            });
+              isRecall: n.category === 'SAFETY_RECALL_REFUND',
+            };
           });
+          setNotifications(items);
+        } else {
+          setNotifications([]);
         }
-
-        // 2. Default order status notices
-        items.push(
-          {
-            id: 'n1',
-            title: 'Order Out for Delivery',
-            desc: 'Order #ORD1256 is out for delivery by Nashik Central Dark Store courier.',
-            time: '10 mins ago',
-            icon: Package,
-            bg: 'bg-[#EBF3E8] text-[#354424]',
-          },
-          {
-            id: 'n2',
-            title: 'Blockchain Verification Passed',
-            desc: 'Organic Tomato Batch #TM1256 record verified on AgriChain network.',
-            time: '2 hours ago',
-            icon: ShieldCheck,
-            bg: 'bg-[#EBF3FA] text-[#2B6CB0]',
-          },
-          {
-            id: 'n3',
-            title: 'Special Promo Offer',
-            desc: 'Use promo code FRESH20 for 20% off on your next fresh produce order.',
-            time: '1 day ago',
-            icon: Tag,
-            bg: 'bg-[#FDF3E7] text-[#B85C38]',
-          }
-        );
-
-        setNotifications(items);
       })
       .catch((err) => {
-        void err;
-        setNotifications([
-          {
-            id: 'n1',
-            title: 'Order Out for Delivery',
-            desc: 'Order #ORD1256 is out for delivery by Nashik Central Dark Store courier.',
-            time: '10 mins ago',
-            icon: Package,
-            bg: 'bg-[#EBF3E8] text-[#354424]',
-          },
-          {
-            id: 'n2',
-            title: 'Blockchain Verification Passed',
-            desc: 'Organic Tomato Batch #TM1256 record verified on AgriChain network.',
-            time: '2 hours ago',
-            icon: ShieldCheck,
-            bg: 'bg-[#EBF3FA] text-[#2B6CB0]',
-          },
-        ]);
+        console.error('Failed to load consumer notifications:', err);
+        setNotifications([]);
       })
       .finally(() => setLoading(false));
   }, [isOpen]);
@@ -96,7 +70,7 @@ export const NotificationsModal = ({ isOpen, onClose }) => {
         <div className="flex justify-between items-center pb-2 border-b border-[#E6E1D5]">
           <h3 className="font-extrabold text-sm text-[#2D2620] flex items-center gap-1.5">
             <Bell className="w-4 h-4 text-[#354424]" />
-            <span>Notifications ({notifications.length})</span>
+            <span>Notifications {notifications.length > 0 && `(${notifications.length})`}</span>
           </h3>
           <button onClick={onClose} className="text-[#666057] hover:text-[#2D2620] cursor-pointer">
             <X className="w-4 h-4" />
@@ -108,6 +82,16 @@ export const NotificationsModal = ({ isOpen, onClose }) => {
             <div className="py-8 flex flex-col items-center justify-center gap-2 text-[#666057]">
               <RefreshCw className="w-5 h-5 animate-spin text-[#556B2F]" />
               <span className="text-xs font-semibold">Loading consumer alerts...</span>
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="py-10 px-4 flex flex-col items-center justify-center text-center">
+              <div className="w-12 h-12 rounded-full bg-[#EBF3E8] border border-[#E6E1D5] flex items-center justify-center text-[#354424] mb-3">
+                <Inbox className="w-6 h-6 text-[#354424]" />
+              </div>
+              <h4 className="font-extrabold text-sm text-[#2D2620]">No Notifications</h4>
+              <p className="text-xs text-[#666057] mt-1 max-w-xs leading-relaxed">
+                Cold-chain quality updates, harvest batch deliveries, and refunds will appear here dynamically.
+              </p>
             </div>
           ) : (
             notifications.map((n) => {

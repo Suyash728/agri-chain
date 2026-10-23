@@ -21,7 +21,10 @@ import {
   RotateCcw
 } from 'lucide-react';
 
+import { useNotificationCount } from '../../utils/useNotificationCount';
+
 export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
+  const { count } = useNotificationCount('darkstore');
   // State for controls
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
@@ -217,11 +220,14 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
           <button 
             onClick={onOpenNotifications}
             className="relative w-10 h-10 rounded-2xl bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] hover:bg-[#FAF7F0] transition-colors cursor-pointer shadow-xs"
+            title="Notifications"
           >
             <Bell className="w-5 h-5 text-[#2D2620]" />
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#354424] text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow-xs">
-              3
-            </span>
+            {count > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#354424] text-white text-[10px] font-extrabold flex items-center justify-center border-2 border-white shadow-xs">
+                {count}
+              </span>
+            )}
           </button>
 
           {/* Date Pill */}

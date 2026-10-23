@@ -1518,3 +1518,56 @@ still static UI with no data flow. Specifically:
 - Hardhat Smart Contract Suite: 22/22 tests passed in 807ms (`cd contracts && npx hardhat test`).
 - Frontend Production Build: 1,811 modules transformed cleanly in 3.18s with 0 errors (`npm run build`).
 - Live Reset & Post-Reset Batch Registration verified via cURL against running backend.
+
+---
+
+## [Dynamic Multi-Role Notifications & Real-Time Bell Counters] — 2026-10-23
+
+**What was done:**
+- Replaced hardcoded notifications and static bell badges across all 4 supply chain roles (Farmer, Logistics Partner, Dark Store, and Consumer) with dynamic real-time database-driven events:
+  1. **Backend Dynamic Multi-Role Notification Engine (`backend/main.py`)**:
+     - Upgraded `GET /notifications/all-users?role={role}` to dynamically aggregate real database records from:
+       - `spoilage_incidents`: Crop loss alerts, carrier SLA penalties, dark store write-offs, and consumer freshness recall refunds.
+       - `quarantine`: Pre-chain AI Trust Layer cold-chain breaches and sensor anomalies with explainable reasons.
+       - `custody_events`: On-chain batch registrations, reefer dispatch, dark store GRN intake, and consumer doorstep deliveries.
+       - `batch_reviews`: Verified consumer ratings and feedback anchored on-chain.
+     - Added `GET /notifications/count?role={role}` returning exact real-time unread/active notification counts for any given role (`farmer`, `logistics`, `darkstore`, `consumer`, `all`).
+  2. **Eliminated Hardcoded Notifications & Fallbacks in Modals**:
+     - `design/src/Farmer/Modals/NotificationsModal.jsx`: Removed hardcoded `#TM1256` and `#SHP5678` defaults; bound dynamic notification categories; added clean empty state with icon and description when 0 notifications exist.
+     - `design/src/Consumer/Modals/NotificationsModal.jsx`: Removed hardcoded `#ORD1256`, `#TM1256`, and `FRESH20` promotional items and `.catch()` fallback; bound dynamic consumer recall, arrival, and review notifications; added clean empty state.
+  3. **Universal Real-Time Notification Count Hook (`design/src/utils/useNotificationCount.js`)**:
+     - Created React hook `useNotificationCount(role)` that fetches live notification count from `GET /notifications/count?role={role}`.
+     - Automatically resets count to 0 and refetches on `agrichain-data-reset` and `agrichain-data-updated` window events.
+  4. **Dynamic Header Notification Bell Badges**:
+     - `Farmer/components/Header.jsx`: Removed hardcoded `unreadCount = 3` parameter; bound to `useNotificationCount('farmer')`; hides badge when count is 0.
+     - `Logistic_Partner/components/LogisticHeader.jsx`: Removed static `3` badge; bound to `useNotificationCount('logistics')`; hides badge when count is 0.
+     - `Dark_Store/components/DarkStoreHeader.jsx`: Removed static `3` badge; bound to `useNotificationCount('darkstore')`; hides badge when count is 0.
+     - `Dark_Store/Views/DarkStoreBlockchainView.jsx`: Removed static `3` and dummy alert; wired to dynamic count and `onOpenNotifications`.
+     - `Dark_Store/Views/DarkStoreRevenueView.jsx`: Removed static `3` badge; wired to dynamic count and `onOpenNotifications`.
+     - `Dark_Store/Views/DarkStoreTraceabilityView.jsx`: Removed static `3` and dummy alert; wired to dynamic count and `onOpenNotifications`.
+     - `Dark_Store/Views/InboundGRNView.jsx`: Removed static `3` badge; wired to dynamic count.
+     - `Consumer/components/ConsumerHeader.jsx`: Removed static `3` badge and default `cartCount = 3`; bound to `useNotificationCount('consumer')`; hides badge when count is 0.
+  5. **Automated Verification Suite (`tests/test_notifications.py`)**:
+     - Added pytest tests for `/notifications/all-users` and `/notifications/count` verifying role isolation, valid notification schemas, and count matching.
+
+**Files changed:**
+- `backend/main.py`
+- `design/src/Farmer/Modals/NotificationsModal.jsx`
+- `design/src/Consumer/Modals/NotificationsModal.jsx`
+- `design/src/Farmer/components/Header.jsx`
+- `design/src/Logistic_Partner/components/LogisticHeader.jsx`
+- `design/src/Dark_Store/components/DarkStoreHeader.jsx`
+- `design/src/Dark_Store/DarkStoreApp.jsx`
+- `design/src/Dark_Store/Views/DarkStoreBlockchainView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreRevenueView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreTraceabilityView.jsx`
+- `design/src/Dark_Store/Views/InboundGRNView.jsx`
+- `design/src/Consumer/components/ConsumerHeader.jsx`
+- `design/src/utils/useNotificationCount.js` (New)
+- `tests/test_notifications.py` (New)
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Pytest Suite: All 157 unit & integration tests passed cleanly in 164.37s (`.venv/bin/pytest tests/ trust-layer/tests/`).
+- Frontend Production Build: Transformed 1,813 modules cleanly in 3.54s with 0 errors (`cd design && npm run build`).
+- Live API verification: `GET /notifications/count` and `GET /notifications/all-users` tested via cURL across all 4 roles.

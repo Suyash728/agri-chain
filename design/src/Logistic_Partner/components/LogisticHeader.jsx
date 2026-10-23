@@ -1,7 +1,11 @@
 import React from 'react';
 import { Bell, Calendar } from 'lucide-react';
+import { useNotificationCount } from '../../utils/useNotificationCount';
 
-export const LogisticHeader = ({ onOpenNotifications }) => {
+export const LogisticHeader = ({ onOpenNotifications, unreadCount }) => {
+  const { count: dynamicCount } = useNotificationCount('logistics');
+  const count = unreadCount !== undefined ? unreadCount : dynamicCount;
+
   return (
     <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
       <div>
@@ -29,9 +33,11 @@ export const LogisticHeader = ({ onOpenNotifications }) => {
           title="Notifications"
         >
           <Bell className="w-5 h-5 text-[#2D2620]" />
-          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#354424] text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white shadow-xs">
-            3
-          </span>
+          {count > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-[#354424] text-white rounded-full text-[10px] font-bold flex items-center justify-center border-2 border-white shadow-xs">
+              {count}
+            </span>
+          )}
         </button>
 
         {/* Date Selector Badge */}

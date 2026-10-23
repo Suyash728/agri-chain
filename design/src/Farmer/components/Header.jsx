@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Calendar } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/api';
+import { useNotificationCount } from '../../utils/useNotificationCount';
 
-export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount = 3 }) => {
+export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount }) => {
   const [profile, setProfile] = useState({ name: 'Rahul Patil' });
+  const { count: dynamicCount } = useNotificationCount('farmer');
+  const count = unreadCount !== undefined ? unreadCount : dynamicCount;
 
   useEffect(() => {
-    fetch('http://localhost:8000/farmer/profile')
+    fetch(`${API_BASE_URL}/farmer/profile`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.name) {
@@ -44,13 +48,13 @@ export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount = 3 })
         {/* Notification Bell */}
         <button 
           onClick={onOpenNotifications}
-          className="relative w-10 h-10 rounded-full bg-white border border-[#E2DDD2] flex items-center justify-center text-[#3B3028] hover:bg-[#FAF7F0] transition-colors shadow-sm"
+          className="relative w-10 h-10 rounded-full bg-white border border-[#E2DDD2] flex items-center justify-center text-[#3B3028] hover:bg-[#FAF7F0] transition-colors shadow-sm cursor-pointer"
           title="Notifications"
         >
           <Bell className="w-5 h-5 text-[#3D4E2A]" />
-          {unreadCount > 0 && (
+          {count > 0 && (
             <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#3D4E2A] text-white text-[11px] font-bold flex items-center justify-center shadow">
-              {unreadCount}
+              {count}
             </span>
           )}
         </button>

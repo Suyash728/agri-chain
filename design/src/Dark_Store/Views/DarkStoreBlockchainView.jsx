@@ -20,7 +20,10 @@ import {
   Clock
 } from 'lucide-react';
 
-export const DarkStoreBlockchainView = ({ onBack }) => {
+import { useNotificationCount } from '../../utils/useNotificationCount';
+
+export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
+  const { count } = useNotificationCount('darkstore');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStore, setActiveStore] = useState('Nashik Central Store');
   const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
@@ -190,13 +193,16 @@ export const DarkStoreBlockchainView = ({ onBack }) => {
         <div className="flex flex-wrap items-center gap-3">
           {/* Bell Notification Button */}
           <button 
-            onClick={() => alert('3 new blockchain ledger smart contract confirmations active!')}
+            onClick={onOpenNotifications || (() => {})}
             className="relative p-2.5 rounded-2xl bg-white border border-[#E6E1D5] text-[#2D2620] hover:bg-[#FAF7F0] cursor-pointer shadow-xs"
+            title="Notifications"
           >
             <Bell className="w-4 h-4 text-[#2D2620]" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#556B2F] text-white text-[10px] font-black flex items-center justify-center">
-              3
-            </span>
+            {count > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#556B2F] text-white text-[10px] font-black flex items-center justify-center">
+                {count}
+              </span>
+            )}
           </button>
 
           {/* Date Selector Pill */}

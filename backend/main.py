@@ -996,95 +996,318 @@ def get_universal_notifications(role: Optional[str] = None):
     """
     Returns multi-role tailored notifications for all 4 users:
     Farmer, Logistics Partner, Dark Store, and Consumer.
-    Explicitly includes supply chain failure and spoilage loss alerts.
+    Dynamically generated from real database events:
+    - On-chain custody transitions (registration, dispatch, delivery, sale)
+    - Pre-chain AI trust quarantine and breach alerts
+    - Spoilage claims and financial impact
+    - Verified consumer ratings and reviews
     """
     conn = get_connection()
     try:
         role_filter = (role or "").strip().lower()
 
         spoilage_rows = conn.execute(
-            "SELECT * FROM spoilage_incidents ORDER BY id DESC LIMIT 20"
+            "SELECT * FROM spoilage_incidents ORDER BY id DESC LIMIT 15"
+        ).fetchall()
+        quarantine_rows = conn.execute(
+            """
+            SELECT q.*, r.batch_id, r.temp_c, r.humidity_pct, b.crop_name
+            FROM quarantine q
+            JOIN readings r ON q.reading_id = r.id
+            LEFT JOIN batches b ON r.batch_id = b.batch_id
+            ORDER BY q.id DESC LIMIT 15
+            """
+        ).fetchall()
+        custody_rows = conn.execute(
+            """
+            SELECT c.*, b.crop_name, b.farmer_name, b.origin_farm
+            FROM custody_events c
+            JOIN batches b ON c.batch_id = b.batch_id
+            ORDER BY c.id DESC LIMIT 25
+            """
+        ).fetchall()
+        review_rows = conn.execute(
+            """
+            SELECT rv.*, b.crop_name
+            FROM batch_reviews rv
+            JOIN batches b ON rv.batch_id = b.batch_id
+            ORDER BY rv.id DESC LIMIT 10
+            """
         ).fetchall()
 
         notifications = []
 
-        # 1. FARMER NOTIFICATIONS
+        # ---------------- 1. FARMER NOTIFICATIONS ----------------
         if not role_filter or role_filter in ("farmer", "all"):
+            # Spoilage Alerts
             for sp in spoilage_rows:
                 notifications.append({
-                    "id": f"spoil-farmer-{sp['incident_id']}",
+                    "id": f"notif-farmer-spoil-{sp['incident_id']}",
                     "recipient_role": "farmer",
                     "category": "FAILURE_LOSS",
                     "title": f"Crop Loss Alert: Batch #{sp['batch_id']} ({sp['crop_name']})",
-                    "desc": f"Transit failure at stage {sp['stage']}. {sp['loss_goods_kg']} kg spoiled. Net financial impact: -₹{sp['total_loss_inr']:,.2f}. Custodian: {sp['custodian_at_fault']}. Claim status: {sp['status']}.",
+                    "desc": f"Transit failure at {sp['stage']}. {sp['loss_goods_kg']} kg degraded. Net impact: -₹{sp['total_loss_inr']:,.2f}. Fault: {sp['custodian_at_fault']}.",
                     "loss_goods_kg": sp["loss_goods_kg"],
                     "loss_money_inr": sp["total_loss_inr"],
-                    "severity": sp["severity"],
                     "time": str(sp["created_at"])[:16],
                     "icon": "AlertTriangle",
                     "color": "text-red-600",
                     "bgColor": "bg-red-50 border-red-200",
                 })
 
-        # 2. LOGISTICS PARTNER NOTIFICATIONS
+            # AI Quarantine Alerts
+            for q in quarantine_rows:
+                notifications.append({
+                    "id": f"notif-farmer-quar-{q['id']}",
+                    "recipient_role": "farmer",
+                    "category": "AI_BREACH_ALERT",
+                    "title": f"AI Cold-Chain Quarantine: #{q['batch_id']}",
+                    "desc": f"Reading quarantined by AI Trust Layer: {q['reason']} ({q['temp_c']}°C, {q['humidity_pct']}% RH). SHA-256 IsoLog chained.",
+                    "time": str(q["created_at"])[:16],
+                    "icon": "AlertTriangle",
+                    "color": "text-rose-600",
+                    "bgColor": "bg-rose-50 border-rose-200",
+                })
+
+            # Custody Transitions
+            for c in custody_rows:
+                state = c["state"]
+                price_inr = (c["price_paise"] or 0) / 100.0
+                if state == "REGISTERED":
+                    notifications.append({
+                        "id": f"notif-farmer-cust-{c['id']}",
+                        "recipient_role": "farmer",
+                        "category": "BATCH_ONCHAIN",
+                        "title": f"Batch Registered On-Chain: #{c['batch_id']}",
+                        "desc": f"{c['crop_name']} origin lot anchored on ProductRegistry.sol. Base rate: ₹{price_inr:,.2f}.",
+                        "time": str(c["occurred_at"])[:16],
+                        "icon": "ShieldCheck",
+                        "color": "text-[#3D5220]",
+                        "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                    })
+                elif state == "IN_TRANSIT":
+                    notifications.append({
+                        "id": f"notif-farmer-cust-{c['id']}",
+                        "recipient_role": "farmer",
+                        "category": "DISPATCH",
+                        "title": f"Produce Dispatched: #{c['batch_id']}",
+                        "desc": f"Handed off to carrier {c['to_holder']}. Stage transfer markup logged: ₹{price_inr:,.2f}.",
+                        "time": str(c["occurred_at"])[:16],
+                        "icon": "Truck",
+                        "color": "text-[#B85C38]",
+                        "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                    })
+                elif state == "SOLD":
+                    notifications.append({
+                        "id": f"notif-farmer-cust-{c['id']}",
+                        "recipient_role": "farmer",
+                        "category": "FINAL_SALE",
+                        "title": f"Retail Sale Complete: #{c['batch_id']}",
+                        "desc": f"Batch #{c['batch_id']} reached consumer doorstep. Farmer fair-share guaranteed payout settled.",
+                        "time": str(c["occurred_at"])[:16],
+                        "icon": "CheckCircle2",
+                        "color": "text-purple-600",
+                        "bgColor": "bg-purple-50 border-purple-200",
+                    })
+
+            # Consumer Reviews
+            for rv in review_rows:
+                notifications.append({
+                    "id": f"notif-farmer-rev-{rv['id']}",
+                    "recipient_role": "farmer",
+                    "category": "VERIFIED_REVIEW",
+                    "title": f"Consumer Review Received: #{rv['batch_id']}",
+                    "desc": f"Rated {rv['rating']}★ (Freshness {rv['freshness_score']}%): \"{rv['comment']}\"",
+                    "time": str(rv["created_at"])[:16],
+                    "icon": "ShieldCheck",
+                    "color": "text-amber-600",
+                    "bgColor": "bg-amber-50 border-amber-200",
+                })
+
+        # ---------------- 2. LOGISTICS PARTNER NOTIFICATIONS ----------------
         if not role_filter or role_filter in ("logistics", "all"):
             for sp in spoilage_rows:
                 is_transit = sp["stage"] == "IN_TRANSIT" or "logistics" in str(sp["custodian_at_fault"]).lower()
                 notifications.append({
-                    "id": f"spoil-logistics-{sp['incident_id']}",
+                    "id": f"notif-logistics-spoil-{sp['incident_id']}",
                     "recipient_role": "logistics",
                     "category": "LIABILITY_PENALTY" if is_transit else "NETWORK_ALERT",
-                    "title": f"{'Transit Breach Penalty' if is_transit else 'Supply Chain Failure'}: Batch #{sp['batch_id']}",
-                    "desc": f"{sp['details']} {sp['loss_goods_kg']} kg spoiled. Transporter damage liability: ₹{sp['total_loss_inr']:,.2f}. Custody: {sp['custodian_at_fault']}.",
+                    "title": f"{'Transit SLA Penalty' if is_transit else 'Supply Chain Spoilage'}: #{sp['batch_id']}",
+                    "desc": f"{sp['details']} Carrier penalty liability: ₹{sp['total_loss_inr']:,.2f}.",
                     "loss_goods_kg": sp["loss_goods_kg"],
                     "loss_money_inr": sp["total_loss_inr"],
-                    "severity": "CRITICAL" if is_transit else "HIGH",
                     "time": str(sp["created_at"])[:16],
                     "icon": "Truck",
                     "color": "text-amber-700",
                     "bgColor": "bg-amber-50 border-amber-200",
                 })
 
-        # 3. DARK STORE NOTIFICATIONS
+            for q in quarantine_rows:
+                notifications.append({
+                    "id": f"notif-logistics-quar-{q['id']}",
+                    "recipient_role": "logistics",
+                    "category": "TELEMETRY_ALERT",
+                    "title": f"Reefer Telematics Alert: #{q['batch_id']}",
+                    "desc": f"IoT Sensor Violation: {q['reason']} (Temp: {q['temp_c']}°C, Humidity: {q['humidity_pct']}%).",
+                    "time": str(q["created_at"])[:16],
+                    "icon": "AlertTriangle",
+                    "color": "text-rose-600",
+                    "bgColor": "bg-rose-50 border-rose-200",
+                })
+
+            for c in custody_rows:
+                state = c["state"]
+                if state == "REGISTERED":
+                    notifications.append({
+                        "id": f"notif-logistics-cust-{c['id']}",
+                        "recipient_role": "logistics",
+                        "category": "PROCUREMENT_ORDER",
+                        "title": f"Procurement Order Ready: #{c['batch_id']}",
+                        "desc": f"Pickup available from {c['farmer_name']} ({c['origin_farm'].split('||')[0].strip()}).",
+                        "time": str(c["occurred_at"])[:16],
+                        "icon": "Truck",
+                        "color": "text-[#3D5220]",
+                        "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                    })
+                elif state == "IN_STORAGE":
+                    notifications.append({
+                        "id": f"notif-logistics-cust-{c['id']}",
+                        "recipient_role": "logistics",
+                        "category": "DELIVERY_COMPLETE",
+                        "title": f"Delivery Confirmed at Dark Store: #{c['batch_id']}",
+                        "desc": f"Shipment accepted into custody by {c['to_holder']}. Handoff verified on-chain.",
+                        "time": str(c["occurred_at"])[:16],
+                        "icon": "CheckCircle2",
+                        "color": "text-emerald-700",
+                        "bgColor": "bg-emerald-50 border-emerald-200",
+                    })
+
+        # ---------------- 3. DARK STORE NOTIFICATIONS ----------------
         if not role_filter or role_filter in ("darkstore", "all"):
             for sp in spoilage_rows:
                 notifications.append({
-                    "id": f"spoil-darkstore-{sp['incident_id']}",
+                    "id": f"notif-darkstore-spoil-{sp['incident_id']}",
                     "recipient_role": "darkstore",
                     "category": "INVENTORY_WRITE_OFF",
-                    "title": f"Inbound Spoilage Write-Off: Batch #{sp['batch_id']} ({sp['crop_name']})",
-                    "desc": f"{sp['loss_goods_kg']} kg condemned during {sp['stage']}. Inventory write-off: -₹{sp['total_loss_inr']:,.2f}. Fault: {sp['custodian_at_fault']}. Return GRN initiated.",
+                    "title": f"Inbound Write-Off: Batch #{sp['batch_id']} ({sp['crop_name']})",
+                    "desc": f"{sp['loss_goods_kg']} kg damaged during transit. Inventory write-off: -₹{sp['total_loss_inr']:,.2f}. Return GRN logged.",
                     "loss_goods_kg": sp["loss_goods_kg"],
                     "loss_money_inr": sp["total_loss_inr"],
-                    "severity": "HIGH",
                     "time": str(sp["created_at"])[:16],
                     "icon": "AlertCircle",
                     "color": "text-rose-700",
                     "bgColor": "bg-rose-50 border-rose-200",
                 })
 
-        # 4. CONSUMER NOTIFICATIONS
+            for c in custody_rows:
+                state = c["state"]
+                price_inr = (c["price_paise"] or 0) / 100.0
+                if state == "IN_TRANSIT":
+                    notifications.append({
+                        "id": f"notif-darkstore-cust-{c['id']}",
+                        "recipient_role": "darkstore",
+                        "category": "INBOUND_SCHEDULED",
+                        "title": f"Inbound Shipment In Transit: #{c['batch_id']}",
+                        "desc": f"Reefer vehicle en route from {c['from_holder']}. Estimated arrival at loading bay.",
+                        "time": str(c["occurred_at"])[:16],
+                        "icon": "Truck",
+                        "color": "text-[#B85C38]",
+                        "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                    })
+                elif state == "IN_STORAGE":
+                    notifications.append({
+                        "id": f"notif-darkstore-cust-{c['id']}",
+                        "recipient_role": "darkstore",
+                        "category": "GRN_RECEIVED",
+                        "title": f"GRN Received & Stored: #{c['batch_id']}",
+                        "desc": f"{c['crop_name']} verified and allocated to cold bay. Intake valuation: ₹{price_inr:,.2f}.",
+                        "time": str(c["occurred_at"])[:16],
+                        "icon": "ShieldCheck",
+                        "color": "text-emerald-700",
+                        "bgColor": "bg-emerald-50 border-emerald-200",
+                    })
+                elif state == "SOLD":
+                    notifications.append({
+                        "id": f"notif-darkstore-cust-{c['id']}",
+                        "recipient_role": "darkstore",
+                        "category": "RETAIL_SALE",
+                        "title": f"Consumer Sale Finalized: #{c['batch_id']}",
+                        "desc": f"Produce lot checked out and sold at retail price of ₹{price_inr:,.2f}.",
+                        "time": str(c["occurred_at"])[:16],
+                        "icon": "CheckCircle2",
+                        "color": "text-[#3D5220]",
+                        "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                    })
+
+        # ---------------- 4. CONSUMER NOTIFICATIONS ----------------
         if not role_filter or role_filter in ("consumer", "all"):
             for sp in spoilage_rows:
                 consumer_refund = min(2200.0, float(sp["total_loss_inr"]))
                 notifications.append({
-                    "id": f"spoil-consumer-{sp['incident_id']}",
+                    "id": f"notif-consumer-spoil-{sp['incident_id']}",
                     "recipient_role": "consumer",
                     "category": "SAFETY_RECALL_REFUND",
-                    "title": f"AgriChain Freshness Recall: Batch #{sp['batch_id']}",
-                    "desc": f"Cold-chain temperature breach detected in transit ({sp['crop_name']}). Produce was intercepted before delivery to protect quality & safety. 100% refund of ₹{consumer_refund:,.2f} credited to your UPI.",
-                    "loss_goods_kg": sp["loss_goods_kg"],
+                    "title": f"AgriChain Freshness Recall: #{sp['batch_id']}",
+                    "desc": f"Cold-chain temperature breach detected in transit ({sp['crop_name']}). Intercepted before delivery. ₹{consumer_refund:,.2f} refunded.",
                     "refund_inr": consumer_refund,
-                    "severity": "MEDIUM",
                     "time": str(sp["created_at"])[:16],
                     "icon": "ShieldCheck",
                     "color": "text-emerald-700",
                     "bgColor": "bg-emerald-50 border-emerald-200",
                 })
 
+            for c in custody_rows:
+                state = c["state"]
+                if state == "IN_STORAGE":
+                    notifications.append({
+                        "id": f"notif-consumer-cust-{c['id']}",
+                        "recipient_role": "consumer",
+                        "category": "FRESH_ARRIVALS",
+                        "title": f"Fresh Harvest in Stock: {c['crop_name']}",
+                        "desc": f"Direct farm harvest #{c['batch_id']} from {c['farmer_name']} is now available for doorstep delivery.",
+                        "time": str(c["occurred_at"])[:16],
+                        "icon": "ShieldCheck",
+                        "color": "text-[#3D5220]",
+                        "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                    })
+                elif state == "SOLD":
+                    notifications.append({
+                        "id": f"notif-consumer-cust-{c['id']}",
+                        "recipient_role": "consumer",
+                        "category": "ORDER_DELIVERED",
+                        "title": f"Order Delivered: #{c['batch_id']}",
+                        "desc": f"Your farm-fresh {c['crop_name']} has been delivered. View immutable QR provenance on-chain.",
+                        "time": str(c["occurred_at"])[:16],
+                        "icon": "CheckCircle2",
+                        "color": "text-emerald-700",
+                        "bgColor": "bg-emerald-50 border-emerald-200",
+                    })
+
+            for rv in review_rows:
+                notifications.append({
+                    "id": f"notif-consumer-rev-{rv['id']}",
+                    "recipient_role": "consumer",
+                    "category": "REVIEW_CONFIRMED",
+                    "title": f"Verified Review Published: #{rv['batch_id']}",
+                    "desc": f"Thank you for rating your produce! Your {rv['rating']}★ review is published on the blockchain.",
+                    "time": str(rv["created_at"])[:16],
+                    "icon": "ShieldCheck",
+                    "color": "text-amber-600",
+                    "bgColor": "bg-amber-50 border-amber-200",
+                })
+
+        # Sort notifications by time descending (newest first)
+        notifications.sort(key=lambda x: x.get("time", ""), reverse=True)
         return notifications
     finally:
         conn.close()
+
+
+@app.get("/notifications/count")
+def get_notifications_count(role: Optional[str] = None):
+    """Return count of active notifications for a given role."""
+    notifs = get_universal_notifications(role=role)
+    return {"count": len(notifs), "role": role or "all"}
 
 
 # ---------------- Batch & Custody Models & Routes ----------------
