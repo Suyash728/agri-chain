@@ -1980,3 +1980,59 @@ still static UI with no data flow. Specifically:
   - `GET /logistics/shipments`: returns clean `vehicle`, `produce`, `quantity`, `coords`, `state`.
   - `GET /logistics/orders`: returns clean `supplier` without unparsed metadata.
   - `GET /batches/{id}/traceability`: fully renders dynamic 5-stage lifecycle, credentials, and custody ledger.
+
+
+## [Dark Store — Dynamic Sales Graph, Revenue Bars, Dashboard Sections & Batch Selection] — 2026-10-24
+
+**What was done:**
+- Fixed all 4 Dark Store screens/sections identified in user screenshots (015017, 015224, 015306, 015410):
+  1. **Dark Store Dashboard (`DarkStoreDashboardView.jsx` - Screenshot 015017)**:
+     - **Top Selling Products**: Replaced hardcoded static array (Mango, Tomato, Potato, Wheat, Banana) with dynamic fetch from `/darkstore/sales` (`topProducts`). Added clean empty state ("No sales recorded yet. Completed consumer sales will appear here automatically.") when 0 sales exist.
+     - **Inventory Overview**: Replaced hardcoded 186 Products and static SVG donut (32%, 28%, 14%, 10%, 16%) and hardcoded stock breakdown (132 fresh, 18 low, 5 out, 3 blocked). Connected directly to `/darkstore/inventory` and `/darkstore/kpis`. Calculates dynamic SVG donut strokeDasharray, category legend percentages, and real stock metrics. Displays a clean 0-product neutral ring when empty.
+     - **Revenue Overview**: Replaced static climbing SVG curve (`M 10 70 C 40 65...`), hardcoded dates (`1 May..31 May`), and static financial stats (Gross ₹3.45L, Net ₹2.12L, AOV ₹1,480). Wired to live `/darkstore/revenue`. Displays a clean flat baseline at 0 with "No sales recorded in this period", dynamic D-6..Today date labels, and ₹0 profits when no sales exist.
+     - **Custody Actions Batch ID Selection**: Added a dynamic Batch Selector `<select>` populated from `/batches` in the "On-Chain Custody Actions" bar so users can select any real batch in the system for "Confirm Inbound GRN" and "Record Sale to Consumer", replacing hardcoded `'BATCH-PO-2026-001'`.
+  2. **Sales Dashboard (`DarkStoreSalesView.jsx` - Screenshot 015224)**:
+     - Removed hardcoded 13-node SVG waveform curve (`M 10 115 L 50 78...`).
+     - Wired to dynamic 6-point timeline (D-5..Today) provided by `/darkstore/sales`.
+     - Added dynamic coordinate generator scaling points for all 3 metrics (`Amount (₹)`, `Orders Count`, `Volume (kg)`).
+     - Renders clean flat baseline at 0 with notice "No sales recorded in this period. Graph displays live baseline at 0" when sales are zero, and dynamic curve with interactive node dots and tooltips when sales exist.
+  3. **Blockchain Verification (`DarkStoreBlockchainView.jsx` - Screenshot 015306)**:
+     - Removed hardcoded fake fallback txHash (`0x8f7a6b...`), fake block number (`# 5874...`), fake milestones, and mock alert batch suggestions.
+     - Added a dynamic Batch Selector `<select>` populated from `/batches` allowing instant verification of any registered on-chain batch.
+     - Added clean empty states when no batches are registered or an invalid search is entered.
+     - Displays real cryptographic transaction hashes (`0x...`), real block numbers, origin farms, and immutable custody milestones.
+  4. **Revenue Analytics (`DarkStoreRevenueView.jsx` - Screenshot 015410)**:
+     - Removed fallback 30%/70% bars in "Revenue Over Time" and 80% width bar in "Revenue by Source".
+     - Removed hardcoded SVG donut percentages (45.2%, 28.1%, 62.3%, etc.) in "Revenue by Category" and "Revenue by Payment Mode".
+     - Slices and legends are dynamically computed from `revenueData.categoryBreakdown` and `revenueData.paymentBreakdown`.
+     - Displays clean empty states ("No daily revenue recorded yet", "No category sales recorded yet", "No transactions recorded yet") when revenue is ₹0.
+  5. **Modals & Backend Endpoints**:
+     - Updated `ConfirmGRNModal.jsx` and `RecordSaleModal.jsx` to load `/batches` and offer real batch selection dropdowns, removing hardcoded `'BATCH-PO-2026-001'` default prop.
+     - Updated `InboundGRNView.jsx` and `DarkStoreApp.jsx` to pass real batch IDs.
+     - Enhanced `backend/main.py`: `/darkstore/sales` returns a 6-point `timeline` (D-5..Today) and `/darkstore/revenue` returns `paymentBreakdown`.
+
+**Files changed:**
+- `backend/main.py`
+- `design/src/Dark_Store/DarkStoreApp.jsx`
+- `design/src/Dark_Store/Modals/ConfirmGRNModal.jsx`
+- `design/src/Dark_Store/Modals/RecordSaleModal.jsx`
+- `design/src/Dark_Store/Views/DarkStoreBlockchainView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreDashboardView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreRevenueView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreSalesView.jsx`
+- `design/src/Dark_Store/Views/InboundGRNView.jsx`
+- `MEMORY.md`
+
+**Decisions made (and why):**
+- All 4 views now cleanly distinguish between zero/reset states and active sales/inventory states.
+- Replaced all static SVG path curves with dynamic coordinate calculation functions.
+- Batch selection dropdowns across the dashboard and modals allow seamless on-chain action without requiring users to memorize or manually paste long batch identifiers.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build: 1,815 modules built in 3.06s with 0 errors (`npm run build`).
+- Full Backend Test Suite: 12/12 passed in 5.14s (`pytest tests/`).
+- Smart Contract Suite: 22/22 passed in 725ms (`npx hardhat test`).
+- Live API Endpoints Verified:
+  - `GET /darkstore/sales`: returns live `totalSales`, `topProducts`, `recentOrders`, and dynamic 6-point `timeline`.
+  - `GET /darkstore/revenue`: returns live `revenueTableData`, `dailyBarData`, `sourceBarData`, `categoryBreakdown`, and `paymentBreakdown`.
+  - `GET /batches/{id}/traceability`: returns live cryptographic transaction hashes, block numbers, and custody timeline.
