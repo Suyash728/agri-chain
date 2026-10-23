@@ -19,14 +19,17 @@ import {
   ExternalLink,
   Flame,
   Snowflake,
-  ShieldAlert
+  ShieldAlert,
+  Trash2
 } from 'lucide-react';
+import { CleanSlateModal } from './CleanSlateModal';
 
 export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpenExternal }) => {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = isOpenExternal !== undefined ? isOpenExternal : internalIsOpen;
   const setIsOpen = setIsOpenExternal !== undefined ? setIsOpenExternal : setInternalIsOpen;
-  const [activeTab, setActiveTab] = useState('scenarios'); // 'scenarios' | 'iot' | 'produce' | 'custody'
+  const [activeTab, setActiveTab] = useState('scenarios'); // 'scenarios' | 'iot' | 'produce' | 'custody' | 'reset'
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   
   // Data State
   const [batches, setBatches] = useState([]);
@@ -231,7 +234,8 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
             { id: 'scenarios', label: '1-Click Scenarios', icon: Play },
             { id: 'iot', label: 'IoT Sliders', icon: Radio },
             { id: 'produce', label: 'New Goods', icon: Sprout },
-            { id: 'custody', label: 'Custody Stepper', icon: Layers }
+            { id: 'custody', label: 'Custody Stepper', icon: Layers },
+            { id: 'reset', label: 'Clean Slate', icon: Trash2 }
           ].map(tab => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -833,7 +837,68 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
             </div>
           )}
 
+          {/* ============================================================= */}
+          {/* TAB 5: CLEAN SLATE & RESET                                    */}
+          {/* ============================================================= */}
+          {activeTab === 'reset' && (
+            <div className="flex flex-col gap-3.5 animate-fade-in">
+              <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-950 font-medium">
+                🧹 <strong className="font-bold">Presentation Slate Prep:</strong> Wipe all previous batches, warehouse inventory, telemetry readings, and spoilage claims. All participant accounts, on-chain role authorizations, and crop policies will remain intact so you can demonstrate the framework from a clean fresh slate.
+              </div>
+
+              <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center flex-shrink-0">
+                    <Trash2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-black text-sm text-[#2D2620]">Reset All Roles to Zero Inventory</h4>
+                    <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">
+                      Farmer • Logistics • Dark Store • Consumer
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-[#666057] leading-relaxed">
+                  Click below to clear all state. Once wiped, you can use the <strong>New Goods</strong> tab or the Farmer dashboard to register a brand new crop lot live in front of your audience.
+                </p>
+
+                <div className="bg-[#FAF7F0] p-3 rounded-xl border border-[#E6E1D5] text-xs font-mono space-y-1">
+                  <div className="flex justify-between text-[#666057]">
+                    <span>Current Batches in DB:</span>
+                    <span className="font-bold text-[#2D2620]">{batches.length}</span>
+                  </div>
+                  <div className="flex justify-between text-[#666057]">
+                    <span>Target State:</span>
+                    <span className="font-bold text-emerald-700">0 kg / Clean Slate</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsResetModalOpen(true)}
+                  className="w-full py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-xs flex items-center justify-center gap-2 cursor-pointer transition-all hover:scale-[1.01]"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Purge Data & Reset System Now</span>
+                </button>
+              </div>
+            </div>
+          )}
+
         </div>
+
+        {/* Confirmation Modal */}
+        <CleanSlateModal
+          isOpen={isResetModalOpen}
+          onClose={() => setIsResetModalOpen(false)}
+          onResetComplete={() => {
+            fetchBatches();
+            setSelectedBatchId('');
+            setIotBatchId('');
+            setCustodyBatchId('');
+          }}
+        />
 
         {/* Drawer Footer with Quick Live Status */}
         <div className="p-3.5 bg-white border-t border-[#E6E1D5] flex items-center justify-between text-xs text-[#666057]">

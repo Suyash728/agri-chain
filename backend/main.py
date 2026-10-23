@@ -15,7 +15,7 @@ import hashlib
 
 import chain
 import ipfs
-from db import get_connection, init_db, DB_PATH
+from db import get_connection, init_db, DB_PATH, reset_system_data
 
 # Ensure trust-layer is importable
 TRUST_LAYER_PATH = pathlib.Path(__file__).resolve().parent.parent / "trust-layer"
@@ -4336,19 +4336,84 @@ def post_demo_scenario(scenario_id: str):
 # OMNISCIENT GOD MODE & 4-QUADRANT LIVE SYSTEM ENDPOINTS
 # =============================================================================
 
+def _build_clean_slate_godmode_state() -> Dict[str, Any]:
+    """Fallback state when no batches exist (freshly purged/reset system)."""
+    return {
+        "success": True,
+        "empty": True,
+        "batch_id": "CLEAN-SLATE",
+        "current_state": "AWAITING_REGISTRATION",
+        "has_breach": False,
+        "has_spoilage": False,
+        "farmer": {
+            "farmer_name": "Rahul Patil (Farmer)",
+            "origin_farm": "No Active Batches (Clean Slate Ready)",
+            "crop_name": "Ready for Harvest Registration",
+            "harvest_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "quantity_kg": 0.0,
+            "farm_gate_rate_inr": 0.0,
+            "guaranteed_payout_inr": 0.0,
+            "escrow_protection_status": "READY_FOR_NEW_BATCH",
+            "registration_tx": "0x0000000000000000000000000000000000000000",
+        },
+        "logistics": {
+            "carrier_name": "Safexpress Cold Chain",
+            "vehicle_no": "MH12 AB 1234",
+            "route": "Depot Standby — Ready for Dispatch",
+            "telematics": {"temperature_c": 0.0, "humidity_pct": 0.0, "speed_kmh": 0.0},
+            "status": "IDLE",
+            "penalty_inr": 0.0,
+            "recent_readings": [],
+        },
+        "darkstore": {
+            "facility": "Pune Fresh DarkStore Hub",
+            "disposition": "EMPTY_SLATE",
+            "inventory_kg": 0.0,
+            "salvage_bay_kg": 0.0,
+            "fefo_expiry_days": 0,
+            "retail_markdown_pct": 0,
+            "circuit_breaker": "NORMAL",
+        },
+        "consumer": {
+            "retail_price_inr": 0.0,
+            "original_retail_inr": 0.0,
+            "discount_active": False,
+            "thermal_warning": None,
+            "provenance_passport": [],
+            "rating": 5.0,
+            "review_count": 0,
+        },
+        "cryptographic_inspector": {
+            "raw_payload_hex": "0x00",
+            "sha256_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+            "isolog_entry_hash": None,
+            "evm_gas_counter": 0,
+        },
+        "blockchain": {
+            "network": "Polygon Amoy / Local Hardhat",
+            "contracts": {
+                "ColdChainMonitor": getattr(chain, "cold_chain_monitor_addr", "0x0"),
+                "CustodyTransfer": getattr(chain, "custody_transfer_addr", "0x0"),
+                "ProductRegistry": getattr(chain, "product_registry_addr", "0x0"),
+            },
+            "circuit_breaker_active": False,
+        },
+    }
+
+
 def build_godmode_state(conn, batch_id: str):
     """Compiles 100% ground-truth real-valued state for all 4 quadrants from SQLite & EVM."""
     if not batch_id or batch_id in ("latest", "undefined", "null"):
         row = conn.execute("SELECT batch_id FROM batches ORDER BY rowid DESC LIMIT 1").fetchone()
         if not row:
-            return None
+            return _build_clean_slate_godmode_state()
         batch_id = row["batch_id"]
 
     b_row = conn.execute("SELECT * FROM batches WHERE batch_id = ?", (batch_id,)).fetchone()
     if not b_row:
         b_row = conn.execute("SELECT * FROM batches ORDER BY rowid DESC LIMIT 1").fetchone()
         if not b_row:
-            return None
+            return _build_clean_slate_godmode_state()
         batch_id = b_row["batch_id"]
 
     origin_full = b_row["origin_farm"] or "Nashik Valley Cluster #4"
@@ -4552,10 +4617,33 @@ def get_demo_godmode(batch_id: str):
     try:
         data = build_godmode_state(conn, batch_id)
         if not data:
-            raise HTTPException(status_code=404, detail="No batches available for God Mode")
+            data = _build_clean_slate_godmode_state()
         return data
     finally:
         conn.close()
+
+
+@app.post("/admin/system-reset")
+def post_admin_system_reset():
+    """Resets all batch inventory, custody events, telemetry readings,
+    quarantine logs, reviews, documents, and spoilage records to a clean slate.
+    Preserves participant accounts, role delegations, and crop policies.
+    """
+    try:
+        report = reset_system_data(preserve_policies=True)
+        return {
+            "status": "success",
+            "message": "System data cleared successfully. Framework is on a clean fresh slate.",
+            "report": report,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"System reset failed: {str(e)}")
+
+
+@app.post("/demo/reset")
+def post_demo_reset():
+    """Demo shortcut alias for system data reset."""
+    return post_admin_system_reset()
 
 
 @app.get("/demo/godmode")

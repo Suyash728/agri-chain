@@ -27,8 +27,10 @@ import {
   Eye,
   Info,
   Sliders,
-  BellRing
+  BellRing,
+  Trash2
 } from 'lucide-react';
+import { CleanSlateModal } from './CleanSlateModal';
 
 const TOUR_STEPS_INFO = [
   {
@@ -71,6 +73,7 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
   const [currentTourStep, setCurrentTourStep] = useState(1);
   const [isPlayingTour, setIsPlayingTour] = useState(false);
   const [showInspector, setShowInspector] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   // Manual IoT Controls
   const [manualTemp, setManualTemp] = useState(4.5);
@@ -324,6 +327,15 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
             >
               <Cpu className="w-3.5 h-3.5 text-purple-400" />
               <span className="hidden sm:inline">Inspector</span>
+            </button>
+
+            <button
+              onClick={() => setIsResetModalOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl border border-rose-800/80 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+              title="Purge all batches & reset to clean slate"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span className="hidden sm:inline">Clean Slate</span>
             </button>
 
             <button
@@ -859,6 +871,19 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
           </button>
         </div>
       </footer>
+
+      {/* Confirmation Modal */}
+      <CleanSlateModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onResetComplete={() => {
+          fetchBatches();
+          setSelectedBatchId('');
+          fetchGodModeState('latest');
+          setActionNotice('System wiped to clean slate! All 4 quadrants reset.');
+          setTimeout(() => setActionNotice(null), 3500);
+        }}
+      />
 
     </div>
   );

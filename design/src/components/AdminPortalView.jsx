@@ -14,8 +14,10 @@ import {
   Unlock,
   Cpu,
   Layers,
-  FileCheck2
+  FileCheck2,
+  Trash2
 } from 'lucide-react';
+import { CleanSlateModal } from './CleanSlateModal';
 
 export const AdminPortalView = ({ currentTab = 'all' }) => {
   const [participants, setParticipants] = useState([]);
@@ -24,6 +26,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
   const [quarantineLogs, setQuarantineLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionStatus, setActionStatus] = useState(null);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   // Grant role form state
   const [targetAddress, setTargetAddress] = useState('');
@@ -383,6 +386,53 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
           </div>
         </div>
       )}
+
+      {/* Section 4: System Maintenance & Clean Slate Reset */}
+      {(currentTab === 'all' || currentTab === 'maintenance') && (
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Trash2 className="w-5 h-5 text-rose-600" />
+            <h2 className="text-lg font-black text-[#2D2620]">System Maintenance & Clean Slate Reset</h2>
+          </div>
+          <div className="bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200">
+                  Demo & Presentation Utility
+                </span>
+                <span className="text-xs font-bold text-[#666057]">Zero-Interference Reset</span>
+              </div>
+              <h3 className="text-sm font-black text-[#2D2620]">
+                Purge All Inventories & Telemetry for Clean Live Presentation
+              </h3>
+              <p className="text-xs text-[#666057] mt-1 leading-relaxed">
+                Clears all registered crops, produce inventory, custody transfer events, sensor telemetry readings, quarantine logs, spoilage claims, and reviews across Farmer, Logistics, Dark Store, and Consumer roles. <strong>Participant accounts, wallet addresses, and on-chain smart contract roles are strictly preserved.</strong>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsResetModalOpen(true)}
+              className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-5 py-3 rounded-xl text-xs font-black shadow-xs flex items-center gap-2 whitespace-nowrap cursor-pointer transition-all hover:scale-[1.02] flex-shrink-0"
+            >
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>Purge Data & Reset Clean Slate</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      <CleanSlateModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onResetComplete={(data) => {
+          setActionStatus({
+            type: 'success',
+            msg: `System wiped to clean slate! Purged ${data.report?.total_cleared || 0} records across all roles.`,
+          });
+          fetchAllData();
+        }}
+      />
     </main>
   );
 };

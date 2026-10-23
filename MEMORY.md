@@ -1476,3 +1476,45 @@ still static UI with no data flow. Specifically:
 - Hardhat Smart Contract Suite (`cd contracts && npx hardhat test`): All 22/22 tests passed in 997ms.
 - Zero Hardcoded Mock Data: Scanned entire frontend code; verified zero unimported legacy mock data references and zero static 2025 dates in active UI templates.
 - Endpoints verified with live cURL requests (`/darkstore/kpis`, `/darkstore/revenue`, `/darkstore/sales`, `/logistics/orders`, `/logistics/transactions`, `/farmer/ai-trust`, `/farmer/profile`).
+
+---
+
+## [Clean Slate System Reset for Live Presentation & Testing] — 2026-10-23
+
+**What was done:**
+- Implemented an end-to-end "Clean Slate / Purge Data" functionality to enable live demonstrations from a fresh, 0-inventory state without destroying participant accounts or smart contract permissions:
+  1. **Backend Reset Engine (`backend/db.py` & `backend/main.py`)**:
+     - Added `reset_system_data(preserve_policies: bool = True)` in `backend/db.py`.
+     - Purges tables in strict foreign-key order: `quarantine`, `readings`, `batch_reviews`, `batch_documents`, `spoilage_incidents`, `custody_events`, `batches`, `telemetry_history`, `audit_trail`, `replay_events`, and `replay_latest_timestamps`.
+     - Resets SQLite `sqlite_sequence` auto-increments and preserves on-chain & relational crop policies (`DEFAULT_POLICIES`).
+     - Exposed `POST /admin/system-reset` and `POST /demo/reset`.
+  2. **Graceful Zero-State for God Mode Hub (`backend/main.py`)**:
+     - Added `_build_clean_slate_godmode_state()`; prevents 404 errors when `batches` is empty and returns clean standby states for all 4 quadrants (`AWAITING_REGISTRATION`, 0 kg inventory, idle logistics telematics).
+  3. **Universal Confirmation Modal (`design/src/components/CleanSlateModal.jsx`)**:
+     - Built confirmation dialog detailing exactly what is purged (batches, telemetry, custody, reviews) and what is preserved (participant accounts, addresses, role permissions).
+     - Dispatches window event `agrichain-data-reset` upon successful reset so all open views update live.
+  4. **Multi-Portal UI Placement**:
+     - **Admin Portal (`AdminPortalView.jsx` & `AdminSidebar.jsx`)**: Added dedicated "System Maintenance & Clean Slate Reset" section and navigation tab with trigger button.
+     - **Showcase Drawer (`ShowcaseDrawer.jsx`)**: Added 5th tab `Clean Slate` with database batch counter and 1-click purge trigger.
+     - **Omniscient God Mode Hub (`GodModeHub.jsx`)**: Added `Clean Slate` button in top command cockpit next to Inspector and Tour controls.
+     - **Application Root (`App.jsx`)**: Wired `agrichain-data-reset` listener to trigger global refetch and remount of role portals.
+  5. **Automated Verification Suite (`tests/test_system_reset.py`)**:
+     - Verifies batch registration -> system reset -> 0-value verification across Farmer, Logistics, Dark Store, and God Mode -> preservation of participant accounts -> registration of new batch on clean slate.
+
+**Files changed:**
+- `backend/db.py`
+- `backend/main.py`
+- `design/src/components/CleanSlateModal.jsx` (New)
+- `design/src/components/AdminPortalView.jsx`
+- `design/src/components/AdminSidebar.jsx`
+- `design/src/components/ShowcaseDrawer.jsx`
+- `design/src/components/GodModeHub.jsx`
+- `design/src/App.jsx`
+- `tests/test_system_reset.py` (New)
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Pytest Suite: 155/155 unit & integration tests passed cleanly in 77.31s (`.venv/bin/pytest tests/ trust-layer/tests/`).
+- Hardhat Smart Contract Suite: 22/22 tests passed in 807ms (`cd contracts && npx hardhat test`).
+- Frontend Production Build: 1,811 modules transformed cleanly in 3.18s with 0 errors (`npm run build`).
+- Live Reset & Post-Reset Batch Registration verified via cURL against running backend.

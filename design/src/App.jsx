@@ -107,8 +107,19 @@ export default function App() {
     }
   }, []);
 
+  const [resetKey, setResetKey] = useState(0);
+
   useEffect(() => {
     fetchFarmerData();
+  }, [fetchFarmerData]);
+
+  useEffect(() => {
+    const handleResetEvent = () => {
+      fetchFarmerData();
+      setResetKey((k) => k + 1);
+    };
+    window.addEventListener('agrichain-data-reset', handleResetEvent);
+    return () => window.removeEventListener('agrichain-data-reset', handleResetEvent);
   }, [fetchFarmerData]);
 
   // Tab state for Logistics Partner portal
@@ -667,14 +678,14 @@ export default function App() {
       {/* 3. DARK STORE PORTAL VIEW                  */}
       {/* ========================================== */}
       {activeRole === 'darkstore' && (
-        <DarkStoreApp />
+        <DarkStoreApp key={`darkstore-${resetKey}`} />
       )}
 
       {/* ========================================== */}
       {/* 4. CONSUMER PORTAL VIEW                    */}
       {/* ========================================== */}
       {activeRole === 'consumer' && (
-        <div className="w-full min-h-screen flex-1 bg-[#FAF7F0]">
+        <div key={`consumer-${resetKey}`} className="w-full min-h-screen flex-1 bg-[#FAF7F0]">
           <ConsumerApp 
             currentTab={consumerTab}
             onSelectTab={setConsumerTab}

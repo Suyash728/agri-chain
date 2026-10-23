@@ -382,3 +382,97 @@ def init_db(db_path: str | pathlib.Path = DB_PATH) -> pathlib.Path | str:
             )
         conn.commit()
     return path
+
+
+def reset_system_data(preserve_policies: bool = True, db_path: str | pathlib.Path = DB_PATH) -> dict:
+    """Purges all produce batches, custody events, telemetry readings, quarantine logs,
+    spoilage incidents, reviews, documents, and telemetry audit records across SQLite & PostgreSQL.
+    Preserves participant accounts, role delegations, and crop policies.
+    """
+    tables_to_clear = [
+        "quarantine",
+        "readings",
+        "batch_reviews",
+        "batch_documents",
+        "spoilage_incidents",
+        "custody_events",
+        "batches",
+        "telemetry_history",
+        "audit_trail",
+        "replay_events",
+        "replay_latest_timestamps",
+    ]
+    counts = {}
+    conn = get_connection(db_path=db_path)
+    try:
+        is_pg = isinstance(conn, PostgresConnectionWrapper)
+
+        if not is_pg:
+            try:
+                conn.execute("PRAGMA foreign_keys = OFF")
+            except Exception:
+                pass
+
+        for table in tables_to_clear:
+            try:
+                cnt_res = conn.execute(f"SELECT COUNT(*) as cnt FROM {table}")
+                row = cnt_res.fetchone()
+                cnt = row["cnt"] if row else 0
+                counts[table] = int(cnt)
+            except Exception:
+                counts[table] = 0
+
+            try:
+                if is_pg:
+                    conn.execute(f"TRUNCATE TABLE {table} CASCADE")
+                else:
+                    conn.execute(f"DELETE FROM {table}")
+            except Exception as e:
+                print(f"[db] Warning: Could not clear table {table}: {e}")
+
+        if not is_pg:
+            try:
+                conn.execute(
+                    "DELETE FROM sqlite_sequence WHERE name IN ('quarantine', 'readings', 'batch_reviews', 'batch_documents', 'spoilage_incidents', 'custody_events')"
+                )
+            except Exception:
+                pass
+            try:
+                conn.execute("PRAGMA foreign_keys = ON")
+            except Exception:
+                pass
+
+        if preserve_policies:
+            for crop_name, min_temp, max_temp, min_hum, max_hum in DEFAULT_POLICIES:
+                try:
+                    if is_pg:
+                        conn.execute(
+                            """
+                            INSERT INTO policy (crop_name, min_temp_c, max_temp_c, min_humidity, max_humidity)
+                            VALUES (%s, %s, %s, %s, %s)
+                            ON CONFLICT (crop_name) DO NOTHING
+                            """,
+                            (crop_name, min_temp, max_temp, min_hum, max_hum),
+                        )
+                    else:
+                        conn.execute(
+                            """
+                            INSERT OR IGNORE INTO policy (crop_name, min_temp_c, max_temp_c, min_humidity, max_humidity)
+                            VALUES (?, ?, ?, ?, ?)
+                            """,
+                            (crop_name, min_temp, max_temp, min_hum, max_hum),
+                        )
+                except Exception:
+                    pass
+
+        conn.commit()
+    finally:
+        conn.close()
+
+    return {
+        "success": True,
+        "cleared_records": counts,
+        "total_cleared": sum(counts.values()),
+        "policies_preserved": preserve_policies,
+    }
+

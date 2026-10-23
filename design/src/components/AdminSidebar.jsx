@@ -5,7 +5,8 @@ import {
   Database, 
   UserCheck, 
   ShieldCheck, 
-  LogOut 
+  LogOut,
+  Trash2
 } from 'lucide-react';
 
 export const adminNavItems = [
@@ -13,6 +14,7 @@ export const adminNavItems = [
   { id: 'circuit-breakers', label: 'Circuit Breakers', icon: Layers },
   { id: 'quarantine', label: 'Quarantine Audit', icon: Database },
   { id: 'roles', label: 'Role Governance', icon: UserCheck },
+  { id: 'maintenance', label: 'Clean Slate Reset', icon: Trash2 },
 ];
 
 export const AdminSidebar = ({ currentTab = 'all', onSelectTab, onLogout }) => {
