@@ -138,7 +138,11 @@ export default function App() {
       setResetKey((k) => k + 1);
     };
     window.addEventListener('agrichain-data-reset', handleResetEvent);
-    return () => window.removeEventListener('agrichain-data-reset', handleResetEvent);
+    window.addEventListener('agrichain-data-updated', handleResetEvent);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', handleResetEvent);
+      window.removeEventListener('agrichain-data-updated', handleResetEvent);
+    };
   }, [fetchFarmerData]);
 
   // Tab state for Logistics Partner portal
@@ -551,11 +555,17 @@ export default function App() {
                           </div>
                           <div>
                             <div className="flex items-baseline gap-1">
-                              <span className="text-2xl sm:text-3xl font-extrabold text-[#2D2620]">{farmerTrust?.score ?? 92}</span>
+                              <span className="text-2xl sm:text-3xl font-extrabold text-[#2D2620]">
+                                {farmerTrust?.score !== undefined ? farmerTrust.score : 0}
+                              </span>
                               <span className="text-sm font-bold text-[#666057]">/100</span>
-                              <span className="text-sm font-extrabold text-[#3D4E2A] ml-1.5">{farmerTrust?.level || 'High Trust'}</span>
+                              <span className="text-sm font-extrabold text-[#3D4E2A] ml-1.5">
+                                {farmerTrust?.level || 'Awaiting Telemetry'}
+                              </span>
                             </div>
-                            <p className="text-xs text-[#666057] mt-0.5">{farmerTrust?.status ? `Your produce is ${farmerTrust.status.toLowerCase()}.` : 'Your produce is safe and trustworthy.'}</p>
+                            <p className="text-xs text-[#666057] mt-0.5">
+                              {farmerTrust?.status ? `${farmerTrust.status}.` : 'Awaiting sensor telemetry.'}
+                            </p>
                           </div>
                         </div>
 
@@ -571,13 +581,13 @@ export default function App() {
 
                             {/* Subtle Filled Area Below Line */}
                             <path 
-                              d="M 5 32 C 25 30, 45 22, 65 15 T 95 6 L 95 38 L 5 38 Z" 
+                              d={farmerTrust?.score > 0 ? "M 5 32 C 25 30, 45 22, 65 15 T 95 6 L 95 38 L 5 38 Z" : "M 5 36 L 95 36 L 95 38 L 5 38 Z"} 
                               fill="url(#farmerTrustGradient)" 
                             />
 
-                            {/* Upward-Trending Line */}
+                            {/* Upward-Trending or Baseline Flat Line */}
                             <path 
-                              d="M 5 32 C 25 30, 45 22, 65 15 T 95 6" 
+                              d={farmerTrust?.score > 0 ? "M 5 32 C 25 30, 45 22, 65 15 T 95 6" : "M 5 36 L 95 36"} 
                               fill="none" 
                               stroke="#556B2F" 
                               strokeWidth="2.5" 
@@ -586,12 +596,12 @@ export default function App() {
                             />
 
                             {/* Realistic Plotted Data Points */}
-                            <circle cx="5" cy="32" r="2" fill="#556B2F" />
-                            <circle cx="35" cy="26" r="2" fill="#556B2F" />
-                            <circle cx="65" cy="15" r="2" fill="#556B2F" />
+                            <circle cx="5" cy={farmerTrust?.score > 0 ? 32 : 36} r="2" fill="#556B2F" />
+                            <circle cx="35" cy={farmerTrust?.score > 0 ? 26 : 36} r="2" fill="#556B2F" />
+                            <circle cx="65" cy={farmerTrust?.score > 0 ? 15 : 36} r="2" fill="#556B2F" />
                             
-                            {/* Peak Trust Score 92 Point Highlight */}
-                            <circle cx="95" cy="6" r="3.5" fill="#3D4E2A" stroke="#ffffff" strokeWidth="1.5" />
+                            {/* Peak Point Highlight */}
+                            <circle cx="95" cy={farmerTrust?.score > 0 ? 6 : 36} r="3.5" fill="#3D4E2A" stroke="#ffffff" strokeWidth="1.5" />
                           </svg>
                           <button 
                             onClick={() => handleSelectFarmerTab('ai-trust')}
@@ -614,21 +624,21 @@ export default function App() {
                             <span className="flex items-center gap-2 font-bold text-[#2D2620]">
                               <span className="text-[#556B2F] font-extrabold">✓</span> Cold Chain Integrity
                             </span>
-                            <span className="font-extrabold text-[#354424]">{farmerTrust?.aiVerificationDetails?.[0]?.status || '100% Compliant (16–20°C Range)'}</span>
+                            <span className="font-extrabold text-[#354424]">{farmerTrust?.aiVerificationDetails?.[0]?.status || 'Awaiting Telemetry (0 Readings)'}</span>
                           </div>
 
                           <div className="p-3 rounded-xl bg-[#FAF7F0]/80 border border-[#E6E1D5]/60 flex items-center justify-between">
                             <span className="flex items-center gap-2 font-bold text-[#2D2620]">
                               <span className="text-[#556B2F] font-extrabold">✓</span> GPS Telemetry Validation
                             </span>
-                            <span className="font-extrabold text-[#354424]">{farmerTrust?.aiVerificationDetails?.[1]?.status || 'Route Verified & Continuous'}</span>
+                            <span className="font-extrabold text-[#354424]">{farmerTrust?.aiVerificationDetails?.[1]?.status || 'Awaiting Transit Geo-Stream'}</span>
                           </div>
 
                           <div className="p-3 rounded-xl bg-[#FAF7F0]/80 border border-[#E6E1D5]/60 flex items-center justify-between">
                             <span className="flex items-center gap-2 font-bold text-[#2D2620]">
                               <span className="text-[#556B2F] font-extrabold">✓</span> Tamper Prevention
                             </span>
-                            <span className="font-extrabold text-[#354424]">{farmerTrust?.aiVerificationDetails?.[2]?.status || 'Smart Seal Intact'}</span>
+                            <span className="font-extrabold text-[#354424]">{farmerTrust?.aiVerificationDetails?.[2]?.status || 'Awaiting Smart Seal Telemetry'}</span>
                           </div>
 
                           <div className="p-3 rounded-xl bg-[#FAF7F0]/80 border border-[#E6E1D5]/60 flex items-center justify-between">

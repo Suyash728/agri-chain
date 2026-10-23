@@ -2131,15 +2131,24 @@ def get_farmer_ai_trust():
         gps_faults = sum(1 for r in quarantine_rows if "GPS" in r["reason"])
         replay_faults = sum(1 for r in quarantine_rows if "REPLAY" in r["reason"])
 
-        if total > 0:
-            compliance_pct = max(0, min(100, int(round((valids / total) * 100))))
-        else:
-            compliance_pct = 100
-
         if total == 0:
-            score = 92
-        else:
-            score = max(50, min(100, compliance_pct))
+            return {
+                "score": 0,
+                "maxScore": 100,
+                "level": "Awaiting Telemetry",
+                "status": "System Reset (No Telemetry)",
+                "lastVerified": "No Readings Logged",
+                "totalReadings": 0,
+                "aiVerificationDetails": [
+                    {"title": "Cold Chain Integrity", "status": "Awaiting Telemetry (0 Readings)"},
+                    {"title": "GPS Telemetry Validation", "status": "Awaiting Transit Geo-Stream"},
+                    {"title": "Tamper Prevention", "status": "Awaiting Smart Seal Telemetry"},
+                    {"title": "Anomaly Check", "status": "0 Deviations Flagged"},
+                ],
+            }
+
+        compliance_pct = max(0, min(100, int(round((valids / total) * 100))))
+        score = max(50, min(100, compliance_pct))
 
         level = "High Trust" if score >= 85 else ("Moderate Trust" if score >= 70 else "Needs Attention")
         status = "Safe & Trustworthy" if score >= 80 else "Deviations Flagged"
@@ -2166,6 +2175,7 @@ def get_farmer_ai_trust():
             "level": level,
             "status": status,
             "lastVerified": last_verified,
+            "totalReadings": total,
             "aiVerificationDetails": [
                 {"title": "Cold Chain Integrity", "status": cold_chain_status},
                 {"title": "GPS Telemetry Validation", "status": gps_status},

@@ -1,10 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { X, Bell, Package, ShieldCheck, Tag, AlertTriangle, RefreshCw, CheckCircle2, Truck, Inbox } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Bell, Package, ShieldCheck, Tag, AlertTriangle, RefreshCw, CheckCircle2, Truck, Inbox, Check } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
 
 export const NotificationsModal = ({ isOpen, onClose }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const markAllRead = useCallback((itemsToMark) => {
+    try {
+      const targetItems = itemsToMark || notifications;
+      const ids = targetItems.map((n) => n.id);
+      localStorage.setItem('agrichain_read_notifs_consumer', JSON.stringify(ids));
+      window.dispatchEvent(new CustomEvent('agrichain-notifications-read', { detail: { role: 'consumer' } }));
+    } catch (_) {}
+  }, [notifications]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -51,6 +60,7 @@ export const NotificationsModal = ({ isOpen, onClose }) => {
             };
           });
           setNotifications(items);
+          markAllRead(items);
         } else {
           setNotifications([]);
         }
@@ -60,7 +70,7 @@ export const NotificationsModal = ({ isOpen, onClose }) => {
         setNotifications([]);
       })
       .finally(() => setLoading(false));
-  }, [isOpen]);
+  }, [isOpen, markAllRead]);
 
   if (!isOpen) return null;
 
@@ -72,9 +82,21 @@ export const NotificationsModal = ({ isOpen, onClose }) => {
             <Bell className="w-4 h-4 text-[#354424]" />
             <span>Notifications {notifications.length > 0 && `(${notifications.length})`}</span>
           </h3>
-          <button onClick={onClose} className="text-[#666057] hover:text-[#2D2620] cursor-pointer">
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {notifications.length > 0 && (
+              <button 
+                onClick={() => markAllRead(notifications)}
+                className="px-2 py-0.5 rounded-lg text-[11px] font-bold text-[#354424] bg-white border border-[#E6E1D5] hover:bg-[#FAF7F0] transition-colors cursor-pointer flex items-center gap-1"
+                title="Mark all as read"
+              >
+                <Check className="w-3 h-3 text-[#354424]" />
+                <span>Mark read</span>
+              </button>
+            )}
+            <button onClick={onClose} className="text-[#666057] hover:text-[#2D2620] cursor-pointer">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-2.5 overflow-y-auto">

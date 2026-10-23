@@ -1,30 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { X, Bell, CheckCircle2, AlertTriangle, Truck, RefreshCw, ShieldAlert, ShoppingBag, Inbox } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Bell, CheckCircle2, AlertTriangle, Truck, RefreshCw, ShieldAlert, ShoppingBag, Inbox, Check } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
 
 export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const markAllRead = useCallback((itemsToMark) => {
+    try {
+      const targetItems = itemsToMark || notifications;
+      const ids = targetItems.map((n) => n.id);
+      localStorage.setItem(`agrichain_read_notifs_${role}`, JSON.stringify(ids));
+      window.dispatchEvent(new CustomEvent('agrichain-notifications-read', { detail: { role } }));
+    } catch (_) {}
+  }, [notifications, role]);
+
   useEffect(() => {
     if (!isOpen) return;
 
     setLoading(true);
-    const fetchPromises = [
-      fetch(`${API_BASE_URL}/notifications/all-users?role=${role}`).then((r) => r.json())
-    ];
-
-    if (role === 'farmer') {
-      fetchPromises.push(fetch(`${API_BASE_URL}/farmer/activity`).then((r) => r.json()));
-    }
-
-    Promise.allSettled(fetchPromises)
-      .then(([allUsersRes, actRes]) => {
+    fetch(`${API_BASE_URL}/notifications/all-users?role=${role}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch notifications');
+        return res.json();
+      })
+      .then((data) => {
         const items = [];
-
-        // 1. Spoilage failure & financial loss notifications from backend
-        if (allUsersRes.status === 'fulfilled' && Array.isArray(allUsersRes.value)) {
-          allUsersRes.value.forEach((n) => {
+        if (Array.isArray(data)) {
+          data.forEach((n) => {
             let IconComponent = AlertTriangle;
             if (n.icon === 'Truck') IconComponent = Truck;
             else if (n.icon === 'ShieldCheck' || n.icon === 'CheckCircle2') IconComponent = CheckCircle2;
@@ -45,41 +48,15 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
             });
           });
         }
-
-        // 2. Real activity milestones (only for farmer role)
-        if (actRes && actRes.status === 'fulfilled' && Array.isArray(actRes.value)) {
-          actRes.value.slice(0, 4).forEach((act) => {
-            let Icon = CheckCircle2;
-            let color = 'text-[#3D5220]';
-            let bg = 'bg-[#FAF7F0] border-[#E6E1D5]';
-
-            if (act.type === 'shipment') {
-              Icon = Truck;
-              color = 'text-[#B85C38]';
-            } else if (act.type === 'payment') {
-              Icon = CheckCircle2;
-              color = 'text-[#3D5220]';
-            }
-
-            items.push({
-              id: act.id,
-              title: act.title,
-              desc: `${act.status} • ${act.amount || 'Custody logged on-chain'}`,
-              time: act.date || 'Today',
-              icon: Icon,
-              color: color,
-              bgColor: bg
-            });
-          });
-        }
-
         setNotifications(items);
+        // Automatically sync read state on modal view
+        markAllRead(items);
       })
       .catch(() => {
         setNotifications([]);
       })
       .finally(() => setLoading(false));
-  }, [isOpen, role]);
+  }, [isOpen, role, markAllRead]);
 
   if (!isOpen) return null;
 
@@ -94,12 +71,24 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
               Live System Notifications {notifications.length > 0 && `(${notifications.length})`}
             </h3>
           </div>
-          <button 
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white border border-[#E6E1D5] flex items-center justify-center text-[#786E65] hover:text-[#3B3028] cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {notifications.length > 0 && (
+              <button 
+                onClick={() => markAllRead(notifications)}
+                className="px-2.5 py-1 rounded-xl bg-white border border-[#E6E1D5] text-[11px] font-bold text-[#3D4E2A] hover:bg-[#FAF7F0] transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                title="Mark all as read"
+              >
+                <Check className="w-3.5 h-3.5 text-[#3D4E2A]" />
+                <span>Mark read</span>
+              </button>
+            )}
+            <button 
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-white border border-[#E6E1D5] flex items-center justify-center text-[#786E65] hover:text-[#3B3028] cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* List */}

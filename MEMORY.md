@@ -1794,3 +1794,53 @@ still static UI with no data flow. Specifically:
 - Vite Production Build: 1,815 modules transformed in 3.28s with 0 errors (`cd design && npm run build`).
 - Pytest Suite: All 12 backend tests passed cleanly (`.venv/bin/pytest tests/`).
 - Verified search reactivity for both category and crop names (e.g. "Tomato", "Mango", "Wheat", "Organic").
+
+
+---
+
+## [Dynamic Notification Badge Counter & System Reset AI Trust Score Zeroing] — 2026-10-24
+
+**What was done:**
+1. **Dynamic Notification Counter & Read State Management (`design/src/utils/useNotificationCount.js`)**:
+   - Replaced passive `/notifications/count` fetching with active read-state tracking against `/notifications/all-users?role=${role}` using role-isolated localStorage cache (`agrichain_read_notifs_${role}`).
+   - Added instant `markAllAsRead()` which zeroes the badge, broadcasts `agrichain-notifications-read`, and persists read IDs in background.
+   - Connected `agrichain-data-reset` to purge all `agrichain_read_notifs_*` keys from localStorage and immediately zero counters across all tabs.
+   - Connected `agrichain-data-updated` to dynamically recalculate unread counts on fresh events.
+2. **Global Role Header & Sub-View Bell Integration**:
+   - Wired `markAllAsRead` into `Farmer/components/Header.jsx`, `Consumer/components/ConsumerHeader.jsx`, `Dark_Store/components/DarkStoreHeader.jsx`, and `Logistic_Partner/components/LogisticHeader.jsx`.
+   - Wired `markAllAsRead` into all Dark Store sub-views (`DarkStoreBlockchainView.jsx`, `DarkStoreRevenueView.jsx`, `DarkStoreTraceabilityView.jsx`, `InboundGRNView.jsx`).
+   - Added "Mark read" action buttons and automatic read-state syncing inside both `Farmer/Modals/NotificationsModal.jsx` and `Consumer/Modals/NotificationsModal.jsx`.
+   - Cleaned redundant `/farmer/activity` dual-fetching in `Farmer/Modals/NotificationsModal.jsx` so modal list strictly mirrors backend `/notifications/all-users` count 1:1.
+3. **AI Trust Score Zeroing on System Reset**:
+   - Fixed `backend/main.py` (`get_farmer_ai_trust()`): When zero readings exist (`total == 0` following system reset or purge), returns `score: 0`, `maxScore: 100`, `level: "Awaiting Telemetry"`, `status: "System Reset (No Telemetry)"`, and "Awaiting Telemetry" status across all verification checkpoints.
+   - Updated `design/src/App.jsx` and `Farmer/Views/AITrustView.jsx`: Removed hardcoded `92` fallback scores and default `'100% Compliant'` strings. Replaced with dynamic fallback `farmerTrust?.score !== undefined ? farmerTrust.score : 0` and flat baseline SVG rendering when score is 0.
+   - Wired `App.jsx` to listen to both `agrichain-data-reset` and `agrichain-data-updated` to reload farmer trust score and KPIs in real time.
+   - Updated `design/src/components/CleanSlateModal.jsx` to wipe all notification read states in localStorage upon clean slate execution.
+4. **Automated Testing**:
+   - Added Step 7b in `tests/test_system_reset.py` verifying `/farmer/ai-trust` returns `score == 0` and `level == "Awaiting Telemetry"` on a clean slate.
+
+**Files changed:**
+- `backend/main.py`
+- `design/src/App.jsx`
+- `design/src/Farmer/Views/AITrustView.jsx`
+- `design/src/Farmer/components/Header.jsx`
+- `design/src/Farmer/Modals/NotificationsModal.jsx`
+- `design/src/Consumer/components/ConsumerHeader.jsx`
+- `design/src/Consumer/Modals/NotificationsModal.jsx`
+- `design/src/Dark_Store/components/DarkStoreHeader.jsx`
+- `design/src/Dark_Store/Views/DarkStoreBlockchainView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreRevenueView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreTraceabilityView.jsx`
+- `design/src/Dark_Store/Views/InboundGRNView.jsx`
+- `design/src/Logistic_Partner/components/LogisticHeader.jsx`
+- `design/src/components/CleanSlateModal.jsx`
+- `design/src/utils/useNotificationCount.js`
+- `tests/test_system_reset.py`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build: 1,815 modules transformed with 0 errors (`cd design && npm run build`).
+- Pytest Backend Suite: All 12 tests passed (`pytest tests/`).
+- Trust-Layer Pytest Suite: All 147 tests passed (`pytest trust-layer/tests/`).
+- Hardhat Contract Tests: All 22 tests passed (`npx hardhat test`).
+- Clean Slate Live Verification: `curl http://localhost:8000/farmer/ai-trust` verified returning `score: 0` and `level: "Awaiting Telemetry"`.

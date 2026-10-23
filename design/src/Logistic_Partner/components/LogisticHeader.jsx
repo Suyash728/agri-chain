@@ -3,7 +3,7 @@ import { Bell, Calendar } from 'lucide-react';
 import { useNotificationCount } from '../../utils/useNotificationCount';
 
 export const LogisticHeader = ({ onOpenNotifications, unreadCount }) => {
-  const { count: dynamicCount } = useNotificationCount('logistics');
+  const { count: dynamicCount, markAllAsRead } = useNotificationCount('logistics');
   const count = unreadCount !== undefined ? unreadCount : dynamicCount;
 
   return (
@@ -28,7 +28,10 @@ export const LogisticHeader = ({ onOpenNotifications, unreadCount }) => {
       <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
         {/* Bell Notifications */}
         <button
-          onClick={onOpenNotifications}
+          onClick={() => {
+            markAllAsRead();
+            if (onOpenNotifications) onOpenNotifications();
+          }}
           className="relative p-2.5 rounded-xl border border-[#E6E1D5] bg-white hover:bg-[#FAF7F0] text-[#2D2620] transition-colors cursor-pointer shadow-xs"
           title="Notifications"
         >

@@ -26,7 +26,7 @@ import { API_BASE_URL } from '../../utils/api';
 import { getBatchQRCodeImageUrl } from '../../utils/qrHelper';
 
 export const DarkStoreTraceabilityView = ({ onBack, onOpenNotifications }) => {
-  const { count } = useNotificationCount('darkstore');
+  const { count, markAllAsRead } = useNotificationCount('darkstore');
   const [availableBatches, setAvailableBatches] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStore, setActiveStore] = useState('Nashik Central Store');
@@ -218,7 +218,10 @@ export const DarkStoreTraceabilityView = ({ onBack, onOpenNotifications }) => {
         <div className="flex flex-wrap items-center gap-3">
           {/* Bell Notification Button */}
           <button 
-            onClick={onOpenNotifications || (() => {})}
+            onClick={() => {
+              markAllAsRead();
+              if (onOpenNotifications) onOpenNotifications();
+            }}
             className="relative p-2.5 rounded-2xl bg-white border border-[#E6E1D5] text-[#2D2620] hover:bg-[#FAF7F0] cursor-pointer shadow-xs"
             title="Notifications"
           >

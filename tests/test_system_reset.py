@@ -91,6 +91,13 @@ def test_system_reset_endpoint_and_clean_slate(client):
     assert god_data["empty"] is True
     assert god_data["farmer"]["quantity_kg"] == 0.0
 
+    # Step 7b: Verify Farmer AI Trust Score returns 0 on clean slate
+    trust_res = client.get("/farmer/ai-trust")
+    assert trust_res.status_code == 200
+    trust_data = trust_res.json()
+    assert trust_data["score"] == 0
+    assert trust_data["level"] == "Awaiting Telemetry"
+
     # Step 8: Verify a new batch can immediately be registered on the clean slate
     fresh_id = f"FRESH-LOT-{int(time.time())}"
     fresh_res = client.post("/batches", json={

@@ -13,7 +13,7 @@ export const ConsumerHeader = ({
   onSearchChange,
   unreadCount
 }) => {
-  const { count: dynamicCount } = useNotificationCount('consumer');
+  const { count: dynamicCount, markAllAsRead } = useNotificationCount('consumer');
   const count = unreadCount !== undefined ? unreadCount : dynamicCount;
   const navItems = [
     { id: 'home', label: 'Home', emoji: '🏠' },
@@ -76,7 +76,10 @@ export const ConsumerHeader = ({
 
           {/* Notification Bell */}
           <button 
-            onClick={onNotificationClick}
+            onClick={() => {
+              markAllAsRead();
+              if (onNotificationClick) onNotificationClick();
+            }}
             className="relative w-9 h-9 rounded-full bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] shadow-xs hover:bg-[#F4F5E6] transition-colors cursor-pointer flex-shrink-0"
             title="Notifications"
           >

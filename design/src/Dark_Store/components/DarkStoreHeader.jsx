@@ -5,7 +5,7 @@ import { useNotificationCount } from '../../utils/useNotificationCount';
 export const DarkStoreHeader = ({ onOpenNotifications, unreadCount }) => {
   const [selectedStore, setSelectedStore] = useState('Nashik Central Store');
   const [isStoreOpen, setIsStoreOpen] = useState(false);
-  const { count: dynamicCount } = useNotificationCount('darkstore');
+  const { count: dynamicCount, markAllAsRead } = useNotificationCount('darkstore');
   const count = unreadCount !== undefined ? unreadCount : dynamicCount;
 
   return (
@@ -30,7 +30,10 @@ export const DarkStoreHeader = ({ onOpenNotifications, unreadCount }) => {
       <div className="flex items-center gap-3 self-end md:self-auto flex-wrap">
         {/* Notification Bell with Badge */}
         <button 
-          onClick={onOpenNotifications}
+          onClick={() => {
+            markAllAsRead();
+            if (onOpenNotifications) onOpenNotifications();
+          }}
           className="relative w-10 h-10 rounded-2xl bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] hover:bg-[#FAF7F0] transition-colors cursor-pointer shadow-xs"
           title="Notifications"
         >

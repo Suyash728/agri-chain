@@ -5,7 +5,7 @@ import { useNotificationCount } from '../../utils/useNotificationCount';
 
 export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount }) => {
   const [profile, setProfile] = useState({ name: 'Rahul Patil' });
-  const { count: dynamicCount } = useNotificationCount('farmer');
+  const { count: dynamicCount, markAllAsRead } = useNotificationCount('farmer');
   const count = unreadCount !== undefined ? unreadCount : dynamicCount;
 
   useEffect(() => {
@@ -47,7 +47,10 @@ export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount }) => 
         )}
         {/* Notification Bell */}
         <button 
-          onClick={onOpenNotifications}
+          onClick={() => {
+            markAllAsRead();
+            if (onOpenNotifications) onOpenNotifications();
+          }}
           className="relative w-10 h-10 rounded-full bg-white border border-[#E2DDD2] flex items-center justify-center text-[#3B3028] hover:bg-[#FAF7F0] transition-colors shadow-sm cursor-pointer"
           title="Notifications"
         >

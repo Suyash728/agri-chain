@@ -24,7 +24,7 @@ import {
 import { useNotificationCount } from '../../utils/useNotificationCount';
 
 export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
-  const { count } = useNotificationCount('darkstore');
+  const { count, markAllAsRead } = useNotificationCount('darkstore');
   // State for controls
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
@@ -218,7 +218,10 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
 
           {/* Notification Bell with Badge */}
           <button 
-            onClick={onOpenNotifications}
+            onClick={() => {
+              markAllAsRead();
+              if (onOpenNotifications) onOpenNotifications();
+            }}
             className="relative w-10 h-10 rounded-2xl bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] hover:bg-[#FAF7F0] transition-colors cursor-pointer shadow-xs"
             title="Notifications"
           >

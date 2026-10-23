@@ -17,7 +17,7 @@ import {
 import { QuarantineAuditModal } from '../Modals/QuarantineAuditModal';
 
 const initialTrustData = {
-  score: 100,
+  score: 0,
   maxScore: 100,
   level: "Analyzing...",
   status: "Live On-Chain Audit",
@@ -52,7 +52,7 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
     setIsQuarantineOpen(true);
   };
 
-  useEffect(() => {
+  const fetchTrustAndInventory = () => {
     fetch('http://localhost:8000/farmer/ai-trust')
       .then((res) => res.json())
       .then((json) => {
@@ -65,12 +65,25 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
     fetch('http://localhost:8000/farmer/inventory')
       .then((res) => res.json())
       .then((inv) => {
-        if (Array.isArray(inv) && inv.length > 0 && inv[0].batchId) {
-          setBatchId(inv[0].batchId);
-          if (inv[0].cropName) setCropName(inv[0].cropName.toLowerCase());
+        const items = Array.isArray(inv) ? inv : (Array.isArray(inv?.items) ? inv.items : []);
+        if (items.length > 0 && items[0].batchId) {
+          setBatchId(items[0].batchId);
+          if (items[0].name) setCropName(items[0].name.toLowerCase());
+        } else {
+          setBatchId('');
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchTrustAndInventory();
+    window.addEventListener('agrichain-data-reset', fetchTrustAndInventory);
+    window.addEventListener('agrichain-data-updated', fetchTrustAndInventory);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', fetchTrustAndInventory);
+      window.removeEventListener('agrichain-data-updated', fetchTrustAndInventory);
+    };
   }, []);
 
   const handleApplyPreset = (type) => {
@@ -204,21 +217,21 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
               </linearGradient>
             </defs>
             <path 
-              d="M 5 42 C 30 38, 55 28, 80 18 T 115 8 L 115 48 L 5 48 Z" 
+              d={trustData.score > 0 ? "M 5 42 C 30 38, 55 28, 80 18 T 115 8 L 115 48 L 5 48 Z" : "M 5 45 L 115 45 L 115 48 L 5 48 Z"} 
               fill="url(#aiGraphBlendGradFinal)" 
             />
             <path 
-              d="M 5 42 C 30 38, 55 28, 80 18 T 115 8" 
+              d={trustData.score > 0 ? "M 5 42 C 30 38, 55 28, 80 18 T 115 8" : "M 5 45 L 115 45"} 
               fill="none" 
               stroke="#556B2F" 
               strokeWidth="3" 
               strokeLinecap="round" 
               strokeLinejoin="round"
             />
-            <circle cx="5" cy="42" r="3" fill="#556B2F" />
-            <circle cx="42" cy="33" r="3" fill="#556B2F" />
-            <circle cx="80" cy="18" r="3" fill="#556B2F" />
-            <circle cx="115" cy="8" r="4.5" fill="#2E3A1F" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="5" cy={trustData.score > 0 ? 42 : 45} r="3" fill="#556B2F" />
+            <circle cx="42" cy={trustData.score > 0 ? 33 : 45} r="3" fill="#556B2F" />
+            <circle cx="80" cy={trustData.score > 0 ? 18 : 45} r="3" fill="#556B2F" />
+            <circle cx="115" cy={trustData.score > 0 ? 8 : 45} r="4.5" fill="#2E3A1F" stroke="#ffffff" strokeWidth="2" />
           </svg>
         </div>
       </div>

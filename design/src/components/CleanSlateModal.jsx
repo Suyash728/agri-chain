@@ -22,6 +22,13 @@ export const CleanSlateModal = ({ isOpen, onClose, onResetComplete }) => {
       }
       const data = await res.json();
       setResult(data);
+      try {
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith('agrichain_read_notifs_')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (_) {}
       window.dispatchEvent(new CustomEvent('agrichain-data-reset', { detail: data }));
       if (onResetComplete) {
         onResetComplete(data);
