@@ -6,7 +6,10 @@ export const ConsumerHeader = ({
   onAddressClick, 
   onNavigate,
   activeTab = 'home',
-  cartCount = 3 
+  cartCount = 3,
+  deliveryAddress = 'Nashik, Maharashtra',
+  searchQuery = '',
+  onSearchChange
 }) => {
   const navItems = [
     { id: 'home', label: 'Home', emoji: '🏠' },
@@ -38,7 +41,7 @@ export const ConsumerHeader = ({
         >
           <MapPin className="w-3.5 h-3.5 text-[#354424]" />
           <span>Deliver to</span>
-          <span className="font-extrabold text-[#354424]">Nashik, Maharashtra</span>
+          <span className="font-extrabold text-[#354424]">{deliveryAddress}</span>
           <ChevronDown className="w-3.5 h-3.5 text-[#666057]" />
         </div>
 
@@ -85,6 +88,11 @@ export const ConsumerHeader = ({
             <input
               type="text"
               placeholder="Search farm fresh produce, fruits, vegetables..."
+              value={searchQuery}
+              onChange={(e) => {
+                if (onSearchChange) onSearchChange(e.target.value);
+                if (activeTab !== 'products' && onNavigate) onNavigate('products');
+              }}
               className="w-full pl-10 pr-4 py-2 bg-white rounded-full border border-[#E6E1D5] text-xs font-semibold text-[#2D2620] placeholder-[#666057] focus:outline-none focus:border-[#354424] shadow-2xs"
             />
           </div>

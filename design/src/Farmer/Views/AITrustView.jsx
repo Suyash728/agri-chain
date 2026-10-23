@@ -546,7 +546,7 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
                     <span className="text-[#666057]">Transaction Hash:</span>
                     {evalResult.tx_hash ? (
                       <span className="font-mono text-[10px] text-emerald-800 break-all bg-white p-1.5 rounded-lg border border-emerald-300 select-all">
-                        0x{evalResult.tx_hash}
+                        {evalResult.tx_hash.startsWith('0x') ? evalResult.tx_hash : `0x${evalResult.tx_hash}`}
                       </span>
                     ) : (
                       <div className="flex items-center gap-1.5 text-amber-800 font-semibold text-[11px] bg-white/70 p-1.5 rounded border border-amber-200">

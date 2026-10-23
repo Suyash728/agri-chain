@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Plus, Minus, Tag, ChevronRight } from 'lucide-react';
+import { Trash2, Plus, Minus, Tag, ChevronRight, Loader2 } from 'lucide-react';
 
 export const CartView = ({ 
   cartItems, 
@@ -8,7 +8,8 @@ export const CartView = ({
   onCheckout,
   onApplyCouponClick,
   appliedCoupon,
-  onNavigate 
+  onNavigate,
+  isSubmitting = false
 }) => {
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const discount = appliedCoupon ? Math.round(subtotal * 0.2) : 0;
@@ -27,7 +28,7 @@ export const CartView = ({
             <p className="text-xs text-[#666057] mt-1 mb-4">Add farm fresh produce to get started</p>
             <button 
               onClick={() => onNavigate && onNavigate('products')}
-              className="px-6 py-2.5 rounded-full bg-[#354424] text-white text-xs font-extrabold shadow-md hover:bg-[#2D3B1E]"
+              className="px-6 py-2.5 rounded-full bg-[#354424] text-white text-xs font-extrabold shadow-md hover:bg-[#2D3B1E] cursor-pointer"
             >
               Browse Products
             </button>
@@ -138,9 +139,17 @@ export const CartView = ({
                 {/* Checkout Button */}
                 <button
                   onClick={onCheckout}
-                  className="w-full mt-2 py-3.5 rounded-2xl bg-[#354424] text-white font-extrabold text-sm shadow-md hover:bg-[#2D3B1E] active:scale-[0.99] transition-all cursor-pointer text-center"
+                  disabled={cartItems.length === 0 || isSubmitting}
+                  className="w-full mt-2 py-3.5 rounded-2xl bg-[#354424] text-white font-extrabold text-sm shadow-md hover:bg-[#2D3B1E] active:scale-[0.99] transition-all cursor-pointer text-center disabled:opacity-60 flex items-center justify-center gap-2"
                 >
-                  Checkout
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Placing Order on Blockchain...</span>
+                    </>
+                  ) : (
+                    <span>Checkout</span>
+                  )}
                 </button>
               </div>
             </div>

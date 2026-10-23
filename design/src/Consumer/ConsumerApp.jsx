@@ -38,6 +38,8 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
   const [appliedCoupon, setAppliedCoupon] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const [deliveryAddress, setDeliveryAddress] = useState('Nashik, Maharashtra');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [selectedJourneyProduct, setSelectedJourneyProduct] = useState(null);
 
@@ -114,20 +116,38 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
   };
 
   const handleCheckout = async () => {
+    if (cartItems.length === 0) return;
+    setIsSubmittingOrder(true);
     try {
-      await fetch('http://localhost:8000/darkstore/checkout', {
+      const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+      const discount = appliedCoupon ? Math.round(subtotal * 0.2) : 0;
+      const grandTotal = Math.max(0, subtotal - discount + (subtotal > 0 ? 20 : 0));
+
+      const res = await fetch('http://localhost:8000/consumer/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          batch_id: selectedJourneyProduct?.batchId || 'TM1256',
-          consumer_name: `Customer Home Delivery (${deliveryAddress})`,
-          price_paise: 220000,
+          items: cartItems,
+          delivery_address: deliveryAddress,
+          applied_coupon: appliedCoupon,
+          total_amount: grandTotal,
         }),
-      }).catch(() => {});
+      });
+
+      if (res.ok) {
+        setIsOrderSuccessOpen(true);
+        setCartItems([]);
+        showToast('Order confirmed! Tracking dispatch.');
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        showToast(errJson.detail || 'Checkout failed. Please try again.');
+      }
     } catch (err) {
+      console.error('Checkout error:', err);
+      showToast('Checkout connection error.');
+    } finally {
+      setIsSubmittingOrder(false);
     }
-    setIsOrderSuccessOpen(true);
-    setCartItems([]);
   };
 
   const handleSelectCategory = (catId) => {
@@ -183,6 +203,12 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
         }}
         activeTab={activeView}
         cartCount={totalCartCount}
+        deliveryAddress={deliveryAddress}
+        searchQuery={searchQuery}
+        onSearchChange={(q) => {
+          setSearchQuery(q);
+          if (activeView !== 'products') setActiveView('products');
+        }}
       />
 
       {/* Main Page View Router */}
@@ -220,6 +246,7 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
             onAddToCart={handleAddToCart}
             onProductClick={handleProductClickForJourney}
             initialCategory={selectedCategoryFilter}
+            searchQuery={searchQuery}
             onNavigate={(view) => setActiveView(view)}
           />
         )}
@@ -234,6 +261,7 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
             onApplyCouponClick={() => setIsCouponOpen(true)}
             appliedCoupon={appliedCoupon}
             onNavigate={(view) => setActiveView(view)}
+            isSubmitting={isSubmittingOrder}
           />
         )}
 
@@ -241,18 +269,16 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab }) => {
           <OrdersView
             onBack={() => setActiveView('home')}
             onViewOrderDetails={(order) => {
-              if (order && order.items && order.items.length > 0) {
-                const firstItemName = order.items[0].name;
-                const matchedProduct = {
-                  name: firstItemName,
-                  batchId: order.items[0].batchId || 'TM1256',
-                  origin: 'Nashik, Maharashtra',
-                  image: '/images/vegetables_ref.png'
-                };
-                handleProductClickForJourney(matchedProduct);
-              } else {
-                setActiveView('journey');
-              }
+              const firstItem = order && order.items && order.items[0];
+              const matchedProduct = {
+                name: firstItem?.name || 'Organic Produce',
+                batchId: firstItem?.batchId || order.batchId || 'TM1256',
+                origin: firstItem?.farm || 'Nashik, Maharashtra',
+                image: order.thumbnails?.[0] || '/images/vegetables_ref.png',
+                date: order.date,
+                total: order.total
+              };
+              handleProductClickForJourney(matchedProduct);
             }}
             onNavigate={(view) => setActiveView(view)}
           />

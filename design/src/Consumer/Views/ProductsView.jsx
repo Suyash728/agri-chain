@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { SlidersHorizontal, Plus, Star } from 'lucide-react';
 
-export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'all' }) => {
+export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'all', searchQuery: externalSearchQuery = '' }) => {
   const [selectedFilter, setSelectedFilter] = useState(initialCategory);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    if (initialCategory) setSelectedFilter(initialCategory);
+  }, [initialCategory]);
+
+  const activeSearch = externalSearchQuery || localSearchQuery;
 
   useEffect(() => {
     fetch('http://localhost:8000/consumer/products')
@@ -31,24 +37,19 @@ export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'a
   ];
 
   const getFilteredProducts = () => {
-    if (selectedFilter === 'all') {
-      const categories = ['fruits', 'vegetables', 'grains', 'pulses', 'dairy', 'spices', 'dryfruits'];
-      let all12 = [];
-      categories.forEach(catId => {
-        const catProducts = products.filter(p => p.category === catId).slice(0, 2);
-        all12 = [...all12, ...catProducts];
-      });
-      if (searchQuery) {
-        return all12.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
-      }
-      return all12;
-    } else {
-      const catProducts = products.filter(p => p.category === selectedFilter);
-      if (searchQuery) {
-        return catProducts.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
-      }
-      return catProducts;
+    let list = selectedFilter === 'all' 
+      ? products 
+      : products.filter(p => (p.category || '').toLowerCase() === selectedFilter.toLowerCase());
+
+    if (activeSearch && activeSearch.trim()) {
+      const q = activeSearch.toLowerCase().trim();
+      list = list.filter(p => 
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.category && p.category.toLowerCase().includes(q)) ||
+        (p.origin && p.origin.toLowerCase().includes(q))
+      );
     }
+    return list;
   };
 
   const filteredProducts = getFilteredProducts();

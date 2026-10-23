@@ -6,6 +6,19 @@ export const CategoriesView = ({ onBack, onSelectCategory }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    fetch('http://localhost:8000/consumer/categories')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+        } else {
+          fallbackCategories();
+        }
+      })
+      .catch(() => fallbackCategories());
+  }, []);
+
+  const fallbackCategories = () => {
     fetch('http://localhost:8000/consumer/products')
       .then((res) => res.json())
       .then((products) => {
@@ -19,16 +32,18 @@ export const CategoriesView = ({ onBack, onSelectCategory }) => {
             { id: 'all', name: 'All Products', count: products.length, image: '/images/vegetables_ref.png' },
             { id: 'vegetables', name: 'Fresh Vegetables', count: counts['vegetables'] || 0, image: '/images/vegetables_ref.png' },
             { id: 'fruits', name: 'Seasonal Fruits', count: counts['fruits'] || 0, image: '/images/fruits_ref.png' },
-            { id: 'dairy', name: 'Dairy & Farm Fresh', count: counts['dairy'] || 0, image: '/images/coins_kpi.png' },
-            { id: 'grains', name: 'Organic Grains', count: counts['grains'] || 0, image: '/images/grains_ref.png' }
+            { id: 'grains', name: 'Organic Grains', count: counts['grains'] || 0, image: '/images/grains_ref.png' },
+            { id: 'pulses', name: 'Pulses & Legumes', count: counts['pulses'] || 0, image: '/images/pulses_ref.png' },
+            { id: 'spices', name: 'Aromatic Spices', count: counts['spices'] || 0, image: '/images/spices_ref.png' },
+            { id: 'dryfruits', name: 'Dry Fruits & Nuts', count: counts['dryfruits'] || 0, image: '/images/dryfruits_ref.png' }
           ]);
         }
       })
       .catch(() => {});
-  }, []);
+  };
 
   const filteredCategories = categories.filter(cat => 
-    cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (cat.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (

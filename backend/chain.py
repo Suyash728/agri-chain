@@ -147,7 +147,9 @@ def _send_tx(target_contract, method_name: str, *args) -> str:
     signed_tx = w3.eth.account.sign_transaction(transaction, PRIVATE_KEY)
     raw_tx = getattr(signed_tx, "raw_transaction", None) or getattr(signed_tx, "rawTransaction")
     tx_hash = w3.eth.send_raw_transaction(raw_tx)
-    w3.eth.wait_for_transaction_receipt(tx_hash)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    if receipt.status != 1:
+        raise RuntimeError(f"Transaction reverted on-chain (status=0): {tx_hash.hex()}")
     return tx_hash.hex()
 
 
@@ -199,10 +201,15 @@ def register_batch(
 
 def transfer_custody(
     batch_id: str,
-    to_address: str,
-    new_state: int | str,
-    price_paise: int,
+    to_address: str | None = None,
+    new_state: int | str = 0,
+    price_paise: int = 0,
+    to_holder: str | None = None,
+    to: str | None = None,
 ) -> str:
+    target_addr = to_address or to_holder or to
+    if not target_addr:
+        raise ValueError("Target address must be provided for transfer_custody")
     """Transfers batch custody on-chain. State enum: 0:REGISTERED, 1:IN_TRANSIT, 2:IN_STORAGE, 3:AT_RETAIL, 4:SOLD."""
     b32 = to_bytes32(batch_id)
     state_map = {
@@ -220,7 +227,7 @@ def transfer_custody(
     else:
         state_int = int(new_state)
 
-    to_addr = w3.to_checksum_address(to_address)
+    to_addr = w3.to_checksum_address(target_addr)
 
     if custody_transfer_contract:
         try:
