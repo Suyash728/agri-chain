@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, QrCode, CheckCircle2, Truck, Factory, Sprout, Store, RefreshCw, Hash, Inbox } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
 import { getBatchQRCodeImageUrl, getBatchConsumerPassportUrl } from '../../utils/qrHelper';
+import { LargeQRModal } from '../../components/LargeQRModal';
 
 export const ViewJourneyModal = ({ isOpen, onClose, batchId }) => {
   const [availableBatches, setAvailableBatches] = useState([]);
@@ -9,6 +10,7 @@ export const ViewJourneyModal = ({ isOpen, onClose, batchId }) => {
   const [journeyData, setJourneyData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isQRZoomOpen, setIsQRZoomOpen] = useState(false);
 
   // 1. Fetch available batches when modal opens
   useEffect(() => {
@@ -159,20 +161,20 @@ export const ViewJourneyModal = ({ isOpen, onClose, batchId }) => {
                   )}
                 </div>
 
-                <a
-                  href={getBatchConsumerPassportUrl(journeyData.batchId)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Scan with phone camera or click to open URL directly"
-                  className="w-20 h-20 bg-white p-1 rounded-xl border border-[#E6E1D5] flex flex-col items-center justify-center shadow-xs flex-shrink-0 cursor-pointer hover:border-[#7A8B52] transition-colors"
+                <div
+                  onClick={() => setIsQRZoomOpen(true)}
+                  title="Click to view large full-screen QR code"
+                  className="w-32 h-32 sm:w-36 sm:h-36 bg-white p-2 rounded-2xl border-2 border-[#7A8B52]/50 flex flex-col items-center justify-center shadow-xs flex-shrink-0 cursor-pointer hover:border-[#3D4E2A] hover:scale-105 transition-all group"
                 >
                   <img
-                    src={getBatchQRCodeImageUrl(journeyData.batchId, 100)}
+                    src={getBatchQRCodeImageUrl(journeyData.batchId, 220)}
                     alt={`QR #${journeyData.batchId}`}
-                    className="w-13 h-13 object-contain"
+                    className="w-24 h-24 sm:w-28 sm:h-28 object-contain"
                   />
-                  <span className="text-[7px] font-extrabold text-[#7A8B52] mt-0.5">SCAN BATCH QR</span>
-                </a>
+                  <span className="text-[8px] font-black tracking-wider text-[#7A8B52] mt-1 group-hover:text-[#2D2620]">
+                    SCAN / ENLARGE
+                  </span>
+                </div>
               </div>
 
               {/* Timeline steps */}
@@ -235,6 +237,15 @@ export const ViewJourneyModal = ({ isOpen, onClose, batchId }) => {
           ) : null}
         </div>
       </div>
+
+      {/* Large QR Zoom Modal */}
+      <LargeQRModal
+        isOpen={isQRZoomOpen}
+        onClose={() => setIsQRZoomOpen(false)}
+        batchId={journeyData?.batchId}
+        cropName={journeyData?.product}
+        origin={journeyData?.farmDetails}
+      />
     </div>
   );
 };

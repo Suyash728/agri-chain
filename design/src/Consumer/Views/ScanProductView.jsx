@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Image, Keyboard, Scan, QrCode, Sparkles } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
 import { getBatchQRCodeImageUrl } from '../../utils/qrHelper';
+import { LargeQRModal } from '../../components/LargeQRModal';
 
 export const ScanProductView = ({ onBack, onScanSuccess, onEnterCodeClick, batches = [] }) => {
   const [liveBatches, setLiveBatches] = useState(batches);
   const [activeBatchIndex, setActiveBatchIndex] = useState(0);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   useEffect(() => {
     if (batches && batches.length > 0) {
@@ -52,47 +54,54 @@ export const ScanProductView = ({ onBack, onScanSuccess, onEnterCodeClick, batch
         {/* Camera Viewfinder Frame */}
         <div 
           onClick={() => handleTriggerScan()}
-          className="bg-[#181C14] rounded-3xl h-[330px] relative p-6 border-2 border-[#2D3B1E] flex flex-col items-center justify-center overflow-hidden cursor-pointer shadow-inner group"
+          className="bg-[#181C14] rounded-3xl h-[380px] relative p-6 border-2 border-[#2D3B1E] flex flex-col items-center justify-center overflow-hidden cursor-pointer shadow-inner group"
           title="Click to Simulate Instant QR Recognition"
         >
           {/* Animated Scanning Beam Line */}
           <div className="absolute inset-x-6 h-0.5 bg-emerald-400 shadow-[0_0_15px_#34d399] animate-bounce top-1/3 z-10" />
 
-          {/* Corner Frame Guides with Real Embedded QR Code Artwork */}
-          <div className="w-56 h-56 relative border-2 border-dashed border-emerald-500/40 rounded-2xl flex flex-col items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-            <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl" />
-            <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
-            <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-xl" />
+          {/* Corner Frame Guides with Real Large Scannable QR Code Artwork */}
+          <div className="w-64 h-64 sm:w-72 sm:h-72 relative border-2 border-dashed border-emerald-500/50 rounded-3xl flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+            <div className="absolute -top-1 -left-1 w-7 h-7 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl" />
+            <div className="absolute -top-1 -right-1 w-7 h-7 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
+            <div className="absolute -bottom-1 -left-1 w-7 h-7 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 border-b-4 border-r-4 border-emerald-400 rounded-br-xl" />
 
             {currentBatch ? (
               <div className="flex flex-col items-center gap-2">
-                <div className="w-24 h-24 bg-white p-1.5 rounded-xl shadow-lg border border-emerald-400/50 flex items-center justify-center">
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsQRModalOpen(true);
+                  }}
+                  title="Click to open full-screen high-res QR code"
+                  className="w-44 h-44 sm:w-48 sm:h-48 bg-white p-2.5 rounded-2xl shadow-xl border-2 border-emerald-400 flex items-center justify-center hover:scale-105 transition-transform"
+                >
                   <img
-                    src={getBatchQRCodeImageUrl(currentBatch.batch_id, 100)}
+                    src={getBatchQRCodeImageUrl(currentBatch.batch_id, 260)}
                     alt="Active Batch QR"
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-[11px] font-black text-emerald-300">
+                <div className="flex flex-col items-center text-center">
+                  <span className="text-xs font-black text-emerald-300">
                     {currentBatch.crop_name}
                   </span>
-                  <span className="text-[9px] font-mono text-emerald-400/80">
-                    #{currentBatch.batch_id}
+                  <span className="text-[10px] font-mono text-emerald-400/90 font-bold">
+                    #{currentBatch.batch_id} • Tap QR to Enlarge
                   </span>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2 text-emerald-400/80 group-hover:text-emerald-300 transition-colors">
-                <Scan className="w-10 h-10 animate-pulse" />
-                <span className="text-[11px] font-bold tracking-wide">Align QR Code within frame</span>
+                <Scan className="w-12 h-12 animate-pulse" />
+                <span className="text-xs font-bold tracking-wide">Align QR Code within frame</span>
               </div>
             )}
           </div>
 
-          <span className="text-[10px] font-bold text-emerald-400/70 mt-3 group-hover:text-emerald-300">
-            Tap anywhere inside frame to scan instantly
+          <span className="text-[11px] font-bold text-emerald-400/80 mt-3 group-hover:text-emerald-300">
+            Point phone camera at QR code or tap frame to simulate
           </span>
         </div>
 
@@ -145,6 +154,15 @@ export const ScanProductView = ({ onBack, onScanSuccess, onEnterCodeClick, batch
           </button>
         </div>
       </div>
+
+      {/* Large QR Zoom Modal */}
+      <LargeQRModal
+        isOpen={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
+        batchId={currentBatch?.batch_id}
+        cropName={currentBatch?.crop_name}
+        origin={currentBatch?.origin_farm}
+      />
     </div>
   );
 };

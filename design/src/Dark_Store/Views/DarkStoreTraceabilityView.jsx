@@ -476,17 +476,17 @@ export const DarkStoreTraceabilityView = ({ onBack, onOpenNotifications }) => {
       {/* ========================================== */}
       {isScannerOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 border border-[#E6E1D5] shadow-2xl space-y-4 text-center animate-scale-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-[#E6E1D5] shadow-2xl space-y-4 text-center animate-scale-in">
             <div className="flex items-center justify-between pb-2 border-b border-[#E6E1D5]">
               <h3 className="font-extrabold text-base text-[#2D2620]">Live QR Code Scanner</h3>
               <button onClick={() => setIsScannerOpen(false)} className="text-[#666057]"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="relative w-48 h-48 mx-auto rounded-2xl bg-[#1E293B] border-2 border-[#556B2F] flex flex-col items-center justify-center overflow-hidden p-3">
+            <div className="relative w-64 h-64 mx-auto rounded-3xl bg-[#1E293B] border-2 border-[#556B2F] flex flex-col items-center justify-center overflow-hidden p-3">
               {availableBatches.length > 0 ? (
-                <div className="w-28 h-28 bg-white p-1 rounded-xl shadow-lg border border-emerald-400 flex items-center justify-center">
+                <div className="w-52 h-52 bg-white p-2.5 rounded-2xl shadow-xl border-2 border-emerald-400 flex items-center justify-center">
                   <img
-                    src={getBatchQRCodeImageUrl(availableBatches[0].batch_id, 110)}
+                    src={getBatchQRCodeImageUrl(availableBatches[0].batch_id, 260)}
                     alt="Traceability QR"
                     className="w-full h-full object-contain"
                   />
@@ -497,7 +497,7 @@ export const DarkStoreTraceabilityView = ({ onBack, onOpenNotifications }) => {
               <div className="absolute inset-x-0 top-0 h-1 bg-[#556B2F] animate-bounce" />
             </div>
 
-            <p className="text-xs text-[#666057] font-medium">Position product QR code inside frame to scan automatically</p>
+            <p className="text-xs text-[#666057] font-semibold">Point phone camera at QR code or click detected package below</p>
 
             {availableBatches.length > 0 && (
               <div className="flex flex-col gap-1.5 text-left">

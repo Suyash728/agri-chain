@@ -54,7 +54,7 @@ export function getBatchConsumerPassportUrl(batchId) {
 /**
  * Generates the QR image source URL using api.qrserver.com.
  */
-export function getBatchQRCodeImageUrl(batchId, size = 120) {
+export function getBatchQRCodeImageUrl(batchId, size = 260) {
   const targetUrl = getBatchConsumerPassportUrl(batchId);
   return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(targetUrl)}`;
 }

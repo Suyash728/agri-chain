@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle2, ShieldCheck, Star, CheckCircle, FileText, ExternalLink, X, QrCode } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
 import { getBatchQRCodeImageUrl, getBatchConsumerPassportUrl } from '../../utils/qrHelper';
+import { LargeQRModal } from '../../components/LargeQRModal';
 
 export const ProductJourneyView = ({ 
   selectedProduct, 
@@ -49,6 +50,7 @@ export const ProductJourneyView = ({
   const [showDocModal, setShowDocModal] = useState(false);
   const [liveReviews, setLiveReviews] = useState(null);
   const [batchIncident, setBatchIncident] = useState(null);
+  const [isQRZoomOpen, setIsQRZoomOpen] = useState(false);
 
   useEffect(() => {
     if (!displayBatchId) {
@@ -189,20 +191,20 @@ export const ProductJourneyView = ({
               </div>
 
               {displayBatchId && (
-                <a
-                  href={getBatchConsumerPassportUrl(displayBatchId)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Scan with phone camera or click to open URL directly"
-                  className="w-16 h-16 rounded-xl bg-[#FAF7F0] p-1 border border-[#E6E1D5] flex flex-col items-center justify-center flex-shrink-0 shadow-2xs cursor-pointer hover:border-[#556B2F] transition-colors"
+                <div
+                  onClick={() => setIsQRZoomOpen(true)}
+                  title="Click to view large full-screen QR code"
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-[#FAF7F0] p-1.5 border-2 border-[#E6E1D5] hover:border-[#556B2F] flex flex-col items-center justify-center flex-shrink-0 shadow-xs cursor-pointer transition-all hover:scale-105 group"
                 >
                   <img 
-                    src={getBatchQRCodeImageUrl(displayBatchId, 100)}
+                    src={getBatchQRCodeImageUrl(displayBatchId, 200)}
                     alt={`Batch QR #${displayBatchId}`}
-                    className="w-10 h-10 object-contain"
+                    className="w-16 h-16 sm:w-18 sm:h-18 object-contain"
                   />
-                  <span className="text-[7px] font-black text-[#556B2F] mt-0.5">PACKAGE QR</span>
-                </a>
+                  <span className="text-[7.5px] font-black tracking-wider text-[#556B2F] mt-1 group-hover:text-[#2D2620]">
+                    SCAN / ZOOM
+                  </span>
+                </div>
               )}
             </div>
 
@@ -460,6 +462,15 @@ export const ProductJourneyView = ({
           </div>
         </div>
       )}
+
+      {/* Large QR Zoom Modal */}
+      <LargeQRModal
+        isOpen={isQRZoomOpen}
+        onClose={() => setIsQRZoomOpen(false)}
+        batchId={displayBatchId}
+        cropName={product.name}
+        origin={product.origin}
+      />
     </div>
   );
 };

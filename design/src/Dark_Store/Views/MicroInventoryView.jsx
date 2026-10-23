@@ -181,9 +181,9 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
             </div>
 
             <div className="flex flex-col items-center justify-center p-4 bg-[#FAF7F0] rounded-2xl border border-[#E6E1D5] space-y-2">
-              <div className="w-36 h-36 bg-white p-2.5 rounded-2xl border border-[#E6E1D5] flex items-center justify-center shadow-xs">
+              <div className="w-56 h-56 bg-white p-3 rounded-2xl border-2 border-[#556B2F] flex items-center justify-center shadow-md">
                 <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`AGRICHAIN-BIN:${selectedBinQR.bin}:PRODUCE:${selectedBinQR.produce}:EXP:${selectedBinQR.expiry}`)}`} 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(`AGRICHAIN-BIN:${selectedBinQR.bin}:PRODUCE:${selectedBinQR.produce}:EXP:${selectedBinQR.expiry}`)}`} 
                   alt="Bin QR"
                   className="w-full h-full object-contain"
                 />

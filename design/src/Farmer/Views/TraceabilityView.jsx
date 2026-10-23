@@ -16,12 +16,14 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
 import { getBatchQRCodeImageUrl, getBatchConsumerPassportUrl } from '../../utils/qrHelper';
+import { LargeQRModal } from '../../components/LargeQRModal';
 
 export const TraceabilityView = ({ onBack, onOpenFullJourney, onViewJourney }) => {
   const [batches, setBatches] = useState([]);
   const [selectedBatchId, setSelectedBatchId] = useState(null);
   const [batchData, setBatchData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   // 1. Fetch all registered batches
   useEffect(() => {
@@ -322,24 +324,33 @@ export const TraceabilityView = ({ onBack, onOpenFullJourney, onViewJourney }) =
                   </span>
                 </span>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-[#E8E2D5]">
-                <div className="flex flex-col">
-                  <span className="font-bold text-[#786E65]">On-Chain QR Passport</span>
-                  <span className="text-[11px] text-[#556B2F] font-semibold">Physical produce packaging label</span>
+              {/* Prominent Large On-Chain QR Passport */}
+              <div className="pt-3 border-t border-[#E8E2D5] flex flex-col items-center justify-center text-center gap-2">
+                <div className="flex flex-col items-center">
+                  <span className="font-extrabold text-sm text-[#2D2620]">Scan Physical Package QR Passport</span>
+                  <span className="text-xs text-[#556B2F] font-semibold">Scan with your mobile phone camera to verify on-chain provenance</span>
                 </div>
-                <a
-                  href={getBatchConsumerPassportUrl(batchData.batchId)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Scan with phone camera or click to open URL directly"
-                  className="w-13 h-13 bg-white p-0.5 rounded-xl border border-[#E8E2D5] flex items-center justify-center shadow-2xs flex-shrink-0 cursor-pointer hover:border-[#3D4E2A] transition-colors"
+                <div
+                  onClick={() => setIsQRModalOpen(true)}
+                  className="w-56 h-56 bg-white p-3 rounded-2xl border-2 border-[#556B2F]/40 hover:border-[#3D4E2A] flex flex-col items-center justify-center shadow-md cursor-pointer transition-all hover:scale-[1.02] group"
+                  title="Click to expand / scan with phone camera"
                 >
                   <img
-                    src={getBatchQRCodeImageUrl(batchData.batchId, 90)}
+                    src={getBatchQRCodeImageUrl(batchData.batchId, 260)}
                     alt={`QR #${batchData.batchId}`}
-                    className="w-12 h-12 object-contain"
+                    className="w-44 h-44 object-contain"
                   />
-                </a>
+                  <span className="text-[10px] font-black tracking-widest text-[#556B2F] mt-1 group-hover:text-[#2D2620]">
+                    #{batchData.batchId} • TAP TO ENLARGE
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsQRModalOpen(true)}
+                  className="text-xs font-bold text-[#3D4E2A] hover:underline cursor-pointer"
+                >
+                  Click to open high-res full screen QR
+                </button>
               </div>
             </div>
           )}
@@ -354,6 +365,15 @@ export const TraceabilityView = ({ onBack, onOpenFullJourney, onViewJourney }) =
           </button>
         </>
       )}
+
+      {/* Large QR Zoom Modal */}
+      <LargeQRModal
+        isOpen={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
+        batchId={batchData?.batchId}
+        cropName={batchData?.product}
+        origin={batchData?.farmDetails}
+      />
     </div>
   );
 };

@@ -1721,3 +1721,46 @@ still static UI with no data flow. Specifically:
 - Vite Production Build: 1,814 modules transformed in 3.13s with 0 errors (`cd design && npm run build`).
 - Pytest Suite: 12/12 tests in `tests/` passing cleanly.
 - Dev server running on `0.0.0.0:3000` (Local: `http://localhost:3000/`, Network: `http://192.168.1.102:3000/`).
+
+---
+
+## [Large High-Resolution QR Codes & Zoom Inspector] — 2026-10-24
+
+**What was done:**
+- Significantly enlarged all scannable QR codes across the application to make them instantly scannable by physical mobile phone cameras from comfortable desk distances (2–4 feet):
+  1. **Reusable Full-Screen High-Res Modal (`LargeQRModal.jsx`)**:
+     - Created `LargeQRModal` rendering a massive 288px (`w-72 h-72`) high-contrast QR code (`size=320`).
+     - Includes direct copy-to-clipboard button, external new tab link, produce metadata, batch ID, and scanning instructions.
+  2. **Farmer Traceability View (`TraceabilityView.jsx`)**:
+     - Upgraded the tiny inline passport table row into a prominent, dedicated `w-56 h-56` on-chain passport card with a `w-44 h-44` QR code (`size=260`).
+     - Added click-to-enlarge triggering the `LargeQRModal`.
+  3. **Farmer Journey Modal (`ViewJourneyModal.jsx`)**:
+     - Enlarged the header QR code badge from `w-20 h-20` to `w-32 h-32` (`w-28 h-28` image, `size=220`) with click-to-enlarge modal support.
+  4. **Consumer Camera Viewfinder (`ScanProductView.jsx`)**:
+     - Enlarged viewfinder frame to `h-[380px]` with expanded `w-64 h-64` corner guides and `w-44 h-44` QR card (`size=260`).
+     - Added tap-to-enlarge modal support.
+  5. **Consumer Product Journey Passport (`ProductJourneyView.jsx`)**:
+     - Enlarged the header card QR passport from `w-16 h-16` to `w-24 h-24` with `SCAN / ZOOM` tag and `LargeQRModal` inspector.
+  6. **Dark Store Traceability & Blockchain Scanners (`DarkStoreBlockchainView.jsx` & `DarkStoreTraceabilityView.jsx`)**:
+     - Expanded modal scanner viewfinder from `w-48 h-48` to `w-64 h-64` with `w-52 h-52` high-res QR code (`size=260`).
+  7. **Dark Store Micro-Inventory (`MicroInventoryView.jsx`)**:
+     - Enlarged storage bin QR tag from `w-36 h-36` to `w-56 h-56` (`size=280`).
+  8. **Default QR Size Upgrade (`qrHelper.js`)**:
+     - Raised default QR generation resolution in `getBatchQRCodeImageUrl` from `size=120` to `size=260`.
+
+**Files changed:**
+- `design/src/components/LargeQRModal.jsx`
+- `design/src/utils/qrHelper.js`
+- `design/src/Farmer/Views/TraceabilityView.jsx`
+- `design/src/Farmer/Modals/ViewJourneyModal.jsx`
+- `design/src/Consumer/Views/ScanProductView.jsx`
+- `design/src/Consumer/Views/ProductJourneyView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreBlockchainView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreTraceabilityView.jsx`
+- `design/src/Dark_Store/Views/MicroInventoryView.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build: 1,815 modules transformed in 3.03s with 0 errors (`cd design && npm run build`).
+- Pytest Suite: All 12 backend tests passed cleanly (`.venv/bin/pytest tests/`).
+- Mobile Scan Distance: High-res 260px–320px QR codes verified readable by mobile cameras across all views.
