@@ -153,3 +153,46 @@ CREATE INDEX IF NOT EXISTS idx_audit_trail_batch_id ON audit_trail(batch_id);
 CREATE INDEX IF NOT EXISTS idx_batch_documents_batch_id ON batch_documents(batch_id);
 CREATE INDEX IF NOT EXISTS idx_batch_reviews_batch_id ON batch_reviews(batch_id);
 CREATE INDEX IF NOT EXISTS idx_spoilage_incidents_batch_id ON spoilage_incidents(batch_id);
+
+-- Grants for Supabase PostgREST (API Gateway) and Realtime roles
+GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres, anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres, anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO postgres, anon, authenticated, service_role;
+
+-- Enable Row Level Security and add public full access policies
+DO $$
+DECLARE
+    tbl text;
+BEGIN
+    FOR tbl IN
+        SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+    LOOP
+        EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', tbl);
+        EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I;', 'Public full access ' || tbl, tbl);
+        EXECUTE format('CREATE POLICY %I ON public.%I FOR ALL USING (true) WITH CHECK (true);', 'Public full access ' || tbl, tbl);
+    END LOOP;
+END
+$$;
+
+-- Add tables to supabase_realtime publication and configure full replica identity
+DO $$
+DECLARE
+    tbl text;
+BEGIN
+    FOR tbl IN
+        SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+    LOOP
+        BEGIN
+            EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I;', tbl);
+        EXCEPTION WHEN duplicate_object THEN
+            -- table already in publication
+        END;
+        EXECUTE format('ALTER TABLE public.%I REPLICA IDENTITY FULL;', tbl);
+    END LOOP;
+END
+$$;

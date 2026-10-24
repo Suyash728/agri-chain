@@ -299,18 +299,15 @@ class PostgresCursorWrapper:
         if trimmed.upper().startswith("INSERT INTO") and "RETURNING" not in trimmed.upper():
             lower_q = trimmed.lower()
             if any(t in lower_q for t in ["readings", "custody_events", "quarantine", "batch_documents", "batch_reviews", "spoilage_incidents", "users"]):
-                q_with_ret = trimmed.rstrip("; ") + " RETURNING id"
-                try:
-                    self._cur.execute(q_with_ret, params)
-                    res = self._cur.fetchone()
-                    if res:
-                        if isinstance(res, dict):
-                            self.lastrowid = res.get("id")
-                        elif isinstance(res, (list, tuple)):
-                            self.lastrowid = res[0]
-                    return self
-                except Exception as e:
-                    logger.debug("Returning id fallback: %s", e)
+                clean_query = trimmed.rstrip("; ") + " RETURNING id"
+                self._cur.execute(clean_query, params)
+                res = self._cur.fetchone()
+                if res:
+                    if isinstance(res, dict):
+                        self.lastrowid = res.get("id")
+                    elif isinstance(res, (list, tuple)):
+                        self.lastrowid = res[0]
+                return self
 
         self._cur.execute(clean_query, params)
         return self
@@ -352,6 +349,16 @@ class PostgresConnectionWrapper:
         self._conn.rollback()
 
     def close(self):
+        try:
+            if not self._conn.closed:
+                import psycopg.pq
+                status = self._conn.info.transaction_status
+                if status == psycopg.pq.TransactionStatus.INTRANS:
+                    self._conn.commit()
+                elif status == psycopg.pq.TransactionStatus.INERROR:
+                    self._conn.rollback()
+        except Exception:
+            pass
         self._conn.close()
 
     def __enter__(self):
