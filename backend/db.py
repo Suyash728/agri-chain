@@ -318,8 +318,18 @@ class PostgresCursorWrapper:
     def fetchall(self):
         return self._cur.fetchall()
 
+    def close(self):
+        if hasattr(self._cur, "close"):
+            self._cur.close()
+
     def __iter__(self):
         return iter(self._cur)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
 class PostgresConnectionWrapper:
