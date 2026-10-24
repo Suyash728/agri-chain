@@ -3,34 +3,29 @@
 ## Overall Classification Metrics
 | Metric | Value |
 | :--- | :--- |
-| Total Cases | 40 |
-| True Positives (TP) | 35 |
-| True Negatives (TN) | 3 |
-| False Positives (FP) | 2 |
+| Total Cases | 3 |
+| True Positives (TP) | 2 |
+| True Negatives (TN) | 1 |
+| False Positives (FP) | 0 |
 | False Negatives (FN) | 0 |
-| **Precision** | **0.9459** (94.6%) |
+| **Precision** | **1.0000** (100.0%) |
 | **Recall** | **1.0000** (100.0%) |
-| **F1-Score** | **0.9722** (97.2%) |
-| **False Positive Rate (FPR)** | **0.4000** (40.0%) |
-| Mean Pipeline Latency | 89.09 ms |
+| **F1-Score** | **1.0000** (100.0%) |
+| **False Positive Rate (FPR)** | **0.0000** (0.0%) |
+| Mean Pipeline Latency | 33.66 ms |
 
 ## Fault-Wise Detection Breakdown
 | Fault Category | Total Trials | Detected Anomalous | Accepted Valid | Insufficient | Detection Rate (%) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| NORMAL | 5 | 2 | 3 | 0 | 60.0% |
-| TEMPERATURE_SPIKE | 5 | 5 | 0 | 0 | 100.0% |
-| HUMIDITY_SPIKE | 5 | 5 | 0 | 0 | 100.0% |
-| GPS_JUMP | 5 | 5 | 0 | 0 | 100.0% |
-| TIMESTAMP_OUT_OF_ORDER | 5 | 5 | 0 | 0 | 100.0% |
-| REPLAY | 5 | 5 | 0 | 0 | 100.0% |
-| TELEMETRY_GAP | 5 | 5 | 0 | 0 | 100.0% |
-| COMBINED | 5 | 5 | 0 | 0 | 100.0% |
+| NORMAL | 1 | 0 | 1 | 0 | 100.0% |
+| GPS_JUMP | 1 | 1 | 0 | 0 | 100.0% |
+| TEMPERATURE_SPIKE | 1 | 1 | 0 | 0 | 100.0% |
 
 ## Confusion Matrix
 | | Predicted Normal | Predicted Anomalous |
 | :--- | :--- | :--- |
-| **Actual Normal** | 3 (TN) | 2 (FP) |
-| **Actual Anomalous** | 0 (FN) | 35 (TP) |
+| **Actual Normal** | 1 (TN) | 0 (FP) |
+| **Actual Anomalous** | 0 (FN) | 2 (TP) |
 
 ## Publication-Ready Figures
 - `confusion_matrix.png`

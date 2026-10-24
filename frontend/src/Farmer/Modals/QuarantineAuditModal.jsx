@@ -5,8 +5,8 @@ export const QuarantineAuditModal = ({ isOpen, onClose }) => {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchQuarantine = () => {
-    setLoading(true);
+  const fetchQuarantine = (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     fetch('http://localhost:8000/telemetry/quarantine')
       .then((res) => res.json())
       .then((data) => {
@@ -15,13 +15,34 @@ export const QuarantineAuditModal = ({ isOpen, onClose }) => {
         }
       })
       .catch((err) => console.error('Failed to load quarantine audit logs:', err))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!isBackground) setLoading(false);
+      });
   };
 
   useEffect(() => {
-    if (isOpen) {
-      fetchQuarantine();
-    }
+    if (!isOpen) return;
+
+    // Initial fetch on open
+    fetchQuarantine(false);
+
+    // Live real-time polling every 2 seconds while modal is open
+    const interval = setInterval(() => {
+      fetchQuarantine(true);
+    }, 2000);
+
+    const handleUpdate = () => {
+      fetchQuarantine(true);
+    };
+
+    window.addEventListener('agrichain-telemetry-updated', handleUpdate);
+    window.addEventListener('agrichain-data-updated', handleUpdate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('agrichain-telemetry-updated', handleUpdate);
+      window.removeEventListener('agrichain-data-updated', handleUpdate);
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -47,8 +68,12 @@ export const QuarantineAuditModal = ({ isOpen, onClose }) => {
           </div>
           
           <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Sync Active
+            </span>
             <button
-              onClick={fetchQuarantine}
+              onClick={() => fetchQuarantine(false)}
               className="w-8 h-8 rounded-full bg-white border border-[#E6E1D5] flex items-center justify-center text-[#666057] hover:text-[#2D2620] cursor-pointer"
               title="Refresh"
             >

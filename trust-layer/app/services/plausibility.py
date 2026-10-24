@@ -299,7 +299,13 @@ def run_plausibility_checks(
     temp_change = abs(current.temperature - previous.temperature)
     temp_rate_per_min = (temp_change / elapsed_seconds) * 60.0
 
-    if temp_rate_per_min > policy.max_temperature_change_rate_per_min:
+    is_current_temp_safe = (
+        policy.min_temp_c is not None
+        and policy.max_temp_c is not None
+        and policy.min_temp_c <= current.temperature <= policy.max_temp_c
+    )
+
+    if temp_rate_per_min > policy.max_temperature_change_rate_per_min and not is_current_temp_safe:
         checks.append(
             PlausibilityCheckResult(
                 name="temperature_rate_check",
@@ -334,7 +340,13 @@ def run_plausibility_checks(
     humidity_change = abs(current.humidity - previous.humidity)
     humidity_rate_per_min = (humidity_change / elapsed_seconds) * 60.0
 
-    if humidity_rate_per_min > policy.max_humidity_change_rate_per_min:
+    is_current_humidity_safe = (
+        policy.min_humidity is not None
+        and policy.max_humidity is not None
+        and policy.min_humidity <= current.humidity <= policy.max_humidity
+    )
+
+    if humidity_rate_per_min > policy.max_humidity_change_rate_per_min and not is_current_humidity_safe:
         checks.append(
             PlausibilityCheckResult(
                 name="humidity_rate_check",

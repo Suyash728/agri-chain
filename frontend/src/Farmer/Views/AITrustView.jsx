@@ -33,6 +33,7 @@ const initialTrustData = {
 export const AITrustView = ({ onBack, onOpenDetails }) => {
   const [trustData, setTrustData] = useState(initialTrustData);
   const [isQuarantineOpen, setIsQuarantineOpen] = useState(false);
+  const [quarantineIncidents, setQuarantineIncidents] = useState([]);
 
   // Live Telemetry Input State
   const [batchId, setBatchId] = useState('BATCH-PO-2026-001');
@@ -50,6 +51,17 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
   const handleOpenDetails = () => {
     if (onOpenDetails) onOpenDetails();
     setIsQuarantineOpen(true);
+  };
+
+  const fetchQuarantineLogs = () => {
+    fetch('http://localhost:8000/telemetry/quarantine')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setQuarantineIncidents(data);
+        }
+      })
+      .catch(() => {});
   };
 
   const fetchTrustAndInventory = () => {
@@ -78,11 +90,26 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
 
   useEffect(() => {
     fetchTrustAndInventory();
-    window.addEventListener('agrichain-data-reset', fetchTrustAndInventory);
-    window.addEventListener('agrichain-data-updated', fetchTrustAndInventory);
+    fetchQuarantineLogs();
+
+    // Real-time polling for background sync
+    const interval = setInterval(() => {
+      fetchQuarantineLogs();
+    }, 2500);
+
+    const handleUpdate = () => {
+      fetchTrustAndInventory();
+      fetchQuarantineLogs();
+    };
+
+    window.addEventListener('agrichain-data-reset', handleUpdate);
+    window.addEventListener('agrichain-data-updated', handleUpdate);
+    window.addEventListener('agrichain-telemetry-updated', handleUpdate);
     return () => {
-      window.removeEventListener('agrichain-data-reset', fetchTrustAndInventory);
-      window.removeEventListener('agrichain-data-updated', fetchTrustAndInventory);
+      clearInterval(interval);
+      window.removeEventListener('agrichain-data-reset', handleUpdate);
+      window.removeEventListener('agrichain-data-updated', handleUpdate);
+      window.removeEventListener('agrichain-telemetry-updated', handleUpdate);
     };
   }, []);
 
@@ -130,7 +157,10 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
 
       const data = await res.json();
       setEvalResult(data);
-      // Immediately refresh overall trust score
+      // Immediately notify audit logs and trust score in real-time
+      window.dispatchEvent(new CustomEvent('agrichain-telemetry-updated', { detail: data }));
+      window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
+      fetchQuarantineLogs();
       fetch('http://localhost:8000/farmer/ai-trust')
         .then((res) => res.json())
         .then((json) => {
@@ -170,10 +200,15 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
 
         <button 
           onClick={handleOpenDetails}
-          className="text-xs font-bold text-[#3B3028] hover:text-[#556B2F] transition-colors py-1.5 px-3.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] cursor-pointer flex items-center gap-1.5"
+          className="text-xs font-bold text-[#3B3028] hover:text-[#556B2F] transition-colors py-1.5 px-3.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] cursor-pointer flex items-center gap-2"
         >
           <ShieldAlert className="w-3.5 h-3.5 text-[#991B1B]" />
           <span>Audit Log</span>
+          {quarantineIncidents.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#FEE2E2] text-[#991B1B] border border-[#FCA5A5]">
+              {quarantineIncidents.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -604,6 +639,63 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
             <span className="font-bold text-[#3D5220]">{item.status}</span>
           </div>
         ))}
+      </div>
+
+      {/* Real-Time Quarantine Audit Stream Feed */}
+      <div className="flex flex-col gap-3 pt-3 border-t border-[#E6E1D5]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-[#991B1B]" />
+            <h3 className="text-xs sm:text-sm font-extrabold text-[#2D2620]">
+              Real-Time Quarantine Audit Feed
+            </h3>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Stream
+            </span>
+          </div>
+          <button
+            onClick={handleOpenDetails}
+            className="text-xs font-extrabold text-[#556B2F] hover:text-[#2E3A1F] cursor-pointer transition-colors"
+          >
+            View All ({quarantineIncidents.length}) →
+          </button>
+        </div>
+
+        {quarantineIncidents.length === 0 ? (
+          <div className="p-4 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-xs text-center text-[#666057]">
+            <p className="font-bold">No quarantined telemetry incidents.</p>
+            <p className="text-[11px] text-[#8C8275] mt-0.5">All active cold-chain IoT data streams are valid and verified.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {quarantineIncidents.slice(0, 2).map((item) => (
+              <div
+                key={item.id}
+                onClick={handleOpenDetails}
+                className="p-3.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] hover:border-[#FCA5A5] cursor-pointer transition-all flex flex-col gap-2"
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-1.5 py-0.5 rounded-md text-[9px] font-extrabold bg-[#FEE2E2] text-[#991B1B] border border-[#FCA5A5]">
+                      QUARANTINED
+                    </span>
+                    <span className="font-bold text-[#2D2620] truncate">{item.batchId}</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-[#666057]">{item.quarantinedAt?.slice(11, 19)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs bg-white p-2 rounded-lg border border-[#E6E1D5]/70">
+                  <span className="font-bold text-[#991B1B]">{item.tempC}°C</span>
+                  <span className="text-[#666057]">{item.humidityPct}% RH</span>
+                  <span className="font-mono text-[10px] text-[#D97706]">{item.anomalyScore}</span>
+                </div>
+                <p className="text-[11px] font-semibold text-[#991B1B] truncate">
+                  {item.reasons?.[0] || item.details}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Quarantine Audit Modal */}

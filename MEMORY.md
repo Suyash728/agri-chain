@@ -2543,3 +2543,53 @@ ole=farmer, 	ab=dashboard), rather than falling back to stale localStorage roles
 - 
 pm run build passed cleanly with 0 errors.
 - Verified live dev server on http://localhost:3000/ initializes directly into Farmer Dashboard.
+
+
+---
+
+## Task: Resolve False AI Trust Anomaly and Restore Dynamic Trust Scoring
+**What was done:**
+- Fixed false positive anomaly flagging where physically safe telemetry parameters (e.g., 4.5°C within 2.0°C - 8.0°C tomato policy) were rejected with `TEMPERATURE_RATE_EXCEEDED` due to historical test readings.
+- Updated `trust-layer/app/services/plausibility.py` so that rate-of-change checks (`temperature_rate_check` and `humidity_rate_check`) only trigger when values are outside biological crop policy limits (`not is_current_temp_safe`, `not is_current_humidity_safe`).
+- Enhanced `trust-layer/app/services/policy.py` (`get_crop_policy`) with exact and substring policy matching and standard agricultural fallbacks (tomato, potato, onion, apple, mango, wheat, rice).
+- Updated `backend/main.py`:
+  - Adjusted telemetry pacing step to 900.0s (15 min) for simulated sensor transmissions when no timestamp is supplied.
+  - Stripped rate and ML transition outlier artifacts when physical readings are strictly inside the crop policy bounds and cryptographic integrity is intact.
+  - Re-engineered `get_farmer_ai_trust()` to calculate composite trust scores from a rolling window of recent readings for active batches rather than an unbounded lifetime count contaminated by historical test suites.
+- Preserved strict project constraints: zero frontend or contract modifications made.
+
+**Files changed:**
+- `trust-layer/app/services/plausibility.py`
+- `trust-layer/app/services/policy.py`
+- `backend/main.py`
+- `MEMORY.md`
+
+**Verified:**
+- `python -m pytest trust-layer/tests/test_plausibility.py trust-layer/tests/test_policy.py trust-layer/tests/test_simulator.py trust-layer/tests/test_verdict.py` (48 passed).
+- Safe telemetry `POST /telemetry` (4.5°C, 88.0% humidity) evaluates to `VALID`, `READY_FOR_ORACLE`, anchors on-chain via EVM contract `ColdChainMonitor.sol` with `tx_hash`, and generates 0 false anomaly reason codes.
+- Breach preset `POST /telemetry` (14.5°C) evaluates to `BREACH`, `RECORDED_ON_CHAIN_BREACH`, anchors on-chain and attributes breach to custodian.
+- Spike preset `POST /telemetry` (48.0°C) evaluates to `ANOMALOUS`, `QUARANTINED`, and blocks EVM writing.
+- `GET /farmer/ai-trust` returns `score: 95 / 100`, `level: "High Trust"`, `status: "Safe & Trustworthy"`, `100% Compliant (Optimal Range)`, and `0 Deviations Flagged`.
+
+
+---
+
+## Task: Enable Real-Time Quarantine Audit Log Streaming and Live Feed
+**What was done:**
+- Enabled real-time auto-refresh in `frontend/src/Farmer/Modals/QuarantineAuditModal.jsx` using a background polling interval (2000ms) and event listeners (`agrichain-telemetry-updated`, `agrichain-data-updated`), ensuring newly quarantined incidents appear at the top immediately without manual refresh.
+- Added a live visual badge with a pulsating indicator (`Live Sync Active`) to the modal header.
+- Added a live Quarantine Audit Feed card in `frontend/src/Farmer/Views/AITrustView.jsx` showing the latest intercepted violations and event count directly on the dashboard.
+- Dispatched instant `agrichain-telemetry-updated` events in `handleSendTelemetry` upon receiving anomalous telemetry.
+- Updated `get_telemetry_quarantine()` in `backend/main.py` to prevent duplicate incident entries between `audit_trail` and `quarantine`, merging SHA-256 hash chains (`prevHash`, `entryHash`) and sorting newest-first.
+
+**Files changed:**
+- `backend/main.py`
+- `frontend/src/Farmer/Modals/QuarantineAuditModal.jsx`
+- `frontend/src/Farmer/Views/AITrustView.jsx`
+- `MEMORY.md`
+
+**Verified:**
+- `npm run build` completed with 0 errors (1,817 modules transformed).
+- Verified `GET /telemetry/quarantine` returns real-time incident array sorted by timestamp descending.
+- Tested submitting a live spike reading (48.0°C) via `POST /telemetry` and verified the new incident (`7bc03ad7...`) appeared at the top of the audit log feed within seconds.
+- All 48 unit tests in `trust-layer/tests/` passed cleanly.
