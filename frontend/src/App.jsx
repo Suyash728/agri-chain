@@ -456,6 +456,7 @@ export default function App() {
   return (
     <WalletProvider>
       <div className="min-h-screen bg-[#FAF7F0] text-[#3B3028] font-sans antialiased flex flex-col select-none">
+
         
         {/* Persistent Top Navigation Bar (Role Switcher & Web3 Wallet) */}
         <header className={`sticky top-0 z-40 bg-[#FAF7F0]/95 backdrop-blur-md border-b border-[#E6E1D5] px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3 shadow-2xs transition-all ${
@@ -586,8 +587,27 @@ export default function App() {
           </div>
         </header>
 
-        {/* Presenter Guided Walkthrough Banner (Hidden when God Mode is active) */}
-        {!isGodMode && (
+        {/* Presenter Guided Walkthrough Banner or Omniscient God Mode Guided Tour */}
+        {isGodMode ? (
+          <GodModeHub
+            activeRole={activeRole}
+            currentRoleTab={
+              activeRole === 'farmer' ? farmerTab :
+              activeRole === 'logistics' ? logisticTab :
+              activeRole === 'darkstore' ? darkStoreTab :
+              activeRole === 'consumer' ? consumerTab : 'dashboard'
+            }
+            initialBatchId={godModeInitialBatchId}
+            initialStep={godModeInitialStep}
+            onExit={() => {
+              setIsGodMode(false);
+              setGodModeInitialBatchId(null);
+            }}
+            onNavigateRoleAndTab={(role, tab, batchId) => {
+              handleNavigateRoleAndTab(role, tab, batchId);
+            }}
+          />
+        ) : (
           <PresenterWalkthroughBanner 
             currentRole={activeRole} 
             onNavigateRoleAndTab={handleNavigateRoleAndTab}
@@ -1037,27 +1057,7 @@ export default function App() {
         }}
       />
 
-      {/* Omniscient God Mode (Guided Window Walkthrough & 4-Quadrant Cockpit) */}
-      {isGodMode && (
-        <GodModeHub
-          activeRole={activeRole}
-          currentRoleTab={
-            activeRole === 'farmer' ? farmerTab :
-            activeRole === 'logistics' ? logisticTab :
-            activeRole === 'darkstore' ? darkStoreTab :
-            activeRole === 'consumer' ? consumerTab : 'dashboard'
-          }
-          initialBatchId={godModeInitialBatchId}
-          initialStep={godModeInitialStep}
-          onExit={() => {
-            setIsGodMode(false);
-            setGodModeInitialBatchId(null);
-          }}
-          onNavigateRoleAndTab={(role, tab, batchId) => {
-            handleNavigateRoleAndTab(role, tab, batchId);
-          }}
-        />
-      )}
+
     </div>
   </WalletProvider>
   );
