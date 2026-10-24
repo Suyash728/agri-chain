@@ -480,6 +480,7 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab, initia
       <NotificationsModal
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+        role="consumer"
       />
     </MobileContainer>
   );

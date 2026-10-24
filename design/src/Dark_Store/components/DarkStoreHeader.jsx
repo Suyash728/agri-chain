@@ -47,7 +47,6 @@ export const DarkStoreHeader = ({ onOpenNotifications, unreadCount }) => {
         {/* Notification Bell with Badge */}
         <button 
           onClick={() => {
-            markAllAsRead();
             if (onOpenNotifications) onOpenNotifications();
           }}
           className="relative w-10 h-10 rounded-2xl bg-white border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] hover:bg-[#FAF7F0] transition-colors cursor-pointer shadow-xs"

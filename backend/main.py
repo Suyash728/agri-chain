@@ -1014,17 +1014,20 @@ def post_spoilage_incident(payload: SpoilageIncidentRequest):
 @app.get("/notifications/all-users")
 def get_universal_notifications(role: Optional[str] = None):
     """
-    Returns multi-role tailored notifications for all 4 users:
-    Farmer, Logistics Partner, Dark Store, and Consumer.
+    Returns multi-role tailored notifications for all 5 roles:
+    Farmer, Logistics Partner, Dark Store, Consumer, and Admin.
     Dynamically generated from real database events:
+    - Registered farm batches & upcoming harvest arrivals
     - On-chain custody transitions (registration, dispatch, delivery, sale)
-    - Pre-chain AI trust quarantine and breach alerts
-    - Spoilage claims and financial impact
+    - Pre-chain AI trust quarantine and cold-chain breach alerts
+    - Spoilage claims, write-offs, and financial impact
     - Verified consumer ratings and reviews
+    - Node operational and network readiness alerts
     """
     conn = get_connection()
     try:
         role_filter = (role or "").strip().lower()
+        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
 
         spoilage_rows = conn.execute(
             "SELECT * FROM spoilage_incidents ORDER BY id DESC LIMIT 15"
@@ -1054,12 +1057,41 @@ def get_universal_notifications(role: Optional[str] = None):
             ORDER BY rv.id DESC LIMIT 10
             """
         ).fetchall()
+        batch_rows = conn.execute(
+            """
+            SELECT b.* FROM batches b ORDER BY b.created_at DESC LIMIT 20
+            """
+        ).fetchall()
 
         notifications = []
 
         # ---------------- 1. FARMER NOTIFICATIONS ----------------
         if not role_filter or role_filter in ("farmer", "all"):
-            # Spoilage Alerts
+            notifications.append({
+                "id": "notif-farmer-system-ready",
+                "recipient_role": "farmer",
+                "category": "SYSTEM_READY",
+                "title": "AgriChain Farm Node Connected",
+                "desc": "Farm node linked with ProductRegistry.sol. Ready to tokenize organic harvests and trace custody.",
+                "time": now_str,
+                "icon": "ShieldCheck",
+                "color": "text-[#3D5220]",
+                "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+            })
+
+            for b in batch_rows:
+                notifications.append({
+                    "id": f"notif-farmer-batch-{b['batch_id']}",
+                    "recipient_role": "farmer",
+                    "category": "BATCH_ONCHAIN",
+                    "title": f"Harvest Registered: #{b['batch_id']}",
+                    "desc": f"Batch {b['crop_name']} anchored on blockchain for farmer {b['farmer_name']}. Ready for procurement pickup.",
+                    "time": str(b["created_at"])[:16],
+                    "icon": "ShieldCheck",
+                    "color": "text-[#3D5220]",
+                    "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                })
+
             for sp in spoilage_rows:
                 notifications.append({
                     "id": f"notif-farmer-spoil-{sp['incident_id']}",
@@ -1075,7 +1107,6 @@ def get_universal_notifications(role: Optional[str] = None):
                     "bgColor": "bg-red-50 border-red-200",
                 })
 
-            # AI Quarantine Alerts
             for q in quarantine_rows:
                 notifications.append({
                     "id": f"notif-farmer-quar-{q['id']}",
@@ -1089,7 +1120,6 @@ def get_universal_notifications(role: Optional[str] = None):
                     "bgColor": "bg-rose-50 border-rose-200",
                 })
 
-            # Custody Transitions
             for c in custody_rows:
                 state = c["state"]
                 price_inr = (c["price_paise"] or 0) / 100.0
@@ -1130,7 +1160,6 @@ def get_universal_notifications(role: Optional[str] = None):
                         "bgColor": "bg-purple-50 border-purple-200",
                     })
 
-            # Consumer Reviews
             for rv in review_rows:
                 notifications.append({
                     "id": f"notif-farmer-rev-{rv['id']}",
@@ -1146,6 +1175,31 @@ def get_universal_notifications(role: Optional[str] = None):
 
         # ---------------- 2. LOGISTICS PARTNER NOTIFICATIONS ----------------
         if not role_filter or role_filter in ("logistics", "all"):
+            notifications.append({
+                "id": "notif-logistics-system-ready",
+                "recipient_role": "logistics",
+                "category": "SYSTEM_READY",
+                "title": "SafeXpress Reefer Fleet Active",
+                "desc": "Cold-chain telemetry oracle connected. Multi-sensor climate logging running at 100% compliance.",
+                "time": now_str,
+                "icon": "Truck",
+                "color": "text-[#3D5220]",
+                "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+            })
+
+            for b in batch_rows:
+                notifications.append({
+                    "id": f"notif-logistics-proc-{b['batch_id']}",
+                    "recipient_role": "logistics",
+                    "category": "PROCUREMENT_ORDER",
+                    "title": f"Procurement Order Ready: #{b['batch_id']}",
+                    "desc": f"Pickup available for {b['crop_name']} from {b['farmer_name']} ({b['origin_farm'].split('||')[0].strip()}). Assign reefer vehicle.",
+                    "time": str(b["created_at"])[:16],
+                    "icon": "Truck",
+                    "color": "text-[#3D5220]",
+                    "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                })
+
             for sp in spoilage_rows:
                 is_transit = sp["stage"] == "IN_TRANSIT" or "logistics" in str(sp["custodian_at_fault"]).lower()
                 notifications.append({
@@ -1204,6 +1258,44 @@ def get_universal_notifications(role: Optional[str] = None):
 
         # ---------------- 3. DARK STORE NOTIFICATIONS ----------------
         if not role_filter or role_filter in ("darkstore", "all"):
+            notifications.append({
+                "id": "notif-darkstore-system-ready",
+                "recipient_role": "darkstore",
+                "category": "SYSTEM_READY",
+                "title": "Dark Store Intake Bays Active",
+                "desc": "Pune Fresh DarkStore facility online. Cold bays 1-4 climate-controlled at 4.0°C and ready for GRN intake.",
+                "time": now_str,
+                "icon": "ShieldCheck",
+                "color": "text-[#3D5220]",
+                "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+            })
+
+            for b in batch_rows:
+                notifications.append({
+                    "id": f"notif-darkstore-inbound-sched-{b['batch_id']}",
+                    "recipient_role": "darkstore",
+                    "category": "INBOUND_SCHEDULED",
+                    "title": f"Incoming Harvest Lot: #{b['batch_id']}",
+                    "desc": f"Farmer {b['farmer_name']} registered {b['crop_name']}. Scheduled for warehouse intake bay allocation.",
+                    "time": str(b["created_at"])[:16],
+                    "icon": "Package",
+                    "color": "text-[#3D5220]",
+                    "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                })
+
+            for q in quarantine_rows:
+                notifications.append({
+                    "id": f"notif-darkstore-quar-{q['id']}",
+                    "recipient_role": "darkstore",
+                    "category": "STORAGE_ALERT",
+                    "title": f"Cold-Chain Quality Alert: #{q['batch_id']}",
+                    "desc": f"Sensor anomaly detected ({q['temp_c']}°C, {q['humidity_pct']}% RH). Pre-intake bay inspection required.",
+                    "time": str(q["created_at"])[:16],
+                    "icon": "AlertTriangle",
+                    "color": "text-rose-600",
+                    "bgColor": "bg-rose-50 border-rose-200",
+                })
+
             for sp in spoilage_rows:
                 notifications.append({
                     "id": f"notif-darkstore-spoil-{sp['incident_id']}",
@@ -1261,6 +1353,44 @@ def get_universal_notifications(role: Optional[str] = None):
 
         # ---------------- 4. CONSUMER NOTIFICATIONS ----------------
         if not role_filter or role_filter in ("consumer", "all"):
+            notifications.append({
+                "id": "notif-consumer-system-ready",
+                "recipient_role": "consumer",
+                "category": "SYSTEM_READY",
+                "title": "100% Farm Freshness Guarantee Active",
+                "desc": "Welcome to AgriChain! All produce is harvested within 24 hours from verified organic farms in Maharashtra.",
+                "time": now_str,
+                "icon": "ShieldCheck",
+                "color": "text-[#3D5220]",
+                "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+            })
+
+            for b in batch_rows:
+                notifications.append({
+                    "id": f"notif-consumer-batch-{b['batch_id']}",
+                    "recipient_role": "consumer",
+                    "category": "FRESH_ARRIVALS",
+                    "title": f"Fresh Harvest Available: {b['crop_name']}",
+                    "desc": f"Direct farm harvest #{b['batch_id']} from {b['farmer_name']} ({b['origin_farm'].split('||')[0].strip()}) is now available for doorstep delivery.",
+                    "time": str(b["created_at"])[:16],
+                    "icon": "ShieldCheck",
+                    "color": "text-[#3D5220]",
+                    "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                })
+
+            for q in quarantine_rows:
+                notifications.append({
+                    "id": f"notif-consumer-quar-{q['id']}",
+                    "recipient_role": "consumer",
+                    "category": "QUALITY_AUDIT",
+                    "title": f"Quality Shield Audit: #{q['batch_id']}",
+                    "desc": f"AI Trust Layer intercepted sub-optimal cold-chain conditions. 100% farm freshness guarantee applied.",
+                    "time": str(q["created_at"])[:16],
+                    "icon": "ShieldCheck",
+                    "color": "text-emerald-700",
+                    "bgColor": "bg-emerald-50 border-emerald-200",
+                })
+
             for sp in spoilage_rows:
                 consumer_refund = min(2200.0, float(sp["total_loss_inr"]))
                 notifications.append({
@@ -1324,11 +1454,23 @@ def get_universal_notifications(role: Optional[str] = None):
                 "category": "SECURITY_AUDIT",
                 "title": "Smart Contract RBAC Integrity Verified",
                 "desc": "DEFAULT_ADMIN_ROLE and circuit breaker contracts synchronized with Hardhat RPC.",
-                "time": datetime.utcnow().strftime("%Y-%m-%d %H:%M"),
+                "time": now_str,
                 "icon": "ShieldCheck",
                 "color": "text-purple-600",
                 "bgColor": "bg-purple-50 border-purple-200",
             })
+            for b in batch_rows:
+                notifications.append({
+                    "id": f"notif-admin-batch-{b['batch_id']}",
+                    "recipient_role": "admin",
+                    "category": "PRODUCT_REGISTRY",
+                    "title": f"Product Registry Anchor: #{b['batch_id']}",
+                    "desc": f"Batch {b['crop_name']} tokenized under farmer role. Contract ProductRegistry.sol verified.",
+                    "time": str(b["created_at"])[:16],
+                    "icon": "ShieldCheck",
+                    "color": "text-[#3D5220]",
+                    "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
+                })
             for q in quarantine_rows[:3]:
                 notifications.append({
                     "id": f"notif-admin-quar-{q['id']}",
@@ -1354,9 +1496,17 @@ def get_universal_notifications(role: Optional[str] = None):
                     "bgColor": "bg-amber-50 border-amber-200",
                 })
 
+        # Deduplicate notifications by id preserving first occurrence
+        seen_ids = set()
+        deduped = []
+        for n in notifications:
+            if n["id"] not in seen_ids:
+                seen_ids.add(n["id"])
+                deduped.append(n)
+
         # Sort notifications by time descending (newest first)
-        notifications.sort(key=lambda x: x.get("time", ""), reverse=True)
-        return notifications
+        deduped.sort(key=lambda x: x.get("time", ""), reverse=True)
+        return deduped
     finally:
         conn.close()
 

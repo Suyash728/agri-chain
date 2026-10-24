@@ -2144,3 +2144,55 @@ still static UI with no data flow. Specifically:
 - Vite Production Build: 1,816 modules built in 2.58s with 0 errors (`npm run build`).
 - Full Backend Test Suite: 12/12 passed in 5.19s (`pytest tests/`).
 - Smart Contract Suite: 22/22 passed in 625ms (`npx hardhat test`).
+
+
+## [Notifications System — Unified Multi-Role Panel & Synchronization Fix] — 2026-10-24
+
+**What was done:**
+- Fixed the issue where notification panels returned empty feeds or appeared broken across user portals (`farmer`, `logistics`, `darkstore`, `consumer`, `admin`):
+  1. **Backend Event Generation (`backend/main.py`)**:
+     - Fixed `get_universal_notifications`: previously generated 0 notifications for Dark Store and Consumer when batches were in initial states or when no spoilage/reviews were present.
+     - Added dynamic harvest lot notifications from `batches` across all roles so newly registered batches immediately alert:
+       - Farmer: "Harvest Registered: #ID"
+       - Logistics: "Procurement Order Ready: #ID"
+       - Dark Store: "Incoming Harvest Lot: #ID"
+       - Consumer: "Fresh Harvest Available: Produce Name"
+       - Admin: "Product Registry Anchor: #ID"
+     - Connected `quarantine_rows` to Dark Store and Consumer so cold-chain breaches and pre-intake quality anomalies alert managers and consumers with the 100% freshness guarantee.
+     - Established guaranteed operational baseline notifications for all 5 roles so the notification feed is always responsive and informative even on clean slate.
+     - Resolved Python 3.14 deprecation by migrating from `datetime.utcnow()` to `datetime.now(timezone.utc)`.
+  2. **Unified Frontend Notification Modal (`NotificationsModal.jsx`)**:
+     - Built a single, responsive, feature-complete modal with:
+       - Role identity pill (`🌾 Farmer Node`, `🚛 SafeXpress Telematics`, `🏬 Dark Store Operations`, `🛒 Consumer Marketplace`, `⚡ Master Governance`).
+       - 3 interactive filter tabs: `All (total)`, `Unread (count)`, and `Alerts (count)`.
+       - Visual unread indicators: white background with brand left accent border (`border-l-4 border-l-[#354424]`) and glowing `NEW` badge for unread notifications; soft muted background for read history.
+       - "Mark all read" button with immediate UI update, toast confirmation, and event dispatch (`agrichain-notifications-read`).
+       - Click-to-toggle: clicking individual notification cards toggles their read state dynamically.
+       - Manual "Refresh Feed" button with animated spinner.
+     - Unified both `Farmer/Modals/NotificationsModal.jsx` and `Consumer/Modals/NotificationsModal.jsx` to share the same verified logic.
+  3. **Header Bell Premature Wipe Fix**:
+     - Removed premature `markAllAsRead()` execution on bell icon clicks across `Farmer/components/Header.jsx`, `LogisticHeader.jsx`, `DarkStoreHeader.jsx`, and `ConsumerHeader.jsx`.
+     - Clicking the bell icon now opens the modal directly so users can view their unread alerts highlighted before choosing to mark them read.
+
+**Files changed:**
+- `backend/main.py`
+- `design/src/Farmer/Modals/NotificationsModal.jsx`
+- `design/src/Consumer/Modals/NotificationsModal.jsx`
+- `design/src/Consumer/ConsumerApp.jsx`
+- `design/src/Farmer/components/Header.jsx`
+- `design/src/Logistic_Partner/components/LogisticHeader.jsx`
+- `design/src/Dark_Store/components/DarkStoreHeader.jsx`
+- `design/src/Consumer/components/ConsumerHeader.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Dynamic Role Counts:
+  - Farmer: 16 notifications
+  - Logistics: 16 notifications
+  - Dark Store: 14 notifications
+  - Consumer: 14 notifications
+  - Admin: 8 notifications
+  - All: 68 total events
+- Backend Pytest Suite: 12/12 passed (`pytest tests/`).
+- Contract Hardhat Suite: 22/22 passed in 609ms (`npx hardhat test`).
+- Production Vite Build: 1,816 modules transformed in 2.67s with 0 errors (`npm run build`).

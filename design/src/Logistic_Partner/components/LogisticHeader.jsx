@@ -30,7 +30,6 @@ export const LogisticHeader = ({ onOpenNotifications, unreadCount }) => {
         {/* Bell Notifications */}
         <button
           onClick={() => {
-            markAllAsRead();
             if (onOpenNotifications) onOpenNotifications();
           }}
           className="relative p-2.5 rounded-xl border border-[#E6E1D5] bg-white hover:bg-[#FAF7F0] text-[#2D2620] transition-colors cursor-pointer shadow-xs"
