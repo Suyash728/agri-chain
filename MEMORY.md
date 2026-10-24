@@ -2652,3 +2652,44 @@ pm run build passed cleanly with 0 errors.
 
 **What's next:**
 - System is ready for live demonstrations with verifiable on-chain transparency.
+
+
+---
+
+## Task: Verify and Enforce Live Supabase Database Connectivity
+
+**What was done:**
+- Verified direct live connectivity to Supabase Cloud PostgreSQL instance (`aws-0-ap-south-1.pooler.supabase.com:5432/postgres`) using `psycopg`.
+- Fixed PostgreSQL compatibility in `backend/db.py`:
+  - Added connection cooldown and automated reconnection retry (`_POSTGRES_FAIL_COOLDOWN = 15.0s`) to prevent permanent SQLite fallback when the Supabase pooler experiences a cold-start latency.
+  - Added `connect_timeout=5` to prevent network hangs on connection attempts.
+  - Added query translation in `PostgresCursorWrapper.execute()` replacing SQLite-specific `ORDER BY rowid` with PostgreSQL-compatible `ORDER BY created_at`.
+  - Added `spoilage_incidents` and `users` tables to the auto-increment `RETURNING id` list for `lastrowid` resolution.
+- Updated `backend/migrations/001_initial_schema.sql` and live Supabase schema:
+  - Added `spoilage_incidents` table definition and performance index.
+  - Added `prev_hash` and `entry_hash` columns to `quarantine` table for IsoLog cryptographic hash chaining.
+  - Created `public.users` table with standard role constraints.
+- Updated `backend/main.py`:
+  - Replaced SQLite-specific `ORDER BY rowid DESC` with universal `ORDER BY created_at DESC`.
+  - Fixed `batch_documents` insertion column from `title` to `file_name` to match table schema.
+  - Enhanced `verify_quarantine_integrity()` to properly handle PostgreSQL `datetime` object serialization during SHA-256 hash-chain reconstruction.
+- Updated `backend/scripts/migrate_sqlite_to_supabase.py`:
+  - Added `spoilage_incidents` and `users` to `TABLES_IN_ORDER` and serial sequence synchronization list.
+  - Executed migration successfully syncing all tables to Supabase.
+- Verified live end-to-end API writes: confirmed `POST /demo/produce/create` inserts records directly into Supabase cloud PostgreSQL.
+
+**Files changed:**
+- `backend/db.py`
+- `backend/main.py`
+- `backend/migrations/001_initial_schema.sql`
+- `backend/scripts/migrate_sqlite_to_supabase.py`
+- `MEMORY.md`
+
+**Verified:**
+- `psycopg` connection to `aws-0-ap-south-1.pooler.supabase.com:5432` confirmed online (PostgreSQL 17.6).
+- `get_connection()` returns `PostgresConnectionWrapper` instance.
+- Verified live queries directly against Supabase (`SELECT COUNT(*) FROM batches` returned 25 rows).
+- Tested `POST /demo/produce/create` via FastAPI, queried Supabase directly, confirmed record `BATCH-HAS-1792872019` written to cloud database.
+- Ran backend pytest: `pytest tests/` (all 16 tests passed).
+- Ran smart contract tests: `cd contracts && npx hardhat test` (all 22 tests passed).
+- Ran frontend production build: `cd frontend && npm run build` (built cleanly in 2.66s).

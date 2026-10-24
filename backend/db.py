@@ -1,4 +1,5 @@
 import os
+import time
 import sqlite3
 import logging
 import pathlib
@@ -258,13 +259,17 @@ DEFAULT_SPOILAGE_INCIDENTS = [
 
 
 _POSTGRES_AVAILABLE: Optional[bool] = None
+_POSTGRES_LAST_FAIL_TIME: float = 0.0
+_POSTGRES_FAIL_COOLDOWN: float = 15.0  # retry connecting after 15 seconds cooldown
 
 
 def is_postgres() -> bool:
     """Return True if DATABASE_URL is set and points to PostgreSQL."""
-    global _POSTGRES_AVAILABLE
+    global _POSTGRES_AVAILABLE, _POSTGRES_LAST_FAIL_TIME
     if _POSTGRES_AVAILABLE is False:
-        return False
+        if time.time() - _POSTGRES_LAST_FAIL_TIME < _POSTGRES_FAIL_COOLDOWN:
+            return False
+        _POSTGRES_AVAILABLE = None  # Cooldown expired: allow retry
     if "DATABASE_URL" not in os.environ:
         return False
     db_target = os.environ["DATABASE_URL"].strip()
@@ -282,12 +287,15 @@ class PostgresCursorWrapper:
         # Convert ? placeholders to %s for PostgreSQL
         clean_query = query.replace("?", "%s")
         clean_query = clean_query.replace("datetime('now')", "CURRENT_TIMESTAMP")
+        clean_query = clean_query.replace("ORDER BY rowid DESC", "ORDER BY created_at DESC")
+        clean_query = clean_query.replace("ORDER BY rowid ASC", "ORDER BY created_at ASC")
+        clean_query = clean_query.replace("ORDER BY rowid", "ORDER BY created_at")
 
         # Automatically append RETURNING id for inserts on tables with auto-increment IDs
         trimmed = clean_query.strip()
         if trimmed.upper().startswith("INSERT INTO") and "RETURNING" not in trimmed.upper():
             lower_q = trimmed.lower()
-            if any(t in lower_q for t in ["readings", "custody_events", "quarantine", "batch_documents", "batch_reviews"]):
+            if any(t in lower_q for t in ["readings", "custody_events", "quarantine", "batch_documents", "batch_reviews", "spoilage_incidents", "users"]):
                 q_with_ret = trimmed.rstrip("; ") + " RETURNING id"
                 try:
                     self._cur.execute(q_with_ret, params)
@@ -356,17 +364,18 @@ class PostgresConnectionWrapper:
 
 def get_connection(db_path: str | pathlib.Path = DB_PATH):
     """Return a unified connection: PostgreSQL if DATABASE_URL is set, else local SQLite with Row factory."""
-    global _POSTGRES_AVAILABLE
+    global _POSTGRES_AVAILABLE, _POSTGRES_LAST_FAIL_TIME
     if is_postgres():
         try:
             import psycopg
             from psycopg.rows import dict_row
             db_url = os.environ["DATABASE_URL"]
-            raw_conn = psycopg.connect(db_url, row_factory=dict_row)
+            raw_conn = psycopg.connect(db_url, row_factory=dict_row, connect_timeout=5)
             _POSTGRES_AVAILABLE = True
             return PostgresConnectionWrapper(raw_conn)
         except Exception as e:
             _POSTGRES_AVAILABLE = False
+            _POSTGRES_LAST_FAIL_TIME = time.time()
             print(f"[db] Warning: Failed to connect to PostgreSQL ({e}). Falling back to local SQLite.")
 
     conn = sqlite3.connect(db_path)

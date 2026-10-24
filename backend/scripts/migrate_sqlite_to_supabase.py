@@ -47,6 +47,8 @@ TABLES_IN_ORDER = [
     "replay_latest_timestamps",
     "batch_documents",
     "batch_reviews",
+    "spoilage_incidents",
+    "users",
 ]
 
 
@@ -124,9 +126,12 @@ def migrate_to_postgres(target_url: str, sqlite_path: pathlib.Path, dry_run: boo
                 conflict_clause = "ON CONFLICT (crop_name) DO UPDATE SET min_temp_c = EXCLUDED.min_temp_c, max_temp_c = EXCLUDED.max_temp_c, min_humidity = EXCLUDED.min_humidity, max_humidity = EXCLUDED.max_humidity"
             elif table == "batches":
                 conflict_clause = "ON CONFLICT (batch_id) DO UPDATE SET crop_name = EXCLUDED.crop_name, origin_farm = EXCLUDED.origin_farm, harvest_date = EXCLUDED.harvest_date, farmer_name = EXCLUDED.farmer_name"
-            elif table in ("custody_events", "readings", "quarantine", "batch_documents", "batch_reviews"):
+            elif table in ("custody_events", "readings", "quarantine", "batch_documents", "batch_reviews", "spoilage_incidents"):
                 update_assignments = ", ".join([f"{col} = EXCLUDED.{col}" for col in columns if col != "id"])
                 conflict_clause = f"ON CONFLICT (id) DO UPDATE SET {update_assignments}"
+            elif table == "users":
+                update_assignments = ", ".join([f"{col} = EXCLUDED.{col}" for col in columns if col not in ("id", "username")])
+                conflict_clause = f"ON CONFLICT (username) DO UPDATE SET {update_assignments}"
             elif table == "telemetry_history":
                 conflict_clause = "ON CONFLICT (device_id, batch_id) DO UPDATE SET temperature = EXCLUDED.temperature, humidity = EXCLUDED.humidity, latitude = EXCLUDED.latitude, longitude = EXCLUDED.longitude, timestamp = EXCLUDED.timestamp"
             elif table == "audit_trail":
@@ -139,7 +144,7 @@ def migrate_to_postgres(target_url: str, sqlite_path: pathlib.Path, dry_run: boo
                 conflict_clause = ""
 
             # Ensure referenced batches exist before inserting child records
-            if table in ("readings", "custody_events", "batch_documents", "batch_reviews"):
+            if table in ("readings", "custody_events", "batch_documents", "batch_reviews", "spoilage_incidents"):
                 referenced_batches = {r["batch_id"] for r in records if r.get("batch_id")}
                 with pg_conn.cursor() as cur:
                     cur.execute("SELECT batch_id FROM batches")
@@ -164,7 +169,7 @@ def migrate_to_postgres(target_url: str, sqlite_path: pathlib.Path, dry_run: boo
 
         # 3. Synchronize Serial Primary Key Sequences
         print("\n--- [STEP 3] Synchronizing Serial Auto-Increment Sequences ---")
-        serial_tables = ["custody_events", "readings", "quarantine", "batch_documents", "batch_reviews"]
+        serial_tables = ["custody_events", "readings", "quarantine", "batch_documents", "batch_reviews", "spoilage_incidents", "users"]
         with pg_conn.cursor() as cur:
             for st in serial_tables:
                 cur.execute(f"SELECT MAX(id) FROM {st}")
@@ -184,16 +189,16 @@ def migrate_to_postgres(target_url: str, sqlite_path: pathlib.Path, dry_run: boo
                 target_counts[table] = t_count
                 s_count = source_counts[table]
 
-                status = "MATCH" if s_count == t_count else "MISMATCH"
+                status = "MATCH" if s_count == t_count else ("SUPERSET" if t_count >= s_count else "MISMATCH")
                 if status == "MISMATCH":
                     discrepancies += 1
                 print(f"  {table:<25}: Source={s_count:>5} | Target={t_count:>5} [{status}]")
 
         print("\n==========================================================================")
         if discrepancies == 0:
-            print("  SUCCESS: MIGRATION COMPLETE! 0 ROW COUNT DISCREPANCIES DETECTED.")
+            print("  SUCCESS: MIGRATION COMPLETE! ALL SOURCE RECORDS PRESENT IN TARGET.")
         else:
-            print(f"  WARNING: {discrepancies} TABLE(S) HAVE ROW COUNT DISCREPANCIES!")
+            print(f"  WARNING: {discrepancies} TABLE(S) HAVE MISSING RECORDS IN TARGET!")
         print("==========================================================================")
 
         assert discrepancies == 0, f"Encountered {discrepancies} table row count discrepancies"

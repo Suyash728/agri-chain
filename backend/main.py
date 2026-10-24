@@ -871,8 +871,16 @@ def verify_quarantine_integrity():
                 }
 
             # Recompute SHA-256 hash
-            payload = f"{row['prev_hash']}:{row['reading_id']}:{row['reason']}:{row['created_at']}"
+            ts_str = row["created_at"].isoformat() if hasattr(row["created_at"], "isoformat") else str(row["created_at"])
+            payload = f"{row['prev_hash']}:{row['reading_id']}:{row['reason']}:{ts_str}"
             calc_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+            if row["entry_hash"] != calc_hash:
+                # Fallback check against plain string representation
+                alt_payload = f"{row['prev_hash']}:{row['reading_id']}:{row['reason']}:{row['created_at']}"
+                alt_hash = hashlib.sha256(alt_payload.encode("utf-8")).hexdigest()
+                if row["entry_hash"] == alt_hash:
+                    calc_hash = alt_hash
 
             if row["entry_hash"] != calc_hash:
                 return {
@@ -2083,7 +2091,7 @@ def list_all_batches():
     """Return all registered batches with current status, custodian, and clean metadata."""
     conn = get_connection()
     try:
-        rows = conn.execute("SELECT * FROM batches ORDER BY rowid DESC").fetchall()
+        rows = conn.execute("SELECT * FROM batches ORDER BY created_at DESC").fetchall()
         result = []
         for r in rows:
             raw_farm = r["origin_farm"] or ""
@@ -4963,7 +4971,7 @@ def post_demo_produce_create(payload: DemoProduceCreateRequest):
             cid = f"ipfs://Qm{hashlib.sha256(batch_id.encode()).hexdigest()[:44]}"
             chain.set_batch_document(batch_id, "QUALITY_CERT", cid)
             conn.execute(
-                "INSERT INTO batch_documents (batch_id, doc_type, ipfs_cid, title) VALUES (?, 'QUALITY_CERT', ?, ?)",
+                "INSERT INTO batch_documents (batch_id, doc_type, ipfs_cid, file_name) VALUES (?, 'QUALITY_CERT', ?, ?)",
                 (batch_id, cid, f"Farm Gate Inspection Certificate - {payload.crop_name}"),
             )
         except Exception as e:
@@ -5717,14 +5725,14 @@ def _build_clean_slate_godmode_state() -> Dict[str, Any]:
 def build_godmode_state(conn, batch_id: str):
     """Compiles 100% ground-truth real-valued state for all 4 quadrants from SQLite & EVM."""
     if not batch_id or batch_id in ("latest", "undefined", "null"):
-        row = conn.execute("SELECT batch_id FROM batches ORDER BY rowid DESC LIMIT 1").fetchone()
+        row = conn.execute("SELECT batch_id FROM batches ORDER BY created_at DESC LIMIT 1").fetchone()
         if not row:
             return _build_clean_slate_godmode_state()
         batch_id = row["batch_id"]
 
     b_row = conn.execute("SELECT * FROM batches WHERE batch_id = ?", (batch_id,)).fetchone()
     if not b_row:
-        b_row = conn.execute("SELECT * FROM batches ORDER BY rowid DESC LIMIT 1").fetchone()
+        b_row = conn.execute("SELECT * FROM batches ORDER BY created_at DESC LIMIT 1").fetchone()
         if not b_row:
             return _build_clean_slate_godmode_state()
         batch_id = b_row["batch_id"]
@@ -6045,7 +6053,7 @@ def post_demo_godmode_tour_step(payload: DemoGodModeTourStepRequest):
                 cid = f"ipfs://Qm{hashlib.sha256(b_id.encode()).hexdigest()[:44]}"
                 chain.set_batch_document(b_id, "QUALITY_CERT", cid)
                 conn.execute(
-                    "INSERT INTO batch_documents (batch_id, doc_type, ipfs_cid, title) VALUES (?, 'QUALITY_CERT', ?, ?)",
+                    "INSERT INTO batch_documents (batch_id, doc_type, ipfs_cid, file_name) VALUES (?, 'QUALITY_CERT', ?, ?)",
                     (b_id, cid, f"Quality Certificate - {payload.crop_name}"),
                 )
             except Exception as e:
@@ -6056,7 +6064,7 @@ def post_demo_godmode_tour_step(payload: DemoGodModeTourStepRequest):
         elif payload.step == 2:
             # Step 2: Reefer Highway Transit Dispatch
             if not b_id:
-                row = conn.execute("SELECT batch_id FROM batches ORDER BY rowid DESC LIMIT 1").fetchone()
+                row = conn.execute("SELECT batch_id FROM batches ORDER BY created_at DESC LIMIT 1").fetchone()
                 b_id = row["batch_id"] if row else f"TOUR-{ts}"
 
             try:
@@ -6079,7 +6087,7 @@ def post_demo_godmode_tour_step(payload: DemoGodModeTourStepRequest):
         elif payload.step == 3:
             # Step 3: Reefer Compressor Seizure & Thermal Anomaly Quarantine
             if not b_id:
-                row = conn.execute("SELECT batch_id FROM batches ORDER BY rowid DESC LIMIT 1").fetchone()
+                row = conn.execute("SELECT batch_id FROM batches ORDER BY created_at DESC LIMIT 1").fetchone()
                 b_id = row["batch_id"] if row else f"TOUR-{ts}"
 
             # Record 26.5°C breach on-chain via ColdChainMonitor.sol
@@ -6116,7 +6124,7 @@ def post_demo_godmode_tour_step(payload: DemoGodModeTourStepRequest):
         elif payload.step == 4:
             # Step 4: Dark Store Inbound Receiving & Fast-Clearance Salvage Allocation
             if not b_id:
-                row = conn.execute("SELECT batch_id FROM batches ORDER BY rowid DESC LIMIT 1").fetchone()
+                row = conn.execute("SELECT batch_id FROM batches ORDER BY created_at DESC LIMIT 1").fetchone()
                 b_id = row["batch_id"] if row else f"TOUR-{ts}"
 
             try:
@@ -6133,7 +6141,7 @@ def post_demo_godmode_tour_step(payload: DemoGodModeTourStepRequest):
         elif payload.step == 5:
             # Step 5: Consumer Transparent Listing & Provenance Clearance Purchase
             if not b_id:
-                row = conn.execute("SELECT batch_id FROM batches ORDER BY rowid DESC LIMIT 1").fetchone()
+                row = conn.execute("SELECT batch_id FROM batches ORDER BY created_at DESC LIMIT 1").fetchone()
                 b_id = row["batch_id"] if row else f"TOUR-{ts}"
 
             try:
