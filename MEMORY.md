@@ -2828,3 +2828,31 @@ pm run build passed cleanly with 0 errors.
   4. Technical Deep-Dives (GIGO Oracle Problem, Isolation Forest path lengths, 58.5% single-slot packed struct gas optimization, zero-float integer rules).
   5. 8 Detailed Examiner Viva Questions & Model Answers.
   6. Quick Code Location Cheat Sheet ('Where is it in the code?').
+
+
+## Task: Transform God Mode into Guided Window-to-Window Demonstration Flow
+
+**What was done:**
+- Re-architected Omniscient God Mode from a static fullscreen modal into a seamless, window-by-window guided presentation tour (`frontend/src/components/GodModeHub.jsx` and `frontend/src/App.jsx`).
+- Introduced dual presentation modes:
+  1. `guided_window` (default): Viewport automatically navigates between real actor windows on each step, displaying a floating glassmorphic Presenter Guide HUD & Spotlight docked at the top with `pointer-events-none` on outer wrapper to allow interacting with the underlying pages.
+  2. `cockpit`: Fullscreen 4-quadrant command center with low-level hex inspector, dials, and IoT sliders.
+- Connected all 5 tour steps to live actor portals:
+  - Step 1: Farmer Origin Portal (`role: 'farmer'`, `tab: 'dashboard'`) — Highlights: 1,000 kg harvest minting on `ProductRegistry.sol`, guaranteed escrow payout lock (₹20,000), zero middleman exploitation.
+  - Step 2: SafeXpress Logistics Fleet (`role: 'logistics'`, `tab: 'transportation'`) — Highlights: `CustodyTransfer.sol` forward state transition (`IN_TRANSIT`), 4.5°C IoT stream, zero breaches.
+  - Step 3: AI Trust Layer & Anomaly Sandbox (`role: 'farmer'`, `tab: 'ai-trust'`) — Highlights: 26.5°C highway compressor breach, SHA-256 IsoLog quarantine chain, -₹16,000 carrier SLA penalty, 100% farmer payout protection.
+  - Step 4: Dark Store Micro-Hub (`role: 'darkstore'`, `tab: 'dashboard'`) — Highlights: Inbound circuit breaker quality check, Fast-Clearance salvage lot allocation, automated -55% markdown (₹18/kg), zero-waste FEFO algorithm.
+  - Step 5: Consumer QR Provenance Passport (`role: 'consumer'`, `tab: 'journey'`) — Highlights: Transparent QR scan, truthful on-chain thermal warning disclosure, verifiable price build-up (₹20 -> ₹22/kg), cryptographically verified 5★ review.
+- Added presenter controls and tools:
+  - Step jump pills (1 to 5).
+  - `Next` and `Prev` step navigation.
+  - `Auto-Play (8s)` with live visual countdown timer.
+  - Live IoT malfunction triggers: `🚨 Seize Compressor (26.5°C)` and `❄️ Restore Chill (4.5°C)`.
+  - Collapsible **Viva Examiner Q&A Cheat Sheet** (2 targeted viva questions and answers per step).
+  - Floating **Presenter Spotlight Directive** calling out the exact card to observe on each window.
+- Updated `frontend/src/components/ShowcaseDrawer.jsx` so 1-click demo scenarios can directly trigger the window-by-window God Mode walkthrough.
+- Verified:
+  - `npm --prefix frontend run build` succeeded (1,817 modules transformed, built in 5.48s with 0 errors).
+  - Hardhat contract tests: 22/22 passed (`npx hardhat test`).
+  - Trust Layer tests: 147/147 passed (`pytest trust-layer/tests/`).
+  - Preserved strict git constraint: Changes are staged/local, **NOT pushed to main branch**, pending user inspection.

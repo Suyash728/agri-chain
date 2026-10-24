@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
+  Sparkles,
   Zap, 
   X, 
   Play, 
@@ -24,7 +25,7 @@ import {
 } from 'lucide-react';
 import { CleanSlateModal } from './CleanSlateModal';
 
-export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpenExternal }) => {
+export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpenExternal, onLaunchGodMode }) => {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = isOpenExternal !== undefined ? isOpenExternal : internalIsOpen;
   const setIsOpen = setIsOpenExternal !== undefined ? setIsOpenExternal : setInternalIsOpen;
@@ -452,6 +453,20 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
                       </div>
                     </div>
                   )}
+
+                  {/* Guided Window-by-Window God Mode Walkthrough Trigger */}
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      if (onLaunchGodMode) {
+                        onLaunchGodMode(scenarioResult.batch_id, 1);
+                      }
+                    }}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-black shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 mt-1 mb-1"
+                  >
+                    <Sparkles className="w-4 h-4 fill-white" />
+                    <span>🚀 Launch Guided God Mode Walkthrough (#{scenarioResult.batch_id})</span>
+                  </button>
 
                   {/* Navigation Shortcuts */}
                   <div className="flex flex-wrap gap-2 pt-1 border-t border-[#E6E1D5]">

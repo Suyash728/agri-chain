@@ -144,6 +144,14 @@ export default function App() {
   const [adminTab, setAdminTab] = useState(initialUrlState.adminTab);
   const [isShowcaseDrawerOpen, setIsShowcaseDrawerOpen] = useState(false);
   const [isGodMode, setIsGodMode] = useState(false);
+  const [godModeInitialBatchId, setGodModeInitialBatchId] = useState(null);
+  const [godModeInitialStep, setGodModeInitialStep] = useState(1);
+
+  const handleLaunchGodMode = (batchId = null, step = 1) => {
+    if (batchId) setGodModeInitialBatchId(batchId);
+    setGodModeInitialStep(step);
+    setIsGodMode(true);
+  };
 
   // Tab state for Farmer portal
   const [farmerTab, setFarmerTab] = useState(initialUrlState.farmerTab);
@@ -527,7 +535,7 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => setIsGodMode(!isGodMode)}
+              onClick={() => isGodMode ? setIsGodMode(false) : handleLaunchGodMode(null, 1)}
               className={`px-3 h-[32px] rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 isGodMode 
                   ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md ring-2 ring-amber-300' 
@@ -578,13 +586,15 @@ export default function App() {
           </div>
         </header>
 
-        {/* Presenter Guided Walkthrough Banner */}
-        <PresenterWalkthroughBanner 
-          currentRole={activeRole} 
-          onNavigateRoleAndTab={handleNavigateRoleAndTab}
-          onOpenShowcaseLab={() => setIsShowcaseDrawerOpen(true)}
-          onOpenGodMode={() => setIsGodMode(true)}
-        />
+        {/* Presenter Guided Walkthrough Banner (Hidden when God Mode is active) */}
+        {!isGodMode && (
+          <PresenterWalkthroughBanner 
+            currentRole={activeRole} 
+            onNavigateRoleAndTab={handleNavigateRoleAndTab}
+            onOpenShowcaseLab={() => setIsShowcaseDrawerOpen(true)}
+            onOpenGodMode={() => handleLaunchGodMode(null, 1)}
+          />
+        )}
 
       {/* ========================================== */}
       {/* 1. LOGISTICS PARTNER PORTAL VIEW          */}
@@ -1022,14 +1032,28 @@ export default function App() {
         isOpenExternal={isShowcaseDrawerOpen}
         setIsOpenExternal={setIsShowcaseDrawerOpen}
         onNavigateRoleAndTab={handleNavigateRoleAndTab}
+        onLaunchGodMode={(batchId, step = 1) => {
+          handleLaunchGodMode(batchId, step);
+        }}
       />
 
-      {/* Omniscient God Mode (4-Quadrant Live Hub) */}
+      {/* Omniscient God Mode (Guided Window Walkthrough & 4-Quadrant Cockpit) */}
       {isGodMode && (
         <GodModeHub
-          onExit={() => setIsGodMode(false)}
-          onNavigateRoleAndTab={(role, tab, batchId) => {
+          activeRole={activeRole}
+          currentRoleTab={
+            activeRole === 'farmer' ? farmerTab :
+            activeRole === 'logistics' ? logisticTab :
+            activeRole === 'darkstore' ? darkStoreTab :
+            activeRole === 'consumer' ? consumerTab : 'dashboard'
+          }
+          initialBatchId={godModeInitialBatchId}
+          initialStep={godModeInitialStep}
+          onExit={() => {
             setIsGodMode(false);
+            setGodModeInitialBatchId(null);
+          }}
+          onNavigateRoleAndTab={(role, tab, batchId) => {
             handleNavigateRoleAndTab(role, tab, batchId);
           }}
         />
