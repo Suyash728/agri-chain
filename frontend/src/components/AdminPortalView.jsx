@@ -329,7 +329,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
       <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-3xl p-6 sm:p-8 mb-8 relative overflow-hidden shadow-xs">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#5B21B6]/10 text-[#5B21B6] border border-[#5B21B6]/20 text-xs font-black mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3D4E2A]/10 text-[#3D4E2A] border border-[#3D4E2A]/20 text-xs font-black mb-3">
               <ShieldCheck className="w-3.5 h-3.5" />
               DEFAULT_ADMIN_ROLE Governance
             </div>
@@ -344,7 +344,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
             <button
               onClick={handleFeedDemoData}
               disabled={seeding || loading}
-              className="flex items-center gap-2 bg-[#5B21B6] hover:bg-[#4C1D95] text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-all disabled:opacity-50"
+              className="flex items-center gap-2 bg-[#3D4E2A] hover:bg-[#2A371B] text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-all disabled:opacity-50"
             >
               <Sparkles className={`w-3.5 h-3.5 ${seeding ? 'animate-spin' : ''}`} />
               {seeding ? 'Feeding Demo Data...' : 'Feed Demo Dataset'}
@@ -377,7 +377,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
       {(currentTab === 'all' || currentTab === 'circuit-breakers') && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
-            <Layers className="w-5 h-5 text-[#5B21B6]" />
+            <Layers className="w-5 h-5 text-[#3D4E2A]" />
             <h2 className="text-lg font-black text-[#2D2620]">Smart Contract Circuit Breakers (Pausable)</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -423,7 +423,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
       {(currentTab === 'all' || currentTab === 'quarantine') && (
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-4">
-            <Database className="w-5 h-5 text-[#5B21B6]" />
+            <Database className="w-5 h-5 text-[#3D4E2A]" />
             <h2 className="text-lg font-black text-[#2D2620]">Tamper-Evident Quarantine Hash Chain (IsoLog)</h2>
           </div>
           <div className="bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs">
@@ -484,7 +484,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-[#E6E1D5]">
                 <div className="flex items-center gap-2.5">
-                  <UserCheck className="w-5 h-5 text-[#5B21B6]" />
+                  <UserCheck className="w-5 h-5 text-[#3D4E2A]" />
                   <div>
                     <h2 className="text-lg font-black text-[#2D2620]">Authorized System Participants & Users</h2>
                     <p className="text-xs text-[#666057]">Manage supply-chain identities, on-chain permissions & credentials</p>
@@ -492,7 +492,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                 </div>
                 <button
                   onClick={() => setIsAddUserModalOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-[#5B21B6] hover:bg-[#4C1D95] text-white text-xs font-black flex items-center gap-1.5 shadow-xs transition-all cursor-pointer self-start sm:self-auto"
+                  className="px-3.5 py-2 rounded-xl bg-[#3D4E2A] hover:bg-[#2A371B] text-white text-xs font-black flex items-center gap-1.5 shadow-xs transition-all cursor-pointer self-start sm:self-auto"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span>Add Participant</span>
@@ -508,7 +508,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                     placeholder="Search by name, email, or address..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                    className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                   />
                 </div>
                 <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1">
@@ -518,7 +518,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                       onClick={() => setRoleFilter(r)}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold capitalize transition-all cursor-pointer ${
                         roleFilter === r
-                          ? 'bg-[#5B21B6] text-white shadow-2xs'
+                          ? 'bg-[#3D4E2A] text-white shadow-2xs'
                           : 'bg-[#FAF7F0] hover:bg-[#E6E1D5] text-[#666057]'
                       }`}
                     >
@@ -546,7 +546,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   .map((p, idx) => (
                     <div key={p.id || idx} className="py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] text-[#5B21B6] font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-9 h-9 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] text-[#3D4E2A] font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
                           {p.name ? p.name.charAt(0) : 'U'}
                         </div>
                         <div className="min-w-0">
@@ -571,7 +571,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                             <span>{p.address}</span>
                             <button
                               onClick={() => handleCopyAddress(p.address)}
-                              className="text-[#5B21B6] hover:text-[#4C1D95] p-0.5 cursor-pointer"
+                              className="text-[#3D4E2A] hover:text-[#2A371B] p-0.5 cursor-pointer"
                               title="Copy Address"
                             >
                               {copiedAddress === p.address ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -627,7 +627,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
           {/* Right: Grant Role Form */}
           <div className="bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs h-fit">
             <div className="flex items-center gap-2 mb-4">
-              <KeyRound className="w-5 h-5 text-[#5B21B6]" />
+              <KeyRound className="w-5 h-5 text-[#3D4E2A]" />
               <h2 className="text-lg font-black text-[#2D2620]">Grant On-Chain Role</h2>
             </div>
             <form onSubmit={handleGrantRole} className="space-y-4">
@@ -638,7 +638,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   placeholder="0x..."
                   value={targetAddress}
                   onChange={(e) => setTargetAddress(e.target.value)}
-                  className="w-full text-xs font-mono p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  className="w-full text-xs font-mono p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                   required
                 />
               </div>
@@ -647,7 +647,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                 <select
                   value={targetRole}
                   onChange={(e) => setTargetRole(e.target.value)}
-                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                 >
                   <option value="FARMER_ROLE">FARMER_ROLE (ProductRegistry)</option>
                   <option value="LOGISTICS_ROLE">LOGISTICS_ROLE (CustodyTransfer)</option>
@@ -658,7 +658,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
               <button
                 type="submit"
                 disabled={granting}
-                className="w-full bg-[#5B21B6] hover:bg-[#4C1D95] text-white py-2.5 rounded-xl text-xs font-black shadow-xs cursor-pointer transition-all disabled:opacity-50"
+                className="w-full bg-[#3D4E2A] hover:bg-[#2A371B] text-white py-2.5 rounded-xl text-xs font-black shadow-xs cursor-pointer transition-all disabled:opacity-50"
               >
                 {granting ? 'Executing on Hardhat...' : 'Execute On-Chain Grant'}
               </button>
@@ -671,7 +671,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
       {(currentTab === 'all' || currentTab === 'maintenance') && (
         <div className="mt-8 space-y-4">
           <div className="flex items-center gap-2 mb-2">
-            <Database className="w-5 h-5 text-[#5B21B6]" />
+            <Database className="w-5 h-5 text-[#3D4E2A]" />
             <h2 className="text-lg font-black text-[#2D2620]">Demonstration Dataset & System Maintenance</h2>
           </div>
 
@@ -679,7 +679,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
           <div className="bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="max-w-2xl">
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#5B21B6]/10 text-[#5B21B6] border border-[#5B21B6]/20">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#3D4E2A]/10 text-[#3D4E2A] border border-[#3D4E2A]/20">
                   Interactive Evaluation Preset
                 </span>
                 <span className="text-xs font-bold text-[#666057]">5-Persona Live Interaction</span>
@@ -695,7 +695,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
               type="button"
               onClick={handleFeedDemoData}
               disabled={seeding}
-              className="bg-[#5B21B6] hover:bg-[#4C1D95] text-white px-5 py-3 rounded-xl text-xs font-black shadow-xs flex items-center gap-2 whitespace-nowrap cursor-pointer transition-all hover:scale-[1.02] flex-shrink-0 disabled:opacity-50"
+              className="bg-[#3D4E2A] hover:bg-[#2A371B] text-white px-5 py-3 rounded-xl text-xs font-black shadow-xs flex items-center gap-2 whitespace-nowrap cursor-pointer transition-all hover:scale-[1.02] flex-shrink-0 disabled:opacity-50"
             >
               <Sparkles className={`w-4 h-4 ${seeding ? 'animate-spin' : ''}`} />
               <span>{seeding ? 'Feeding Dataset...' : 'Feed Demonstration Dataset'}</span>
@@ -749,7 +749,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
           <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-[#E6E1D5] flex items-center justify-between bg-white/70">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#5B21B6] text-white flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-[#3D4E2A] text-white flex items-center justify-center">
                   <UserPlus className="w-4 h-4" />
                 </div>
                 <h3 className="text-base font-black text-[#2D2620]">Add New Supply-Chain Participant</h3>
@@ -776,7 +776,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   placeholder="e.g. Ramesh Shinde"
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
-                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                   required
                 />
               </div>
@@ -788,7 +788,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   placeholder="e.g. ramesh@farmfresh.in"
                   value={newUserEmail}
                   onChange={(e) => setNewUserEmail(e.target.value)}
-                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                   required
                 />
               </div>
@@ -799,7 +799,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   <select
                     value={newUserRole}
                     onChange={(e) => setNewUserRole(e.target.value)}
-                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                   >
                     <option value="farmer">🌿 Farmer</option>
                     <option value="logistics">🚛 Logistics</option>
@@ -815,7 +815,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                     placeholder="+91 98200 ..."
                     value={newUserPhone}
                     onChange={(e) => setNewUserPhone(e.target.value)}
-                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                   />
                 </div>
               </div>
@@ -829,7 +829,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                       const rand = '0x' + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
                       setNewUserAddress(rand);
                     }}
-                    className="text-[10px] font-bold text-[#5B21B6] hover:underline cursor-pointer"
+                    className="text-[10px] font-bold text-[#3D4E2A] hover:underline cursor-pointer"
                   >
                     Auto-Generate Mock Address
                   </button>
@@ -839,7 +839,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   placeholder="0x... (leave empty to auto-derive)"
                   value={newUserAddress}
                   onChange={(e) => setNewUserAddress(e.target.value)}
-                  className="w-full text-xs font-mono p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  className="w-full text-xs font-mono p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                 />
               </div>
 
@@ -854,7 +854,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                 <button
                   type="submit"
                   disabled={submittingUser}
-                  className="px-5 py-2.5 rounded-xl bg-[#5B21B6] hover:bg-[#4C1D95] text-white text-xs font-black shadow-xs cursor-pointer transition-all disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#3D4E2A] hover:bg-[#2A371B] text-white text-xs font-black shadow-xs cursor-pointer transition-all disabled:opacity-50"
                 >
                   {submittingUser ? 'Registering...' : 'Register Participant'}
                 </button>
@@ -870,7 +870,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
           <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b border-[#E6E1D5] flex items-center justify-between bg-white/70">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#354424] text-white flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-[#3D4E2A] text-white flex items-center justify-center">
                   <Edit3 className="w-4 h-4" />
                 </div>
                 <h3 className="text-base font-black text-[#2D2620]">Edit Participant #{editingUser.id}</h3>
@@ -890,7 +890,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   type="text"
                   value={editingUser.name || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                   required
                 />
               </div>
@@ -901,7 +901,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   type="email"
                   value={editingUser.email || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                   required
                 />
               </div>
@@ -912,7 +912,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   <select
                     value={editingUser.portal_role || editingUser.role || 'farmer'}
                     onChange={(e) => setEditingUser({ ...editingUser, portal_role: e.target.value, role: e.target.value })}
-                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                   >
                     <option value="farmer">🌿 Farmer</option>
                     <option value="logistics">🚛 Logistics</option>
@@ -926,7 +926,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   <select
                     value={editingUser.status || 'ACTIVE'}
                     onChange={(e) => setEditingUser({ ...editingUser, status: e.target.value })}
-                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                   >
                     <option value="ACTIVE">ACTIVE</option>
                     <option value="INACTIVE">INACTIVE</option>
@@ -940,7 +940,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                   type="text"
                   value={editingUser.phone || ''}
                   onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
-                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#3D4E2A]"
                 />
               </div>
 
@@ -955,7 +955,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
                 <button
                   type="submit"
                   disabled={submittingUser}
-                  className="px-5 py-2.5 rounded-xl bg-[#354424] hover:bg-[#2B381D] text-white text-xs font-black shadow-xs cursor-pointer transition-all disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#3D4E2A] hover:bg-[#2A371B] text-white text-xs font-black shadow-xs cursor-pointer transition-all disabled:opacity-50"
                 >
                   {submittingUser ? 'Saving...' : 'Save Changes'}
                 </button>

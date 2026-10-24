@@ -2418,3 +2418,128 @@ still static UI with no data flow. Specifically:
 - Frontend Production Build: `npm run build` compiled 1,817 modules in 2.56s with 0 errors.
 - TrustLayer Security & Quality Audit: `trustlayer audit` reported 0 high findings.
 - End-to-End Playwright Automated Test: full authentication cycle (Logistics logout -> modal open -> persona login -> header switch -> admin sign-in -> add user -> edit user -> remove user) passed with 100% success.
+
+
+---
+
+## [Academic Report Generation & Document Overhaul] — 2026-10-24
+
+**What was done:**
+- Fully engineered, assembled, and verified the complete BE Major Project Report document (`Final_BE_Report_AgriChain.docx` and `Final_BE_REPORT_2026 (1).docx`) for Terna Engineering College, Department of Artificial Intelligence and Data Science.
+- Standardized document layout and page margins:
+  - Fixed corrupt/erratic margins (previously top=1.84", bottom=2.05", left=0.5", right=0.5", 0.4" left indent on headings) to standard academic normal 1.0" margins all around (`top=1.00"`, `bottom=1.00"`, `left=1.00"`, `right=1.00"`).
+  - Standardized paragraph and heading indents: 0.00" left/right indent for all headings and body paragraphs with 1.15 line spacing and justified alignment.
+- Integrated all diagram placements and visual elements referenced from `finalout.pdf` and `GRP 8 BE Review I.pptx`:
+  - Figure 4.1: Four-Tier System Architecture (`image_12_image4.png`)
+  - Figure 4.2: Operational Flowchart (`slide_15_img_2.png`)
+  - Figure 4.3: Data Flow Diagram Level 0 Context Diagram (`dfd-level-0-context.png`)
+  - Figure 4.4: Data Flow Diagram Level 1 Complete System Flow (`dfd-level-1-complete.png`)
+  - Figure 4.5: Entity-Relationship Diagram ERD (`slide_23_img_6.png`)
+  - Figure 4.6: Multi-Stakeholder Use Case Diagram (`slide_25_img_7.png`)
+  - Figure 4.7: Project Timeline & Gantt Chart (`slide_21_img_5.png`)
+  - Figures 5.1 to 5.11: Confusion Matrix, Telemetry Quarantine Isolation, Farmer Dashboard, Logistics Dispatch, Transit Custody, AI Trust Layer Checkpoints, Dark Store Receiving, Admin Dashboard & Circuit Breakers, Consumer QR Portal, Farm-to-Fork Journey & Fair Price Trail, and Digital Provenance Certificate.
+- Added all Literature Review survey tables extracted from presentation slides into Chapter 2:
+  - Table 2.1: Blockchain-Based Supply Chain Traceability (Agrawal et al., Maurya et al., Dudczyk et al.)
+  - Table 2.2: AI & ML for Anomaly Detection (Mohamed et al., Zhou et al., Kandasamy et al.)
+  - Table 2.3: IoT & Blockchain Security Integration (Yavaprabhas et al., Aggarwal et al., Mangala et al., Eghmazi et al.)
+  - Table 2.4: Domain-Specific Agricultural Supply Chain Studies (Wu et al., Chaker et al., Shoomal et al., Singh et al.)
+  - Table 2.5: Comparative Analysis (Existing Systems vs Proposed AgriChain)
+- Preserved all empirical data:
+  - AI Trust Layer metrics (Overall F1=97.22%, Accuracy=98.15%, Recall=100% across all 7 fault profiles)
+  - PRD Section 6 Capstone verification test suite results (10/10 tests passed)
+  - Gas consumption benchmarks (52.71% gas reduction under batched condition writes)
+  - Authentic 5-stage fair price distribution trail (Farmer 50.0% share).
+- Complete IEEE bibliography with 16 citations and full academic front matter (Cover Page, Approval Sheet, Certificate, Declaration, Acknowledgement, Abstract, Table of Contents, List of Figures, List of Tables, List of Abbreviations).
+
+**Files changed:**
+- `scripts/report_data.py`
+- `scripts/report_helpers.py`
+- `scripts/section_front_matter.py`
+- `scripts/section_chapters_1_3.py`
+- `scripts/section_chapter_4.py`
+- `scripts/section_chapter_5_6.py`
+- `scripts/run_builder.py`
+- `Final_BE_Report_AgriChain.docx`
+- `Final_BE_REPORT_2026 (1).docx`
+- `Final_BE_REPORT_2026 (1).docx.bak` (backup of original)
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Document generation build passed with 0 errors via `run_builder.py`.
+- Margin check: Verified Section 0 top=1.00", bottom=1.00", left=1.00", right=1.00".
+- Indents check: Verified 0.00" left/right indents on headings and body paragraphs.
+- Image verification: Verified 0 missing image placeholders across all 443 paragraphs and 15 tables.
+- Generated file size: 5,189,316 bytes (~5.19 MB) containing all high-resolution figures.
+
+---
+
+## [Academic Report Expansion: 40-45 Pages After Abstract & Georgia Format] — 2026-10-24
+
+**What was done:**
+- Re-architected and expanded the BE Major Project Report document (`Final_BE_Report_AgriChain.docx` and `Final_BE_REPORT_2026 (1).docx`) to strictly match the requested volume, font, typography, header, and footer specifications:
+  1. **Page Count**:
+     - Expanded substantive technical, mathematical, and algorithmic content across all chapters to achieve **51 total pages** (~45 pages after the Abstract: Pages 7 to 51).
+     - Front matter: 6 pages (Cover, Approval, Certificate, Declaration, Acknowledgement, Abstract).
+     - Body & Back matter: 45 pages (TOC pp. 7-8, LOF p. 9, LOT p. 10, Abbreviations p. 11, Ch 1 pp. 12-15, Ch 2 pp. 16-20, Ch 3 pp. 21-24, Ch 4 pp. 25-35, Ch 5 pp. 36-45, Ch 6 pp. 46-47, Appendices pp. 48-49, Bibliography pp. 50-51).
+  2. **Font & Typography Alignment**:
+     - Standardized entire document to **Georgia** (matching original report format and `Final_BE_REPORT_2026 (1).docx.bak`):
+       - Title / Cover: 17 pt / 18 pt Georgia Bold.
+       - Chapter Headings (H1): 16 pt Georgia Bold.
+       - Major Sections (H2): 14 pt Georgia Bold.
+       - Subsections (H3): 12 pt Georgia Bold.
+       - Body Text: 12 pt Georgia Regular with 1.15 line spacing and justified alignment.
+       - Captions & Tables: 10.5 pt / 9.5 pt Georgia.
+       - Bullet lists: 11.5 pt Georgia.
+  3. **Headers & Footers**:
+     - Header: 2-line college header on all pages (Line 1: `Reg. No. E-91,(Osmanabad) Dated 30-09-80 DTE INST. CODE : 3190` in 8.5 pt Verdana Bold; Line 2: `Department of Artificial Intelligence (AI) and Data Science` in 9.0 pt Georgia Bold).
+     - Cover Page Footer: 3-line college address in 8.5 pt Georgia.
+     - Body Footers: Centered dynamic Word `PAGE` field in 10 pt Georgia.
+  4. **Diagrams & Tables**:
+     - 18 high-resolution diagrams (Figures 4.1 to 4.7 and 5.1 to 5.11) with 0 missing images.
+     - 15 academic tables (Tables 1.1, 2.1 to 2.5, 4.1, 4.2, 5.1 to 5.4) styled with custom `#1E3A2F` green headers, zebra striping, and cell padding.
+
+**Files changed:**
+- `scripts/report_helpers.py`
+- `scripts/section_front_matter.py`
+- `scripts/section_chapters_1_3.py`
+- `scripts/section_chapter_4.py`
+- `scripts/section_chapter_5_6.py`
+- `scripts/run_builder.py`
+- `Final_BE_Report_AgriChain.docx`
+- `Final_BE_REPORT_2026 (1).docx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Word count: 13,012 words in body and tables.
+- Total pages: 51 pages (~45 pages after the Abstract).
+- Image integrity: 0 missing images across all 531 paragraphs and 15 tables.
+- Margin check: Top=1.00", Bottom=1.00", Left=1.00", Right=1.00".
+- Heading alignment: 0.00" left/right indent.
+
+## Task: Harmonize Admin Theme with Global Agrarian Palette
+**What was done:**
+- Aligned the Master Admin Portal frontend design system with the agrarian earth & forest green theme used across Farmer, Logistics, Dark Store, and Consumer pages.
+- Removed legacy purple/violet tokens (\#5B21B6\, \#4C1D95\, \	ext-violet-700\, \g-violet-50\) and substituted standard palette tokens:
+  - Brand green primary: \#3D4E2A  - Accent / badge text: \#556B2F  - Hover states: \#2A371B  - Surface containers: \#FAF7F0  - Borders: \#E6E1D5- Preserved 100% of state logic, API wiring, modal workflows, and contract interactions. Zero backend or contract changes were introduced.
+
+**Files changed:**
+- \rontend/src/components/AdminSidebar.jsx- \rontend/src/components/AdminPortalView.jsx- \rontend/src/components/LoginModal.jsx- \rontend/src/App.jsx- \MEMORY.md
+**Verified:**
+- pm run build\ passed cleanly with 0 errors (1,817 modules transformed).
+- Live Vite dev server HMR updated cleanly on port 3000.
+- Verified HTTP 200 on \http://localhost:3000/?role=admin\.
+
+## Task: Enforce Farmer Dashboard as Default Landing View
+**What was done:**
+- Updated role initialization logic in rontend/src/App.jsx so that any visit to the base URL (http://localhost:3000/) always defaults to the **Farmer Dashboard** (
+ole=farmer, 	ab=dashboard), rather than falling back to stale localStorage roles (such as admin).
+- Specific roles remain fully accessible via direct navigation or role switcher buttons (?role=farmer, ?role=logistics, ?role=darkstore, ?role=consumer, ?role=admin).
+
+**Files changed:**
+- rontend/src/App.jsx
+- MEMORY.md
+
+**Verified:**
+- 
+pm run build passed cleanly with 0 errors.
+- Verified live dev server on http://localhost:3000/ initializes directly into Farmer Dashboard.

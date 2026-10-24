@@ -173,7 +173,7 @@ export const LoginModal = ({
       case 'consumer':
         return <ShoppingBag className="w-5 h-5 text-purple-700" />;
       case 'admin':
-        return <ShieldCheck className="w-5 h-5 text-violet-700" />;
+        return <ShieldCheck className="w-5 h-5 text-[#3D4E2A]" />;
       default:
         return <User className="w-5 h-5 text-gray-700" />;
     }
@@ -190,7 +190,7 @@ export const LoginModal = ({
       case 'consumer':
         return 'bg-purple-50 text-purple-800 border-purple-200';
       case 'admin':
-        return 'bg-violet-50 text-violet-800 border-violet-200';
+        return 'bg-[#FAF7F0] text-[#3D4E2A] border-[#E6E1D5]';
       default:
         return 'bg-gray-50 text-gray-800 border-gray-200';
     }

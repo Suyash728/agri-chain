@@ -80,17 +80,10 @@ export default function App() {
       const urlTab = params.get('tab');
       const urlBatch = params.get('batch');
 
-      let savedRole = null;
-      try {
-        savedRole = localStorage.getItem('agrichain_active_role');
-      } catch (_) {}
-
       const validRoles = ['farmer', 'logistics', 'darkstore', 'consumer', 'admin'];
       let role = 'farmer';
       if (urlRole && validRoles.includes(urlRole.toLowerCase())) {
         role = urlRole.toLowerCase();
-      } else if (savedRole && validRoles.includes(savedRole.toLowerCase())) {
-        role = savedRole.toLowerCase();
       }
 
       const getSavedTab = (r, defaultTab) => {
@@ -525,7 +518,7 @@ export default function App() {
               onClick={() => handleSwitchRole('admin')}
               className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'admin' 
-                  ? 'bg-[#5B21B6] text-white shadow-xs' 
+                  ? 'bg-[#3D4E2A] text-white shadow-xs' 
                   : 'text-[#666057] hover:text-[#2D2620]'
               }`}
             >
@@ -578,7 +571,7 @@ export default function App() {
               <span className="hidden lg:inline max-w-[120px] truncate text-[11px] font-extrabold text-[#2D2620]">
                 {currentUser ? currentUser.name : (ROLE_NAMES[activeRole] ? ROLE_NAMES[activeRole].split(' ')[0] : 'Sign In')}
               </span>
-              <span className="text-[10px] font-bold text-[#5B21B6] bg-[#5B21B6]/10 px-1.5 py-0.2 rounded hidden xl:inline">
+              <span className="text-[10px] font-bold text-[#3D4E2A] bg-[#3D4E2A]/10 px-1.5 py-0.2 rounded hidden xl:inline">
                 Switch
               </span>
             </button>
