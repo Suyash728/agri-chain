@@ -240,8 +240,8 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab, initia
         onGetStarted={() => setActiveView('home')}
         onContinueAsGuest={() => setActiveView('home')}
         onLogin={() => {
-          showToast("Welcome back! Entering AgriChain...");
-          setActiveView('home');
+          if (onLogout) onLogout();
+          else setActiveView('home');
         }}
       />
     );

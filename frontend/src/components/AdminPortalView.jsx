@@ -11,12 +11,20 @@ import {
   UserCheck, 
   UserX, 
   Lock, 
-  Unlock,
-  Cpu,
-  Layers,
-  FileCheck2,
-  Trash2,
-  Sparkles
+  Unlock, 
+  Cpu, 
+  Layers, 
+  FileCheck2, 
+  Trash2, 
+  Sparkles,
+  UserPlus,
+  Edit3,
+  Search,
+  X,
+  Phone,
+  Mail,
+  Copy,
+  Check
 } from 'lucide-react';
 import { CleanSlateModal } from './CleanSlateModal';
 
@@ -29,6 +37,22 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
   const [actionStatus, setActionStatus] = useState(null);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [seeding, setSeeding] = useState(false);
+
+  // User Management State
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [copiedAddress, setCopiedAddress] = useState('');
+
+  // Add User Form State
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState('farmer');
+  const [newUserPhone, setNewUserPhone] = useState('');
+  const [newUserAddress, setNewUserAddress] = useState('');
+  const [submittingUser, setSubmittingUser] = useState(false);
+  const [addUserError, setAddUserError] = useState('');
 
   // Grant role form state
   const [targetAddress, setTargetAddress] = useState('');
@@ -162,6 +186,110 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
       setActionStatus({
         type: 'success',
         msg: `Role ${role} revoked from ${address.slice(0, 10)}... on-chain.`,
+      });
+      fetchAllData();
+    } catch (err) {
+      setActionStatus({ type: 'error', msg: err.message });
+    }
+  };
+
+  const handleCopyAddress = (addr) => {
+    if (!addr) return;
+    navigator.clipboard?.writeText(addr);
+    setCopiedAddress(addr);
+    setTimeout(() => setCopiedAddress(''), 2000);
+  };
+
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    setAddUserError('');
+    if (!newUserName.trim() || !newUserEmail.trim()) {
+      setAddUserError('Name and email are required.');
+      return;
+    }
+    setSubmittingUser(true);
+    setActionStatus(null);
+    try {
+      const res = await fetch('http://localhost:8000/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newUserName.trim(),
+          email: newUserEmail.trim(),
+          role: newUserRole,
+          phone: newUserPhone.trim() || undefined,
+          address: newUserAddress.trim() || undefined,
+          grant_onchain: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to add user');
+
+      setActionStatus({
+        type: 'success',
+        msg: `User '${data.user.name}' successfully added and registered in system!`,
+      });
+      setIsAddUserModalOpen(false);
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPhone('');
+      setNewUserAddress('');
+      fetchAllData();
+    } catch (err) {
+      setAddUserError(err.message);
+      setActionStatus({ type: 'error', msg: err.message });
+    } finally {
+      setSubmittingUser(false);
+    }
+  };
+
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setSubmittingUser(true);
+    setActionStatus(null);
+    try {
+      const res = await fetch(`http://localhost:8000/admin/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingUser.name,
+          email: editingUser.email,
+          phone: editingUser.phone,
+          role: editingUser.portal_role || editingUser.role,
+          status: editingUser.status,
+          address: editingUser.address,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to update user');
+
+      setActionStatus({
+        type: 'success',
+        msg: `User '${data.user.name}' updated successfully!`,
+      });
+      setEditingUser(null);
+      fetchAllData();
+    } catch (err) {
+      setActionStatus({ type: 'error', msg: err.message });
+    } finally {
+      setSubmittingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (user) => {
+    if (!confirm(`Are you sure you want to remove participant '${user.name}' (${user.email || user.address}) from the system?`)) return;
+    setActionStatus(null);
+    try {
+      const res = await fetch(`http://localhost:8000/admin/users/${user.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to remove user');
+
+      setActionStatus({
+        type: 'success',
+        msg: data.message || `User '${user.name}' removed successfully.`,
       });
       fetchAllData();
     } catch (err) {
@@ -348,44 +476,151 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
         </div>
       )}
 
-      {/* Section 3: Participant Role Governance */}
+      {/* Section 3: Participant Role Governance & User Management */}
       {(currentTab === 'all' || currentTab === 'roles') && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Role List */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs">
-            <div className="flex items-center gap-2 mb-4">
-              <UserCheck className="w-5 h-5 text-[#5B21B6]" />
-              <h2 className="text-lg font-black text-[#2D2620]">Authorized System Participants</h2>
-            </div>
-            <div className="divide-y divide-[#E6E1D5]">
-              {participants.map((p, idx) => (
-                <div key={idx} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          {/* Left: Role & User List */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-[#E6E1D5]">
+                <div className="flex items-center gap-2.5">
+                  <UserCheck className="w-5 h-5 text-[#5B21B6]" />
                   <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-extrabold text-[#2D2620]">{p.name}</span>
-                      <span className="px-2 py-0.5 rounded-md bg-[#FAF7F0] border border-[#E6E1D5] text-[10px] font-mono font-bold text-[#666057]">
-                        {p.role}
-                      </span>
-                    </div>
-                    <span className="text-[11px] font-mono text-[#8C827A] block mt-0.5 break-all">{p.address}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
-                      p.is_granted_onchain ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-                    }`}>
-                      {p.is_granted_onchain ? 'ON-CHAIN' : 'OFF-CHAIN'}
-                    </span>
-                    {p.role !== 'DEFAULT_ADMIN_ROLE' && p.role !== 'CONSUMER' && p.is_granted_onchain && (
-                      <button
-                        onClick={() => handleRevokeRole(p.address, p.role)}
-                        className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 cursor-pointer transition-all"
-                      >
-                        Revoke
-                      </button>
-                    )}
+                    <h2 className="text-lg font-black text-[#2D2620]">Authorized System Participants & Users</h2>
+                    <p className="text-xs text-[#666057]">Manage supply-chain identities, on-chain permissions & credentials</p>
                   </div>
                 </div>
-              ))}
+                <button
+                  onClick={() => setIsAddUserModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-[#5B21B6] hover:bg-[#4C1D95] text-white text-xs font-black flex items-center gap-1.5 shadow-xs transition-all cursor-pointer self-start sm:self-auto"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Add Participant</span>
+                </button>
+              </div>
+
+              {/* Search & Filter Controls */}
+              <div className="flex flex-col sm:flex-row gap-2.5 mb-4">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-[#8C827A] absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, email, or address..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  />
+                </div>
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1">
+                  {['all', 'farmer', 'logistics', 'darkstore', 'consumer', 'admin'].map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setRoleFilter(r)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-extrabold capitalize transition-all cursor-pointer ${
+                        roleFilter === r
+                          ? 'bg-[#5B21B6] text-white shadow-2xs'
+                          : 'bg-[#FAF7F0] hover:bg-[#E6E1D5] text-[#666057]'
+                      }`}
+                    >
+                      {r === 'darkstore' ? 'Dark Store' : r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* User / Participant Rows */}
+              <div className="divide-y divide-[#E6E1D5]">
+                {participants
+                  .filter((p) => {
+                    const matchesRole = roleFilter === 'all' || 
+                      (p.portal_role && p.portal_role.toLowerCase() === roleFilter.toLowerCase()) ||
+                      (p.role && p.role.toLowerCase().includes(roleFilter.toLowerCase()));
+                    const q = searchQuery.toLowerCase().trim();
+                    const matchesSearch = !q || 
+                      (p.name && p.name.toLowerCase().includes(q)) ||
+                      (p.email && p.email.toLowerCase().includes(q)) ||
+                      (p.address && p.address.toLowerCase().includes(q)) ||
+                      (p.username && p.username.toLowerCase().includes(q));
+                    return matchesRole && matchesSearch;
+                  })
+                  .map((p, idx) => (
+                    <div key={p.id || idx} className="py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] text-[#5B21B6] font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                          {p.name ? p.name.charAt(0) : 'U'}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-black text-[#2D2620]">{p.name}</span>
+                            <span className="px-2 py-0.5 rounded-md bg-[#FAF7F0] border border-[#E6E1D5] text-[10px] font-mono font-bold text-[#666057]">
+                              {p.role}
+                            </span>
+                            {p.status && (
+                              <span className={`px-1.5 py-0.2 text-[9px] font-extrabold rounded ${
+                                p.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                              }`}>
+                                {p.status}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-[11px] text-[#666057] mt-0.5 flex-wrap">
+                            {p.email && <span>{p.email}</span>}
+                            {p.phone && <span>• {p.phone}</span>}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#8C827A] mt-1 break-all">
+                            <span>{p.address}</span>
+                            <button
+                              onClick={() => handleCopyAddress(p.address)}
+                              className="text-[#5B21B6] hover:text-[#4C1D95] p-0.5 cursor-pointer"
+                              title="Copy Address"
+                            >
+                              {copiedAddress === p.address ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: Status Badges and Actions */}
+                      <div className="flex items-center gap-2 self-end md:self-center flex-shrink-0">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
+                          p.is_granted_onchain ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}>
+                          {p.is_granted_onchain ? 'ON-CHAIN' : 'OFF-CHAIN'}
+                        </span>
+
+                        {p.id && (
+                          <button
+                            onClick={() => setEditingUser(p)}
+                            className="p-1.5 rounded-lg border border-[#E6E1D5] bg-[#FAF7F0] hover:bg-[#E6E1D5] text-[#2D2620] cursor-pointer transition-colors"
+                            title="Edit User"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {p.role !== 'DEFAULT_ADMIN_ROLE' && p.role !== 'CONSUMER' && p.is_granted_onchain && (
+                          <button
+                            onClick={() => handleRevokeRole(p.address, p.role)}
+                            className="text-xs text-rose-600 hover:text-rose-700 font-bold px-2 py-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 cursor-pointer transition-all"
+                            title="Revoke On-Chain Role"
+                          >
+                            Revoke
+                          </button>
+                        )}
+
+                        {p.id && p.role !== 'DEFAULT_ADMIN_ROLE' && (
+                          <button
+                            onClick={() => handleDeleteUser(p)}
+                            className="p-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 cursor-pointer transition-colors"
+                            title="Remove User"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
 
@@ -507,6 +742,228 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
           fetchAllData();
         }}
       />
+
+      {/* Add Participant Modal */}
+      {isAddUserModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none">
+          <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-[#E6E1D5] flex items-center justify-between bg-white/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#5B21B6] text-white flex items-center justify-center">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-black text-[#2D2620]">Add New Supply-Chain Participant</h3>
+              </div>
+              <button 
+                onClick={() => setIsAddUserModalOpen(false)}
+                className="w-7 h-7 rounded-full bg-white hover:bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#666057]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddUser} className="p-6 space-y-4">
+              {addUserError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <span>{addUserError}</span>
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-bold text-[#666057] block mb-1">Full Name / Organization</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Ramesh Shinde"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#666057] block mb-1">Email Address</label>
+                <input
+                  type="email"
+                  placeholder="e.g. ramesh@farmfresh.in"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-[#666057] block mb-1">Portal Role</label>
+                  <select
+                    value={newUserRole}
+                    onChange={(e) => setNewUserRole(e.target.value)}
+                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  >
+                    <option value="farmer">🌿 Farmer</option>
+                    <option value="logistics">🚛 Logistics</option>
+                    <option value="darkstore">🏬 Dark Store</option>
+                    <option value="consumer">🛒 Consumer</option>
+                    <option value="admin">⚡ Administrator</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#666057] block mb-1">Phone (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="+91 98200 ..."
+                    value={newUserPhone}
+                    onChange={(e) => setNewUserPhone(e.target.value)}
+                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-[#666057]">Ethereum Wallet Address</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const rand = '0x' + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
+                      setNewUserAddress(rand);
+                    }}
+                    className="text-[10px] font-bold text-[#5B21B6] hover:underline cursor-pointer"
+                  >
+                    Auto-Generate Mock Address
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="0x... (leave empty to auto-derive)"
+                  value={newUserAddress}
+                  onChange={(e) => setNewUserAddress(e.target.value)}
+                  className="w-full text-xs font-mono p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#5B21B6]"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsAddUserModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#666057] hover:bg-[#E6E1D5] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingUser}
+                  className="px-5 py-2.5 rounded-xl bg-[#5B21B6] hover:bg-[#4C1D95] text-white text-xs font-black shadow-xs cursor-pointer transition-all disabled:opacity-50"
+                >
+                  {submittingUser ? 'Registering...' : 'Register Participant'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Participant Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none">
+          <div className="bg-[#FAF7F0] border border-[#E6E1D5] rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-[#E6E1D5] flex items-center justify-between bg-white/70">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#354424] text-white flex items-center justify-center">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-black text-[#2D2620]">Edit Participant #{editingUser.id}</h3>
+              </div>
+              <button 
+                onClick={() => setEditingUser(null)}
+                className="w-7 h-7 rounded-full bg-white hover:bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#666057]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateUser} className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-[#666057] block mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={editingUser.name || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#666057] block mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={editingUser.email || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-[#666057] block mb-1">Portal Role</label>
+                  <select
+                    value={editingUser.portal_role || editingUser.role || 'farmer'}
+                    onChange={(e) => setEditingUser({ ...editingUser, portal_role: e.target.value, role: e.target.value })}
+                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                  >
+                    <option value="farmer">🌿 Farmer</option>
+                    <option value="logistics">🚛 Logistics</option>
+                    <option value="darkstore">🏬 Dark Store</option>
+                    <option value="consumer">🛒 Consumer</option>
+                    <option value="admin">⚡ Administrator</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[#666057] block mb-1">Account Status</label>
+                  <select
+                    value={editingUser.status || 'ACTIVE'}
+                    onChange={(e) => setEditingUser({ ...editingUser, status: e.target.value })}
+                    className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                  >
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-[#666057] block mb-1">Phone</label>
+                <input
+                  type="text"
+                  value={editingUser.phone || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
+                  className="w-full text-xs font-bold p-2.5 rounded-xl bg-white border border-[#E6E1D5] text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-[#666057] hover:bg-[#E6E1D5] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingUser}
+                  className="px-5 py-2.5 rounded-xl bg-[#354424] hover:bg-[#2B381D] text-white text-xs font-black shadow-xs cursor-pointer transition-all disabled:opacity-50"
+                >
+                  {submittingUser ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 };

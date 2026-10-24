@@ -112,6 +112,19 @@ CREATE TABLE IF NOT EXISTS batch_reviews (
     created_at       TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    id            SERIAL PRIMARY KEY,
+    username      VARCHAR(100) UNIQUE NOT NULL,
+    name          VARCHAR(150) NOT NULL,
+    email         VARCHAR(150) UNIQUE NOT NULL,
+    phone         VARCHAR(50),
+    role          VARCHAR(50) NOT NULL,
+    onchain_role  VARCHAR(50),
+    address       VARCHAR(66) NOT NULL,
+    status        VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_custody_events_batch_id ON custody_events(batch_id);
 CREATE INDEX IF NOT EXISTS idx_readings_batch_id ON readings(batch_id);

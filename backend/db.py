@@ -146,7 +146,73 @@ CREATE TABLE IF NOT EXISTS spoilage_incidents (
     status              TEXT NOT NULL,
     created_at          TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    username      TEXT UNIQUE NOT NULL,
+    name          TEXT NOT NULL,
+    email         TEXT UNIQUE NOT NULL,
+    phone         TEXT,
+    role          TEXT NOT NULL,
+    onchain_role  TEXT,
+    address       TEXT NOT NULL,
+    status        TEXT NOT NULL DEFAULT 'ACTIVE',
+    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
+
+DEFAULT_USERS = [
+    (
+        "admin",
+        "System Administrator",
+        "admin@agrichain.io",
+        "+91 98200 11000",
+        "admin",
+        "DEFAULT_ADMIN_ROLE",
+        "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "ACTIVE",
+    ),
+    (
+        "rahul_farmer",
+        "Rahul Patil (Farmer)",
+        "rahul@greenfarms.in",
+        "+91 94231 45678",
+        "farmer",
+        "FARMER_ROLE",
+        "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "ACTIVE",
+    ),
+    (
+        "safexpress_logistics",
+        "Safexpress Cold Chain (Logistics)",
+        "dispatch@safexpress.com",
+        "+91 98220 98765",
+        "logistics",
+        "LOGISTICS_ROLE",
+        "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+        "ACTIVE",
+    ),
+    (
+        "pune_darkstore",
+        "Pune Fresh DarkStore Hub",
+        "anand@punefresh.in",
+        "+91 99210 33445",
+        "darkstore",
+        "RETAILER_ROLE",
+        "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+        "ACTIVE",
+    ),
+    (
+        "priya_consumer",
+        "Priya Sharma",
+        "priya.sharma@gmail.com",
+        "+91 98190 55667",
+        "consumer",
+        "CONSUMER",
+        "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+        "ACTIVE",
+    ),
+]
 
 DEFAULT_POLICIES = [
     ("tomato", 2.0, 8.0, 85.0, 95.0),
@@ -384,6 +450,15 @@ def init_db(db_path: str | pathlib.Path = DB_PATH) -> pathlib.Path | str:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 inc,
+            )
+        for user in DEFAULT_USERS:
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO users (
+                    username, name, email, phone, role, onchain_role, address, status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                user,
             )
         conn.commit()
     return path

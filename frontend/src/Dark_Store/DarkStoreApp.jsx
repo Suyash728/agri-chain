@@ -24,7 +24,7 @@ import { RecordSaleModal } from './Modals/RecordSaleModal';
 import { NotificationsModal } from '../Farmer/Modals/NotificationsModal';
 import { MoreMenuSheet } from '../Farmer/Modals/MoreMenuSheet';
 
-export const DarkStoreApp = ({ currentTab, onSelectTab }) => {
+export const DarkStoreApp = ({ currentTab, onSelectTab, onLogout }) => {
   const [internalTab, setInternalTab] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -68,16 +68,16 @@ export const DarkStoreApp = ({ currentTab, onSelectTab }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleLogout = () => {
+  const handleLogoutAction = onLogout || (() => {
     alert("Logged out of Anand Deshmukh's Dark Store Hub Account.");
-  };
+  });
 
   return (
     <>
       <DarkStoreSidebar 
         currentTab={darkStoreTab}
         onSelectTab={handleSelectTab}
-        onLogout={handleLogout}
+        onLogout={handleLogoutAction}
       />
 
       <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] px-4 sm:px-6 lg:px-8 max-w-7xl pb-24 md:pb-8 pt-4 sm:pt-6">
@@ -140,7 +140,7 @@ export const DarkStoreApp = ({ currentTab, onSelectTab }) => {
         )}
 
         {darkStoreTab === 'profile' && (
-          <DarkStoreProfileView onBack={() => handleSelectTab('dashboard')} onLogout={handleLogout} />
+          <DarkStoreProfileView onBack={() => handleSelectTab('dashboard')} onLogout={handleLogoutAction} />
         )}
       </main>
 
@@ -162,7 +162,7 @@ export const DarkStoreApp = ({ currentTab, onSelectTab }) => {
         isOpen={isMoreOpen} 
         onClose={() => setIsMoreOpen(false)} 
         onSelectTab={handleSelectTab}
-        onLogout={handleLogout}
+        onLogout={handleLogoutAction}
       />
 
       {/* Custody Action Modals */}

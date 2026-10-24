@@ -57,6 +57,7 @@ import { WalletProvider, WalletConnect } from './components/WalletConnect';
 import { ShowcaseDrawer } from './components/ShowcaseDrawer';
 import { PresenterWalkthroughBanner } from './components/PresenterWalkthroughBanner';
 import { GodModeHub } from './components/GodModeHub';
+import { LoginModal } from './components/LoginModal';
 
 export default function App() {
   // Read URL query parameters and localStorage to initialize state
@@ -363,7 +364,7 @@ export default function App() {
     } else if (role === 'consumer') {
       handleSelectConsumerTab(tab || 'home');
     } else if (role === 'admin') {
-      handleSelectAdminTab(tab || 'all');
+      handleSelectAdminTab(tab === 'dashboard' ? 'all' : (tab || 'all'));
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -421,8 +422,34 @@ export default function App() {
 
   const { count: unreadNotifsCount } = useNotificationCount(activeRole);
 
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('agrichain_current_user');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return null;
+  });
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
   const handleLogout = () => {
-    alert(`Logged out of ${ROLE_NAMES[activeRole] || activeRole}'s AgriChain Account.`);
+    try {
+      localStorage.removeItem('agrichain_current_user');
+      fetch('http://localhost:8000/auth/logout', { method: 'POST' }).catch(() => {});
+    } catch (_) {}
+    setCurrentUser(null);
+    setIsLoginModalOpen(true);
+  };
+
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('agrichain_current_user', JSON.stringify(user));
+    } catch (_) {}
+    if (user && user.role) {
+      const defaultTab = user.role === 'admin' ? 'all' : (user.role === 'consumer' ? 'home' : 'dashboard');
+      handleNavigateRoleAndTab(user.role, defaultTab);
+    }
+    setIsLoginModalOpen(false);
   };
 
   return (
@@ -536,6 +563,25 @@ export default function App() {
             </button>
 
             <WalletConnect activeRole={activeRole} />
+
+            <div className="h-5 w-px bg-[#E6E1D5] mx-1 flex-shrink-0" />
+
+            {/* Active User Persona & Switch User / Logout Button */}
+            <button
+              onClick={() => setIsLoginModalOpen(true)}
+              className="px-2.5 h-[32px] rounded-xl bg-white hover:bg-[#FAF7F0] border border-[#E6E1D5] flex items-center gap-1.5 text-xs font-bold text-[#2D2620] cursor-pointer transition-colors shadow-2xs flex-shrink-0"
+              title="Switch Account / Sign In"
+            >
+              <div className="w-5 h-5 rounded-full bg-[#354424] text-white flex items-center justify-center text-[10px] font-black">
+                {currentUser ? currentUser.name.charAt(0) : (ROLE_NAMES[activeRole] ? ROLE_NAMES[activeRole].charAt(0) : 'U')}
+              </div>
+              <span className="hidden lg:inline max-w-[120px] truncate text-[11px] font-extrabold text-[#2D2620]">
+                {currentUser ? currentUser.name : (ROLE_NAMES[activeRole] ? ROLE_NAMES[activeRole].split(' ')[0] : 'Sign In')}
+              </span>
+              <span className="text-[10px] font-bold text-[#5B21B6] bg-[#5B21B6]/10 px-1.5 py-0.2 rounded hidden xl:inline">
+                Switch
+              </span>
+            </button>
           </div>
         </header>
 
@@ -927,6 +973,7 @@ export default function App() {
           key={`darkstore-${resetKey}`} 
           currentTab={darkStoreTab}
           onSelectTab={handleSelectDarkStoreTab}
+          onLogout={handleLogout}
         />
       )}
 
@@ -970,6 +1017,12 @@ export default function App() {
       <AddStockModal isOpen={isAddStockOpen} onClose={() => setIsAddStockOpen(false)} onAddStock={handleAddStock} />
       <ViewJourneyModal isOpen={isJourneyOpen} onClose={() => setIsJourneyOpen(false)} batchId={selectedBatchId} />
       <NotificationsModal isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} role={activeRole} />
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+        onLoginSuccess={handleLoginSuccess}
+        currentRole={activeRole}
+      />
 
       {/* Showcase & Demo Drawer */}
       <ShowcaseDrawer 

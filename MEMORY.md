@@ -2368,3 +2368,53 @@ still static UI with no data flow. Specifically:
 - Full Backend Test Suite: 13/13 passed in 5.55s (`pytest tests/`).
 - Smart Contract Suite: 22/22 passed in 679ms (`npx hardhat test`).
 - TrustLayer Audit: 0 high findings.
+
+
+## [Authentication & User Management — Login/Logout & Add/Edit/Remove Participants] — 2026-10-24
+
+**What was done:**
+- Replaced legacy dummy `alert("Logged out...")` across all roles with complete, persistent session authentication and full participant lifecycle governance.
+- **Backend Architecture (`backend/db.py`, `backend/migrations/001_initial_schema.sql`, `backend/main.py`)**:
+  - Added persistent `users` table schema to SQLite and PostgreSQL definitions (`id`, `username`, `name`, `email` [UNIQUE], `phone`, `role`, `onchain_role`, `address`, `status`, `created_at`).
+  - Added automatic database seeding for baseline personas on `init_db()` (`admin`, `rahul_farmer`, `safexpress_logistics`, `pune_darkstore`, `priya_consumer`).
+  - Implemented persistent User Management endpoints:
+    - `GET /admin/users`: returns persistent user records and synchronizes on-chain verification flags (`is_granted_onchain`).
+    - `POST /admin/users`: creates user, auto-derives or assigns Ethereum wallet address, checks duplicate emails with 400 error, persists to SQLite, and automatically executes on-chain `grant_role`.
+    - `PUT /admin/users/{user_id}`: updates user details, email, phone, role, and account status (`ACTIVE`/`INACTIVE`).
+    - `DELETE /admin/users/{user_id}`: automatically revokes on-chain permissions via `revoke_role` and deletes user from the database.
+  - Implemented Authentication endpoints:
+    - `POST /auth/login`: verifies username or email and validates active status.
+    - `POST /auth/logout`: clean session termination.
+    - `GET /auth/users`: lists active login personas for 1-click authentication.
+- **Frontend Components & Flows (`frontend/src/`)**:
+  - Created `frontend/src/components/LoginModal.jsx`:
+    - Tab 1: "1-Click Personas" quick switch for all 5 roles (`Farmer`, `Logistics`, `Dark Store`, `Consumer`, `Admin`).
+    - Tab 2: Standard "Sign In" with email/username.
+    - Tab 3: "Register Account" with instant participant registration.
+  - Updated `frontend/src/App.jsx`:
+    - Tracks `currentUser` state synchronized with `localStorage.getItem('agrichain_current_user')`.
+    - Header User Avatar pill displays current user name, role badge, and "Switch" button to trigger `LoginModal`.
+    - Real `handleLogout` calls `POST /auth/logout`, purges session storage, and opens `LoginModal`.
+    - Proper default routing on login (`all` for admin, `home` for consumer, `dashboard` for farmer/logistics/darkstore).
+  - Updated `DarkStoreApp.jsx`, `ConsumerApp.jsx`, and `Logistic_Partner`:
+    - Wired `onLogout` prop to sidebar and profile views.
+    - Connected Consumer `OnboardingView` "Sign In" button to open `LoginModal`.
+  - Updated `frontend/src/components/AdminPortalView.jsx`:
+    - Integrated Participant Search and Role Filter pills (`all`, `farmer`, `logistics`, `darkstore`, `consumer`, `admin`).
+    - Added "Add Participant" modal with instant auto-generated wallet address helper and in-modal error alert.
+    - Added "Edit Participant" modal with role and status (`ACTIVE`/`INACTIVE`) updates.
+    - Added "Remove User" with confirmation dialog and dual database/blockchain cleanup.
+- **Automated Testing Suite**:
+  - Created `tests/test_user_management.py` (3 comprehensive unit/integration test cases verifying endpoints, duplicate rejection, and role lifecycle).
+  - Executed end-to-end browser test verifying login, persona switching, logout, participant addition, phone edit, and removal.
+
+**Files changed:**
+- Created: `frontend/src/components/LoginModal.jsx`, `tests/test_user_management.py`
+- Modified: `backend/db.py`, `backend/main.py`, `backend/migrations/001_initial_schema.sql`, `frontend/src/App.jsx`, `frontend/src/Consumer/ConsumerApp.jsx`, `frontend/src/Dark_Store/DarkStoreApp.jsx`, `frontend/src/components/AdminPortalView.jsx`, `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Automated Backend Tests: `pytest tests/` passed 16/16 tests (100% pass rate).
+- Smart Contract Test Suite: `npx hardhat test` passed 22/22 tests in 560ms.
+- Frontend Production Build: `npm run build` compiled 1,817 modules in 2.56s with 0 errors.
+- TrustLayer Security & Quality Audit: `trustlayer audit` reported 0 high findings.
+- End-to-End Playwright Automated Test: full authentication cycle (Logistics logout -> modal open -> persona login -> header switch -> admin sign-in -> add user -> edit user -> remove user) passed with 100% success.
