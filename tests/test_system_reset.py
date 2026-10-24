@@ -112,3 +112,50 @@ def test_system_reset_endpoint_and_clean_slate(client):
     assert fresh_res.status_code == 200
     fresh_data = fresh_res.json()
     assert fresh_data["batch_id"] == fresh_id
+
+
+def test_feed_demo_dataset_endpoint(client):
+    """Verifies that POST /admin/seed-demo-data feeds an optimal multi-role demonstration dataset."""
+    res = client.post("/admin/seed-demo-data")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "success"
+    assert "counts" in data
+    assert data["counts"]["batches"] == 6
+    assert data["counts"]["custody_events"] >= 16
+
+    # Verify Farmer has active data
+    farmer_kpi_res = client.get("/farmer/kpis")
+    assert farmer_kpi_res.status_code == 200
+    farmer_kpis = farmer_kpi_res.json()
+    inv_kpi = next((k for k in farmer_kpis if k["id"] == "inventory"), None)
+    assert inv_kpi is not None
+    assert float(inv_kpi["value"]) > 0
+
+    # Verify Logistics has available produce
+    avail_res = client.get("/logistics/available-produce")
+    assert avail_res.status_code == 200
+    avail_data = avail_res.json()
+    assert any(b["batchId"] == "BAT-TUR-404" for b in avail_data)
+
+    # Verify Dark Store has inbound deliveries
+    inbound_res = client.get("/darkstore/inbound")
+    assert inbound_res.status_code == 200
+    inbound_data = inbound_res.json()
+    assert any(b["batchId"] == "BAT-APL-903" for b in inbound_data)
+
+    # Verify Consumer traceability and fair price share for BAT-MGO-701
+    trace_res = client.get("/batches/BAT-MGO-701/traceability")
+    assert trace_res.status_code == 200
+    trace_data = trace_res.json()
+    assert trace_data["currentState"] == "SOLD"
+    assert len(trace_data["steps"]) == 4
+    assert trace_data["qualityGrade"] == "A+"
+
+    # Verify IsoLog quarantine verification is valid
+    quar_res = client.get("/quarantine/verify-integrity")
+    assert quar_res.status_code == 200
+    quar_data = quar_res.json()
+    assert quar_data["status"] == "VALID"
+    assert quar_data["tampered"] is False
+    assert quar_data["verified_records"] >= 1

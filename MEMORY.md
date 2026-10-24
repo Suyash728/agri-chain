@@ -2296,3 +2296,39 @@ still static UI with no data flow. Specifically:
 - `contracts/npx hardhat test`: 22/22 passing.
 - `backend/scripts/verify_final_system.py`: 8/8 capstone stages passing with 100%.
 - `trustlayer audit`: 0 high findings.
+
+
+## [Optimal Demonstration Dataset & Admin Feed Button] — 2026-10-24
+
+**What was done:**
+- Implemented optimal multi-role demonstration dataset seeder in `backend/seeder.py`:
+  - Seeds 6 interconnected batches across all 5 supply chain personas:
+    1. `BAT-MGO-701` (Alphonso Mango): Complete 4-stage lifecycle (`REGISTERED` -> `IN_TRANSIT` -> `IN_STORAGE` -> `SOLD`), 50.0% farmer fair price share (₹1,200 -> ₹1,650 -> ₹2,100 -> ₹2,400), anchored IPFS quality certificate, and verified 5-star consumer review.
+    2. `BAT-TOM-802` (Organic Field Tomatoes): `IN_STORAGE` at Pune Dark Store Hub in Bay A (Cold), 4-day shelf life FEFO candidate with anchored IPFS pesticide residue lab report.
+    3. `BAT-APL-903` (Shimla Royal Golden Apples): `IN_TRANSIT` on highway NH-48 corridor (Vehicle `MH15 CD 5678`, Driver Suresh Patil, 3.8°C reefer chill), inbound for Dark Store GRN intake.
+    4. `BAT-TUR-404` (Salem Pure Curcumin Turmeric): `REGISTERED` at Farm Gate, ready on Logistics "Available Produce" screen for dispatch.
+    5. `BAT-WHT-505` (Sharbati Golden Wheat): `AT_RETAIL` in Dark Store Bay B (Ambient), listed in Consumer store catalog ready for purchase.
+    6. `BAT-BER-606` (Fresh Strawberries): `IN_TRANSIT` with AI-intercepted thermal anomaly (28.5°C), cryptographically chained in IsoLog SHA-256 hash chain, and logging a carrier SLA Spoilage Claim for ₹18,000.
+  - Generates on-chain records via `chain.py` (`registerBatch`, `transferCustody`, `recordCondition`, `setBatchDocument`).
+- Added backend endpoints:
+  - `POST /admin/seed-demo-data`: seeds the demonstration dataset.
+  - `POST /demo/seed`: demo shortcut alias.
+- Added Admin Panel Controls in `frontend/src/components/AdminPortalView.jsx`:
+  - Quick-action "Feed Demo Dataset" button in Header Banner with `Sparkles` icon and loading feedback.
+  - Dedicated "Feed Optimal Multi-Role Demonstration Dataset" card in Section 4 (Maintenance & Dataset).
+  - Broadcasts `agrichain-data-reset` CustomEvent on execution to trigger instant dynamic UI re-renders across all active views without full page reloads.
+- Connected Dark Store views (`DarkStoreDashboardView`, `InboundGRNView`, `MicroInventoryView`, `DarkStoreSalesView`, `FulfillmentOrdersView`, `DarkStoreRevenueView`, `DarkStoreKPICards`) to `agrichain-data-reset` event listeners.
+- Updated `backend/scripts/seed_demo_batch.py` to invoke `seed_optimal_demo_dataset()`.
+- Added automated unit test `test_feed_demo_dataset_endpoint` in `tests/test_system_reset.py`.
+
+**Files changed:**
+- Created: `backend/seeder.py`
+- Modified: `backend/main.py`, `backend/scripts/seed_demo_batch.py`, `frontend/src/components/AdminPortalView.jsx`, `frontend/src/Dark_Store/Views/DarkStoreDashboardView.jsx`, `frontend/src/Dark_Store/Views/InboundGRNView.jsx`, `frontend/src/Dark_Store/Views/MicroInventoryView.jsx`, `frontend/src/Dark_Store/Views/DarkStoreSalesView.jsx`, `frontend/src/Dark_Store/Views/FulfillmentOrdersView.jsx`, `frontend/src/Dark_Store/Views/DarkStoreRevenueView.jsx`, `frontend/src/Dark_Store/components/DarkStoreKPICards.jsx`, `tests/test_system_reset.py`
+- Appended: `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- `pytest tests/`: 13/13 passing (including new `test_feed_demo_dataset_endpoint`).
+- `contracts/npx hardhat test`: 22/22 passing.
+- `npm run build` in `frontend/`: 1,816 modules transformed in 3.58s with 0 errors.
+- `trustlayer audit`: 0 high findings.
+- Live verification: `POST /admin/seed-demo-data` populates all 6 batches across blockchain, SQLite, IPFS, and reviews; verified `/farmer/kpis`, `/logistics/available-produce`, `/darkstore/inbound`, `/batches/BAT-MGO-701/traceability`, and `/quarantine/verify-integrity`.

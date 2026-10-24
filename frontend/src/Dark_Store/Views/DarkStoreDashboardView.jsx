@@ -29,7 +29,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
   const [availableBatches, setAvailableBatches] = useState([]);
   const [selectedBatchId, setSelectedBatchId] = useState('');
 
-  useEffect(() => {
+  const loadDashboardData = () => {
     fetch('http://localhost:8000/darkstore/kpis')
       .then((res) => res.json())
       .then((data) => setKpis(data))
@@ -49,6 +49,8 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
             image: d.image,
           }));
           setRecentDeliveries(mapped);
+        } else {
+          setRecentDeliveries([]);
         }
       })
       .catch((err) => console.error('Error fetching inbound deliveries:', err));
@@ -66,6 +68,8 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
             image: inc.crop_name.toLowerCase().includes('tomato') ? '/images/tomato_only.png' : '/images/vegetables_ref.png',
           }));
           setExpiryAlerts(mapped);
+        } else {
+          setExpiryAlerts([]);
         }
       })
       .catch(() => {});
@@ -81,6 +85,8 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
             date: `Verified on ${it.harvestDate || '20 Oct, 2026'}`,
           }));
           setBlockchainCerts(mapped);
+        } else {
+          setBlockchainCerts([]);
         }
       })
       .catch(() => {});
@@ -121,6 +127,12 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+    window.addEventListener('agrichain-data-reset', loadDashboardData);
+    return () => window.removeEventListener('agrichain-data-reset', loadDashboardData);
   }, []);
 
   // Compute dynamic inventory categories and percentages

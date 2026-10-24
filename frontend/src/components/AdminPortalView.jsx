@@ -15,7 +15,8 @@ import {
   Cpu,
   Layers,
   FileCheck2,
-  Trash2
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 import { CleanSlateModal } from './CleanSlateModal';
 
@@ -27,6 +28,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
   const [loading, setLoading] = useState(false);
   const [actionStatus, setActionStatus] = useState(null);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   // Grant role form state
   const [targetAddress, setTargetAddress] = useState('');
@@ -73,6 +75,39 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  const handleFeedDemoData = async () => {
+    setSeeding(true);
+    setActionStatus(null);
+    try {
+      const res = await fetch('http://localhost:8000/admin/seed-demo-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Failed to feed demonstration dataset');
+      }
+      const data = await res.json();
+      try {
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith('agrichain_read_notifs_')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (_) {}
+      window.dispatchEvent(new CustomEvent('agrichain-data-reset', { detail: data }));
+      setActionStatus({
+        type: 'success',
+        msg: 'Optimal demonstration dataset fed successfully! 6 interconnected batches initialized across all 5 roles.',
+      });
+      fetchAllData();
+    } catch (err) {
+      setActionStatus({ type: 'error', msg: err.message });
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const handleGrantRole = async (e) => {
     e.preventDefault();
@@ -177,14 +212,24 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
               Manage smart contract role delegations, emergency circuit breakers, and verify cryptographic SHA-256 hash-chain logs.
             </p>
           </div>
-          <button
-            onClick={fetchAllData}
-            disabled={loading}
-            className="flex items-center gap-2 bg-white hover:bg-[#FAF7F0] text-[#2D2620] border border-[#E6E1D5] px-4 py-2.5 rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-all"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Refresh On-Chain State
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={handleFeedDemoData}
+              disabled={seeding || loading}
+              className="flex items-center gap-2 bg-[#5B21B6] hover:bg-[#4C1D95] text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-all disabled:opacity-50"
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${seeding ? 'animate-spin' : ''}`} />
+              {seeding ? 'Feeding Demo Data...' : 'Feed Demo Dataset'}
+            </button>
+            <button
+              onClick={fetchAllData}
+              disabled={loading}
+              className="flex items-center gap-2 bg-white hover:bg-[#FAF7F0] text-[#2D2620] border border-[#E6E1D5] px-4 py-2.5 rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-all"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Refresh On-Chain State
+            </button>
+          </div>
         </div>
       </div>
 
@@ -387,13 +432,42 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
         </div>
       )}
 
-      {/* Section 4: System Maintenance & Clean Slate Reset */}
+      {/* Section 4: System Maintenance & Demonstration Dataset */}
       {(currentTab === 'all' || currentTab === 'maintenance') && (
-        <div className="mt-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Trash2 className="w-5 h-5 text-rose-600" />
-            <h2 className="text-lg font-black text-[#2D2620]">System Maintenance & Clean Slate Reset</h2>
+        <div className="mt-8 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Database className="w-5 h-5 text-[#5B21B6]" />
+            <h2 className="text-lg font-black text-[#2D2620]">Demonstration Dataset & System Maintenance</h2>
           </div>
+
+          {/* Feed Demo Dataset Card */}
+          <div className="bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#5B21B6]/10 text-[#5B21B6] border border-[#5B21B6]/20">
+                  Interactive Evaluation Preset
+                </span>
+                <span className="text-xs font-bold text-[#666057]">5-Persona Live Interaction</span>
+              </div>
+              <h3 className="text-sm font-black text-[#2D2620]">
+                Feed Optimal Multi-Role Demonstration Dataset
+              </h3>
+              <p className="text-xs text-[#666057] mt-1 leading-relaxed">
+                Populates an optimal, interconnected 6-batch dataset across all roles: <strong>Farmer</strong> (fresh crops & revenue), <strong>Logistics</strong> (available crops for pickup & highway reefer in-transit), <strong>Dark Store</strong> (inbound GRN deliveries & cold micro-inventory), <strong>Consumer</strong> (delivered order with IPFS certificate, 50% fair price share & 5★ review), and <strong>Admin</strong> (IsoLog SHA-256 quarantine hash chain & carrier SLA claim).
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleFeedDemoData}
+              disabled={seeding}
+              className="bg-[#5B21B6] hover:bg-[#4C1D95] text-white px-5 py-3 rounded-xl text-xs font-black shadow-xs flex items-center gap-2 whitespace-nowrap cursor-pointer transition-all hover:scale-[1.02] flex-shrink-0 disabled:opacity-50"
+            >
+              <Sparkles className={`w-4 h-4 ${seeding ? 'animate-spin' : ''}`} />
+              <span>{seeding ? 'Feeding Dataset...' : 'Feed Demonstration Dataset'}</span>
+            </button>
+          </div>
+
+          {/* Clean Slate Reset Card */}
           <div className="bg-white rounded-2xl border border-[#E6E1D5] p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="max-w-2xl">
               <div className="flex items-center gap-2 mb-1.5">

@@ -61,6 +61,8 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
 
   useEffect(() => {
     fetchInbound();
+    window.addEventListener('agrichain-data-reset', fetchInbound);
+    return () => window.removeEventListener('agrichain-data-reset', fetchInbound);
   }, []);
 
   const handleReceive = async (delivery) => {

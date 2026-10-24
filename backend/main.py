@@ -5395,6 +5395,23 @@ def post_demo_reset():
     return post_admin_system_reset()
 
 
+@app.post("/admin/seed-demo-data")
+def post_admin_seed_demo_data(reset_first: bool = True):
+    """Feeds the optimal multi-role demonstration dataset across blockchain & database."""
+    try:
+        from seeder import seed_optimal_demo_dataset
+        report = seed_optimal_demo_dataset(reset_first=reset_first)
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to seed demonstration dataset: {str(e)}")
+
+
+@app.post("/demo/seed")
+def post_demo_seed():
+    """Demo shortcut alias for seeding optimal multi-role demonstration dataset."""
+    return post_admin_seed_demo_data(reset_first=True)
+
+
 @app.get("/demo/godmode")
 def get_demo_godmode_default():
     """Retrieve consolidated state for the latest active batch."""

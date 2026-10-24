@@ -5,7 +5,7 @@ export const FulfillmentOrdersView = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState('All');
   const [orders, setOrders] = useState([]);
 
-  useEffect(() => {
+  const loadFulfillmentData = () => {
     Promise.all([
       fetch('http://localhost:8000/darkstore/inventory').then(r => r.json()).catch(() => []),
       fetch('http://localhost:8000/darkstore/sales').then(r => r.json()).catch(() => ({ recentOrders: [] }))
@@ -41,6 +41,12 @@ export const FulfillmentOrdersView = ({ onBack }) => {
       }
       setOrders(liveOrders);
     });
+  };
+
+  useEffect(() => {
+    loadFulfillmentData();
+    window.addEventListener('agrichain-data-reset', loadFulfillmentData);
+    return () => window.removeEventListener('agrichain-data-reset', loadFulfillmentData);
   }, []);
 
   const filteredOrders = orders.filter(ord => {

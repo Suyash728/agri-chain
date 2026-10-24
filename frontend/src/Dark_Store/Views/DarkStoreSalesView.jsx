@@ -25,13 +25,19 @@ export const DarkStoreSalesView = ({ onBack }) => {
   const [showAllOrdersModal, setShowAllOrdersModal] = useState(false);
   const [orderSearchModal, setOrderSearchModal] = useState('');
 
-  useEffect(() => {
+  const loadSalesData = () => {
     fetch('http://localhost:8000/darkstore/sales')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setLiveSales(data);
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadSalesData();
+    window.addEventListener('agrichain-data-reset', loadSalesData);
+    return () => window.removeEventListener('agrichain-data-reset', loadSalesData);
   }, []);
 
   const totalSalesVal = liveSales?.totalSales || '₹ 0';

@@ -27,7 +27,7 @@ export const DarkStoreRevenueView = ({ onBack, onOpenNotifications }) => {
   const [liveKpis, setLiveKpis] = useState(null);
   const [revenueData, setRevenueData] = useState(null);
 
-  useEffect(() => {
+  const loadRevenueData = () => {
     fetch('http://localhost:8000/darkstore/kpis')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -41,6 +41,12 @@ export const DarkStoreRevenueView = ({ onBack, onOpenNotifications }) => {
         if (data) setRevenueData(data);
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadRevenueData();
+    window.addEventListener('agrichain-data-reset', loadRevenueData);
+    return () => window.removeEventListener('agrichain-data-reset', loadRevenueData);
   }, []);
 
   // Revenue Summary Table Dataset from live API

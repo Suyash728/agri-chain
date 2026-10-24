@@ -5,10 +5,15 @@ export const DarkStoreKPICards = ({ onCardClick, kpis: externalKpis }) => {
 
   useEffect(() => {
     if (externalKpis) return;
-    fetch('http://localhost:8000/darkstore/kpis')
-      .then((res) => res.json())
-      .then((data) => setInternalKpis(data))
-      .catch((err) => console.error('Error fetching DarkStore KPIs:', err));
+    const loadKpis = () => {
+      fetch('http://localhost:8000/darkstore/kpis')
+        .then((res) => res.json())
+        .then((data) => setInternalKpis(data))
+        .catch((err) => console.error('Error fetching DarkStore KPIs:', err));
+    };
+    loadKpis();
+    window.addEventListener('agrichain-data-reset', loadKpis);
+    return () => window.removeEventListener('agrichain-data-reset', loadKpis);
   }, [externalKpis]);
 
   const kpis = externalKpis || internalKpis || {

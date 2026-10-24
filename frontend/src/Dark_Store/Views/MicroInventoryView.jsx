@@ -9,7 +9,7 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
   const [bins, setBins] = useState([]);
   const [selectedBinQR, setSelectedBinQR] = useState(null);
 
-  useEffect(() => {
+  const fetchInventory = () => {
     fetch('http://localhost:8000/darkstore/inventory')
       .then((res) => res.json())
       .then((data) => {
@@ -18,6 +18,12 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
         }
       })
       .catch((err) => console.error('Error fetching darkstore inventory:', err));
+  };
+
+  useEffect(() => {
+    fetchInventory();
+    window.addEventListener('agrichain-data-reset', fetchInventory);
+    return () => window.removeEventListener('agrichain-data-reset', fetchInventory);
   }, []);
 
   const filteredBins = bins.filter(bin => {
