@@ -819,24 +819,43 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
               </div>
 
               {custodyResult && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col gap-2 shadow-xs animate-fade-in text-emerald-950">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      Custody Transferred On-Chain!
-                    </span>
-                    <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded border border-emerald-200 uppercase">
-                      {custodyResult.state}
-                    </span>
+                custodyResult.blocked || !custodyResult.success ? (
+                  <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-4 flex flex-col gap-2.5 shadow-sm animate-fade-in text-red-950">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black flex items-center gap-1.5 text-red-700">
+                        <AlertTriangle className="w-4 h-4 text-red-600" />
+                        Circuit Breaker: Transfer Blocked!
+                      </span>
+                      <span className="text-[10px] font-bold bg-red-100 text-red-800 px-2 py-0.5 rounded border border-red-300 uppercase">
+                        LOCKED
+                      </span>
+                    </div>
+                    <p className="text-xs text-red-900 font-medium leading-relaxed">
+                      {custodyResult.reason || 'Batch is quarantined by the AI Trust Layer. Physical custody and smart contract handoff are permanently locked.'}
+                    </p>
                   </div>
-                  <p className="text-xs text-[#666057]">
-                    New Custodian: <strong>{custodyResult.to_holder}</strong> • Cumulative Settlement: <strong>₹ {custodyResult.price_inr}</strong>
-                  </p>
-                  <div className="text-[10px] font-mono bg-white p-2 rounded-lg border border-emerald-200 break-all">
-                    <span className="font-bold block text-emerald-800">EVM Tx:</span>
-                    {custodyResult.tx_hash}
+                ) : (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col gap-2 shadow-xs animate-fade-in text-emerald-950">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        Custody Transferred On-Chain!
+                      </span>
+                      <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded border border-emerald-200 uppercase">
+                        {custodyResult.state}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#666057]">
+                      New Custodian: <strong>{custodyResult.to_holder}</strong> • Cumulative Settlement: <strong>₹ {custodyResult.price_inr}</strong>
+                    </p>
+                    {custodyResult.tx_hash && (
+                      <div className="text-[10px] font-mono bg-white p-2 rounded-lg border border-emerald-200 break-all">
+                        <span className="font-bold block text-emerald-800">EVM Tx:</span>
+                        {custodyResult.tx_hash}
+                      </div>
+                    )}
                   </div>
-                </div>
+                )
               )}
             </div>
           )}

@@ -284,8 +284,11 @@ class PostgresCursorWrapper:
         self.lastrowid: Optional[int] = None
 
     def execute(self, query: str, params: Any = None):
-        # Convert ? placeholders to %s for PostgreSQL
-        clean_query = query.replace("?", "%s")
+        # Convert ? placeholders to %s for PostgreSQL and escape literal % signs
+        if "?" in query:
+            clean_query = query.replace("%", "%%").replace("?", "%s")
+        else:
+            clean_query = query
         clean_query = clean_query.replace("datetime('now')", "CURRENT_TIMESTAMP")
         clean_query = clean_query.replace("ORDER BY rowid DESC", "ORDER BY created_at DESC")
         clean_query = clean_query.replace("ORDER BY rowid ASC", "ORDER BY created_at ASC")

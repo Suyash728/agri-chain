@@ -2693,3 +2693,34 @@ pm run build passed cleanly with 0 errors.
 - Ran backend pytest: `pytest tests/` (all 16 tests passed).
 - Ran smart contract tests: `cd contracts && npx hardhat test` (all 22 tests passed).
 - Ran frontend production build: `cd frontend && npm run build` (built cleanly in 2.66s).
+
+
+---
+
+## Task: Fix Consumer Checkout and Enforce Circuit Breaker on Corrupt/Quarantined Demo Simulations
+
+**What was done:**
+- Fixed Consumer Checkout flow in `backend/main.py` (`post_consumer_checkout`):
+  - Fixed timestamp serialization: replaced non-standard timestamp format string containing bullet characters with ISO 8601 `now_ts = datetime.now(timezone.utc).isoformat()`, preventing PostgreSQL `TIMESTAMPTZ` insertion failures.
+  - Fixed SQL parameter placeholder escaping: in `backend/db.py` `PostgresCursorWrapper.execute()`, properly escaped literal `%` signs in SQLite-style queries (e.g. `LIKE 'QUARANTINE%'`) to prevent `psycopg` placeholder syntax exceptions.
+  - Enforced strict referential integrity: ensured fallback batch resolution links to verified registered batches, auto-registering clean catalog batches into `batches` and `custody_events` (`IN_STORAGE`) so cart checkouts never encounter `ForeignKeyViolation`.
+  - Added on-chain forward custody staging to `SOLD` via `CustodyTransfer.sol` with 5-star customer review provisioning.
+- Fixed Demo Lab simulations and prevented incorrect/corrupt simulations from being processed as valid actions:
+  - **Quarantine Purchase Blocker**: In `post_consumer_checkout`, added safety circuit breaker check. If any item in the consumer cart is associated with a quarantined batch (`QUARANTINE-...`, `REPLAY-...`, or any batch with `QUARANTINED` / `ANOMALOUS` reading), the checkout is strictly blocked with HTTP 400 and a food safety circuit breaker alert.
+  - **Consumer Marketplace Sanitization**: In `get_consumer_products`, filtered out compromised, breached, and quarantined batches so consumers are never offered contaminated produce.
+  - **Demo Lab Custody Stepper Circuit Breaker**: In `post_demo_custody_advance`, added strict validation checking whether the target batch is quarantined or compromised by physical breaches or cryptographic replay attacks. If compromised, the custody advance is **blocked** (`blocked: true`, `circuit_breaker: true`, `success: false`), preventing fraudulent or contaminated batches from being advanced to `IN_STORAGE` or `SOLD`.
+  - **Frontend Circuit Breaker UI Alert**: In `ShowcaseDrawer.jsx`, updated the Custody Stepper results view to detect `custodyResult.blocked` and display a prominent red **Circuit Breaker: Transfer Blocked!** alert with details on why handoff was denied, rather than falsely displaying a green "Custody Transferred" badge.
+
+**Files changed:**
+- `backend/db.py`
+- `backend/main.py`
+- `frontend/src/components/ShowcaseDrawer.jsx`
+- `MEMORY.md`
+
+**Verified:**
+- Tested clean checkout via `POST /consumer/checkout`: successfully placed order, recorded custody event on-chain, returned HTTP 200 with order ID.
+- Tested checkout of quarantined batch (`QUARANTINE-...`): returned HTTP 400 with detail `"Cannot purchase 'Organic Field Tomatoes': Batch QUARANTINE-1792872352 is quarantined by the AI Trust Layer due to cold-chain violation. Food safety circuit breaker is active."`.
+- Tested advancing quarantined and replay batches via `POST /demo/custody/advance`: returned `blocked: true`, `circuit_breaker: true`, preventing on-chain custody progression.
+- Ran backend pytest: `pytest tests/` (all 16 tests passed).
+- Ran smart contract tests: `cd contracts && npx hardhat test` (all 22 tests passed).
+- Ran frontend production build: `cd frontend && npm run build` (built cleanly in 2.87s).
