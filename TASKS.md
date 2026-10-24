@@ -205,7 +205,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   SQLite and on-chain.
 
 ### Task 3.6 — `GET /farmer/kpis`, `/farmer/crops`, `/farmer/activity`
-- [x] Add all three. Open `design/src/data/mockData.js`, find the
+- [x] Add all three. Open `frontend/src/data/mockData.js`, find the
   `kpiMetrics`, `cropCategories`, and `recentActivities` exports, and shape
   each response to match exactly (per `ARCHITECTURE.md` §4 and `RULES.md`
   §6). Values should be computed from real rows in SQLite (e.g. `Total
@@ -217,7 +217,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
 
 ### Task 3.7 — `GET /batches/{batch_id}/traceability`
 - [x] Add the route. Shape it to match `traceabilityBatch` in
-  `design/src/data/mockData.js`. Populate the journey from `custody_events`
+  `frontend/src/data/mockData.js`. Populate the journey from `custody_events`
   (for the who/where/when/price) and from the contract's `ConditionRecorded`
   events (for the cold-chain log) — query events via `chain.py`, add a
   function there if one doesn't exist yet for reading past events.
@@ -271,12 +271,12 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
 ## Phase 5 — Frontend wiring (days 12–14)
 
 ### Task 5.1 — Wire the Farmer dashboard KPIs
-- [x] In `design/src/`, find the component(s) importing `kpiMetrics` from
+- [x] In `frontend/src/`, find the component(s) importing `kpiMetrics` from
   `mockData.js` for the Farmer dashboard. Replace the import with a
   `fetch('http://localhost:8000/farmer/kpis')` call inside a `useEffect`,
   storing the result in `useState`. Keep the loading UI simple (a plain
   "Loading…" text is fine — no new component).
-- **DONE WHEN:** running `npm run dev` in `design/` and opening the Farmer
+- **DONE WHEN:** running `npm run dev` in `frontend/` and opening the Farmer
   dashboard shows real numbers (matching whatever's actually in SQLite from
   Phases 3–4's testing), not the original mock numbers (`3.45`, `4`, `2`,
   `₹28,450`).
@@ -288,9 +288,9 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   confirmed the same way as Task 5.1.
 
 ### Task 5.3 — Wire batch registration
-- [x] Find the Farmer "register batch" / "add stock" flow in `design/src/`
+- [x] Find the Farmer "register batch" / "add stock" flow in `frontend/src/`
   (likely `Farmer/Modals/AddStockModal.jsx` or similar — check
-  `design/src/App.jsx`'s imports for the exact name). Replace whatever
+  `frontend/src/App.jsx`'s imports for the exact name). Replace whatever
   local-state-only submit handler exists with a `POST` to
   `localhost:8000/batches`, then refresh the KPIs/crops/activity views
   (Tasks 5.1–5.2) after a successful response.
@@ -310,7 +310,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
   batch shows all four transfers with their prices, in order.
 
 ### Task 5.5 — Wire the Consumer traceability/QR view
-- [x] Find the Consumer traceability screen(s) in `design/src/Consumer/`
+- [x] Find the Consumer traceability screen(s) in `frontend/src/Consumer/`
   using `productJourneyTimeline` from `consumerData.js`. Replace with a
   fetch to `/batches/{batch_id}/traceability` for the demo batch from Task
   5.4, mapped to the `{title, date, location, status}` shape that export
@@ -326,7 +326,7 @@ Keep the local Hardhat node from Task 2.5 running for this entire phase.
 - [x] This is `PRD.md` O14, not part of the essential five-step check, but
   worth doing here if Tasks 5.1–5.5 finished with time to spare, since price
   transparency is the project's stated differentiating feature. Find an
-  existing card/text style already used elsewhere in `design/src/Consumer/`
+  existing card/text style already used elsewhere in `frontend/src/Consumer/`
   (e.g. how `RevenueView.jsx` presents a rupee figure) and reuse that exact
   pattern to add one small element to the journey view showing the price at
   each step from the same `/batches/{batch_id}/traceability` response. Do
@@ -402,7 +402,7 @@ This phase integrates teammate Rutuja's standalone `trust-layer` module into the
   - GPS Telemetry Validation (route velocity continuity check)
   - Tamper Prevention (cryptographic seal & replay status)
   - Anomaly Check (number of deviations flagged)
-- [x] In `design/src/Farmer/Views/AITrustView.jsx`, replace mock `aiTrustData` with a `fetch('http://localhost:8000/farmer/ai-trust')` call inside `useEffect`.
+- [x] In `frontend/src/Farmer/Views/AITrustView.jsx`, replace mock `aiTrustData` with a `fetch('http://localhost:8000/farmer/ai-trust')` call inside `useEffect`.
 - **DONE WHEN:** opening the AI Trust Score view in the running Farmer UI displays live checkpoint status derived from real processed telemetry. (Verified: `GET /farmer/ai-trust` tested and returning live audit-derived metrics; `AITrustView.jsx` wired and tested; frontend built cleanly with 0 errors).
 
 **→ End of Phase 6. Append a `MEMORY.md` entry.**
@@ -411,7 +411,7 @@ This phase integrates teammate Rutuja's standalone `trust-layer` module into the
 
 ## Phase 7 — Role Dashboards Wiring & Quarantine / Trust UI (Week 3)
 
-Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and the Quarantine Inspection UI in `design/` to live backend API endpoints and on-chain state, enabling full cross-role multi-stakeholder lifecycle management.
+Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and the Quarantine Inspection UI in `frontend/` to live backend API endpoints and on-chain state, enabling full cross-role multi-stakeholder lifecycle management.
 
 ### Task 7.1 — Implement Logistics Partner Backend Endpoints
 - [x] In `backend/main.py`, implement:
@@ -421,8 +421,8 @@ Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and
 - **DONE WHEN:** querying `GET /logistics/kpis` and `GET /logistics/shipments` via `curl` returns real batches, valid GPS/temp telemetry, and dynamic counts matching database state. (Verified: tested `/logistics/kpis`, `/logistics/shipments`, and `/logistics/orders`; returned live batches, valid GPS coordinates, reefer temperatures, and accurate counts).
 
 ### Task 7.2 — Wire Logistics Partner UI (`LogisticDashboardView.jsx` & Fleet Views)
-- [x] In `design/src/Logistic_Partner/components/LogisticKPICards.jsx` and `LogisticDashboardView.jsx`, replace mock data with `fetch('http://localhost:8000/logistics/kpis')` and `fetch('http://localhost:8000/logistics/shipments')`.
-- [x] In `design/src/Logistic_Partner/Views/TransportationView.jsx` and `ShipmentTrackingView.jsx`, wire fleet cards and live telemetry corridor to display real batches, vehicle numbers, route checkpoints, and live reefer temperatures.
+- [x] In `frontend/src/Logistic_Partner/components/LogisticKPICards.jsx` and `LogisticDashboardView.jsx`, replace mock data with `fetch('http://localhost:8000/logistics/kpis')` and `fetch('http://localhost:8000/logistics/shipments')`.
+- [x] In `frontend/src/Logistic_Partner/Views/TransportationView.jsx` and `ShipmentTrackingView.jsx`, wire fleet cards and live telemetry corridor to display real batches, vehicle numbers, route checkpoints, and live reefer temperatures.
 - [x] Wire a "Dispatch / Pick Up" action triggering `POST /batches/{batch_id}/custody` with state `IN_TRANSIT` and paying the transit price.
 - **DONE WHEN:** opening the Logistics Partner portal shows live shipment cards with real crop names and temperatures, and picking up a batch updates its state to `IN_TRANSIT` on-chain. (Verified: `LogisticKPICards`, `LogisticDashboardView`, `TransportationView`, `ShipmentTrackingView`, and `ProcurementOrdersView` wired to backend; dispatch action tested and verified transferring batch `BATCH-001` to `IN_TRANSIT` on-chain with tx `33370e1a...`).
 
@@ -436,15 +436,15 @@ Goal: Wire the Logistics Partner dashboard, Dark Store / Retailer dashboard, and
 - **DONE WHEN:** calling `GET /darkstore/kpis` returns accurate counts from SQLite, and calling `POST /darkstore/receive` followed by `POST /darkstore/checkout` records valid blockchain state transitions. (Verified: tested `/darkstore/kpis`, `/darkstore/inbound`, `/darkstore/inventory`, `POST /darkstore/receive` [tx `905f9dbf...`], and `POST /darkstore/checkout` [tx `7cb5aa63...`]; full 4-stage lifecycle verified).
 
 ### Task 7.4 — Wire Dark Store UI (`DarkStoreApp.jsx` & Inbound / Inventory Views)
-- [x] In `design/src/Dark_Store/Views/DarkStoreDashboardView.jsx` and `DarkStoreKPICards.jsx`, replace mock KPIs with live `fetch('http://localhost:8000/darkstore/kpis')`.
-- [x] In `design/src/Dark_Store/Views/InboundGRNView.jsx`, wire inbound deliveries list to `GET /darkstore/inbound` and wire the "Receive Goods / Complete GRN" action to `POST /darkstore/receive`.
-- [x] In `design/src/Dark_Store/Views/MicroInventoryView.jsx`, wire inventory stock table to `GET /darkstore/inventory`.
+- [x] In `frontend/src/Dark_Store/Views/DarkStoreDashboardView.jsx` and `DarkStoreKPICards.jsx`, replace mock KPIs with live `fetch('http://localhost:8000/darkstore/kpis')`.
+- [x] In `frontend/src/Dark_Store/Views/InboundGRNView.jsx`, wire inbound deliveries list to `GET /darkstore/inbound` and wire the "Receive Goods / Complete GRN" action to `POST /darkstore/receive`.
+- [x] In `frontend/src/Dark_Store/Views/MicroInventoryView.jsx`, wire inventory stock table to `GET /darkstore/inventory`.
 - **DONE WHEN:** opening the Dark Store portal displays live incoming deliveries, receiving an inbound batch updates inventory in real time, and the UI builds cleanly without layout or style regressions. (Verified: `DarkStoreKPICards`, `DarkStoreDashboardView`, `InboundGRNView`, and `MicroInventoryView` wired to backend; tested receiving test batch `DEMO-DS-01` into `IN_STORAGE` and verified instant reflection in storage bins; `npm run build` compiled cleanly in 2.45s).
 
 ### Task 7.5 — Implement & Wire Quarantine Inspection UI
 - [x] In `backend/main.py`, implement `GET /telemetry/quarantine` returning detailed quarantined records from SQLite `quarantine`, `audit_trail`, and `readings`:
   - `reading_id`, `batch_id`, `crop_name`, `temp_c`, `humidity_pct`, `latitude`, `longitude`, `reasons` (list of human-readable fault descriptions), `anomaly_score`, `quarantined_at`.
-- [x] In `design/src/Farmer/Views/AITrustView.jsx` (and `Farmer/Modals/`), connect the "View Details" button to a Quarantine Audit Inspection sheet/modal listing real intercepted sensor violations with explainable reason codes.
+- [x] In `frontend/src/Farmer/Views/AITrustView.jsx` (and `Farmer/Modals/`), connect the "View Details" button to a Quarantine Audit Inspection sheet/modal listing real intercepted sensor violations with explainable reason codes.
 - **DONE WHEN:** clicking "View Details" in the AI Trust view opens a modal displaying live quarantined incidents (e.g. simulated temperature spikes, GPS jumps, replay attacks) with their exact detection timestamps and reason codes. (Verified: `GET /telemetry/quarantine` returning persisted audit and quarantine records; created `QuarantineAuditModal.jsx` and wired to "View Details" button in `AITrustView.jsx`; `npm run build` compiled cleanly in 2.47s).
 
 ### Task 7.6 — End-to-End Multi-Role Workflow Verification
@@ -538,8 +538,8 @@ Goal: Migrate off-chain state from local SQLite to cloud PostgreSQL (Supabase) a
 - **DONE WHEN:** uploading a document stores the CID in SQLite/PostgreSQL and emits `DocumentAnchored(bytes32 indexed batchId, string docType, string ipfsCid)` on-chain. (Verified: `ProductRegistry.sol` updated with `setBatchDocument` emitting `BatchDocumentAnchored`; `ProductRegistry.test.cjs` passed 6/6 tests; upload returned on-chain anchoring tx `e8f41072b78870ba...`).
 
 ### Task 9.5 — Wire IPFS Documents in Consumer & Farmer UI
-- [x] In `design/src/Consumer/Views/ProductJourneyView.jsx`, add an "Inspect Certificates & Lab Reports" button that fetches documents from `GET /batches/{batch_id}/documents` and displays clickable IPFS gateway links.
-- [x] In `design/src/Farmer/Views/CropDetailsView.jsx`, display the anchored certificate badge.
+- [x] In `frontend/src/Consumer/Views/ProductJourneyView.jsx`, add an "Inspect Certificates & Lab Reports" button that fetches documents from `GET /batches/{batch_id}/documents` and displays clickable IPFS gateway links.
+- [x] In `frontend/src/Farmer/Views/CropDetailsView.jsx`, display the anchored certificate badge.
 - **DONE WHEN:** clicking "Inspect Certificates" on a product journey card opens the document viewer displaying real pinned IPFS assets, and `npm run build` succeeds with 0 errors. (Verified: `ProductJourneyView.jsx` wired with live document fetching and modal inspector; `CropDetailsView.jsx` updated with IPFS Anchored badge; `npm run build` compiled in 3.28s with 0 errors).
 
 **→ End of Phase 9. Append a `MEMORY.md` entry.**
@@ -551,25 +551,25 @@ Goal: Migrate off-chain state from local SQLite to cloud PostgreSQL (Supabase) a
 Goal: Enable client-side MetaMask wallet connection per supply chain role, build verified consumer review loop, implement admin role governance, and build physical ESP32 sensor hardware ingestion prop.
 
 ### Task 10.1 — Client-Side Web3 Wallet Connection (`ethers.js` v6)
-- [x] In `design/`, add lightweight Web3 wallet connection component `design/src/components/WalletConnect.jsx` using `window.ethereum` and `ethers.js` v6.
+- [x] In `frontend/`, add lightweight Web3 wallet connection component `frontend/src/components/WalletConnect.jsx` using `window.ethereum` and `ethers.js` v6.
 - [x] Detect connected account address and query `AccessControlRoles.sol` to display active user role (`Farmer`, `Logistics Partner`, `Dark Store Manager`, `Consumer`, or `Unregistered`).
-- **DONE WHEN:** connecting MetaMask displays the active address and recognized supply chain role in the application header. (Verified: `WalletConnect.jsx` created using ethers v6 with role detection against `ProductRegistry` and test address fallback; integrated in floating control bar in `design/src/App.jsx`; `npm run build` passed with 0 errors).
+- **DONE WHEN:** connecting MetaMask displays the active address and recognized supply chain role in the application header. (Verified: `WalletConnect.jsx` created using ethers v6 with role detection against `ProductRegistry` and test address fallback; integrated in floating control bar in `frontend/src/App.jsx`; `npm run build` passed with 0 errors).
 
 ### Task 10.2 — Client-Side MetaMask Transaction Signing for Farmer & Logistics
-- [x] In `design/src/Farmer/Modals/AddStockModal.jsx`, when MetaMask is connected, request user signature for `ProductRegistry.registerBatch(...)` directly in MetaMask instead of relying solely on backend relayer.
-- [x] In `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`, request MetaMask signature for `CustodyTransfer.transferCustody(...)`.
+- [x] In `frontend/src/Farmer/Modals/AddStockModal.jsx`, when MetaMask is connected, request user signature for `ProductRegistry.registerBatch(...)` directly in MetaMask instead of relying solely on backend relayer.
+- [x] In `frontend/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`, request MetaMask signature for `CustodyTransfer.transferCustody(...)`.
 - **DONE WHEN:** submitting a new batch with MetaMask connected prompts MetaMask popup and writes the transaction directly from the farmer's wallet address. (Verified: `AddStockModal.jsx` wired with `useWallet()` requesting direct `registerBatch` + `initializeCustody` signing with fallback; `ProcurementOrdersView.jsx` wired with `useWallet()` requesting direct `transferCustody` signing; build compiled in 3.50s with 0 errors).
 
 ### Task 10.3 — Consumer Rating & Freshness Review System
 - [x] In `backend/main.py`, implement `POST /batches/{batch_id}/reviews` and `GET /batches/{batch_id}/reviews`:
   - Review schema: `rating` (1–5 stars), `comment`, `freshness_score`, `reviewer_address`, `created_at`.
   - Only batches with custody state `SOLD` can receive verified reviews.
-- [x] In `design/src/Consumer/Views/ProductJourneyView.jsx`, wire the review submission drawer allowing verified consumers to submit feedback.
+- [x] In `frontend/src/Consumer/Views/ProductJourneyView.jsx`, wire the review submission drawer allowing verified consumers to submit feedback.
 - **DONE WHEN:** posting a review for a `SOLD` batch records the review and updates the batch's average consumer rating in the traceability view. (Verified: `POST /batches/{id}/reviews` and `GET /batches/{id}/reviews` implemented in `backend/main.py`; verified non-SOLD batches rejected with 400 error; `ProductJourneyView.jsx` and `WriteReviewModal.jsx` wired to live backend review endpoints; `scripts/test_reviews.py` passed all checks).
 
 ### Task 10.4 — Admin Governance & Account Role Granting Flow
 - [x] In `backend/main.py`, implement `GET /admin/users` and `POST /admin/roles/grant` calling `AccessControlRoles.grantRole(...)`.
-- [x] In `design/src/Farmer/Modals/MoreMenuSheet.jsx` (or Admin settings), wire a role management panel allowing the contract owner to grant `FARMER_ROLE`, `LOGISTICS_ROLE`, or `RETAILER_ROLE` to newly registered Ethereum addresses.
+- [x] In `frontend/src/Farmer/Modals/MoreMenuSheet.jsx` (or Admin settings), wire a role management panel allowing the contract owner to grant `FARMER_ROLE`, `LOGISTICS_ROLE`, or `RETAILER_ROLE` to newly registered Ethereum addresses.
 - **DONE WHEN:** granting `FARMER_ROLE` to an address executes on-chain `grantRole` and allows that address to register batches. (Verified: `chain.grant_role` and `chain.check_role` implemented in `backend/chain.py`; `GET /admin/users` and `POST /admin/roles/grant` implemented; on-chain execution verified granting `LOGISTICS_ROLE` and `RETAILER_ROLE`; interactive Admin Governance panel added to `MoreMenuSheet.jsx`).
 
 ### Task 10.5 — Physical IoT Hardware Sensor Firmware (ESP32 Prop)
@@ -699,8 +699,8 @@ Benchmarked against 6 reference repositories (`ONTOCHAIN/ADOS`, `bhaskardatta/Cr
 - **DONE WHEN:** Hardhat test verifies paused contract reverts state mutations and unpausing restores operation; pytest passes. (Verified: 31 Hardhat tests passing, 7 pytest tests passing, emergency pause reverts with `EnforcedPause`).
 
 ### Task 12.6 — Dedicated Desktop Admin Persona UI
-- [x] Promote Admin from mobile `MoreMenuSheet` to a first-class persona in `design/src/App.jsx` switcher.
-- [x] Create `design/src/components/AdminPortalView.jsx` wiring:
+- [x] Promote Admin from mobile `MoreMenuSheet` to a first-class persona in `frontend/src/App.jsx` switcher.
+- [x] Create `frontend/src/components/AdminPortalView.jsx` wiring:
   - Smart Contract Circuit Breakers (Pausable emergency pause/unpause with live status)
   - Tamper-Evident Quarantine Hash Chain Audit Verifier (`/quarantine/verify-integrity`)
   - Participant Role Governance (`/admin/users`, `/admin/roles/grant`, `/admin/roles/revoke`)
@@ -713,7 +713,7 @@ Benchmarked against 6 reference repositories (`ONTOCHAIN/ADOS`, `bhaskardatta/Cr
 Goal: Deliver a synchronized command center for presentation, audience-interactive scenario injection, and complete codebase audit.
 
 ### Task 13.1 — Omniscient God Mode 4-Quadrant Split-Screen (`GodModeHub.jsx`)
-- [x] In `design/src/components/GodModeHub.jsx`, create a responsive 2x2 grid rendering all four supply chain participants simultaneously with zero mock data:
+- [x] In `frontend/src/components/GodModeHub.jsx`, create a responsive 2x2 grid rendering all four supply chain participants simultaneously with zero mock data:
   - Quadrant 1 (Farmer Origin & Escrow Protection)
   - Quadrant 2 (Logistics Reefer Cockpit & Live NH-48 Telematics Gauges)
   - Quadrant 3 (Dark Store Inbound Salvage Bay & FEFO Markdown Logic)
@@ -728,7 +728,7 @@ Goal: Deliver a synchronized command center for presentation, audience-interacti
 - **DONE WHEN:** calling `/demo/godmode/tour-step` advances custody and state on-chain and reflects in all 4 quadrants simultaneously. (Verified: tested via headless browser automation and curl; state updates in real time).
 
 ### Task 13.3 — Interactive Showcase Drawer & Manual IoT Controls
-- [x] In `design/src/components/ShowcaseDrawer.jsx`, implement interactive slider controls for temperature and humidity, manual produce onboarding, and preset scenarios ("Golden Harvest", "In-Transit Spoilage").
+- [x] In `frontend/src/components/ShowcaseDrawer.jsx`, implement interactive slider controls for temperature and humidity, manual produce onboarding, and preset scenarios ("Golden Harvest", "In-Transit Spoilage").
 - **DONE WHEN:** moving the temperature slider above 12°C triggers an immediate warning badge and logs a spoilage breach in the backend. (Verified: manual slider injection tested and validated).
 
 ### Task 13.4 — Codebase Audit, Deprecation Fixes & Resource Leak Elimination

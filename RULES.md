@@ -23,9 +23,9 @@ If a task genuinely needs something not on this list, the correct move is to
 add it to this file with a one-line justification, in the same commit as the
 task that needs it — not to install it silently.
 
-## 2. Never touch `design/` visual styling
+## 2. Never touch `frontend/` visual styling
 
-Every file under `design/src/` may be edited **only** to:
+Every file under `frontend/src/` may be edited **only** to:
 - replace a `mockData` / `consumerData` import with a `fetch()` call
 - add a loading state or error state around that fetch (a spinner, a "failed
   to load" message) using components/classes that already exist elsewhere in
@@ -36,7 +36,7 @@ to layout, spacing, color, font, or icon choice is out of scope. If a screen
 "looks wrong" after wiring real data, the fix is almost always in the data
 shape (see `ARCHITECTURE.md` §4), not the JSX.
 
-`design/DESIGN.md` is the visual specification. It should not need to change
+`frontend/DESIGN.md` is the visual specification. It should not need to change
 for the essential build. If you believe it does, stop and write why in
 `MEMORY.md` rather than editing it.
 

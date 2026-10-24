@@ -2227,3 +2227,40 @@ still static UI with no data flow. Specifically:
 - `pytest tests/`: 12/12 passing.
 - `npx hardhat test`: 22/22 passing.
 - `npm run build`: 1,816 modules built in 3.45s with 0 errors.
+
+
+## [Frontend Directory Rename & Asset Purge] — 2026-10-24
+
+**What was done:**
+- Renamed `design/` to `frontend/` across the repository using `git mv` to preserve full file history.
+- Purged legacy and unnecessary assets:
+  - Removed `design/mockups/` (static reference mockups).
+  - Removed `design/screen-recordings/` (249MB of old MP4 demo videos).
+  - Removed outdated root-level test scripts (`test_comprehensive_responsive.py`, `test_live_data_integrity.py`).
+  - Removed legacy specification artifact (`PROJECT_SPEC.md`).
+  - Cleaned untracked build directory `dist/`.
+- Updated all references from `design/` to `frontend/` across documentation and scripts:
+  - `AGENTS.md`
+  - `ARCHITECTURE.md`
+  - `TASKS.md`
+  - `RULES.md`
+  - `PRD.md`
+  - `PLAN.md`
+  - `README.md`
+  - `scripts/local_ai_cleanup.py`
+  - `review-2/SYSTEM_ARCHITECTURE_AND_WORKING.md`
+  - `docs/reference/recommendations.md`
+- Restarted the Vite development server pointing to `frontend/` (`http://localhost:3000`).
+
+**Files changed:**
+- Renamed: `design/` -> `frontend/` (102 files renamed with history preserved)
+- Deleted: `design/mockups/`, `design/screen-recordings/`, `design/PROJECT_SPEC.md`, `design/test_comprehensive_responsive.py`, `design/test_live_data_integrity.py`
+- Updated: `AGENTS.md`, `ARCHITECTURE.md`, `TASKS.md`, `RULES.md`, `PRD.md`, `PLAN.md`, `README.md`, `scripts/local_ai_cleanup.py`, `review-2/SYSTEM_ARCHITECTURE_AND_WORKING.md`, `docs/reference/recommendations.md`
+- Appended: `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- `npm run build` in `frontend/`: 1,816 modules transformed, built in 3.39s with 0 errors.
+- `pytest tests/`: 12/12 passing.
+- `contracts/npx hardhat test`: 22/22 passing.
+- `trustlayer audit`: 0 high findings.
+- Vite dev server running cleanly on `http://localhost:3000/`.

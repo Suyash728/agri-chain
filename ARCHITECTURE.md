@@ -18,7 +18,7 @@ document describes a **deliberately simplified essential architecture**,
 chosen for two reasons that override the original plan for the first two
 weeks specifically:
 
-1. **The frontend is already built, and it's not Next.js.** `design/` is a
+1. **The frontend is already built, and it's not Next.js.** `frontend/` is a
    Vite + React 18 + Tailwind app using plain `useState` for all navigation
    and data (no router, no server components). The essential architecture
    below is designed to slot a real backend under this *actual* app, not the
@@ -32,7 +32,7 @@ weeks specifically:
 
 | Original plan | Essential architecture | Status / Target Phase |
 |---|---|---|
-| Next.js 14 frontend | Existing Vite + React app in `design/`, wired not rebuilt | ✅ Preserved — Vite React app fully wired across Farmer, Logistics, Dark Store, Consumer, Admin, and God Mode |
+| Next.js 14 frontend | Existing Vite + React app in `frontend/`, wired not rebuilt | ✅ Preserved — Vite React app fully wired across Farmer, Logistics, Dark Store, Consumer, Admin, and God Mode |
 | Supabase (Postgres, cloud) | SQLite, one file, zero setup | ✅ Complete — Dual SQLite / Supabase PostgreSQL hybrid layer with auto-migration (Phase 9) |
 | 5 smart contracts + OpenZeppelin `AccessControl` | 1 consolidated contract, simple owner check | ✅ Complete — Modular 5-contract suite + OpenZeppelin `AccessControl` & Pausable circuit breakers (Phases 8 & 12) |
 | Deployed to Polygon Amoy (public testnet) | Deployed to a local Hardhat node | ✅ Complete — Configured for Polygon Amoy testnet (Chain ID 80002) and local node (Phase 8) |
@@ -50,7 +50,7 @@ systematically expanded across Phases 6 through 10.
 
 ```
 agri-chain/
-├── design/              EXISTING, working React frontend. Wire, don't rebuild.
+├── frontend/            EXISTING, working React frontend. Wire, don't rebuild.
 │   ├── src/
 │   │   ├── data/mockData.js         Farmer + shared mock data — THIS IS THE API CONTRACT (see §4)
 │   │   ├── Farmer/                  Farmer dashboard, registration modal, AI trust view, quarantine modal
@@ -102,7 +102,7 @@ agri-chain/
 ```
 
 `indexer/` and `web/` from the original plan don't exist as separate folders
-in the essential build — `backend/` and `design/` absorb their jobs
+in the essential build — `backend/` and `frontend/` absorb their jobs
 respectively. They can be split out later (Optional tier) if the monolith
 becomes unwieldy.
 
@@ -146,8 +146,8 @@ The boundary between the AI Trust Layer and the blockchain is defined by `Oracle
 
 ## 4. The API contract is `mockData.js` — there is no separate contract document
 
-`design/src/data/mockData.js` and `design/src/Consumer/data/consumerData.js`
-(and any other per-role mock data files under `design/src/*/data/`) already
+`frontend/src/data/mockData.js` and `frontend/src/Consumer/data/consumerData.js`
+(and any other per-role mock data files under `frontend/src/*/data/`) already
 define, in exact JavaScript object shape, every piece of data every screen in
 the app expects. This is why there is no `API-CONTRACT.md` in this repo and
 none is needed:
@@ -156,7 +156,7 @@ none is needed:
 endpoint returns must have the exact same keys, nesting, and types as the
 mock object it's replacing — no more, no fewer, no renamed fields.**
 
-Concretely: `design/src/data/mockData.js` exports `kpiMetrics`, an array of
+Concretely: `frontend/src/data/mockData.js` exports `kpiMetrics`, an array of
 objects each shaped `{id, title, value, unit, type}`. If you're wiring the
 Farmer dashboard's KPI cards to real data, your backend's `GET
 /farmer/{id}/kpis` endpoint must return JSON that is a list of objects with
@@ -395,7 +395,7 @@ In Phase 9 (O7, O10), the storage architecture evolves to support production clo
 
 ## 7. Backend endpoints (complete multi-role set)
 
-Each response shape is governed by §4 — matching the mock exports in `design/src/*/data/` exactly.
+Each response shape is governed by §4 — matching the mock exports in `frontend/src/*/data/` exactly.
 
 | Endpoint | Method | Role / Phase | Purpose & Mock Source |
 |---|---|---|---|

@@ -39,8 +39,8 @@ TIMEOUT_PER_FILE = 180
 # Files to scan per domain. Paths are relative to REPO_ROOT.
 SCAN_TARGETS = {
     "frontend": sorted(
-        [str(p.relative_to(REPO_ROOT)) for p in (REPO_ROOT / "design/src").rglob("*.jsx")]
-        + [str(p.relative_to(REPO_ROOT)) for p in (REPO_ROOT / "design/src").rglob("*.js")
+        [str(p.relative_to(REPO_ROOT)) for p in (REPO_ROOT / "frontend/src").rglob("*.jsx")]
+        + [str(p.relative_to(REPO_ROOT)) for p in (REPO_ROOT / "frontend/src").rglob("*.js")
            if ".venv" not in str(p) and "node_modules" not in str(p)]
     ),
     "backend": [

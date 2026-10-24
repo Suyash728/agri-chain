@@ -25,11 +25,11 @@ scheduled yet.
 
 | Phase | Goal | Proves |
 |---|---|---|
-| **1. Environment** | Every tool installed, `design/` runs, empty `contracts/` and `backend/` scaffolded | The three sub-projects can coexist and each starts cleanly |
+| **1. Environment** | Every tool installed, `frontend/` runs, empty `contracts/` and `backend/` scaffolded | The three sub-projects can coexist and each starts cleanly |
 | **2. Smart contract** | `AgriChainCore.sol` deployed to a local Hardhat node, with passing tests for register/transfer/record | The blockchain layer works in isolation, callable from a script |
 | **3. Backend** | FastAPI app with SQLite, the rule-based AI trust layer, and `web3.py` writing to the contract from Phase 2 | Sensor data → validation → chain, end to end, via `curl`/Postman — no UI yet |
 | **4. Simulator** | One script sending readings for one batch, with a flag to send one deliberately bad reading | Phase 3's validation actually catches something, not just passes everything through |
-| **5. Frontend wiring** | Farmer dashboard + Consumer traceability/QR screens in `design/` fetch real data from Phase 3 instead of `mockData.js` | The whole loop is visible and demoable, matching `PRD.md` §6 exactly |
+| **5. Frontend wiring** | Farmer dashboard + Consumer traceability/QR screens in `frontend/` fetch real data from Phase 3 instead of `mockData.js` | The whole loop is visible and demoable, matching `PRD.md` §6 exactly |
 
 Each phase is a hard prerequisite for the next — Phase 3 cannot meaningfully
 start until Phase 2's contract is deployed and tested, because Phase 3 needs
@@ -98,16 +98,16 @@ Phase 13: Omniscient God Mode Hub, Showcase Automation & Capstone Audit (O15) [C
   4. Connected `backend` ingestion to `trust-layer`: raw telemetry evaluated across range, plausibility, feature extraction, Isolation Forest, and integrity checks; approved `OracleHandoffPayload` events write to `AgriChainCore.recordCondition`; rejected readings enter the quarantine store.
   5. Upgraded simulator to stream using the 7 fault injection types (`trust-layer/app/services/simulator.py`).
   6. Ran automated evaluation benchmark (`/telemetry/evaluate`) and exported publication-ready figures (confusion matrix, fault detection rates, performance summary) with F1-score of 0.9722 for the IEEE paper.
-  7. Wired `design/src/Farmer/Views/AITrustView.jsx` to live AI verification checkpoints (`Cold Chain Integrity`, `GPS Telemetry Validation`, `Tamper Prevention`, `Anomaly Check`) powered by `trust-layer` audit data.
+  7. Wired `frontend/src/Farmer/Views/AITrustView.jsx` to live AI verification checkpoints (`Cold Chain Integrity`, `GPS Telemetry Validation`, `Tamper Prevention`, `Anomaly Check`) powered by `trust-layer` audit data.
 
 ### Phase 7 — Role Dashboards Wiring & Quarantine / Trust UI (O1, O11) — [COMPLETE]
-**Goal:** Connect Logistics Partner, Dark Store / Retailer, and the Quarantine Inspection UI in `design/` to live data and on-chain custody states.
+**Goal:** Connect Logistics Partner, Dark Store / Retailer, and the Quarantine Inspection UI in `frontend/` to live data and on-chain custody states.
 - **Tasks & Deliverables:**
   1. Implemented Logistics Partner backend endpoints (`GET /logistics/kpis`, `/logistics/shipments`, `/logistics/orders`) in `backend/main.py`.
   2. Wired Logistics Partner UI (`LogisticKPICards.jsx`, `LogisticDashboardView.jsx`, `TransportationView.jsx`, `ShipmentTrackingView.jsx`, and `ProcurementOrdersView.jsx`) with live telemetry and on-chain dispatch (`POST /batches/{batch_id}/custody`).
   3. Implemented Dark Store / Retailer backend endpoints (`GET /darkstore/kpis`, `/darkstore/inbound`, `/darkstore/inventory`, `POST /darkstore/receive`, `POST /darkstore/checkout`) in `backend/main.py`.
   4. Wired Dark Store UI (`DarkStoreKPICards.jsx`, `DarkStoreDashboardView.jsx`, `InboundGRNView.jsx`, and `MicroInventoryView.jsx`) with live inventory bays and inbound GRN reception.
-  5. Implemented `GET /telemetry/quarantine` and created `design/src/Farmer/Modals/QuarantineAuditModal.jsx` wired to the "View Details" button in `AITrustView.jsx`.
+  5. Implemented `GET /telemetry/quarantine` and created `frontend/src/Farmer/Modals/QuarantineAuditModal.jsx` wired to the "View Details" button in `AITrustView.jsx`.
   6. Verified end-to-end multi-role lifecycle via `backend/scripts/verify_phase7_e2e.py` (all 6 stages passing with 50.0% farmer fair price share proven).
 
 ---
@@ -152,7 +152,7 @@ Phase 13: Omniscient God Mode Hub, Showcase Automation & Capstone Audit (O15) [C
 **Goal:** Enable client-side MetaMask wallet signing per role, build consumer feedback and review loop, implement admin role governance, and build physical ESP32 sensor hardware ingestion prop.
 - **Tasks & Deliverables:**
   1. **Web3 Client-Side Wallet Integration (O2):**
-     - Created `design/src/components/WalletConnect.jsx` with `ethers.js` v6 and automatic role detection against `AccessControlRoles`.
+     - Created `frontend/src/components/WalletConnect.jsx` with `ethers.js` v6 and automatic role detection against `AccessControlRoles`.
   2. **Consumer Rating & Feedback System (O8):**
      - Implemented `POST` & `GET` `/batches/{batch_id}/reviews` and Consumer review drawer.
   3. **Admin Governance & Role Approval Flow (O9):**
@@ -182,7 +182,7 @@ Phase 13: Omniscient God Mode Hub, Showcase Automation & Capstone Audit (O15) [C
   2. **IsoLog Tamper-Evident SHA-256 Hash Chain**: Implemented cryptographic chaining (`prev_hash` → `entry_hash`) across quarantine records with runtime verification (`/quarantine/verify-integrity`).
   3. **ADOS Dynamic Quality Scoring**: Derived batch `qualityGrade` (A+, A, B, C) and freshness percentage from condition histories.
   4. **Pausable Emergency Circuit Breakers**: Integrated OpenZeppelin `Pausable` into modular contracts with admin endpoints (`/admin/contracts/pause`, `/admin/contracts/unpause`).
-  5. **Dedicated Admin Persona UI**: First-class Admin portal in `design/` for role management and audit verifications.
+  5. **Dedicated Admin Persona UI**: First-class Admin portal in `frontend/` for role management and audit verifications.
 
 ---
 

@@ -13,9 +13,9 @@ Entry point for AI coding agents. Read this file and `MEMORY.md` before touching
 4. `RULES.md` — Hard constraints on stack, money representation, and data shapes.
 5. `TASKS.md` — Task checklist with exact `DONE WHEN` verification commands.
 
-## 2. Frontend Constraints (`design/`)
-- **Wire, never recreate**: `design/` is a finished React 18 + Tailwind app. Do not install UI libraries, routers, or state managers.
-- **Style lock**: Do not modify colors, fonts, spacing, or Tailwind classes. Follow `design/DESIGN.md`.
+## 2. Frontend Constraints (`frontend/`)
+- **Wire, never recreate**: `frontend/` is a finished React 18 + Tailwind app. Do not install UI libraries, routers, or state managers.
+- **Style lock**: Do not modify colors, fonts, spacing, or Tailwind classes. Follow `frontend/DESIGN.md`.
 - **API contracts**: Replace mock imports only with `fetch()` returning the exact same data shape as `mockData.js` / `consumerData.js`.
 
 ## 3. Strict Code & Data Rules

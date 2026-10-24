@@ -59,7 +59,7 @@ uvicorn main:app --reload --port 8000
 
 ### 4. Launch Frontend
 ```bash
-cd design && npm install
+cd frontend && npm install
 npm run dev  # Open http://localhost:3000
 ```
 
@@ -91,7 +91,7 @@ python hardware/simulate_esp32.py --mode demo
 .
 ├── backend/       FastAPI REST API, dual-storage (Supabase/SQLite), Web3 relayer
 ├── contracts/     Hardhat suite: 5 modular Solidity contracts + gas benchmark
-├── design/        React 18 + Vite + Tailwind multi-role UI + God Mode Hub
+├── frontend/      React 18 + Vite + Tailwind multi-role UI + God Mode Hub
 ├── trust-layer/   AI Pre-Chain anomaly detection microservice (F1: 0.9722)
 ├── hardware/      ESP32 firmware (DHT22, GPS, GPIO 4 button) & Python simulator
 ├── simulator/     IoT multi-scenario telemetry streaming simulator

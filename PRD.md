@@ -60,8 +60,8 @@ for the reasoning behind merging Warehouse and Transporter into one
 ## 4. The UI already exists
 
 Every screen for every role above has already been designed and built as a
-working React app in `design/`. This PRD does not need to specify what any
-screen looks like — open `design/` and run it. What this PRD specifies is
+working React app in `frontend/`. This PRD does not need to specify what any
+screen looks like — open `frontend/` and run it. What this PRD specifies is
 **which of those already-built screens get connected to real data in the
 essential build**, and which stay on mock data for now (§5).
 
@@ -87,7 +87,7 @@ it more complete, more secure, or more production-like, tackled after.
 
 > **Note on E6/E8:** checked the actual mock data before writing this table —
 > neither `productJourneyTimeline` nor `traceabilityBatch` in the existing
-> `design/` app has a price field anywhere; the existing Consumer journey
+> `frontend/` app has a price field anywhere; the existing Consumer journey
 > screens are provenance-only (dates, locations, status). Displaying the
 > price trail to the consumer would mean adding a UI element that doesn't
 > exist yet, which is out of scope for "wire, don't create" (see
@@ -153,7 +153,7 @@ essential build is done, regardless of what's left in the Optional list.
 - Real payments or money movement of any kind — prices are recorded numbers,
   not transactions
 - Mainnet deployment
-- Mobile app (web only, and the existing `design/` app is already
+- Mobile app (web only, and the existing `frontend/` app is already
   mobile-responsive)
 - Supporting real farmers, real logistics companies, or real retailers as
   users — this is an academic capstone prototype

@@ -565,7 +565,7 @@ source ../.venv/bin/activate
 uvicorn main:app --reload --port 8000
 
 # Terminal 4: Launch Vite React Multi-Role Frontend
-cd design
+cd frontend
 npm run dev
 ```
 

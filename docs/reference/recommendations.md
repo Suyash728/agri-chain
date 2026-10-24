@@ -15,7 +15,7 @@
 | **3** | **Admin Role Revocation Endpoint** | `CropChain` (`CropChain.sol#L160-L184`) | Medium (Completes OpenZeppelin role lifecycle in the backend API) | **S** | `backend/main.py`, `backend/chain.py` | `POST /admin/roles/revoke` successfully revokes role on-chain and updates participant state. |
 | **4** | **Freshness & AI Trust Score Exposure** | `ADOS` (`quality factor`) | Medium (Surfaces normalized 0–100% quality score in batch traceability response for consumers) | **S** | `backend/main.py` | `GET /batches/{id}/traceability` contains `quality_score` and `freshness_pct`. |
 | **5 (Deferred)** | **Smart Contract Circuit-Breaker Emergency Pause** | `CropChain` (`pause()`) | Medium (Allows deployer to pause contract functions during an emergency) | **M** | `contracts/contracts/`, `contracts/test/` | Handled in future task backlog (`TASKS.md`). |
-| **6 (Deferred)** | **Dedicated Desktop Admin Persona UI** | `CropChain` | Medium (Full UI persona switcher for Admin) | **L** | `design/src/App.jsx`, `design/src/Admin/` | Handled in future task backlog (`TASKS.md`). |
+| **6 (Deferred)** | **Dedicated Desktop Admin Persona UI** | `CropChain` | Medium (Full UI persona switcher for Admin) | **L** | `frontend/src/App.jsx`, `frontend/src/Admin/` | Handled in future task backlog (`TASKS.md`). |
 
 ---
 
