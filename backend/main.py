@@ -2555,7 +2555,20 @@ def get_logistics_shipments():
             elif state == "SOLD":
                 dest = "Consumer Doorstep (Delivered)"
 
-            if state == "IN_TRANSIT":
+            is_quar = batch_id.startswith("QUARANTINE-") or (reading and reading["verdict"] in ("QUARANTINED", "ANOMALOUS")) or (reading and reading["temp_c"] and reading["temp_c"] >= 40.0)
+            is_salvage = batch_id.startswith("TRANSIT-DEGRADE-") or (reading and reading["verdict"] == "BREACH_MINED_ON_CHAIN")
+            is_replay = batch_id.startswith("REPLAY-")
+
+            if is_quar:
+                status_label = "Quarantined (Compressor Breakdown)"
+                badge = "bg-red-100 text-red-800 font-extrabold border border-red-300"
+            elif is_salvage:
+                status_label = "Degraded (Salvage Lot Transferred)"
+                badge = "bg-amber-100 text-amber-900 font-bold border border-amber-300"
+            elif is_replay:
+                status_label = "Halted (Sensor Spoofing Quarantined)"
+                badge = "bg-purple-100 text-purple-900 font-bold border border-purple-300"
+            elif state == "IN_TRANSIT":
                 status_label = "In Transit"
                 badge = "bg-[#2B6CB0]/15 text-[#2B6CB0]"
             elif state in ("REGISTERED", "PENDING"):
@@ -2801,6 +2814,24 @@ def get_darkstore_inbound():
             ).fetchone()
             temp_str = f"{reading['temp_c']:.1f}°C" if reading else "4.2°C"
 
+            is_quarantined = conn.execute(
+                """
+                SELECT 1 FROM readings WHERE batch_id = ? AND verdict IN ('QUARANTINED', 'ANOMALOUS')
+                UNION
+                SELECT 1 FROM spoilage_incidents WHERE batch_id = ? AND status IN ('BATCH_QUARANTINED', 'QUARANTINED')
+                UNION
+                SELECT 1 FROM quarantine q JOIN readings r ON q.reading_id = r.id WHERE r.batch_id = ?
+                """,
+                (batch_id, batch_id, batch_id),
+            ).fetchone() or batch_id.startswith("QUARANTINE-") or batch_id.startswith("REPLAY-")
+
+            if is_quarantined:
+                inbound_status = "BLOCKED (QUARANTINED)"
+                badge_class = "bg-red-100 text-red-800 border border-red-300 font-extrabold"
+            else:
+                inbound_status = "In Transit"
+                badge_class = "bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30"
+
             deliveries.append({
                 "id": f"DLY #{batch_id}",
                 "batchId": batch_id,
@@ -2815,12 +2846,13 @@ def get_darkstore_inbound():
                 "itemsCount": "1 Batch",
                 "expectedDate": "Today, 05:00 PM",
                 "dateTag": str(r["occurred_at"])[:10],
-                "status": "In Transit",
-                "badgeClass": "bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30",
+                "status": inbound_status,
+                "badgeClass": badge_class,
                 "temp": temp_str,
                 "qrSeal": f"SEAL-{batch_id[-4:] if len(batch_id) >= 4 else '88902'}",
                 "driver": "Vikram Solanki (MH-12-QX-8812)",
                 "txHash": r["tx_hash"],
+                "circuitBreaker": bool(is_quarantined),
             })
 
         return deliveries
@@ -2850,8 +2882,40 @@ def get_darkstore_inventory():
         for idx, r in enumerate(rows):
             batch_id = r["batch_id"]
             crop_lower = r["crop_name"].lower()
-            bay = "Bay A (Cold)" if crop_lower in ("tomato", "mango") else "Bay B (Ambient)"
-            bin_id = f"Bin A-{idx+1:02d}" if "Cold" in bay else f"Bin B-{idx+1:02d}"
+            to_h = (r["to_holder"] or "").lower()
+
+            is_salvage = "clearance" in to_h or "salvage" in to_h or batch_id.startswith("TRANSIT-DEGRADE-")
+            is_fefo = batch_id.startswith("FEFO-") or "strawberr" in crop_lower
+
+            spoil = conn.execute(
+                "SELECT failure_type, status, loss_goods_kg, total_loss_inr FROM spoilage_incidents WHERE batch_id = ?",
+                (batch_id,),
+            ).fetchone()
+
+            if is_salvage or (spoil and spoil["status"] == "CUSTODIAN_PENALIZED_SALVAGE_DISPATCH"):
+                bay = "Bay C (Clearance Bay)"
+                bin_id = f"Bin C-{idx+1:02d}"
+                quality = "Grade C (Salvage Lot)"
+                stock_str = "600 kg"
+                price_kg = 18
+                expiry_str = "2 Days (Quick Clearance)"
+                status_str = "Clearance Bay Allocation"
+            elif is_fefo or (spoil and spoil["status"] == "DYNAMIC_DISCOUNT_APPLIED"):
+                bay = "Bay A (Cold Fast-Pick)"
+                bin_id = f"Bin A-{idx+1:02d}"
+                quality = "Grade B (Accelerated Ripening)"
+                stock_str = "120 kg" if "strawberr" in crop_lower else "300 kg"
+                price_kg = 48
+                expiry_str = "1-2 Days (FEFO Markdown)"
+                status_str = "Dynamic Markdown (-40%)"
+            else:
+                bay = "Bay A (Cold)" if any(k in crop_lower for k in ("tomato", "mango", "apple", "fruit")) else "Bay B (Ambient)"
+                bin_id = f"Bin A-{idx+1:02d}" if "Cold" in bay else f"Bin B-{idx+1:02d}"
+                quality = "Grade A"
+                stock_str = "500 kg"
+                price_kg = 40 if "tomato" in crop_lower else (120 if "mango" in crop_lower else 25)
+                expiry_str = "8 Days"
+                status_str = "In Storage"
 
             reading = conn.execute(
                 "SELECT temp_c, humidity_pct FROM readings WHERE batch_id = ? ORDER BY id DESC LIMIT 1",
@@ -2860,22 +2924,22 @@ def get_darkstore_inventory():
             temp_str = f"{reading['temp_c']:.1f}°C" if reading else ("3.1°C" if "Cold" in bay else "18.5°C")
             hum_str = f"{int(reading['humidity_pct'])}%" if reading else ("84%" if "Cold" in bay else "55%")
 
-            cat = "Vegetables" if crop_lower in ("tomato", "potato") else ("Fruits" if crop_lower == "mango" else "Grains")
+            cat = "Vegetables" if any(k in crop_lower for k in ("tomato", "potato", "spinach", "capsicum")) else ("Fruits" if any(k in crop_lower for k in ("mango", "apple", "strawberr", "banana")) else "Grains")
 
             bins.append({
                 "binId": bin_id,
                 "bay": bay,
                 "batchId": batch_id,
-                "item": f"Fresh Farm {r['crop_name'].capitalize()}",
+                "item": f"Fresh Farm {r['crop_name'].title()}",
                 "category": cat,
-                "stock": "500 kg",
+                "stock": stock_str,
                 "capacity": "600 kg",
                 "temp": temp_str,
                 "humidity": hum_str,
-                "quality": "Grade A",
-                "expiry": "8 Days",
-                "status": "In Storage",
-                "pricePerKg": 40,
+                "quality": quality,
+                "expiry": expiry_str,
+                "status": status_str,
+                "pricePerKg": price_kg,
                 "txHash": r["tx_hash"],
             })
 
@@ -2893,6 +2957,24 @@ def post_darkstore_receive(payload: DarkStoreReceiveRequest):
         batch_row = conn.execute("SELECT * FROM batches WHERE batch_id = ?", (batch_id,)).fetchone()
         if not batch_row:
             raise HTTPException(status_code=404, detail=f"Batch {batch_id} not found")
+
+        # Enforce Food Safety Circuit Breaker: block inbound receipt if quarantined or breached
+        is_quarantined = conn.execute(
+            """
+            SELECT 1 FROM readings WHERE batch_id = ? AND verdict IN ('QUARANTINED', 'ANOMALOUS')
+            UNION
+            SELECT 1 FROM spoilage_incidents WHERE batch_id = ? AND status IN ('BATCH_QUARANTINED', 'QUARANTINED')
+            UNION
+            SELECT 1 FROM quarantine q JOIN readings r ON q.reading_id = r.id WHERE r.batch_id = ?
+            """,
+            (batch_id, batch_id, batch_id),
+        ).fetchone() or batch_id.startswith("QUARANTINE-") or batch_id.startswith("REPLAY-")
+
+        if is_quarantined:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Circuit Breaker Active: Inbound receipt blocked! Batch {batch_id} is quarantined due to cold-chain thermal failure.",
+            )
 
         last_event = conn.execute(
             "SELECT to_holder, state FROM custody_events WHERE batch_id = ? ORDER BY id DESC LIMIT 1",
@@ -3177,9 +3259,14 @@ def get_darkstore_expiry_alerts():
             crop_lower = crop.lower()
 
             breach = conn.execute(
-                "SELECT COUNT(*) as cnt FROM readings WHERE batch_id = ? AND verdict = 'BREACH'",
+                "SELECT COUNT(*) as cnt FROM readings WHERE batch_id = ? AND (verdict LIKE 'BREACH%%' OR verdict = 'QUARANTINED')",
                 (batch_id,)
             ).fetchone()["cnt"]
+
+            spoil = conn.execute(
+                "SELECT failure_type, status, total_loss_inr FROM spoilage_incidents WHERE batch_id = ?",
+                (batch_id,)
+            ).fetchone()
 
             try:
                 h_date = datetime.strptime(str(r["harvest_date"])[:10], "%Y-%m-%d").date()
@@ -3187,7 +3274,61 @@ def get_darkstore_expiry_alerts():
             except Exception:
                 days_old = 1
 
-            if breach > 0 or days_old >= 7:
+            if breach > 0 or (spoil and spoil["status"] == "BATCH_QUARANTINED") or batch_id.startswith("QUARANTINE-"):
+                risk = "Critical"
+                left_str = "0 Days (Quarantine Lock)"
+                badge_class = "bg-[#FEE2E2] text-[#991B1B] border border-red-300 font-extrabold"
+                critical_items.append({
+                    "batchId": batch_id,
+                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "badge": "Quarantine Alert",
+                    "badgeClass": badge_class,
+                    "location": f"Quarantine Bay • Bin Q-{idx+1:02d}",
+                    "qty": "800 kg" if "tomato" in crop_lower else "500 kg",
+                    "left": left_str,
+                    "leftColor": "text-[#991B1B]",
+                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "risk": risk,
+                    "expiryDate": "Immediate Quarantine Lock",
+                    "breachDetected": True,
+                })
+            elif spoil and spoil["status"] == "CUSTODIAN_PENALIZED_SALVAGE_DISPATCH":
+                risk = "High"
+                left_str = "2 Days Left (Salvage Lot Bay)"
+                badge_class = "bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30"
+                high_items.append({
+                    "batchId": batch_id,
+                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "badge": "Salvage Lot (-55%)",
+                    "badgeClass": badge_class,
+                    "location": f"Clearance Bay C • Bin C-{idx+1:02d}",
+                    "qty": "600 kg",
+                    "left": left_str,
+                    "leftColor": "text-[#B85C38]",
+                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "risk": risk,
+                    "expiryDate": "2 Days (Quick Clearance)",
+                    "breachDetected": True,
+                })
+            elif spoil and spoil["status"] == "DYNAMIC_DISCOUNT_APPLIED":
+                risk = "Medium"
+                left_str = "1-2 Days (FEFO Markdown: -40%)"
+                badge_class = "bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]"
+                medium_items.append({
+                    "batchId": batch_id,
+                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "badge": "40% Dynamic Markdown",
+                    "badgeClass": badge_class,
+                    "location": f"Cold Bay A • Bin A-{idx+1:02d}",
+                    "qty": "120 kg",
+                    "left": left_str,
+                    "leftColor": "text-[#1D4ED8]",
+                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "risk": risk,
+                    "expiryDate": "1-2 Days (FEFO Clearance)",
+                    "breachDetected": False,
+                })
+            elif days_old >= 7:
                 risk = "Critical"
                 left_str = "0-3 Days Left (Breach Action)"
                 badge_class = "bg-[#FEE2E2] text-[#991B1B]"
@@ -4138,7 +4279,20 @@ def get_farmer_shipments():
             hum = f"{reading['humidity_pct']:.0f}%" if reading else "88%"
             gps_str = f"Lat {gps['latitude']:.2f}, Lon {gps['longitude']:.2f}" if gps else "NH-48 Corridor"
 
-            if state == "IN_TRANSIT":
+            is_quar = b_id.startswith("QUARANTINE-") or (reading and reading["verdict"] in ("QUARANTINED", "ANOMALOUS")) or (reading and reading["temp_c"] and reading["temp_c"] >= 40.0)
+            is_salvage = b_id.startswith("TRANSIT-DEGRADE-") or (reading and reading["verdict"] == "BREACH_MINED_ON_CHAIN")
+            is_replay = b_id.startswith("REPLAY-")
+
+            if is_quar:
+                status = "Quarantined in Transit (Carrier Fault)"
+                status_type = "quarantined"
+            elif is_salvage:
+                status = "Delivered (Salvage Lot Transferred)"
+                status_type = "salvage"
+            elif is_replay:
+                status = "Awaiting Pickup (Sensor Alert)"
+                status_type = "alert"
+            elif state == "IN_TRANSIT":
                 status = "In Transit"
                 status_type = "intransit"
             elif state in ("IN_STORAGE", "AT_RETAIL", "SOLD"):
@@ -4461,6 +4615,33 @@ def get_logistics_transactions():
         ).fetchall()
 
         txns = []
+        # 1. Fetch carrier penalties from spoilage incidents
+        penalties = conn.execute(
+            """
+            SELECT s.id, s.incident_id, s.batch_id, s.crop_name, s.total_loss_inr,
+                   s.custodian_at_fault, s.created_at, s.details, s.status
+            FROM spoilage_incidents s
+            WHERE s.total_loss_inr > 0 AND s.custodian_at_fault IS NOT NULL
+            ORDER BY s.id DESC
+            LIMIT 10
+            """
+        ).fetchall()
+
+        for p in penalties:
+            p_amt = int(p["total_loss_inr"])
+            txns.append({
+                "id": f"SLA-{p['id']:04d}",
+                "batchId": p["batch_id"],
+                "crop": p["crop_name"].title(),
+                "type": "SLA Carrier Penalty Deduction",
+                "from": p["custodian_at_fault"],
+                "to": "AgriChain Escrow & Farmer Settlement",
+                "amount": f"- ₹ {p_amt:,}",
+                "status": "Enforced On-Chain",
+                "txHash": f"0x{hashlib.sha256(p['incident_id'].encode()).hexdigest()}",
+                "date": str(p["created_at"])[:10],
+            })
+
         for e in events:
             amt = e["price_paise"] // 100
             txns.append({
@@ -4598,6 +4779,7 @@ def get_consumer_products():
         # Comprehensive catalog metadata with valid, verified image paths
         catalog_defs = [
             # Fruits
+            {"key": "strawberr", "name": "Fresh Mahabaleshwar Strawberries", "cat": "fruits", "img": "/images/fruits_ref.png", "price": 48, "original_price": 80, "weight": "250 g box", "best": True},
             {"key": "mango", "name": "Ratnagiri Alphonso Mango", "cat": "fruits", "img": "/images/mango.png", "price": 120, "weight": "1 kg", "best": True},
             {"key": "apple", "name": "Shimla Royal Apple", "cat": "fruits", "img": "/images/apple.png", "price": 180, "weight": "1 kg (4-5 pcs)", "best": False},
             {"key": "banana", "name": "Jalgaon Robusta Banana", "cat": "fruits", "img": "/images/banana.png", "price": 50, "weight": "1 kg (6-7 pcs)", "best": True},
@@ -4660,7 +4842,27 @@ def get_consumer_products():
                 ).fetchone()
                 rating = round(rev_stat["avg_rating"], 1) if rev_stat and rev_stat["cnt"] > 0 else 4.7
                 rev_count = rev_stat["cnt"] if rev_stat and rev_stat["cnt"] > 0 else (18 + idx * 4)
+
+                spoil_info = conn.execute(
+                    "SELECT status FROM spoilage_incidents WHERE batch_id = ?",
+                    (b_id,)
+                ).fetchone()
+
+                final_price = item["price"]
+                original_price = item.get("original_price")
+                display_name = item["name"]
+
+                if spoil_info and spoil_info["status"] == "DYNAMIC_DISCOUNT_APPLIED":
+                    final_price = 48
+                    original_price = 80
+                elif b_id.startswith("TRANSIT-DEGRADE-") or (spoil_info and spoil_info["status"] == "CUSTODIAN_PENALIZED_SALVAGE_DISPATCH"):
+                    final_price = 22
+                    original_price = 55
+                    display_name = "Clearance Grade Cluster Tomatoes"
             else:
+                final_price = item["price"]
+                original_price = item.get("original_price")
+                display_name = item["name"]
                 b_id = f"BATCH-CAT-{key.upper()}-01"
                 farm_clean = "Sahyadri Organic Cluster, Maharashtra"
                 farmer = "Rahul Patil"
@@ -4683,9 +4885,10 @@ def get_consumer_products():
 
             products.append({
                 "id": f"prod-{key}",
-                "name": item["name"],
+                "name": display_name,
                 "weight": item["weight"],
-                "price": item["price"],
+                "price": final_price,
+                "originalPrice": original_price,
                 "rating": rating,
                 "reviewsCount": rev_count,
                 "category": item["cat"],
@@ -5705,7 +5908,7 @@ def post_demo_scenario(scenario_id: str):
             conn.execute(
                 """
                 INSERT INTO batches (batch_id, crop_name, origin_farm, harvest_date, farmer_name)
-                VALUES (?, 'Vine-Ripened Cluster Tomatoes', 'Nashik Valley Cluster #4 ||cat=vegetables||qty=1.00||price=40000.00', '2026-10-20', 'Rahul Patil')
+                VALUES (?, 'Vine-Ripened Cluster Tomatoes', 'Nashik Valley Cluster #4 ||cat=vegetables||qty=1.00||price=20000.00', '2026-10-20', 'Rahul Patil')
                 """,
                 (b_id,),
             )

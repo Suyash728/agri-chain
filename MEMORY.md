@@ -2724,3 +2724,53 @@ pm run build passed cleanly with 0 errors.
 - Ran backend pytest: `pytest tests/` (all 16 tests passed).
 - Ran smart contract tests: `cd contracts && npx hardhat test` (all 22 tests passed).
 - Ran frontend production build: `cd frontend && npm run build` (built cleanly in 2.87s).
+
+
+---
+
+## Task: Audit and Synchronize Multi-Role Live Reactions for All 5 1-Click Demo Lab Scenarios
+
+**What was done:**
+- Performed an end-to-end multi-role audit of all 5 1-click showcase scenarios in Demo Lab (`ShowcaseDrawer.jsx`) against all 5 system user roles (Farmer, Logistics Partner, Dark Store Hub, Consumer, Admin Portal):
+  1. **Scenario 1: The Golden Harvest (`golden-path`)**:
+     - 100% compliant journey from Ratnagiri orchard to customer doorstep.
+     - Farmer: Harvest registered, status `Delivered`, trust score 95/100, payout credited.
+     - Logistics: State `SOLD`, status `Delivered & Sold`, nominal temp 4.4°C, custody settlements settled on-chain.
+     - Dark Store: Inbound completed, transferred to retail fulfillment and doorstep delivery.
+     - Consumer: Available in marketplace (`Ratnagiri Alphonso Mango`, ₹120), full 4-stage verified QR passport with 5-star customer review.
+  2. **Scenario 2: In-Transit Thermal Spoilage & Multi-Role Impact (`transit-degradation`)**:
+     - Severe 26.5°C transit thermal breach with 400 kg spoiled and 600 kg salvaged.
+     - Logistics: SLA Carrier Penalty Deduction `- ₹ 16,000` enforced on-chain and surfaced in `TransactionsView.jsx` with red alert badge; status updated to `Degraded (Salvage Lot Transferred)`.
+     - Farmer: Guaranteed farm-gate payout protected (₹20,000 in revenue), zero liability affirmed in Spoilage & Financial Deductions ledger.
+     - Dark Store: Salvaged 600 kg allocated directly to `Bay C (Clearance Bay)` as `Grade C (Salvage Lot)` at ₹18/kg salvage cost; flagged in Expiry Alerts as high-priority clearance lot.
+     - Consumer: Listed as `Clearance Grade Cluster Tomatoes` at steep markdown (₹22/kg down from ₹55/kg), with transparent on-chain transit breach disclosure in QR passport.
+  3. **Scenario 3: Highway Reefer Breakdown & Quarantine (`thermal-quarantine`)**:
+     - 48.0°C compressor failure triggers automated IsoLog cryptographic quarantine.
+     - Farmer: Shipment status marked `Quarantined in Transit (Carrier Fault)` with red badge.
+     - Logistics: Shipment marked `Quarantined (Compressor Breakdown)` with red border; SLA penalty `- ₹ 32,000` recorded.
+     - Dark Store: Inbound delivery flagged `BLOCKED (QUARANTINED)` with active circuit breaker; `post_darkstore_receive` strictly blocks intake attempts with HTTP 400.
+     - Consumer: Produce strictly filtered out of consumer marketplace; checkout blocked by food safety circuit breaker.
+  4. **Scenario 4: Sensor Replay & Spoofing Defense (`sensor-replay-fraud`)**:
+     - Replay of stale 3.5°C packet isolated before oracle submission.
+     - Farmer: AI Trust Score dynamically drops to 87/100, quarantine audit log tracks cryptographic fraud.
+     - Logistics & Dark Store: Telemetry quarantined, blocked from oracle handoff.
+  5. **Scenario 5: FEFO Spoilage & Dynamic Discounting (`fefo-discount`)**:
+     - Accelerated ripening in Bay 3 triggers automated -40% markdown.
+     - Dark Store: Allocated to `Bay A (Cold Fast-Pick)` as `Grade B (Accelerated Ripening)` at ₹48/kg; flagged in Expiry Alerts with `40% Dynamic Markdown` (`1-2 Days (FEFO Markdown: -40%)`).
+     - Consumer: Available in marketplace as `Fresh Mahabaleshwar Strawberries` at discounted clearance price `₹48` (down from `₹80`).
+     - Spoilage Accounting: Logged as `DYNAMIC_DISCOUNT_APPLIED` saving 120 kg of food waste.
+- **Frontend Live Event Wiring**:
+  - `TransactionsView.jsx`: Added `agrichain-data-updated` and `agrichain-data-reset` event listeners and stylized negative penalty amounts with `text-rose-600` and rose status badges.
+  - `ShipmentsView.jsx`: Added distinct red and amber badge styling for quarantined and salvage shipment statuses.
+
+**Files changed:**
+- `backend/main.py`
+- `frontend/src/Logistic_Partner/Views/TransactionsView.jsx`
+- `frontend/src/Farmer/Views/ShipmentsView.jsx`
+- `MEMORY.md`
+
+**Verified:**
+- Ran automated multi-role audit script (`audit_scenarios_multi_role.py`) verifying live responses for all 5 scenarios across all 5 roles.
+- Ran backend test suite: `pytest tests/` (all 16 tests passed).
+- Ran smart contract test suite: `cd contracts && npx hardhat test` (all 22 tests passed).
+- Ran frontend production build: `cd frontend && npm run build` (compiled 1,817 modules in 2.74s with 0 errors).

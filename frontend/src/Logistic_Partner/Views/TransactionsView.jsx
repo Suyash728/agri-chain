@@ -5,7 +5,7 @@ export const TransactionsView = () => {
   const [spoilageData, setSpoilageData] = useState(null);
   const [liveTransactions, setLiveTransactions] = useState([]);
 
-  useEffect(() => {
+  const loadLedgerData = () => {
     fetch('http://localhost:8000/incidents/spoilage')
       .then((res) => res.json())
       .then((data) => setSpoilageData(data))
@@ -25,6 +25,16 @@ export const TransactionsView = () => {
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadLedgerData();
+    window.addEventListener('agrichain-data-updated', loadLedgerData);
+    window.addEventListener('agrichain-data-reset', loadLedgerData);
+    return () => {
+      window.removeEventListener('agrichain-data-updated', loadLedgerData);
+      window.removeEventListener('agrichain-data-reset', loadLedgerData);
+    };
   }, []);
 
   const txList = liveTransactions;
@@ -127,8 +137,12 @@ export const TransactionsView = () => {
                   <tr key={i} className="hover:bg-[#FAF7F0]/50 transition-colors">
                     <td className="p-4 font-bold text-[#2D2620]">{t.desc}</td>
                     <td className="p-4 text-center text-[#8C8275]">{t.date}</td>
-                    <td className="p-4 text-right font-extrabold text-[#2D2620]">{t.amount}</td>
-                    <td className="p-4 text-right"><span className="px-2.5 py-1 rounded text-xs font-bold bg-[#556B2F]/15 text-[#556B2F]">{t.status}</span></td>
+                    <td className={`p-4 text-right font-extrabold ${t.amount && t.amount.startsWith('-') ? 'text-rose-600' : 'text-[#2D2620]'}`}>{t.amount}</td>
+                    <td className="p-4 text-right">
+                      <span className={`px-2.5 py-1 rounded text-xs font-bold ${t.amount && t.amount.startsWith('-') ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-[#556B2F]/15 text-[#556B2F]'}`}>
+                        {t.status}
+                      </span>
+                    </td>
                   </tr>
                 ))
               )}

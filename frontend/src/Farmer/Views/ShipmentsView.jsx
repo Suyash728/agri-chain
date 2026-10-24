@@ -160,7 +160,11 @@ export const ShipmentsView = ({ onBack, onViewJourney }) => {
                       )}
                     </div>
                     <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                      ship.status === 'In Transit' 
+                      ship.status && ship.status.toLowerCase().includes('quarantin')
+                        ? 'bg-red-100 text-red-800 border border-red-300 font-extrabold'
+                        : ship.status && ship.status.toLowerCase().includes('salvage')
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300 font-extrabold'
+                        : ship.status === 'In Transit' 
                         ? 'bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30' 
                         : ship.status === 'Delivered' 
                         ? 'bg-[#EBF3E8] text-[#3D5220] border border-[#3D5220]/30'
