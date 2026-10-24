@@ -201,6 +201,24 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
         return o.status === filter;
       });
 
+  const handleExportLedgerCSV = () => {
+    const headers = ['Transaction Description', 'Date', 'Amount', 'Status'];
+    const rows = txs.map(t => [
+      `"${(t.desc || '').replace(/"/g, '""')}"`,
+      `"${t.date || ''}"`,
+      `"${(t.amount || '').replace(/"/g, '""')}"`,
+      `"${t.status || 'Settled'}"`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `agrichain_logistics_ledger_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       
@@ -343,7 +361,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                 <p className="text-xs text-[#666057]">Total Monthly Volume: ₹ {totalTxVolume.toLocaleString('en-IN')} | Freight & Storage Ledger</p>
               </div>
               <button 
-                onClick={() => alert('Financial ledger statement downloaded!')}
+                onClick={handleExportLedgerCSV}
                 className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
               >
                 <Download className="w-3.5 h-3.5" />

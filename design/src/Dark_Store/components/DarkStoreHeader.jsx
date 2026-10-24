@@ -1,12 +1,28 @@
-import React, { useState } from 'react';
-import { Bell, Calendar, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, Calendar, ChevronDown, Check } from 'lucide-react';
 import { useNotificationCount } from '../../utils/useNotificationCount';
+import { DateRangePicker } from '../../components/DateRangePicker';
 
 export const DarkStoreHeader = ({ onOpenNotifications, unreadCount }) => {
-  const [selectedStore, setSelectedStore] = useState('Nashik Central Store');
+  const [selectedStore, setSelectedStore] = useState(() => {
+    try {
+      return localStorage.getItem('agrichain_selected_darkstore') || 'Pune Hub - DS-402';
+    } catch {
+      return 'Pune Hub - DS-402';
+    }
+  });
   const [isStoreOpen, setIsStoreOpen] = useState(false);
   const { count: dynamicCount, markAllAsRead } = useNotificationCount('darkstore');
   const count = unreadCount !== undefined ? unreadCount : dynamicCount;
+
+  const handleSelectStore = (store) => {
+    setSelectedStore(store);
+    setIsStoreOpen(false);
+    try {
+      localStorage.setItem('agrichain_selected_darkstore', store);
+    } catch {}
+    window.dispatchEvent(new CustomEvent('agrichain-store-changed', { detail: { store } }));
+  };
 
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full pt-1 pb-2">
@@ -17,9 +33,9 @@ export const DarkStoreHeader = ({ onOpenNotifications, unreadCount }) => {
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2D2620]">
-            Rahul Patil
+            Anand Deshmukh
           </h1>
-          <span className="text-xl">🌿</span>
+          <span className="text-xl">🏬</span>
         </div>
         <p className="text-xs text-[#666057] mt-1 font-medium">
           Here's what's happening in your dark store today.
@@ -45,11 +61,8 @@ export const DarkStoreHeader = ({ onOpenNotifications, unreadCount }) => {
           )}
         </button>
 
-        {/* Date Pill */}
-        <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white border border-[#E6E1D5] shadow-xs text-xs font-bold text-[#2D2620]">
-          <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-          <Calendar className="w-4 h-4 text-[#666057]" />
-        </div>
+        {/* Interactive Date Range Picker */}
+        <DateRangePicker initialPeriod="today" />
 
         {/* Store Selector Dropdown Pill */}
         <div className="relative">
@@ -63,19 +76,22 @@ export const DarkStoreHeader = ({ onOpenNotifications, unreadCount }) => {
           </button>
 
           {isStoreOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl border border-[#E6E1D5] shadow-xl py-2 z-30">
-              {['Nashik Central Store', 'Pune Hub - DS-402', 'Mumbai Express - DS-108'].map((store) => (
+            <div className="absolute right-0 mt-2 w-60 bg-white rounded-2xl border border-[#E6E1D5] shadow-xl py-2 z-50">
+              <div className="px-3 py-1 border-b border-[#E6E1D5]/60 mb-1">
+                <span className="text-[10px] font-extrabold text-[#8C8275] uppercase tracking-wider block">
+                  Select Active Facility
+                </span>
+              </div>
+              {['Pune Hub - DS-402', 'Nashik Central Store', 'Mumbai Express - DS-108'].map((store) => (
                 <button
                   key={store}
-                  onClick={() => {
-                    setSelectedStore(store);
-                    setIsStoreOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-xs font-semibold hover:bg-[#FAF7F0] transition-colors cursor-pointer ${
-                    selectedStore === store ? 'text-[#354424] font-black bg-[#FAF7F0]' : 'text-[#2D2620]'
+                  onClick={() => handleSelectStore(store)}
+                  className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                    selectedStore === store ? 'text-[#354424] font-black bg-[#FAF7F0]' : 'text-[#2D2620] hover:bg-[#FAF7F0]'
                   }`}
                 >
-                  {store}
+                  <span>{store}</span>
+                  {selectedStore === store && <Check className="w-3.5 h-3.5 text-[#354424]" />}
                 </button>
               ))}
             </div>

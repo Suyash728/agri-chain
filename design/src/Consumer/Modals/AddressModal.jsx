@@ -5,10 +5,10 @@ export const AddressModal = ({ isOpen, onClose, currentAddress, onSelectAddress 
   if (!isOpen) return null;
 
   const addresses = [
-    { id: 'a1', city: 'Nashik, Maharashtra', area: 'Central Store Zone, College Road, Nashik - 422005' },
-    { id: 'a2', city: 'Pune, Maharashtra', area: 'Kothrud Farm Hub, Karve Road, Pune - 411038' },
-    { id: 'a3', city: 'Mumbai, Maharashtra', area: 'Bandra West Fresh Express, Mumbai - 400050' },
-    { id: 'a4', city: 'Satara, Maharashtra', area: 'Satara Farmer Collective, Satara - 415001' }
+    { id: 'a1', city: 'Bandra West, Mumbai', area: 'Flat 402, Green Valley Apartments, Hill Road - 400050' },
+    { id: 'a2', city: 'Lower Parel, Mumbai', area: 'Tech Park, Tower B, 5th Floor - 400013' },
+    { id: 'a3', city: 'Nashik, Maharashtra', area: 'Central Store Zone, College Road, Nashik - 422005' },
+    { id: 'a4', city: 'Pune, Maharashtra', area: 'Kothrud Farm Hub, Karve Road, Pune - 411038' }
   ];
 
   return (
@@ -26,11 +26,17 @@ export const AddressModal = ({ isOpen, onClose, currentAddress, onSelectAddress 
 
         <div className="flex flex-col gap-2.5">
           {addresses.map((addr) => {
-            const isSelected = currentAddress.includes(addr.city.split(',')[0]);
+            const isSelected = currentAddress.toLowerCase().includes(addr.city.toLowerCase().split(',')[0]);
             return (
               <div
                 key={addr.id}
                 onClick={() => {
+                  try {
+                    localStorage.setItem('agrichain_delivery_address', addr.city);
+                  } catch {}
+                  window.dispatchEvent(new CustomEvent('agrichain-address-changed', {
+                    detail: { address: addr.city }
+                  }));
                   onSelectAddress(addr.city);
                   onClose();
                 }}

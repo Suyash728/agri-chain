@@ -57,15 +57,16 @@ export const ScanProductView = ({ onBack, onScanSuccess, onEnterCodeClick, batch
           className="bg-[#181C14] rounded-3xl h-[380px] relative p-6 border-2 border-[#2D3B1E] flex flex-col items-center justify-center overflow-hidden cursor-pointer shadow-inner group"
           title="Click to Simulate Instant QR Recognition"
         >
-          {/* Animated Scanning Beam Line */}
-          <div className="absolute inset-x-6 h-0.5 bg-emerald-400 shadow-[0_0_15px_#34d399] animate-bounce top-1/3 z-10" />
-
           {/* Corner Frame Guides with Real Large Scannable QR Code Artwork */}
-          <div className="w-64 h-64 sm:w-72 sm:h-72 relative border-2 border-dashed border-emerald-500/50 rounded-3xl flex flex-col items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-            <div className="absolute -top-1 -left-1 w-7 h-7 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl" />
-            <div className="absolute -top-1 -right-1 w-7 h-7 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
-            <div className="absolute -bottom-1 -left-1 w-7 h-7 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 border-b-4 border-r-4 border-emerald-400 rounded-br-xl" />
+          <div className="w-64 h-64 sm:w-72 sm:h-72 relative border-2 border-dashed border-emerald-500/50 rounded-3xl flex flex-col items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-hidden shadow-2xl">
+            {/* Animated Laser Scanning Beam constrained strictly inside viewfinder */}
+            <div className="absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_15px_#34d399] animate-bounce top-1/2 z-20 pointer-events-none" />
+
+            {/* Viewfinder HUD Corners */}
+            <div className="absolute top-2 left-2 w-7 h-7 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl z-10 pointer-events-none" />
+            <div className="absolute top-2 right-2 w-7 h-7 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl z-10 pointer-events-none" />
+            <div className="absolute bottom-2 left-2 w-7 h-7 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl z-10 pointer-events-none" />
+            <div className="absolute bottom-2 right-2 w-7 h-7 border-b-4 border-r-4 border-emerald-400 rounded-br-xl z-10 pointer-events-none" />
 
             {currentBatch ? (
               <div className="flex flex-col items-center gap-2">

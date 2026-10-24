@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bell } from 'lucide-react';
+import { useNotificationCount } from './utils/useNotificationCount';
 import { Sidebar as FarmerSidebar } from './Farmer/components/Sidebar';
 import { BottomNav as FarmerBottomNav } from './Farmer/components/BottomNav';
 import { Header as FarmerHeader } from './Farmer/components/Header';
@@ -253,6 +254,8 @@ export default function App() {
     admin: 'System Administrator',
   };
 
+  const { count: unreadNotifsCount } = useNotificationCount(activeRole);
+
   const handleLogout = () => {
     alert(`Logged out of ${ROLE_NAMES[activeRole] || activeRole}'s AgriChain Account.`);
   };
@@ -352,6 +355,21 @@ export default function App() {
             </button>
 
             <div className="h-5 w-px bg-[#E6E1D5] mx-1 flex-shrink-0" />
+
+            {/* Universal Notification Bell with Unread Badge */}
+            <button
+              onClick={() => setIsNotificationsOpen(true)}
+              className="relative p-1.5 h-[32px] w-[32px] rounded-xl bg-white hover:bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] cursor-pointer transition-colors shadow-2xs flex-shrink-0"
+              title="View Live Notifications & Alerts"
+            >
+              <Bell className="w-4 h-4 text-[#354424]" />
+              {unreadNotifsCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#354424] text-white text-[9px] font-black flex items-center justify-center border border-white">
+                  {unreadNotifsCount}
+                </span>
+              )}
+            </button>
+
             <WalletConnect activeRole={activeRole} />
           </div>
         </header>

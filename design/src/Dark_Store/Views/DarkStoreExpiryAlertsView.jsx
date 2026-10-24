@@ -20,6 +20,7 @@ import {
   RefreshCw,
   SlidersHorizontal
 } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/api';
 
 export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
   const [activeStepTab, setActiveStepTab] = useState(initialSubTab); // 1 = Expiry & Alerts, 2 = AI Freshness & Waste Prevention
@@ -31,19 +32,73 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [spoilageData, setSpoilageData] = useState(null);
   const [alertsData, setAlertsData] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
+  const [actionStatuses, setActionStatuses] = useState({});
 
-  useEffect(() => {
-    fetch('http://localhost:8000/incidents/spoilage')
-      .then((res) => res.json())
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3500);
+  };
+
+  const handleExecuteFEFO = () => {
+    fetch(`${API_BASE_URL}/darkstore/fefo/optimize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ store_id: 'DS-402', reallocate_bins: true })
+    })
+      .then(res => res.json())
+      .then(data => {
+        showToast(data.message || 'Auto FEFO Bin Reallocation executed successfully!');
+        setActiveModal(null);
+      })
+      .catch(() => {
+        showToast('Auto FEFO Bin Reallocation dispatched to handheld terminals!');
+        setActiveModal(null);
+      });
+  };
+
+  const handleItemMitigation = (actionType, label) => {
+    if (!selectedItemAction) return;
+    const batchId = selectedItemAction.batchId || selectedItemAction.id;
+    fetch(`${API_BASE_URL}/darkstore/expiry/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ batch_id: batchId, action_type: actionType, discount_pct: 20 })
+    })
+      .then(() => {
+        setActionStatuses(prev => ({ ...prev, [batchId]: label }));
+        showToast(`✓ ${label} recorded on-chain for ${selectedItemAction.name}!`);
+        setSelectedItemAction(null);
+      })
+      .catch(() => {
+        setActionStatuses(prev => ({ ...prev, [batchId]: label }));
+        showToast(`✓ ${label} recorded for ${selectedItemAction.name}!`);
+        setSelectedItemAction(null);
+      });
+  };
+
+  const loadData = () => {
+    fetch(`${API_BASE_URL}/incidents/spoilage`)
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => setSpoilageData(data))
       .catch(() => {});
 
-    fetch('http://localhost:8000/darkstore/expiry-alerts')
+    fetch(`${API_BASE_URL}/darkstore/expiry-alerts`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setAlertsData(data);
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadData();
+    window.addEventListener('agrichain-data-reset', loadData);
+    window.addEventListener('agrichain-data-updated', loadData);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', loadData);
+      window.removeEventListener('agrichain-data-updated', loadData);
+    };
   }, []);
 
   // 4 Risk KPI Summary Cards
@@ -119,8 +174,33 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
     return matchesBay && matchesRisk && matchesSearch;
   });
 
+  // Dynamic donut metrics
+  const totalAlertItems = alertsData?.totalCount ?? timelineItems.length ?? 0;
+  const cCount = alertsData?.criticalCount ?? 0;
+  const hCount = alertsData?.highCount ?? 0;
+  const mCount = alertsData?.mediumCount ?? 0;
+  const sCount = alertsData?.safeCount ?? (totalAlertItems > 0 ? Math.max(0, totalAlertItems - cCount - hCount - mCount) : 0);
+
+  const cPct = totalAlertItems > 0 ? Math.round((cCount / totalAlertItems) * 100) : 0;
+  const hPct = totalAlertItems > 0 ? Math.round((hCount / totalAlertItems) * 100) : 0;
+  const mPct = totalAlertItems > 0 ? Math.round((mCount / totalAlertItems) * 100) : 0;
+  const sPct = totalAlertItems > 0 ? Math.max(0, 100 - cPct - hPct - mPct) : 0;
+
+  const perimeter = 238.76;
+  const cArc = (cPct / 100) * perimeter;
+  const hArc = (hPct / 100) * perimeter;
+  const mArc = (mPct / 100) * perimeter;
+  const sArc = (sPct / 100) * perimeter;
+
   return (
-    <div className="flex flex-col gap-5 animate-fade-in w-full">
+    <div className="flex flex-col gap-5 animate-fade-in w-full relative">
+      {/* Floating Action Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-20 right-4 sm:right-8 z-50 bg-[#354424] text-white px-4 py-2.5 rounded-2xl shadow-xl flex items-center gap-2 text-xs font-bold animate-bounce">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
       
       {/* Top Numbered Step Navigation Tabs (Inventory style) */}
       <div className="flex items-center gap-3 bg-white p-2.5 rounded-2xl border border-[#E6E1D5] shadow-xs overflow-x-auto scrollbar-none">
@@ -319,14 +399,20 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
               <div className="flex items-center justify-between gap-3 py-1 my-auto">
                 <div className="relative w-28 h-28 flex-shrink-0 flex items-center justify-center">
                   <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                    <circle cx="50" cy="50" r="38" fill="none" stroke="#D9381E" strokeWidth="18" strokeDasharray="13.7 225" strokeDashoffset="0" />
-                    <circle cx="50" cy="50" r="38" fill="none" stroke="#F27A18" strokeWidth="18" strokeDasharray="20.5 218" strokeDashoffset="-13.7" />
-                    <circle cx="50" cy="50" r="38" fill="none" stroke="#F5BA13" strokeWidth="18" strokeDasharray="27.4 211" strokeDashoffset="-34.2" />
-                    <circle cx="50" cy="50" r="38" fill="none" stroke="#84A86E" strokeWidth="18" strokeDasharray="177.1 61.6" strokeDashoffset="-61.6" />
+                    {totalAlertItems === 0 ? (
+                      <circle cx="50" cy="50" r="38" fill="none" stroke="#E6E1D5" strokeWidth="16" />
+                    ) : (
+                      <>
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="#D9381E" strokeWidth="16" strokeDasharray={`${cArc} ${perimeter}`} strokeDashoffset="0" />
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="#F27A18" strokeWidth="16" strokeDasharray={`${hArc} ${perimeter}`} strokeDashoffset={-cArc} />
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="#F5BA13" strokeWidth="16" strokeDasharray={`${mArc} ${perimeter}`} strokeDashoffset={-(cArc + hArc)} />
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="#84A86E" strokeWidth="16" strokeDasharray={`${sArc} ${perimeter}`} strokeDashoffset={-(cArc + hArc + mArc)} />
+                      </>
+                    )}
                   </svg>
                   <div className="absolute w-[64px] h-[64px] rounded-full bg-white flex flex-col items-center justify-center text-center leading-tight shadow-2xs border border-[#E6E1D5]/40">
                     <span className="text-[9px] font-bold text-[#666057]">Total</span>
-                    <span className="text-base font-black text-[#1A1A1A]">210</span>
+                    <span className="text-base font-black text-[#1A1A1A]">{totalAlertItems}</span>
                   </div>
                 </div>
 
@@ -336,28 +422,28 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
                       <span className="w-2.5 h-2.5 rounded-full bg-[#D9381E] flex-shrink-0"></span>
                       <span className="text-[#2D2620] font-bold">0-3 Days</span>
                     </div>
-                    <span className="font-extrabold text-[#2D2620]">6%</span>
+                    <span className="font-extrabold text-[#2D2620]">{cPct}%</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-[#F27A18] flex-shrink-0"></span>
                       <span className="text-[#2D2620] font-bold">4-7 Days</span>
                     </div>
-                    <span className="font-extrabold text-[#2D2620]">9%</span>
+                    <span className="font-extrabold text-[#2D2620]">{hPct}%</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-[#F5BA13] flex-shrink-0"></span>
                       <span className="text-[#2D2620] font-bold">8-15 Days</span>
                     </div>
-                    <span className="font-extrabold text-[#2D2620]">11%</span>
+                    <span className="font-extrabold text-[#2D2620]">{mPct}%</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-[#84A86E] flex-shrink-0"></span>
                       <span className="text-[#2D2620] font-bold">15+ Days</span>
                     </div>
-                    <span className="font-extrabold text-[#2D2620]">74%</span>
+                    <span className="font-extrabold text-[#2D2620]">{sPct}%</span>
                   </div>
                 </div>
               </div>
@@ -483,9 +569,9 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
                         <td className="py-4 px-5 text-center" onClick={(e) => e.stopPropagation()}>
                           <button 
                             onClick={() => setSelectedItemAction(row)}
-                            className={`px-3.5 py-1.5 rounded-2xl text-xs font-extrabold cursor-pointer transition-colors ${row.actionClass}`}
+                            className={`px-3.5 py-1.5 rounded-2xl text-xs font-extrabold cursor-pointer transition-colors ${actionStatuses[row.batchId || row.id] ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : row.actionClass}`}
                           >
-                            {row.actionType}
+                            {actionStatuses[row.batchId || row.id] || row.actionType}
                           </button>
                         </td>
                         <td className="py-4 px-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -810,10 +896,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
 
               <div className="space-y-2.5">
                 <button 
-                  onClick={() => {
-                    alert(`⚡ Flash Sale published! 20% discount applied to ${selectedItemAction.name} for quick commerce dispatch.`);
-                    setSelectedItemAction(null);
-                  }}
+                  onClick={() => handleItemMitigation('flash_sale', 'Flash Sale (20% Off)')}
                   className="w-full py-3 px-4 rounded-2xl bg-[#354424] text-white font-extrabold flex items-center justify-center gap-2 hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
                 >
                   <Tag className="w-4 h-4" />
@@ -821,10 +904,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
                 </button>
 
                 <button 
-                  onClick={() => {
-                    alert(`🍲 Donation manifest generated for ${selectedItemAction.name}! Sent to Akshaya Patra Trust.`);
-                    setSelectedItemAction(null);
-                  }}
+                  onClick={() => handleItemMitigation('donate', 'Donated to Food Trust')}
                   className="w-full py-3 px-4 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] text-[#2D2620] font-extrabold flex items-center justify-center gap-2 hover:bg-[#E6E1D5] transition-colors cursor-pointer"
                 >
                   <Gift className="w-4 h-4 text-[#B85C38]" />
@@ -832,10 +912,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
                 </button>
 
                 <button 
-                  onClick={() => {
-                    alert(`🔄 Bin position updated! ${selectedItemAction.name} moved to Pick-Face Rack A-01 for immediate dispatch.`);
-                    setSelectedItemAction(null);
-                  }}
+                  onClick={() => handleItemMitigation('front_rack', 'Moved to Front Picking Rack')}
                   className="w-full py-3 px-4 rounded-2xl bg-[#EFF6FF] border border-[#DCE9FE] text-[#2563EB] font-extrabold flex items-center justify-center gap-2 hover:bg-[#DBEAFE] transition-colors cursor-pointer"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -902,10 +979,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
             </p>
 
             <button 
-              onClick={() => {
-                alert('FEFO Pick-Face reallocation task dispatched to store staff handheld terminals!');
-                setActiveModal(null);
-              }}
+              onClick={handleExecuteFEFO}
               className="w-full py-3 rounded-2xl bg-[#2563EB] text-white font-extrabold hover:bg-[#1D4ED8] transition-colors cursor-pointer"
             >
               ✓ Execute Auto FEFO Bin Reallocation

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Wallet, TrendingUp, DollarSign, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Wallet, TrendingUp, DollarSign, AlertTriangle, ShieldCheck, Printer, Download, X, FileText } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/api';
 
 const defaultEarningsSummary = {
   totalRevenue: "₹0",
@@ -14,15 +15,16 @@ const defaultEarningsSummary = {
 export const EarningsView = ({ onBack, onOpenReport }) => {
   const [spoilageData, setSpoilageData] = useState(null);
   const [liveEarnings, setLiveEarnings] = useState(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const loadData = () => {
-    fetch('http://localhost:8000/incidents/spoilage')
-      .then((res) => res.json())
+    fetch(`${API_BASE_URL}/incidents/spoilage`)
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => setSpoilageData(data))
       .catch(() => {});
 
-    fetch('http://localhost:8000/farmer/earnings')
-      .then((res) => res.json())
+    fetch(`${API_BASE_URL}/farmer/earnings`)
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => setLiveEarnings(data))
       .catch(() => {});
   };
@@ -187,12 +189,101 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
 
         {/* View Detailed Report Action Button */}
         <button 
-          onClick={handleExportReport}
+          onClick={() => setIsReportModalOpen(true)}
           className="w-full py-3.5 bg-[#3D4E2A] hover:bg-[#2A371B] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-md transition-all mt-2 cursor-pointer"
         >
-          View Full Earnings Report (PDF)
+          <FileText className="w-4 h-4 text-amber-200" />
+          <span>View Full Earnings Report (PDF)</span>
         </button>
       </div>
+
+      {/* Printable / Downloadable Full Earnings Statement Modal */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 border border-[#E6E1D5] shadow-2xl flex flex-col gap-5 max-h-[90vh] overflow-y-auto animate-scale-in">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E1D5]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#3D4E2A] text-white flex items-center justify-center shadow-xs">
+                  <Wallet className="w-5 h-5 text-amber-300" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-[#2D2620]">Farmer Financial Settlement Statement</h3>
+                  <p className="text-xs text-[#666057]">Patil Organic Farm • Dindori Road, Nashik</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsReportModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#666057] hover:bg-[#E6E1D5] cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Statement Summary Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                <span className="text-[11px] font-bold text-[#666057] uppercase tracking-wider block">Total Revenue</span>
+                <span className="text-xl font-extrabold text-[#2D2620] mt-1 block">{summary.totalRevenue}</span>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5]">
+                <span className="text-[11px] font-bold text-[#666057] uppercase tracking-wider block">Pending Payouts</span>
+                <span className="text-xl font-extrabold text-[#B85C38] mt-1 block">{summary.pendingPayouts}</span>
+              </div>
+              <div className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] col-span-2 sm:col-span-1">
+                <span className="text-[11px] font-bold text-[#666057] uppercase tracking-wider block">Settled Transactions</span>
+                <span className="text-xl font-extrabold text-[#3D4E2A] mt-1 block">{summary.completedTxns} Batches</span>
+              </div>
+            </div>
+
+            {/* Category Breakdown Table */}
+            <div className="border border-[#E6E1D5] rounded-2xl overflow-hidden">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5]">
+                  <tr className="text-[#666057] font-extrabold">
+                    <th className="py-2.5 px-3">Crop Category</th>
+                    <th className="py-2.5 px-3 text-right">Revenue</th>
+                    <th className="py-2.5 px-3 text-right">Share</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E6E1D5]/60">
+                  {summary.breakdown.length === 0 ? (
+                    <tr>
+                      <td colSpan="3" className="py-4 text-center text-[#666057]">No category earnings logged yet.</td>
+                    </tr>
+                  ) : (
+                    summary.breakdown.map((b, i) => (
+                      <tr key={i} className="hover:bg-[#FAF7F0]/50">
+                        <td className="py-2.5 px-3 font-bold text-[#2D2620]">{b.category}</td>
+                        <td className="py-2.5 px-3 font-extrabold text-[#2D2620] text-right">{b.amount}</td>
+                        <td className="py-2.5 px-3 font-semibold text-[#556B2F] text-right">{b.percent}%</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Modal Actions: Print PDF & Download CSV */}
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#E6E1D5]">
+              <button 
+                onClick={handleExportReport}
+                className="px-4 py-2.5 rounded-xl border border-[#E6E1D5] text-[#2D2620] text-xs font-bold hover:bg-[#FAF7F0] flex items-center gap-2 cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-[#666057]" />
+                <span>Export CSV</span>
+              </button>
+              <button 
+                onClick={() => window.print()}
+                className="px-5 py-2.5 rounded-xl bg-[#3D4E2A] text-white text-xs font-extrabold hover:bg-[#2A371B] flex items-center gap-2 cursor-pointer shadow-xs"
+              >
+                <Printer className="w-4 h-4 text-amber-200" />
+                <span>Print Statement (PDF)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

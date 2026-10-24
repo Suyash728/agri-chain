@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, Calendar } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
 import { useNotificationCount } from '../../utils/useNotificationCount';
+import { DateRangePicker } from '../../components/DateRangePicker';
 
 export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount }) => {
   const [profile, setProfile] = useState({ name: 'Rahul Patil' });
@@ -62,11 +63,8 @@ export const Header = ({ onOpenNotifications, onOpenAddStock, unreadCount }) => 
           )}
         </button>
 
-        {/* Date Selector Pill */}
-        <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-[#E2DDD2] text-xs font-semibold text-[#3B3028] shadow-sm">
-          <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-          <Calendar className="w-4 h-4 text-[#7A8B52]" />
-        </div>
+        {/* Interactive Date Range Picker */}
+        <DateRangePicker initialPeriod="today" />
       </div>
     </header>
   );

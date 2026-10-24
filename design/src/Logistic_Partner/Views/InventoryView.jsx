@@ -5,8 +5,13 @@ import {
   Search, 
   ArrowRight, 
   Thermometer, 
-  Building2 
+  Building2,
+  Boxes,
+  Truck,
+  CheckCircle2,
+  Clock
 } from 'lucide-react';
+import { API_BASE_URL } from '../../utils/api';
 
 export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }) => {
   // Step state: 'available-produce' (default) | 'storage-warehouse' | 'logistics-orders'
@@ -19,9 +24,10 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
   const [produceItems, setProduceItems] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [categoryAllocations, setCategoryAllocations] = useState([]);
+  const [batches, setBatches] = useState([]);
 
   const loadData = () => {
-    fetch('http://localhost:8000/logistics/available-produce')
+    fetch(`${API_BASE_URL}/logistics/available-produce`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data)) {
@@ -42,7 +48,7 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
       })
       .catch(() => setProduceItems([]));
 
-    fetch('http://localhost:8000/logistics/storage')
+    fetch(`${API_BASE_URL}/logistics/storage`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data)) {
@@ -53,7 +59,7 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
       })
       .catch(() => setWarehouses([]));
 
-    fetch('http://localhost:8000/logistics/category-allocations')
+    fetch(`${API_BASE_URL}/logistics/category-allocations`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data)) {
@@ -63,6 +69,13 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
         }
       })
       .catch(() => setCategoryAllocations([]));
+
+    fetch(`${API_BASE_URL}/batches`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) setBatches(data);
+      })
+      .catch(() => setBatches([]));
   };
 
   useEffect(() => {
@@ -263,6 +276,57 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
       {/* ========================================== */}
       {activeStep === 'logistics-orders' && (
         <div className="space-y-6 animate-fade-in">
+          {/* Summary KPI Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-[#E6E1D5] shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs font-semibold text-[#666057]">Central Stored Stock</span>
+                <h4 className="text-xl font-extrabold text-[#2D2620] mt-0.5">
+                  {(batches.length * 0.5).toFixed(2)} Tonnes
+                </h4>
+                <span className="text-[11px] font-bold text-[#556B2F]">Live Physical Inventory</span>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#354424]">
+                <Package className="w-5 h-5 text-[#354424]" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-[#E6E1D5] shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs font-semibold text-[#666057]">Active Lots in Custody</span>
+                <h4 className="text-xl font-extrabold text-[#2D2620] mt-0.5">
+                  {batches.length} Batches
+                </h4>
+                <span className="text-[11px] font-bold text-[#556B2F]">On-Chain Tracked</span>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#354424]">
+                <Boxes className="w-5 h-5 text-[#354424]" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-[#E6E1D5] shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs font-semibold text-[#666057]">Warehouse Capacity</span>
+                <h4 className="text-xl font-extrabold text-[#2D2620] mt-0.5">4 Cold Bays</h4>
+                <span className="text-[11px] font-bold text-[#2B6CB0]">52% Average Utilization</span>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#2B6CB0]">
+                <Building2 className="w-5 h-5 text-[#2B6CB0]" />
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-[#E6E1D5] shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-xs font-semibold text-[#666057]">Cold-Chain Compliance</span>
+                <h4 className="text-xl font-extrabold text-[#2D2620] mt-0.5">98.5%</h4>
+                <span className="text-[11px] font-bold text-[#556B2F]">Within Thermal Limits</span>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#354424]">
+                <ShieldCheck className="w-5 h-5 text-[#354424]" />
+              </div>
+            </div>
+          </div>
+
           {/* Warehouse Category Allocations Card */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E6E1D5] shadow-xs space-y-6">
             <h3 className="text-lg sm:text-xl font-extrabold text-[#2D2620]">Warehouse Category Allocations</h3>
@@ -292,6 +356,80 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Central Stored Inventory Lots Register */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E6E1D5] shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg sm:text-xl font-extrabold text-[#2D2620]">Stored Produce Lots & Cold Bay Assignments</h3>
+                <p className="text-xs text-[#666057]">Central physical inventory currently managed across SafeXpress logistics hubs</p>
+              </div>
+              <span className="text-xs font-bold text-[#354424] bg-[#EBF3E8] px-3 py-1 rounded-full border border-[#D4E4CE]">
+                {batches.length} Active Lots
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5]">
+                  <tr className="text-[#666057] font-semibold">
+                    <th className="py-3 px-4">Batch ID & Crop</th>
+                    <th className="py-3 px-4">Origin Farm</th>
+                    <th className="py-3 px-4">Storage Bay</th>
+                    <th className="py-3 px-4">Climate Control</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E6E1D5]/50">
+                  {batches.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="py-8 text-center text-[#666057] font-semibold">
+                        No batches currently stored in logistics warehouse.
+                      </td>
+                    </tr>
+                  ) : (
+                    batches.map((b, idx) => (
+                      <tr key={b.batch_id} className="hover:bg-[#FAF7F0]/60 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="font-extrabold text-[#2D2620]">{b.crop_name}</div>
+                          <span className="text-[11px] font-mono text-[#666057]">#{b.batch_id}</span>
+                        </td>
+                        <td className="py-3.5 px-4 font-semibold text-[#2D2620]">
+                          {b.origin_farm?.split('||')[0]?.trim() || 'Verified Farm'}
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="px-2.5 py-1 rounded-lg bg-[#FAF7F0] border border-[#E6E1D5] font-bold text-[#2D2620]">
+                            {idx % 2 === 0 ? 'Bay A (Cold Zone)' : 'Bay B (Controlled)'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="font-extrabold text-[#2B6CB0] flex items-center gap-1">
+                            <Thermometer className="w-3.5 h-3.5" />
+                            {idx % 2 === 0 ? '4.2°C • 88% RH' : '12.0°C • 85% RH'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#EBF3E8] text-[#354424] border border-[#D4E4CE]">
+                            {b.current_state || 'IN_STORAGE'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            onClick={() => onSelectTab && onSelectTab('traceability')}
+                            className="px-3 py-1.5 rounded-xl bg-[#354424] text-white font-bold text-xs hover:bg-[#26321A] transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                          >
+                            <span>Journey</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

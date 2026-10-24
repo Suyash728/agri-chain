@@ -2072,3 +2072,75 @@ still static UI with no data flow. Specifically:
 - Vite Production Build: 1,815 modules built in 3.19s with 0 errors (`npm run build`).
 - Full Backend Test Suite: 12/12 passed in 5.08s (`pytest tests/`).
 - Smart Contract Suite: 22/22 passed in 711ms (`npx hardhat test`).
+
+
+## [Portals & Roles — Full Fix for Hardcoded Screens, Selectors, Scanner, and Profiles] — 2026-10-24
+
+**What was done:**
+- Fixed all 10 issues and screenshots identified by user:
+  1. **Farmer Shipments View (`design/src/Farmer/Views/ShipmentsView.jsx`)**:
+     - Switched from static mock lists to dynamic backend data via `API_BASE_URL` with real-time update listeners.
+     - Implemented complete custody lifecycle display: `REGISTERED`, `IN_TRANSIT`, `IN_STORAGE`, `AT_RETAIL`, `SOLD`.
+     - Added 4 interactive filter tabs (`All`, `In Transit`, `Delivered`, `Awaiting Pickup`) with dynamic badge statuses and transit route details.
+  2. **Farmer Earnings Summary (`design/src/Farmer/Views/EarningsView.jsx`)**:
+     - Removed arbitrary fixed multipliers in backend `get_farmer_earnings()` to calculate actual earnings, stage costs, and deductions.
+     - Built an interactive printable Statement modal for "View Full Earnings Report (PDF)" supporting `window.print()` and CSV export.
+  3. **Logistics Central Inventory (`design/src/Logistic_Partner/Views/InventoryView.jsx`)**:
+     - Filled the previously empty white space under warehouse category allocation with 4 KPI summary cards (Central Stored Stock, Active Lots in Custody, Warehouse Capacity, Cold-Chain Compliance).
+     - Added a live Central Stored Inventory Lots Register table with bay assignments, climate control telemetry, storage timestamps, and direct links to consumer journey tracking.
+  4. **Export Ledger & Notification System**:
+     - In `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`, replaced `alert('Financial ledger statement downloaded!')` with real CSV export (`handleExportLedgerCSV`).
+     - In `design/src/App.jsx`, added a universal notification bell button with dynamic unread badge in the sticky top `<header>`, accessible across all roles with dynamic polling and instant read-state synchronization.
+  5. **Store Selector & Dark Store Header (`design/src/Dark_Store/components/DarkStoreHeader.jsx`)**:
+     - Replaced hardcoded store selector with persistent dark store switcher (`localStorage` + `agrichain-store-changed`).
+     - Corrected manager greeting name to "Anand Deshmukh 🏬" (Dark Store Operations Manager) instead of farmer name.
+  6. **Interactive Date / Month / Year Picker (`design/src/components/DateRangePicker.jsx`)**:
+     - Built a universal date range picker component supporting Today, This Week, This Month, Last Month, This Year, with quick pill presets and custom calendar input.
+     - Integrated into Dark Store, Farmer, and Logistics headers.
+     - Connected `revenueFilter` in `DarkStoreDashboardView.jsx` to dynamically recalculate gross profit, net profit, and average order value.
+  7. **Dark Store Expiry Alerts & FEFO Optimization (`design/src/Dark_Store/Views/DarkStoreExpiryAlertsView.jsx`)**:
+     - Replaced hardcoded static SVG donut with dynamic SVG donut calculation based on live risk counts (with neutral empty ring when 0 items).
+     - Added `POST /darkstore/fefo/optimize` and `POST /darkstore/expiry/action` in FastAPI backend.
+     - Wired "AI FEFO Optimize" and "Take Action" buttons (Flash Sale 20% off, Food Donation, Move to Front Picking Rack) with live state updates and toast feedback.
+  8. **Consumer QR Scanner UI (`design/src/Consumer/Views/ScanProductView.jsx`)**:
+     - Constrained laser scanning beam strictly inside the viewfinder frame (`w-64 h-64 sm:w-72 sm:h-72 overflow-hidden`).
+     - Added glowing gradient laser beam and sleek corner HUD brackets.
+  9. **Logistics Manager Profile Screen (`design/src/Logistic_Partner/Views/LogisticProfileView.jsx`)**:
+     - Replaced broken avatar and wrong farmer name with "Vikram Malhotra 🚛" (Chief Logistics Operations Manager).
+     - Replaced non-interactive settings rows with 4 interactive modal dialogues: Account Profile Settings, Telemetry Alert Preferences, SLA Certifications & Audit Compliance, and 24/7 Operations Support Desk.
+  10. **Consumer Profile & Address Management (`design/src/Consumer/Views/ProfileView.jsx`, `ConsumerApp.jsx`, `AddressModal.jsx`)**:
+      - Replaced fruit photo avatar with initials "PS" avatar matching brand colors.
+      - Synchronized "Make Default Address" in `ProfileView` with global delivery address state in `ConsumerApp` header via `agrichain-address-changed` event and `localStorage`.
+      - Updated `AddressModal` to sync seamlessly with saved profile addresses and header delivery pill.
+
+**Files changed:**
+- `backend/main.py`
+- `backend/modular-deployments.json`
+- `contracts/amoy-deployments.json`
+- `design/src/App.jsx`
+- `design/src/components/DateRangePicker.jsx`
+- `design/src/Consumer/ConsumerApp.jsx`
+- `design/src/Consumer/Modals/AddressModal.jsx`
+- `design/src/Consumer/Views/ProfileView.jsx`
+- `design/src/Consumer/Views/ScanProductView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreDashboardView.jsx`
+- `design/src/Dark_Store/Views/DarkStoreExpiryAlertsView.jsx`
+- `design/src/Dark_Store/components/DarkStoreHeader.jsx`
+- `design/src/Farmer/Views/EarningsView.jsx`
+- `design/src/Farmer/Views/ShipmentsView.jsx`
+- `design/src/Farmer/components/Header.jsx`
+- `design/src/Logistic_Partner/Views/InventoryView.jsx`
+- `design/src/Logistic_Partner/Views/LogisticProfileView.jsx`
+- `design/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`
+- `design/src/Logistic_Partner/components/LogisticHeader.jsx`
+- `MEMORY.md`
+
+**Decisions made (and why):**
+- Preserved all brand styling tokens (`#FAF7F0`, `#E6E1D5`, `#354424`, `#2D2620`) while removing all dummy mock data and hardcoded screen placeholders.
+- Unified date filtering and store switching across portals through shared custom events (`agrichain-date-range-changed`, `agrichain-store-changed`, `agrichain-address-changed`) and `localStorage` to guarantee cross-screen reactivity.
+- Kept all money values strictly in integer paise and temperatures in integer deci-Celsius per project rules.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Vite Production Build: 1,816 modules built in 2.58s with 0 errors (`npm run build`).
+- Full Backend Test Suite: 12/12 passed in 5.19s (`pytest tests/`).
+- Smart Contract Suite: 22/22 passed in 625ms (`npx hardhat test`).

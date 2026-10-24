@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   MapPin, 
@@ -38,7 +38,7 @@ export const ProfileView = ({ onNavigate, onLogout }) => {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   // 2. Addresses State
-  const [addresses, setAddresses] = useState([
+  const defaultAddressList = [
     {
       id: 'addr-1',
       title: 'Home (Primary)',
@@ -55,9 +55,40 @@ export const ProfileView = ({ onNavigate, onLogout }) => {
       pincode: '400013',
       isDefault: false
     }
-  ]);
+  ];
+
+  const [addresses, setAddresses] = useState(() => {
+    try {
+      const saved = localStorage.getItem('agrichain_user_addresses');
+      return saved ? JSON.parse(saved) : defaultAddressList;
+    } catch {
+      return defaultAddressList;
+    }
+  });
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [newAddr, setNewAddr] = useState({ title: '', address: '', city: 'Mumbai', pincode: '' });
+
+  useEffect(() => {
+    const handleAddrSync = (e) => {
+      const newLoc = e.detail?.address;
+      if (newLoc) {
+        setAddresses((prev) => {
+          const updated = prev.map((a) => {
+            const match =
+              newLoc.toLowerCase().includes(a.city.toLowerCase()) ||
+              (a.title && newLoc.toLowerCase().includes(a.title.toLowerCase()));
+            return { ...a, isDefault: match };
+          });
+          try {
+            localStorage.setItem('agrichain_user_addresses', JSON.stringify(updated));
+          } catch {}
+          return updated;
+        });
+      }
+    };
+    window.addEventListener('agrichain-address-changed', handleAddrSync);
+    return () => window.removeEventListener('agrichain-address-changed', handleAddrSync);
+  }, []);
 
   // 3. Payment Methods State
   const [payments, setPayments] = useState([
@@ -110,19 +141,41 @@ export const ProfileView = ({ onNavigate, onLogout }) => {
       pincode: newAddr.pincode,
       isDefault: false
     };
-    setAddresses([...addresses, created]);
+    const updated = [...addresses, created];
+    setAddresses(updated);
+    try {
+      localStorage.setItem('agrichain_user_addresses', JSON.stringify(updated));
+    } catch {}
     setNewAddr({ title: '', address: '', city: 'Mumbai', pincode: '' });
     setShowAddAddress(false);
     triggerToast('New delivery address added!');
   };
 
   const handleDeleteAddress = (id) => {
-    setAddresses(addresses.filter(a => a.id !== id));
+    const updated = addresses.filter(a => a.id !== id);
+    setAddresses(updated);
+    try {
+      localStorage.setItem('agrichain_user_addresses', JSON.stringify(updated));
+    } catch {}
     triggerToast('Address removed.');
   };
 
   const handleSetDefaultAddress = (id) => {
-    setAddresses(addresses.map(a => ({ ...a, isDefault: a.id === id })));
+    const updated = addresses.map(a => ({ ...a, isDefault: a.id === id }));
+    setAddresses(updated);
+    try {
+      localStorage.setItem('agrichain_user_addresses', JSON.stringify(updated));
+    } catch {}
+    const chosen = updated.find(a => a.id === id);
+    if (chosen) {
+      const displayLoc = chosen.title.includes('Home') ? 'Bandra West, Mumbai' : (chosen.city ? `${chosen.city}, Maharashtra` : 'Bandra West, Mumbai');
+      try {
+        localStorage.setItem('agrichain_delivery_address', displayLoc);
+      } catch {}
+      window.dispatchEvent(new CustomEvent('agrichain-address-changed', {
+        detail: { address: displayLoc, fullAddress: `${chosen.address}, ${chosen.city} - ${chosen.pincode}` }
+      }));
+    }
     triggerToast('Default address updated!');
   };
 
@@ -197,10 +250,8 @@ export const ProfileView = ({ onNavigate, onLogout }) => {
           {/* Left Column (1/3): User Profile Card */}
           <div className="md:col-span-1 bg-white rounded-3xl p-6 border border-[#E6E1D5] shadow-xs flex flex-col items-center text-center gap-3">
             {/* Avatar Graphic */}
-            <div className="w-24 h-24 rounded-full bg-[#354424] p-1 shadow-md relative overflow-hidden flex items-center justify-center">
-              <div className="w-full h-full rounded-full bg-[#FAF7F0] flex items-center justify-center overflow-hidden border-2 border-white">
-                <img src="/images/fruits_ref.png" alt={profile.name} className="w-16 h-16 object-contain" />
-              </div>
+            <div className="w-24 h-24 rounded-full bg-[#354424] text-white flex items-center justify-center font-black text-2xl shadow-md border-4 border-white select-none">
+              PS
             </div>
 
             <div>

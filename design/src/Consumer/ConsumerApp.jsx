@@ -39,7 +39,13 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab, initia
   const [cartItems, setCartItems] = useState([]);
   const [appliedCoupon, setAppliedCoupon] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
-  const [deliveryAddress, setDeliveryAddress] = useState('Nashik, Maharashtra');
+  const [deliveryAddress, setDeliveryAddress] = useState(() => {
+    try {
+      return localStorage.getItem('agrichain_delivery_address') || 'Bandra West, Mumbai';
+    } catch {
+      return 'Bandra West, Mumbai';
+    }
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -95,11 +101,18 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab, initia
       fetchBatches();
       setSelectedJourneyProduct(null);
     };
+    const handleAddressChanged = (e) => {
+      if (e.detail?.address) {
+        setDeliveryAddress(e.detail.address);
+      }
+    };
     window.addEventListener('agrichain-data-reset', handleReset);
     window.addEventListener('agrichain-data-updated', fetchBatches);
+    window.addEventListener('agrichain-address-changed', handleAddressChanged);
     return () => {
       window.removeEventListener('agrichain-data-reset', handleReset);
       window.removeEventListener('agrichain-data-updated', fetchBatches);
+      window.removeEventListener('agrichain-address-changed', handleAddressChanged);
     };
   }, []);
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Bell, Calendar } from 'lucide-react';
 import { useNotificationCount } from '../../utils/useNotificationCount';
+import { DateRangePicker } from '../../components/DateRangePicker';
 
 export const LogisticHeader = ({ onOpenNotifications, unreadCount }) => {
   const { count: dynamicCount, markAllAsRead } = useNotificationCount('logistics');
@@ -14,10 +15,10 @@ export const LogisticHeader = ({ onOpenNotifications, unreadCount }) => {
         </span>
         <div className="flex items-center gap-2 mt-0.5">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-[#2D2620] tracking-tight">
-            Rahul Patil
+            Vikram Malhotra
           </h1>
-          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#556B2F]/15 text-[#556B2F] text-xs font-bold" title="Verified Logistics Manager">
-            🌿
+          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#354424]/15 text-[#354424] text-xs font-bold" title="Verified Logistics Operations Command">
+            🚛
           </span>
         </div>
         <p className="text-xs sm:text-sm font-medium text-[#666057] mt-1">
@@ -43,13 +44,8 @@ export const LogisticHeader = ({ onOpenNotifications, unreadCount }) => {
           )}
         </button>
 
-        {/* Date Selector Badge */}
-        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-[#E6E1D5] bg-white text-[#2D2620] shadow-xs">
-          <span className="text-xs sm:text-sm font-bold text-[#2D2620]">
-            {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-          </span>
-          <Calendar className="w-4 h-4 text-[#666057]" />
-        </div>
+        {/* Interactive Date Range Picker */}
+        <DateRangePicker initialPeriod="today" />
       </div>
     </header>
   );
