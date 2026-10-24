@@ -23,7 +23,11 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
   useEffect(() => {
     fetchInventory();
     window.addEventListener('agrichain-data-reset', fetchInventory);
-    return () => window.removeEventListener('agrichain-data-reset', fetchInventory);
+    window.addEventListener('agrichain-data-updated', fetchInventory);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', fetchInventory);
+      window.removeEventListener('agrichain-data-updated', fetchInventory);
+    };
   }, []);
 
   const filteredBins = bins.filter(bin => {

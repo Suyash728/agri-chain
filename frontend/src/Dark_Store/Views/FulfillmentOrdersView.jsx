@@ -46,7 +46,11 @@ export const FulfillmentOrdersView = ({ onBack }) => {
   useEffect(() => {
     loadFulfillmentData();
     window.addEventListener('agrichain-data-reset', loadFulfillmentData);
-    return () => window.removeEventListener('agrichain-data-reset', loadFulfillmentData);
+    window.addEventListener('agrichain-data-updated', loadFulfillmentData);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', loadFulfillmentData);
+      window.removeEventListener('agrichain-data-updated', loadFulfillmentData);
+    };
   }, []);
 
   const filteredOrders = orders.filter(ord => {

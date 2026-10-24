@@ -153,7 +153,8 @@ def _send_tx(target_contract, method_name: str, *args) -> str:
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     if receipt.status != 1:
         raise RuntimeError(f"Transaction reverted on-chain (status=0): {tx_hash.hex()}")
-    return tx_hash.hex()
+    hex_str = tx_hash.hex()
+    return f"0x{hex_str}" if not hex_str.startswith("0x") else hex_str
 
 
 def _send(method_name: str, *args) -> str:

@@ -46,7 +46,11 @@ export const DarkStoreRevenueView = ({ onBack, onOpenNotifications }) => {
   useEffect(() => {
     loadRevenueData();
     window.addEventListener('agrichain-data-reset', loadRevenueData);
-    return () => window.removeEventListener('agrichain-data-reset', loadRevenueData);
+    window.addEventListener('agrichain-data-updated', loadRevenueData);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', loadRevenueData);
+      window.removeEventListener('agrichain-data-updated', loadRevenueData);
+    };
   }, []);
 
   // Revenue Summary Table Dataset from live API

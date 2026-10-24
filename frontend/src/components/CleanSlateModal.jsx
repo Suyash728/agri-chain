@@ -30,6 +30,7 @@ export const CleanSlateModal = ({ isOpen, onClose, onResetComplete }) => {
         });
       } catch (_) {}
       window.dispatchEvent(new CustomEvent('agrichain-data-reset', { detail: data }));
+      window.dispatchEvent(new CustomEvent('agrichain-data-updated', { detail: data }));
       if (onResetComplete) {
         onResetComplete(data);
       }

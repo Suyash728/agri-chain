@@ -84,6 +84,16 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
 
   const autoPlayTimerRef = useRef(null);
 
+  const handleExit = () => {
+    window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
+    if (onExit) onExit();
+  };
+
+  const handleNavigate = (role, tab, batchId) => {
+    window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
+    if (onNavigateRoleAndTab) onNavigateRoleAndTab(role, tab, batchId);
+  };
+
   // Fetch all batches on mount
   useEffect(() => {
     fetchBatches();
@@ -175,6 +185,7 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
           }
         }
         setActionNotice(`Step ${stepNum} executed on-chain with ground-truth records!`);
+        window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
         setTimeout(() => setActionNotice(null), 3000);
       }
     } catch (err) {
@@ -216,6 +227,7 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
       if (res.ok) {
         await fetchGodModeState(selectedBatchId);
         setActionNotice(`Sensor telemetry (${temp}°C) transmitted! All 4 quadrants refreshed.`);
+        window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
         setTimeout(() => setActionNotice(null), 3000);
       }
     } catch (err) {
@@ -339,7 +351,7 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
             </button>
 
             <button
-              onClick={onExit}
+              onClick={handleExit}
               className="p-1.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/50 cursor-pointer transition-all"
               title="Exit God Mode to Standard Portals"
             >
@@ -468,7 +480,7 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
               </div>
             </div>
             <button
-              onClick={() => onNavigateRoleAndTab('farmer', 'dashboard')}
+              onClick={() => handleNavigate('farmer', 'dashboard')}
               className="text-[11px] font-bold text-[#8FA866] hover:text-white flex items-center gap-1 cursor-pointer"
             >
               <span>View Portal</span>
@@ -554,7 +566,7 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
               </div>
             </div>
             <button
-              onClick={() => onNavigateRoleAndTab('logistics', 'dashboard')}
+              onClick={() => handleNavigate('logistics', 'dashboard')}
               className="text-[11px] font-bold text-blue-400 hover:text-white flex items-center gap-1 cursor-pointer"
             >
               <span>View Portal</span>
@@ -697,7 +709,7 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
               </div>
             </div>
             <button
-              onClick={() => onNavigateRoleAndTab('darkstore', 'dashboard')}
+              onClick={() => handleNavigate('darkstore', 'dashboard')}
               className="text-[11px] font-bold text-orange-400 hover:text-white flex items-center gap-1 cursor-pointer"
             >
               <span>View Portal</span>
@@ -779,7 +791,7 @@ export const GodModeHub = ({ onExit, onNavigateRoleAndTab }) => {
               </div>
             </div>
             <button
-              onClick={() => onNavigateRoleAndTab('consumer', 'journey', godData?.batch_id)}
+              onClick={() => handleNavigate('consumer', 'journey', godData?.batch_id)}
               className="text-[11px] font-bold text-emerald-400 hover:text-white flex items-center gap-1 cursor-pointer"
             >
               <span>View Passport</span>

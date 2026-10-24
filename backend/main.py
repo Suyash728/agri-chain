@@ -2,11 +2,14 @@ import pathlib
 import uuid
 import math
 import socket
+import logging
 from typing import Optional, List, Union
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+logger = logging.getLogger("agrichain")
 
 import sys
 import time
@@ -2247,16 +2250,24 @@ def get_batch_traceability(batch_id: str):
                     "breach": c["breach"],
                 })
         except Exception:
-            readings = conn.execute(
-                "SELECT * FROM readings WHERE batch_id = ? AND verdict IN ('VALID', 'BREACH') ORDER BY id ASC",
-                (batch_id,),
-            ).fetchall()
-            for r in readings:
-                condition_log.append({
-                    "tempC": r["temp_c"],
-                    "humidityPct": r["humidity_pct"],
-                    "breach": (r["verdict"] == "BREACH"),
-                })
+            pass
+
+        # If on-chain records are fewer than SQLite records, merge with SQLite readings
+        readings = conn.execute(
+            "SELECT * FROM readings WHERE batch_id = ? ORDER BY id ASC",
+            (batch_id,),
+        ).fetchall()
+        if len(condition_log) < len(readings):
+            condition_log = [
+                {
+                    "tempC": float(r["temp_c"]),
+                    "humidityPct": float(r["humidity_pct"]),
+                    "breach": (r["verdict"] in ("BREACH", "BREACH_MINED_ON_CHAIN") or "BREACH" in (r["verdict"] or "")),
+                    "quarantined": (r["verdict"] == "QUARANTINED"),
+                    "txHash": r["tx_hash"],
+                }
+                for r in readings
+            ]
 
         custody_history = []
         for ev in events:
@@ -4903,7 +4914,10 @@ def post_demo_produce_create(payload: DemoProduceCreateRequest):
                 harvest_date=datetime.now(timezone.utc).strftime("%Y-%m-%d"),
                 farmer_address=farmer_addr,
             )
-        except Exception:
+            if tx_hash and not tx_hash.startswith("0x"):
+                tx_hash = f"0x{tx_hash}"
+        except Exception as e:
+            logger.warning("On-chain register_batch warning: %s", e)
             tx_hash = f"0x{uuid.uuid4().hex}"
 
         encoded_origin = f"{payload.origin_farm} ||cat={payload.category or 'vegetables'}||qty={payload.quantity_kg / 1000.0:.2f}||price={payload.price_per_kg * payload.quantity_kg:.2f}"
@@ -4925,6 +4939,36 @@ def post_demo_produce_create(payload: DemoProduceCreateRequest):
             """,
             (batch_id, payload.farmer_name, price_paise, tx_hash),
         )
+
+        # Baseline chill reading on-chain and in SQLite so batch immediately has live telemetry
+        temp_deci = 40 if "mango" not in payload.crop_name.lower() else 120
+        tx_iot = None
+        try:
+            tx_iot = chain.record_condition(batch_id, temp_deci, 88, False)
+            if tx_iot and not tx_iot.startswith("0x"):
+                tx_iot = f"0x{tx_iot}"
+        except Exception as e:
+            logger.debug("Initial condition on-chain warning: %s", e)
+
+        conn.execute(
+            """
+            INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash)
+            VALUES (?, ?, 88.0, 'VALID', ?)
+            """,
+            (batch_id, temp_deci / 10.0, tx_iot),
+        )
+
+        # Anchor quality certificate document CID
+        try:
+            cid = f"ipfs://Qm{hashlib.sha256(batch_id.encode()).hexdigest()[:44]}"
+            chain.set_batch_document(batch_id, "QUALITY_CERT", cid)
+            conn.execute(
+                "INSERT INTO batch_documents (batch_id, doc_type, ipfs_cid, title) VALUES (?, 'QUALITY_CERT', ?, ?)",
+                (batch_id, cid, f"Farm Gate Inspection Certificate - {payload.crop_name}"),
+            )
+        except Exception as e:
+            logger.debug("Initial doc anchor warning: %s", e)
+
         conn.commit()
 
         return {
@@ -4958,9 +5002,9 @@ def post_demo_iot_inject(payload: DemoIotInjectRequest):
         is_thermal_breach = payload.temperature > max_t or payload.temperature < min_t
         is_fraud = payload.simulate_replay
 
-        if is_fraud or is_thermal_breach:
-            # Quarantined Off-Chain
-            reason = f"SENSOR_REPLAY_ATTACK_DETECTED: Duplicate signature" if is_fraud else f"THERMAL_BREACH: {payload.temperature:.1f}°C outside policy [{min_t:.1f}°C - {max_t:.1f}°C]"
+        if is_fraud:
+            # Cryptographic fraud / replay attack: Isolated off-chain
+            reason = f"SENSOR_REPLAY_ATTACK_DETECTED: Duplicate signature"
             r_cur = conn.execute(
                 """
                 INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash)
@@ -4970,23 +5014,6 @@ def post_demo_iot_inject(payload: DemoIotInjectRequest):
             )
             r_id = r_cur.lastrowid
             prev_h, entry_h = insert_quarantine_entry(conn, r_id, reason)
-
-            # Log incident if thermal breach
-            if is_thermal_breach:
-                existing_spoil = conn.execute("SELECT id FROM spoilage_incidents WHERE batch_id = ?", (payload.batch_id,)).fetchone()
-                if not existing_spoil:
-                    inc_id = f"INC-IOT-{uuid.uuid4().hex[:6].upper()}"
-                    conn.execute(
-                        """
-                        INSERT INTO spoilage_incidents (
-                            incident_id, batch_id, crop_name, stage, failure_type,
-                            severity, loss_goods_kg, price_per_kg_paise, total_loss_paise,
-                            total_loss_inr, custodian_at_fault, details, status
-                        ) VALUES (?, ?, ?, 'IN_TRANSIT', 'THERMAL_BREACH', 'HIGH', 400, 4000, 1600000, 16000.0, 'Safexpress Cold Chain Logistics', ?, 'CUSTODIAN_PENALIZED_SALVAGE_DISPATCH')
-                        """,
-                        (inc_id, payload.batch_id, b_row["crop_name"] if b_row else "Produce", f"Live sensor injection breach: {payload.temperature:.1f}°C outside policy limits."),
-                    )
-
             conn.commit()
 
             raw_packet = {"batch_id": payload.batch_id, "temperature": payload.temperature, "humidity": payload.humidity, "verdict": "QUARANTINED"}
@@ -5006,13 +5033,74 @@ def post_demo_iot_inject(payload: DemoIotInjectRequest):
                 "raw_payload_hex": raw_hex,
                 "sha256_fingerprint": sha256_fp,
             }
+        elif is_thermal_breach:
+            # Genuine Thermal Policy Breach: MINED ON-CHAIN via ColdChainMonitor.recordCondition(..., breach=True)
+            temp_deci = int(round(payload.temperature * 10))
+            hum_pct = int(round(payload.humidity))
+            tx_hash = None
+            try:
+                tx_hash = chain.record_condition(payload.batch_id, temp_deci, hum_pct, True)
+                if tx_hash and not tx_hash.startswith("0x"):
+                    tx_hash = f"0x{tx_hash}"
+            except Exception as e:
+                logger.warning("Failed to record breach condition on-chain: %s", e)
+                tx_hash = f"0x{uuid.uuid4().hex}"
+
+            r_cur = conn.execute(
+                """
+                INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash)
+                VALUES (?, ?, ?, 'BREACH_MINED_ON_CHAIN', ?)
+                """,
+                (payload.batch_id, payload.temperature, payload.humidity, tx_hash),
+            )
+            r_id = r_cur.lastrowid
+
+            reason = f"THERMAL_BREACH: {payload.temperature:.1f}°C outside policy [{min_t:.1f}°C - {max_t:.1f}°C]"
+            prev_h, entry_h = insert_quarantine_entry(conn, r_id, reason)
+
+            # Record / update spoilage incident
+            existing_spoil = conn.execute("SELECT id FROM spoilage_incidents WHERE batch_id = ?", (payload.batch_id,)).fetchone()
+            if not existing_spoil:
+                inc_id = f"INC-IOT-{uuid.uuid4().hex[:6].upper()}"
+                conn.execute(
+                    """
+                    INSERT INTO spoilage_incidents (
+                        incident_id, batch_id, crop_name, stage, failure_type,
+                        severity, loss_goods_kg, price_per_kg_paise, total_loss_paise,
+                        total_loss_inr, custodian_at_fault, details, status
+                    ) VALUES (?, ?, ?, 'IN_TRANSIT', 'THERMAL_BREACH', 'HIGH', 400, 4000, 1600000, 16000.0, 'Safexpress Cold Chain Logistics', ?, 'CUSTODIAN_PENALIZED_SALVAGE_DISPATCH')
+                    """,
+                    (inc_id, payload.batch_id, b_row["crop_name"] if b_row else "Produce", f"Live sensor injection breach: {payload.temperature:.1f}°C outside policy limits."),
+                )
+            conn.commit()
+
+            raw_packet = {"batch_id": payload.batch_id, "temperature": payload.temperature, "humidity": payload.humidity, "verdict": "BREACH_MINED_ON_CHAIN", "tx": tx_hash}
+            raw_hex = f"0x{json.dumps(raw_packet).encode().hex()}"
+            sha256_fp = hashlib.sha256(json.dumps(raw_packet).encode()).hexdigest()
+
+            return {
+                "verdict": "BREACH_MINED_ON_CHAIN",
+                "disposition": "MINED_ON_CHAIN",
+                "reading_id": r_id,
+                "temperature": payload.temperature,
+                "humidity": payload.humidity,
+                "reason": reason,
+                "is_breach": True,
+                "quarantine_hash": entry_h,
+                "tx_hash": tx_hash,
+                "raw_payload_hex": raw_hex,
+                "sha256_fingerprint": sha256_fp,
+            }
         else:
             # Valid Reading Mined On-Chain
-            temp_deci = int(payload.temperature * 10)
-            hum_pct = int(payload.humidity)
+            temp_deci = int(round(payload.temperature * 10))
+            hum_pct = int(round(payload.humidity))
             try:
                 tx_hash = chain.record_condition(payload.batch_id, temp_deci, hum_pct, False)
-            except Exception:
+                if tx_hash and not tx_hash.startswith("0x"):
+                    tx_hash = f"0x{tx_hash}"
+            except Exception as e:
+                logger.warning("Failed to record valid condition on-chain: %s", e)
                 tx_hash = f"0x{uuid.uuid4().hex}"
 
             r_cur = conn.execute(
@@ -5052,12 +5140,33 @@ def post_demo_custody_advance(payload: DemoCustodyAdvanceRequest):
     conn = get_connection()
     try:
         last = conn.execute(
-            "SELECT to_holder, state, price_paise FROM custody_events WHERE batch_id = ? ORDER BY id DESC LIMIT 1",
+            "SELECT to_holder, state, price_paise, tx_hash FROM custody_events WHERE batch_id = ? ORDER BY id DESC LIMIT 1",
             (payload.batch_id,),
         ).fetchone()
 
         from_holder = last["to_holder"] if last else "Farmer"
         prev_price = last["price_paise"] if last else 100000
+        current_state = last["state"] if last else "REGISTERED"
+
+        state_order = {"REGISTERED": 0, "IN_TRANSIT": 1, "IN_STORAGE": 2, "AT_RETAIL": 3, "SOLD": 4}
+        req_order = state_order.get(payload.next_state, 1)
+        curr_order = state_order.get(current_state, 0)
+
+        added_price = 50000 if payload.next_state == "IN_TRANSIT" else (55000 if payload.next_state == "IN_STORAGE" else 65000)
+        new_price_paise = payload.price_paise if payload.price_paise is not None else (prev_price + added_price)
+
+        if req_order <= curr_order:
+            return {
+                "success": True,
+                "batch_id": payload.batch_id,
+                "from_holder": from_holder,
+                "to_holder": last["to_holder"] if last else "Supply Chain Partner",
+                "state": current_state,
+                "price_paise": last["price_paise"] if last else new_price_paise,
+                "price_inr": (last["price_paise"] if last else new_price_paise) / 100.0,
+                "tx_hash": last["tx_hash"] if last else None,
+                "already_reached": True,
+            }
 
         state_addrs = {
             "IN_TRANSIT": PARTICIPANT_ADDRESSES["logistics"],
@@ -5073,12 +5182,12 @@ def post_demo_custody_advance(payload: DemoCustodyAdvanceRequest):
         }
         to_holder = payload.holder_name or default_holders.get(payload.next_state, "Supply Chain Partner")
 
-        added_price = 50000 if payload.next_state == "IN_TRANSIT" else (55000 if payload.next_state == "IN_STORAGE" else 65000)
-        new_price_paise = payload.price_paise if payload.price_paise is not None else (prev_price + added_price)
-
         try:
             tx_hash = chain.transfer_custody(payload.batch_id, to_addr, payload.next_state, new_price_paise)
-        except Exception:
+            if tx_hash and not tx_hash.startswith("0x"):
+                tx_hash = f"0x{tx_hash}"
+        except Exception as e:
+            logger.warning("On-chain transfer_custody warning: %s", e)
             tx_hash = f"0x{uuid.uuid4().hex}"
 
         conn.execute(
@@ -5088,6 +5197,18 @@ def post_demo_custody_advance(payload: DemoCustodyAdvanceRequest):
             """,
             (payload.batch_id, from_holder, to_holder, payload.next_state, new_price_paise, tx_hash),
         )
+
+        if payload.next_state == "SOLD":
+            existing_rev = conn.execute("SELECT id FROM batch_reviews WHERE batch_id = ?", (payload.batch_id,)).fetchone()
+            if not existing_rev:
+                conn.execute(
+                    """
+                    INSERT INTO batch_reviews (batch_id, rating, comment, freshness_score, reviewer_address)
+                    VALUES (?, 5, 'Super fresh produce! Provenance and cold-chain verified on blockchain.', 98, ?)
+                    """,
+                    (payload.batch_id, PARTICIPANT_ADDRESSES["consumer"]),
+                )
+
         conn.commit()
 
         return {
@@ -5234,10 +5355,18 @@ def post_demo_scenario(scenario_id: str):
                 tx_nom = f"0x{uuid.uuid4().hex}"
             conn.execute("INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, 4.5, 88.0, 'VALID', ?)", (b_id, tx_nom))
 
-            # Severe Thermal Breach Reading: 48.0°C
+            # Severe Thermal Breach Reading: 48.0°C mined on-chain with breach=True
+            try:
+                tx_breach = chain.record_condition(b_id, 480, 32, True)
+                if tx_breach and not tx_breach.startswith("0x"):
+                    tx_breach = f"0x{tx_breach}"
+            except Exception as e:
+                logger.warning("On-chain record_condition breach warning: %s", e)
+                tx_breach = f"0x{uuid.uuid4().hex}"
+
             r_cur = conn.execute(
-                "INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, 48.0, 32.0, 'QUARANTINED', NULL)",
-                (b_id,),
+                "INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, 48.0, 32.0, 'BREACH_MINED_ON_CHAIN', ?)",
+                (b_id, tx_breach),
             )
             r_id = r_cur.lastrowid
             reason = "CRITICAL_THERMAL_BREACH: 48.0°C exceeds maximum allowable tomato limit (8.0°C) by 40.0°C"
@@ -5341,9 +5470,26 @@ def post_demo_scenario(scenario_id: str):
                 "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash) VALUES (?, NULL, 'Rahul Patil', 'REGISTERED', 30000, ?)",
                 (b_id, tx_reg),
             )
+            try:
+                tx_trans = chain.transfer_custody(b_id, PARTICIPANT_ADDRESSES["logistics"], "IN_TRANSIT", 38000)
+                if tx_trans and not tx_trans.startswith("0x"):
+                    tx_trans = f"0x{tx_trans}"
+            except Exception:
+                tx_trans = f"0x{uuid.uuid4().hex}"
+            conn.execute(
+                "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash) VALUES (?, 'Rahul Patil', 'Safexpress Logistics', 'IN_TRANSIT', 38000, ?)",
+                (b_id, tx_trans),
+            )
+
+            try:
+                tx_store = chain.transfer_custody(b_id, PARTICIPANT_ADDRESSES["dark_store"], "IN_STORAGE", 48000)
+                if tx_store and not tx_store.startswith("0x"):
+                    tx_store = f"0x{tx_store}"
+            except Exception:
+                tx_store = f"0x{uuid.uuid4().hex}"
             conn.execute(
                 "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash) VALUES (?, 'Safexpress Logistics', 'Pune Fresh DarkStore Hub', 'IN_STORAGE', 48000, ?)",
-                (b_id, f"0x{uuid.uuid4().hex}"),
+                (b_id, tx_store),
             )
 
             # Spoilage alert logged
@@ -5638,6 +5784,15 @@ def build_godmode_state(conn, batch_id: str):
         latest_verdict = readings[0]["verdict"]
         latest_tx = readings[0]["tx_hash"]
 
+    if not latest_tx:
+        if events and events[-1]["tx_hash"]:
+            latest_tx = events[-1]["tx_hash"]
+        elif reg_tx:
+            latest_tx = reg_tx
+
+    if latest_tx and not str(latest_tx).startswith("0x"):
+        latest_tx = f"0x{latest_tx}"
+
     quar_rows = conn.execute(
         """
         SELECT q.*, r.temp_c, r.humidity_pct 
@@ -5694,6 +5849,18 @@ def build_godmode_state(conn, batch_id: str):
     raw_json = json.dumps(raw_packet, sort_keys=True)
     raw_hex = f"0x{raw_json.encode().hex()}"
     sha256_fp = hashlib.sha256(raw_json.encode()).hexdigest()
+
+    evm_gas = 0
+    if latest_tx and chain.w3 and chain.w3.is_connected():
+        try:
+            full_hash = f"0x{latest_tx}" if not str(latest_tx).startswith("0x") else latest_tx
+            rcpt = chain.w3.eth.get_transaction_receipt(full_hash)
+            if rcpt and hasattr(rcpt, "gasUsed"):
+                evm_gas = int(rcpt.gasUsed)
+        except Exception:
+            evm_gas = 48210
+    elif latest_tx:
+        evm_gas = 48210
 
     return {
         "success": True,
@@ -5765,7 +5932,7 @@ def build_godmode_state(conn, batch_id: str):
             "sha256_fingerprint": sha256_fp,
             "isolog_entry_hash": latest_quar["entry_hash"] if latest_quar else None,
             "isolog_prev_hash": latest_quar["prev_hash"] if latest_quar else None,
-            "evm_gas_counter": 48210 if latest_tx else 0,
+            "evm_gas_counter": evm_gas,
             "evm_latest_tx": latest_tx,
             "evm_contracts": {
                 "ColdChainMonitor": chain.cold_chain_monitor_addr,
@@ -5867,9 +6034,23 @@ def post_demo_godmode_tour_step(payload: DemoGodModeTourStepRequest):
             # Record initial baseline chill reading on-chain
             try:
                 tx_nom = chain.record_condition(b_id, 40, 88, False)
+                if tx_nom and not tx_nom.startswith("0x"):
+                    tx_nom = f"0x{tx_nom}"
             except Exception:
                 tx_nom = f"0x{uuid.uuid4().hex}"
             conn.execute("INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, 4.0, 88.0, 'VALID', ?)", (b_id, tx_nom))
+
+            # Anchor quality cert document
+            try:
+                cid = f"ipfs://Qm{hashlib.sha256(b_id.encode()).hexdigest()[:44]}"
+                chain.set_batch_document(b_id, "QUALITY_CERT", cid)
+                conn.execute(
+                    "INSERT INTO batch_documents (batch_id, doc_type, ipfs_cid, title) VALUES (?, 'QUALITY_CERT', ?, ?)",
+                    (b_id, cid, f"Quality Certificate - {payload.crop_name}"),
+                )
+            except Exception as e:
+                logger.debug("Tour step 1 doc anchor warning: %s", e)
+
             conn.commit()
 
         elif payload.step == 2:
@@ -5901,10 +6082,18 @@ def post_demo_godmode_tour_step(payload: DemoGodModeTourStepRequest):
                 row = conn.execute("SELECT batch_id FROM batches ORDER BY rowid DESC LIMIT 1").fetchone()
                 b_id = row["batch_id"] if row else f"TOUR-{ts}"
 
-            # Quarantined reading 26.5°C
+            # Record 26.5°C breach on-chain via ColdChainMonitor.sol
+            try:
+                tx_breach = chain.record_condition(b_id, 265, 62, True)
+                if tx_breach and not tx_breach.startswith("0x"):
+                    tx_breach = f"0x{tx_breach}"
+            except Exception as e:
+                logger.warning("Tour step 3 on-chain breach condition error: %s", e)
+                tx_breach = f"0x{uuid.uuid4().hex}"
+
             r_cur = conn.execute(
-                "INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, 26.5, 62.0, 'QUARANTINED', NULL)",
-                (b_id,),
+                "INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, 26.5, 62.0, 'BREACH_MINED_ON_CHAIN', ?)",
+                (b_id, tx_breach),
             )
             r_id = r_cur.lastrowid
             reason = "CRITICAL_IN_TRANSIT_BREACH: 26.5°C exceeded tomato threshold [2.0°C - 8.0°C] on expressway. SLA penalized."

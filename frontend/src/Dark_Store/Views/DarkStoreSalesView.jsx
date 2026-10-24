@@ -37,7 +37,11 @@ export const DarkStoreSalesView = ({ onBack }) => {
   useEffect(() => {
     loadSalesData();
     window.addEventListener('agrichain-data-reset', loadSalesData);
-    return () => window.removeEventListener('agrichain-data-reset', loadSalesData);
+    window.addEventListener('agrichain-data-updated', loadSalesData);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', loadSalesData);
+      window.removeEventListener('agrichain-data-updated', loadSalesData);
+    };
   }, []);
 
   const totalSalesVal = liveSales?.totalSales || '₹ 0';

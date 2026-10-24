@@ -2593,3 +2593,62 @@ pm run build passed cleanly with 0 errors.
 - Verified `GET /telemetry/quarantine` returns real-time incident array sorted by timestamp descending.
 - Tested submitting a live spike reading (48.0°C) via `POST /telemetry` and verified the new incident (`7bc03ad7...`) appeared at the top of the audit log feed within seconds.
 - All 48 unit tests in `trust-layer/tests/` passed cleanly.
+
+
+---
+
+## Task: Connect God Mode and Demo Lab to Live System and Blockchain
+
+**What was done:**
+- Connected God Mode Hub (`GodModeHub.jsx`) and Demo Lab (`ShowcaseDrawer.jsx`) actions directly to the live backend database and EVM smart contracts (`ProductRegistry.sol`, `CustodyTransfer.sol`, `ColdChainMonitor.sol`).
+- Updated `backend/chain.py` `_send_tx` to guarantee `0x`-prefixed hex strings for all transaction hashes returned across smart contract calls.
+- Updated `backend/main.py`:
+  - `post_demo_produce_create`: Signs on-chain batch registration with `ProductRegistry.registerBatch()`, establishes on-chain baseline condition telemetry via `ColdChainMonitor.recordCondition()`, and pins initial IPFS quality certificates on-chain.
+  - `post_demo_iot_inject`: Differentiates cryptographic replay attacks (isolated off-chain with `tx_hash = None`) from genuine physical temperature breaches (mined on `ColdChainMonitor.recordCondition(..., breach=True)` with 0x-prefixed `tx_hash`, `BREACH_MINED_ON_CHAIN` status, and IsoLog quarantine SHA-256 hash).
+  - `post_demo_custody_advance`: Guards state progression order to prevent invalid backward/identical on-chain reverts, calls `CustodyTransfer.transferCustody()` on-chain, provisions 5-star clearance review on `SOLD`, and returns live EVM transaction receipt data.
+  - `post_demo_scenario`: Scenario 2 (`thermal-quarantine`) mines 48.0°C thermal breach on-chain with `breach=True` and records in `spoilage_incidents`; Scenario 4 (`fefo-discount`) advances custody on-chain through `IN_TRANSIT` and `IN_STORAGE`.
+  - `build_godmode_state`: Falls back to latest custody or registration transaction if reading tx is absent, and queries live EVM receipt `gasUsed` via `w3.eth.get_transaction_receipt()` for the Cryptographic Inspector.
+  - `get_batch_traceability`: Combines on-chain records with SQLite audit readings to ensure breaches, temperatures, and quarantine states are always fully populated in the condition log and milestones.
+  - `post_demo_godmode_tour_step`: Step 1 pins IPFS quality cert on-chain; Step 3 mines 26.5°C compressor seizure breach on-chain via `chain.record_condition(..., breach=True)` with real `tx_hash` and EVM gas counter.
+- Connected real-time frontend data synchronization:
+  - Dispatched `window.dispatchEvent(new CustomEvent('agrichain-data-updated'))` across all God Mode steps, manual IoT injections, tour exits, role navigation buttons, Demo Lab scenarios, produce creation, and custody advances.
+  - Added `agrichain-data-updated` event listeners across all Dark Store views (`DarkStoreDashboardView`, `InboundGRNView`, `MicroInventoryView`, `DarkStoreSalesView`, `FulfillmentOrdersView`, `DarkStoreRevenueView`, `DarkStoreKPICards`).
+  - Added navigation and exit handlers in `GodModeHub.jsx` to dispatch `agrichain-data-updated` before exiting to portals.
+
+**Files changed:**
+- `backend/chain.py`
+- `backend/main.py`
+- `backend/modular-deployments.json`
+- `contracts/amoy-deployments.json`
+- `frontend/src/components/GodModeHub.jsx`
+- `frontend/src/components/ShowcaseDrawer.jsx`
+- `frontend/src/components/CleanSlateModal.jsx`
+- `frontend/src/components/AdminPortalView.jsx`
+- `frontend/src/Dark_Store/Views/DarkStoreDashboardView.jsx`
+- `frontend/src/Dark_Store/Views/InboundGRNView.jsx`
+- `frontend/src/Dark_Store/Views/MicroInventoryView.jsx`
+- `frontend/src/Dark_Store/Views/DarkStoreSalesView.jsx`
+- `frontend/src/Dark_Store/Views/FulfillmentOrdersView.jsx`
+- `frontend/src/Dark_Store/Views/DarkStoreRevenueView.jsx`
+- `frontend/src/Dark_Store/components/DarkStoreKPICards.jsx`
+- `MEMORY.md`
+
+**Decisions made (and why):**
+- Physical thermal breaches must be mined on `ColdChainMonitor.sol` on-chain with `breach=True` rather than left with `tx_hash = NULL`, because a thermal excursion is a legitimate physical condition requiring on-chain SLA violation attribution, whereas cryptographic replays and tampered payloads are isolated off-chain into the IsoLog quarantine.
+- `_send_tx` in `backend/chain.py` returned hex strings without `0x`. Prefixing with `0x` is required for standard web3 consumers, receipt lookups, and block explorers.
+- Wrapped all mutation calls in God Mode and Demo Lab with `agrichain-data-updated` event dispatch, and added listeners across all Dark Store views so that any test run in God Mode or Demo Lab immediately updates all open role portals in real time without requiring browser refresh.
+
+**Verified:**
+- Ran automated E2E verification test script against live running backend (`http://127.0.0.1:8000`) and Hardhat node (`http://127.0.0.1:8545`):
+  - God Mode Tour steps 1 through 5: verified step 1 registers batch on `ProductRegistry.sol` with `tx_hash` (`0x...`) and `gasUsed = 73430`; step 2 advances custody on `CustodyTransfer.sol` (`gasUsed = 56330`); step 3 mines 26.5°C compressor seizure breach on `ColdChainMonitor.sol` (`gasUsed = 56354`, `has_spoilage = True`); step 4 sets salvage markdown (55%); step 5 completes retail sale (SOLD) with consumer review.
+  - Demo Lab Produce Create: successfully registered `BATCH-KIN-...` on-chain with 0x tx hash.
+  - Demo Lab IoT Inject (29.5°C breach): successfully mined on `ColdChainMonitor.sol` with 0x tx hash, `is_breach = True`, and SHA-256 IsoLog quarantine hash.
+  - Demo Lab Custody Advance: successfully advanced on-chain to `IN_TRANSIT` and `IN_STORAGE` with valid tx hashes.
+  - Batch Traceability: verified 3 steps and 2 condition readings including the on-chain breach flag.
+  - Scenarios 2 and 4: verified scenario 2 thermal breach and scenario 4 FEFO markdown on-chain transitions.
+- Ran backend pytest: `pytest tests/` (all 16 tests passed).
+- Ran smart contract tests: `cd contracts && npx hardhat test` (all 22 tests passed).
+- Ran frontend production build: `cd frontend && npm run build` (built in 2.70s with 0 errors).
+
+**What's next:**
+- System is ready for live demonstrations with verifiable on-chain transparency.

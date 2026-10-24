@@ -98,6 +98,12 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
 
   useEffect(() => {
     fetchAllData();
+    window.addEventListener('agrichain-data-reset', fetchAllData);
+    window.addEventListener('agrichain-data-updated', fetchAllData);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', fetchAllData);
+      window.removeEventListener('agrichain-data-updated', fetchAllData);
+    };
   }, []);
 
   const handleFeedDemoData = async () => {

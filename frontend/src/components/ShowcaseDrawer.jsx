@@ -95,6 +95,7 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
         setIotBatchId(data.batch_id);
         setCustodyBatchId(data.batch_id);
       }
+      window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
     } catch (err) {
       console.error('Scenario run error:', err);
     } finally {
@@ -120,6 +121,7 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
       });
       const data = await res.json();
       setIotResult(data);
+      window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
     } catch (err) {
       console.error('IoT transmission error:', err);
     } finally {
@@ -151,6 +153,7 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
         setIotBatchId(data.batch_id);
         setCustodyBatchId(data.batch_id);
       }
+      window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
     } catch (err) {
       console.error('Produce create error:', err);
     } finally {
@@ -176,6 +179,7 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
       const data = await res.json();
       setCustodyResult(data);
       fetchBatches();
+      window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
     } catch (err) {
       console.error('Custody advance error:', err);
     } finally {

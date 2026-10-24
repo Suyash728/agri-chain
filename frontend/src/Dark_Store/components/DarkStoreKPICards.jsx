@@ -13,7 +13,11 @@ export const DarkStoreKPICards = ({ onCardClick, kpis: externalKpis }) => {
     };
     loadKpis();
     window.addEventListener('agrichain-data-reset', loadKpis);
-    return () => window.removeEventListener('agrichain-data-reset', loadKpis);
+    window.addEventListener('agrichain-data-updated', loadKpis);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', loadKpis);
+      window.removeEventListener('agrichain-data-updated', loadKpis);
+    };
   }, [externalKpis]);
 
   const kpis = externalKpis || internalKpis || {

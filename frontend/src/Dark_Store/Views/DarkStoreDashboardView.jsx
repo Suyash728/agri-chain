@@ -132,7 +132,11 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
   useEffect(() => {
     loadDashboardData();
     window.addEventListener('agrichain-data-reset', loadDashboardData);
-    return () => window.removeEventListener('agrichain-data-reset', loadDashboardData);
+    window.addEventListener('agrichain-data-updated', loadDashboardData);
+    return () => {
+      window.removeEventListener('agrichain-data-reset', loadDashboardData);
+      window.removeEventListener('agrichain-data-updated', loadDashboardData);
+    };
   }, []);
 
   // Compute dynamic inventory categories and percentages
