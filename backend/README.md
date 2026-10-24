@@ -28,7 +28,7 @@ backend/
 ├── modular-deployments.json    Active contract deployment addresses
 └── scripts/                    Verification and test suites
     ├── verify_final_system.py  Capstone 8-stage automated verification suite
-    ├── verify_phase7_e2e.py    Multi-role custody lifecycle test
+    ├── seed_demo_batch.py      Batch seeder utility for presentations
     └── migrate_sqlite_to_supabase.py Database migration utility
 ```
 

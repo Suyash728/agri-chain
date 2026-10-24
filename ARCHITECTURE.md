@@ -6,7 +6,7 @@ first if you haven't.
 
 ## 1. Why this architecture differs from the original plan — read this first
 
-`docs/proposal/KisanChain_Project_Context.md` describes a more ambitious
+`docs/proposal/AgriChain_Project_Context.md` describes a more ambitious
 target architecture: Next.js 14, Supabase/Postgres, five separate smart
 contracts with full OpenZeppelin `AccessControl`, deployment to the Polygon
 Amoy public testnet, a five-service split (`contracts/` / `trust-layer/` /

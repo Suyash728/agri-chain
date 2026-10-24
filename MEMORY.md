@@ -2264,3 +2264,35 @@ still static UI with no data flow. Specifically:
 - `contracts/npx hardhat test`: 22/22 passing.
 - `trustlayer audit`: 0 high findings.
 - Vite dev server running cleanly on `http://localhost:3000/`.
+
+
+## [Repository Cleanup & Redundant Asset Elimination] — 2026-10-24
+
+**What was done:**
+- Purged 26 unreferenced intermediate image iterations from `frontend/public/images/` (~26.6 MB), retaining only the 47 active images used across the UI.
+- Removed duplicate and superseded documentation:
+  - Removed `docs/proposal/KisanChain_Project_Context.md` (duplicate of `AgriChain_Project_Context.md`).
+  - Removed `docs/plan/` (early sprint tracks 1–4, superseded by `TASKS.md` & `PLAN.md`).
+  - Preserved `docs/review-I/` as the academic submission archive.
+- Purged legacy contract deployment artifacts and obsolete verification scripts:
+  - Deleted `backend/deployed-abi.json` and `backend/deployed-address.txt` (monolithic contract artifacts).
+  - Deleted `contracts/scripts/deploy.js` (broken ethers v5 legacy script; `deploy.cjs` is active).
+  - Deleted `backend/validation.py` (legacy rule-based threshold checker superseded by `trust-layer` in Phase 6).
+  - Deleted early-phase test scripts (`backend/scripts/verify_phase3.py`, `verify_phase4.py`, `verify_phase5_e2e.py`, `verify_phase6_task4.py`, `verify_phase7_e2e.py`), consolidating onto `backend/scripts/verify_final_system.py` and `tests/`.
+- Consolidated AI Trust Layer evaluation reports:
+  - Removed duplicate root `reports/` directory.
+  - Standardized `trust-layer/app/services/evaluation.py` to default to `trust-layer/reports/figures/`.
+- Deleted orphaned 116 MB virtual environment in `backend/.venv/`.
+- Updated documentation and scripts (`ARCHITECTURE.md`, `TASKS.md`, `backend/README.md`).
+
+**Files changed:**
+- Deleted: 26 unused images in `frontend/public/images/`, `docs/proposal/KisanChain_Project_Context.md`, `docs/plan/` (9 files), `backend/deployed-abi.json`, `backend/deployed-address.txt`, `contracts/scripts/deploy.js`, `backend/validation.py`, 5 phase verification scripts in `backend/scripts/`, root `reports/` (6 files), `backend/.venv/` (116 MB).
+- Modified: `ARCHITECTURE.md`, `TASKS.md`, `backend/README.md`, `trust-layer/app/services/evaluation.py`.
+- Appended: `MEMORY.md`.
+
+**Verified (DONE WHEN checks that actually passed):**
+- `npm run build` in `frontend/`: 1,816 modules transformed in 3.92s with 0 errors.
+- `pytest tests/`: 12/12 passing.
+- `contracts/npx hardhat test`: 22/22 passing.
+- `backend/scripts/verify_final_system.py`: 8/8 capstone stages passing with 100%.
+- `trustlayer audit`: 0 high findings.

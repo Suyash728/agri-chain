@@ -46,6 +46,12 @@ from app.services.history import history_repository
 from app.services.integrity import replay_repository
 from app.services.simulator import telemetry_simulator
 
+DEFAULT_FIGURES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "reports",
+    "figures",
+)
+
 
 SCIENTIFIC_NOTES = (
     "SCIENTIFIC CAVEATS & EVALUATION SCOPE:\n"
@@ -71,8 +77,10 @@ class EvaluationService:
     def run_pipeline_evaluation(
         self,
         config: Optional[EvaluationConfig] = None,
-        output_dir: Optional[str] = "reports/figures",
+        output_dir: Optional[str] = None,
     ) -> EvaluationReport:
+        if output_dir is None:
+            output_dir = DEFAULT_FIGURES_DIR
         """
         Execute an end-to-end evaluation run against the real AI Trust Layer pipeline.
 
@@ -274,8 +282,10 @@ class EvaluationService:
     def generate_evaluation_visualizations(
         self,
         report: EvaluationReport,
-        output_dir: str = "reports/figures",
+        output_dir: Optional[str] = None,
     ) -> List[str]:
+        if output_dir is None:
+            output_dir = DEFAULT_FIGURES_DIR
         """
         Generate visualization charts for evaluation report.
 

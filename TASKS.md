@@ -119,7 +119,7 @@ same commit that finishes it. After the last task in a phase, append the
   keys. **These are Hardhat's well-known public test keys — this is the
   account `RULES.md` §7 refers to for the essential build.**
 - [x] In a second terminal, write and run a deployment script
-  (`contracts/scripts/deploy.js`) using Hardhat Ignition or a plain deploy
+  (`contracts/scripts/deploy.cjs`) using Hardhat Ignition or a plain deploy
   script, targeting `--network localhost`. Have it print the deployed
   contract address.
 - [x] Copy the deployed address and the contract's ABI (from
