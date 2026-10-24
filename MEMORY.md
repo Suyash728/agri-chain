@@ -2196,3 +2196,34 @@ still static UI with no data flow. Specifically:
 - Backend Pytest Suite: 12/12 passed (`pytest tests/`).
 - Contract Hardhat Suite: 22/22 passed in 609ms (`npx hardhat test`).
 - Production Vite Build: 1,816 modules transformed in 2.67s with 0 errors (`npm run build`).
+
+
+## [TrustLayer Audit & Hardening] — 2026-10-24
+
+**What was done:**
+- Tested and audited the AgriChain repository using the mechanical TrustLayer testing suite (`/home/suyash/Projects/trustlayer`):
+  1. **Dependency Analysis (`trustlayer deps`)**:
+     - Audited all 56 declared dependencies against live PyPI registry state.
+     - Result: **0 High, 0 Medium, 0 Low**. All packages are valid, popular, and verified.
+  2. **Audit Checkers (`trustlayer audit`)**:
+     - `stale-models`: **0 findings** (zero deprecated LLM model names in the codebase).
+     - `import-effects`: **0 findings** (zero import-time side-effects or rogue execution).
+     - `fail-open`: Initially reported 4 HIGH findings (`env-default-degrades-url` where `os.getenv("DATABASE_URL")` could degrade to an empty string) and swallowed exceptions.
+  3. **Hardening & Defect Elimination**:
+     - Fixed `is_postgres()`, `get_connection()`, `init_db()` in `backend/db.py` to use non-degrading subscript access (`os.environ["DATABASE_URL"]` guarded by membership checks) rather than empty string fallbacks.
+     - Fixed `migrate_sqlite_to_supabase.py` argument parsing to prevent URL degradation.
+     - Replaced empty `except:` bodies in `backend/chain.py` and `backend/db.py` with structured logging (`logger.debug(...)`).
+     - Re-ran `trustlayer audit`: **HIGH findings reduced from 4 to 0**.
+
+**Files changed:**
+- `backend/db.py`
+- `backend/chain.py`
+- `backend/scripts/migrate_sqlite_to_supabase.py`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- `uv run trustlayer deps /home/suyash/Projects/agri-chain`: 0 high, 0 medium, 0 low (56 packages cleared).
+- `uv run trustlayer audit /home/suyash/Projects/agri-chain`: 0 high findings.
+- `pytest tests/`: 12/12 passing.
+- `npx hardhat test`: 22/22 passing.
+- `npm run build`: 1,816 modules built in 3.45s with 0 errors.

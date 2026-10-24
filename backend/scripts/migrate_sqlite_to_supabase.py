@@ -201,10 +201,11 @@ def migrate_to_postgres(target_url: str, sqlite_path: pathlib.Path, dry_run: boo
 
 
 def main():
+    target_default = os.environ["DATABASE_URL"] if "DATABASE_URL" in os.environ else None
     parser = argparse.ArgumentParser(description="Migrate AgriChain SQLite database to Supabase PostgreSQL.")
     parser.add_argument(
         "--target-url",
-        default=os.getenv("DATABASE_URL"),
+        default=target_default,
         help="Target PostgreSQL connection URL (e.g. postgresql://user:pass@host:5432/dbname)",
     )
     parser.add_argument(

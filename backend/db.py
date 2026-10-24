@@ -1,8 +1,11 @@
 import os
 import sqlite3
+import logging
 import pathlib
 from typing import Optional, Any
 from dotenv import load_dotenv
+
+logger = logging.getLogger("agrichain.db")
 
 # Load environment variables
 ROOT_DIR = pathlib.Path(__file__).resolve().parents[1]
@@ -196,8 +199,10 @@ def is_postgres() -> bool:
     global _POSTGRES_AVAILABLE
     if _POSTGRES_AVAILABLE is False:
         return False
-    db_url = os.getenv("DATABASE_URL", "").strip()
-    return db_url.startswith("postgresql://") or db_url.startswith("postgres://")
+    if "DATABASE_URL" not in os.environ:
+        return False
+    db_target = os.environ["DATABASE_URL"].strip()
+    return db_target.startswith("postgresql://") or db_target.startswith("postgres://")
 
 
 class PostgresCursorWrapper:
@@ -227,8 +232,8 @@ class PostgresCursorWrapper:
                         elif isinstance(res, (list, tuple)):
                             self.lastrowid = res[0]
                     return self
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Returning id fallback: %s", e)
 
         self._cur.execute(clean_query, params)
         return self
@@ -290,7 +295,7 @@ def get_connection(db_path: str | pathlib.Path = DB_PATH):
         try:
             import psycopg
             from psycopg.rows import dict_row
-            db_url = os.getenv("DATABASE_URL")
+            db_url = os.environ["DATABASE_URL"]
             raw_conn = psycopg.connect(db_url, row_factory=dict_row)
             _POSTGRES_AVAILABLE = True
             return PostgresConnectionWrapper(raw_conn)
@@ -309,7 +314,7 @@ def init_db(db_path: str | pathlib.Path = DB_PATH) -> pathlib.Path | str:
     Uses PostgreSQL migrations if DATABASE_URL is configured, else local SQLite.
     """
     if is_postgres():
-        db_url = os.getenv("DATABASE_URL")
+        db_url = os.environ["DATABASE_URL"]
         try:
             conn = get_connection()
             if isinstance(conn, PostgresConnectionWrapper):
@@ -410,8 +415,8 @@ def reset_system_data(preserve_policies: bool = True, db_path: str | pathlib.Pat
         if not is_pg:
             try:
                 conn.execute("PRAGMA foreign_keys = OFF")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Pragma foreign_keys off: %s", e)
 
         for table in tables_to_clear:
             try:
@@ -419,7 +424,8 @@ def reset_system_data(preserve_policies: bool = True, db_path: str | pathlib.Pat
                 row = cnt_res.fetchone()
                 cnt = row["cnt"] if row else 0
                 counts[table] = int(cnt)
-            except Exception:
+            except Exception as e:
+                logger.debug("Count table %s fallback: %s", table, e)
                 counts[table] = 0
 
             try:
@@ -435,12 +441,12 @@ def reset_system_data(preserve_policies: bool = True, db_path: str | pathlib.Pat
                 conn.execute(
                     "DELETE FROM sqlite_sequence WHERE name IN ('quarantine', 'readings', 'batch_reviews', 'batch_documents', 'spoilage_incidents', 'custody_events')"
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("sqlite_sequence reset: %s", e)
             try:
                 conn.execute("PRAGMA foreign_keys = ON")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Pragma foreign_keys on: %s", e)
 
         if preserve_policies:
             for crop_name, min_temp, max_temp, min_hum, max_hum in DEFAULT_POLICIES:
@@ -462,8 +468,8 @@ def reset_system_data(preserve_policies: bool = True, db_path: str | pathlib.Pat
                             """,
                             (crop_name, min_temp, max_temp, min_hum, max_hum),
                         )
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Policy insert fallback: %s", e)
 
         conn.commit()
     finally:

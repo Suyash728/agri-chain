@@ -1,9 +1,12 @@
 import os
 import json
+import logging
 import pathlib
 from datetime import datetime
 from dotenv import load_dotenv
 from web3 import Web3
+
+logger = logging.getLogger("agrichain.chain")
 
 # Load env vars from .env at project root
 ROOT_DIR = pathlib.Path(__file__).resolve().parents[1]
@@ -234,8 +237,8 @@ def transfer_custody(
             c_rec = custody_transfer_contract.functions.getCustody(b32).call()
             if not c_rec[3]:
                 _send_tx(custody_transfer_contract, "initializeCustody", b32, owner_address)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("initializeCustody check skipped: %s", e)
         return _send_tx(custody_transfer_contract, "transferCustody", b32, to_addr, state_int, int(price_paise))
     elif legacy_contract:
         return _send_tx(legacy_contract, "transferCustody", b32, to_addr, state_int, int(price_paise))
@@ -295,8 +298,8 @@ def get_batch(batch_id: str) -> dict:
                         if ct[3]:
                             current_holder = ct[0]
                             state = ct[1]
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("getCustody query fallback: %s", e)
                 return {
                     "cropName": result[0],
                     "originFarm": result[1],
@@ -525,18 +528,18 @@ def check_role(role_name: str, account_address: str) -> dict:
     if product_registry_contract:
         try:
             results["ProductRegistry"] = product_registry_contract.functions.hasRole(role_bytes, addr).call()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("ProductRegistry hasRole check: %s", e)
     if custody_transfer_contract:
         try:
             results["CustodyTransfer"] = custody_transfer_contract.functions.hasRole(role_bytes, addr).call()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("CustodyTransfer hasRole check: %s", e)
     if cold_chain_monitor_contract:
         try:
             results["ColdChainMonitor"] = cold_chain_monitor_contract.functions.hasRole(role_bytes, addr).call()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("ColdChainMonitor hasRole check: %s", e)
 
     return {
         "role": role_key,
