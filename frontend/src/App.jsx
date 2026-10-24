@@ -59,30 +59,100 @@ import { PresenterWalkthroughBanner } from './components/PresenterWalkthroughBan
 import { GodModeHub } from './components/GodModeHub';
 
 export default function App() {
-  // Read URL query parameters (e.g. from mobile QR scan: ?role=consumer&tab=journey&batch=BATCH-001)
-  const getInitialUrlState = () => {
-    if (typeof window === 'undefined') return { role: 'consumer', tab: 'home', batch: null };
+  // Read URL query parameters and localStorage to initialize state
+  const getInitialState = () => {
+    if (typeof window === 'undefined') {
+      return { 
+        role: 'farmer', 
+        tab: 'dashboard', 
+        batch: null,
+        farmerTab: 'dashboard',
+        logisticTab: 'dashboard',
+        darkStoreTab: 'dashboard',
+        consumerTab: 'home',
+        adminTab: 'all'
+      };
+    }
     try {
       const params = new URLSearchParams(window.location.search);
-      const role = params.get('role') || 'consumer';
-      const batch = params.get('batch') || null;
-      const tab = params.get('tab') || (batch ? 'journey' : 'home');
-      return { role, tab, batch };
+      const urlRole = params.get('role');
+      const urlTab = params.get('tab');
+      const urlBatch = params.get('batch');
+
+      let savedRole = null;
+      try {
+        savedRole = localStorage.getItem('agrichain_active_role');
+      } catch (_) {}
+
+      const validRoles = ['farmer', 'logistics', 'darkstore', 'consumer', 'admin'];
+      let role = 'farmer';
+      if (urlRole && validRoles.includes(urlRole.toLowerCase())) {
+        role = urlRole.toLowerCase();
+      } else if (savedRole && validRoles.includes(savedRole.toLowerCase())) {
+        role = savedRole.toLowerCase();
+      }
+
+      const getSavedTab = (r, defaultTab) => {
+        if (urlRole && urlRole.toLowerCase() === r && urlTab) {
+          return urlTab;
+        }
+        try {
+          const s = localStorage.getItem(`agrichain_${r}_tab`);
+          if (s) return s;
+          if (r === 'logistics') {
+            const alt = localStorage.getItem('agrichain_logistic_tab');
+            if (alt) return alt;
+          }
+        } catch (_) {}
+        return defaultTab;
+      };
+
+      const farmerTab = getSavedTab('farmer', 'dashboard');
+      const logisticTab = getSavedTab('logistics', 'dashboard');
+      const darkStoreTab = getSavedTab('darkstore', 'dashboard');
+      const consumerTab = getSavedTab('consumer', urlBatch ? 'journey' : 'home');
+      const adminTab = getSavedTab('admin', 'all');
+
+      let currentTab = farmerTab;
+      if (role === 'logistics') currentTab = logisticTab;
+      else if (role === 'darkstore') currentTab = darkStoreTab;
+      else if (role === 'consumer') currentTab = consumerTab;
+      else if (role === 'admin') currentTab = adminTab;
+
+      return {
+        role,
+        tab: currentTab,
+        batch: urlBatch || null,
+        farmerTab,
+        logisticTab,
+        darkStoreTab,
+        consumerTab,
+        adminTab
+      };
     } catch (_) {
-      return { role: 'consumer', tab: 'home', batch: null };
+      return { 
+        role: 'farmer', 
+        tab: 'dashboard', 
+        batch: null,
+        farmerTab: 'dashboard',
+        logisticTab: 'dashboard',
+        darkStoreTab: 'dashboard',
+        consumerTab: 'home',
+        adminTab: 'all'
+      };
     }
   };
 
-  const initialUrlState = getInitialUrlState();
+  const initialUrlState = getInitialState();
 
-  // Role Portal State: 'consumer' (default launch role), 'farmer', 'logistics', or 'darkstore'
+  // Role Portal State: 'farmer', 'logistics', 'darkstore', 'consumer', or 'admin'
   const [activeRole, setActiveRole] = useState(initialUrlState.role);
-  const [adminTab, setAdminTab] = useState('all');
+  const [adminTab, setAdminTab] = useState(initialUrlState.adminTab);
   const [isShowcaseDrawerOpen, setIsShowcaseDrawerOpen] = useState(false);
   const [isGodMode, setIsGodMode] = useState(false);
 
   // Tab state for Farmer portal
-  const [farmerTab, setFarmerTab] = useState(initialUrlState.role === 'farmer' ? initialUrlState.tab : 'dashboard');
+  const [farmerTab, setFarmerTab] = useState(initialUrlState.farmerTab);
   const [selectedCropCategory, setSelectedCropCategory] = useState(null);
   const [inventoryList, setInventoryList] = useState([]);
   const [farmerKpis, setFarmerKpis] = useState([]);
@@ -147,20 +217,72 @@ export default function App() {
   }, [fetchFarmerData]);
 
   // Tab state for Logistics Partner portal
-  const [logisticTab, setLogisticTab] = useState(initialUrlState.role === 'logistics' ? initialUrlState.tab : 'dashboard');
+  const [logisticTab, setLogisticTab] = useState(initialUrlState.logisticTab);
+
+  // Tab state for Dark Store portal
+  const [darkStoreTab, setDarkStoreTab] = useState(initialUrlState.darkStoreTab);
 
   // Tab state for Consumer portal
-  const [consumerTab, setConsumerTab] = useState(initialUrlState.role === 'consumer' ? initialUrlState.tab : 'home');
+  const [consumerTab, setConsumerTab] = useState(initialUrlState.consumerTab);
   const [consumerBatchId, setConsumerBatchId] = useState(initialUrlState.batch);
+
+  // Synchronize active role and tab to URL query parameters & localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('role', activeRole);
+
+      let currentTab = '';
+      if (activeRole === 'farmer') currentTab = farmerTab;
+      else if (activeRole === 'logistics') currentTab = logisticTab;
+      else if (activeRole === 'darkstore') currentTab = darkStoreTab;
+      else if (activeRole === 'consumer') currentTab = consumerTab;
+      else if (activeRole === 'admin') currentTab = adminTab;
+
+      if (currentTab) {
+        url.searchParams.set('tab', currentTab);
+      } else {
+        url.searchParams.delete('tab');
+      }
+
+      if (activeRole === 'consumer' && consumerBatchId) {
+        url.searchParams.set('batch', consumerBatchId);
+      } else if (activeRole === 'farmer' && selectedBatchId && (farmerTab === 'traceability' || farmerTab === 'crop-details')) {
+        url.searchParams.set('batch', selectedBatchId);
+      } else {
+        url.searchParams.delete('batch');
+      }
+
+      const newRelativePathQuery = url.pathname + url.search;
+      if (window.location.pathname + window.location.search !== newRelativePathQuery) {
+        window.history.replaceState({ role: activeRole, tab: currentTab }, '', newRelativePathQuery);
+      }
+
+      localStorage.setItem('agrichain_active_role', activeRole);
+      if (currentTab) {
+        localStorage.setItem(`agrichain_${activeRole}_tab`, currentTab);
+      }
+    } catch (_) {}
+  }, [activeRole, farmerTab, logisticTab, darkStoreTab, consumerTab, adminTab, consumerBatchId, selectedBatchId]);
 
   // Sync state if user navigates with browser history / URL
   useEffect(() => {
     const handleUrlChange = () => {
-      const { role, tab, batch } = getInitialUrlState();
-      if (role) setActiveRole(role);
-      if (role === 'consumer') {
-        setConsumerTab(tab);
-        setConsumerBatchId(batch);
+      const state = getInitialState();
+      if (state.role) setActiveRole(state.role);
+      if (state.role === 'farmer') {
+        if (state.farmerTab) setFarmerTab(state.farmerTab);
+        if (state.batch) setSelectedBatchId(state.batch);
+      } else if (state.role === 'logistics') {
+        if (state.logisticTab) setLogisticTab(state.logisticTab);
+      } else if (state.role === 'darkstore') {
+        if (state.darkStoreTab) setDarkStoreTab(state.darkStoreTab);
+      } else if (state.role === 'consumer') {
+        if (state.consumerTab) setConsumerTab(state.consumerTab);
+        if (state.batch) setConsumerBatchId(state.batch);
+      } else if (state.role === 'admin') {
+        if (state.adminTab) setAdminTab(state.adminTab);
       }
     };
     window.addEventListener('popstate', handleUrlChange);
@@ -178,34 +300,77 @@ export default function App() {
     setIsJourneyOpen(true);
   };
 
+  const handleSwitchRole = (newRole) => {
+    setActiveRole(newRole);
+    try {
+      localStorage.setItem('agrichain_active_role', newRole);
+    } catch (_) {}
+  };
+
   const handleSelectFarmerTab = (tabId) => {
     setFarmerTab(tabId);
     setSelectedCropCategory(null);
+    try {
+      localStorage.setItem('agrichain_farmer_tab', tabId);
+    } catch (_) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectLogisticTab = (tabId) => {
     setLogisticTab(tabId);
+    try {
+      localStorage.setItem('agrichain_logistics_tab', tabId);
+      localStorage.setItem('agrichain_logistic_tab', tabId);
+    } catch (_) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleNavigateRoleAndTab = (role, tab) => {
-    setActiveRole(role);
+  const handleSelectDarkStoreTab = (tabId) => {
+    setDarkStoreTab(tabId);
+    try {
+      localStorage.setItem('agrichain_darkstore_tab', tabId);
+    } catch (_) {}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectConsumerTab = (tabId) => {
+    setConsumerTab(tabId);
+    try {
+      localStorage.setItem('agrichain_consumer_tab', tabId);
+    } catch (_) {}
+  };
+
+  const handleSelectAdminTab = (tabId) => {
+    setAdminTab(tabId);
+    try {
+      localStorage.setItem('agrichain_admin_tab', tabId);
+    } catch (_) {}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleNavigateRoleAndTab = (role, tab, batchId = null) => {
+    handleSwitchRole(role);
+    if (batchId) {
+      if (role === 'consumer') setConsumerBatchId(batchId);
+      if (role === 'farmer') setSelectedBatchId(batchId);
+    }
     if (role === 'farmer') {
-      setFarmerTab(tab || 'dashboard');
+      handleSelectFarmerTab(tab || 'dashboard');
     } else if (role === 'logistics') {
-      setLogisticTab(tab || 'dashboard');
+      handleSelectLogisticTab(tab || 'dashboard');
+    } else if (role === 'darkstore') {
+      handleSelectDarkStoreTab(tab || 'dashboard');
     } else if (role === 'consumer') {
-      setConsumerTab(tab || 'home');
+      handleSelectConsumerTab(tab || 'home');
     } else if (role === 'admin') {
-      setAdminTab(tab || 'all');
+      handleSelectAdminTab(tab || 'all');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectCategory = (category) => {
     setSelectedCropCategory(category);
-    setFarmerTab('crop-details');
+    handleSelectFarmerTab('crop-details');
   };
 
   const handleAddStock = (newStock) => {
@@ -283,7 +448,7 @@ export default function App() {
           {/* Right: Role Switcher & Web3 Wallet Control Bar */}
           <div className="flex items-center gap-1.5 p-1 bg-white/95 rounded-2xl border border-[#E6E1D5] shadow-xs max-w-full overflow-x-auto no-scrollbar whitespace-nowrap flex-shrink-0">
             <button
-              onClick={() => setActiveRole('farmer')}
+              onClick={() => handleSwitchRole('farmer')}
               className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'farmer' 
                   ? 'bg-[#3D4E2A] text-white shadow-xs' 
@@ -294,7 +459,7 @@ export default function App() {
               <span>Farmer</span>
             </button>
             <button
-              onClick={() => setActiveRole('logistics')}
+              onClick={() => handleSwitchRole('logistics')}
               className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'logistics' 
                   ? 'bg-[#354424] text-white shadow-xs' 
@@ -305,7 +470,7 @@ export default function App() {
               <span>Logistics</span>
             </button>
             <button
-              onClick={() => setActiveRole('darkstore')}
+              onClick={() => handleSwitchRole('darkstore')}
               className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'darkstore' 
                   ? 'bg-[#3D4E2A] text-white shadow-xs' 
@@ -317,8 +482,8 @@ export default function App() {
             </button>
             <button
               onClick={() => {
-                setActiveRole('consumer');
-                if (consumerTab === 'onboarding') setConsumerTab('home');
+                handleSwitchRole('consumer');
+                if (consumerTab === 'onboarding') handleSelectConsumerTab('home');
               }}
               className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'consumer' 
@@ -330,7 +495,7 @@ export default function App() {
               <span>Consumer</span>
             </button>
             <button
-              onClick={() => setActiveRole('admin')}
+              onClick={() => handleSwitchRole('admin')}
               className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'admin' 
                   ? 'bg-[#5B21B6] text-white shadow-xs' 
@@ -758,7 +923,11 @@ export default function App() {
       {/* 3. DARK STORE PORTAL VIEW                  */}
       {/* ========================================== */}
       {activeRole === 'darkstore' && (
-        <DarkStoreApp key={`darkstore-${resetKey}`} />
+        <DarkStoreApp 
+          key={`darkstore-${resetKey}`} 
+          currentTab={darkStoreTab}
+          onSelectTab={handleSelectDarkStoreTab}
+        />
       )}
 
       {/* ========================================== */}
@@ -769,9 +938,9 @@ export default function App() {
           <ConsumerApp 
             currentTab={consumerTab}
             initialBatchId={consumerBatchId}
-            onSelectTab={setConsumerTab}
+            onSelectTab={handleSelectConsumerTab}
             onLogout={(role) => {
-              if (role) setActiveRole(role);
+              if (role) handleSwitchRole(role);
               else handleLogout();
             }} 
           />
@@ -785,13 +954,13 @@ export default function App() {
         <>
           <AdminSidebar 
             currentTab={adminTab}
-            onSelectTab={setAdminTab}
+            onSelectTab={handleSelectAdminTab}
             onLogout={handleLogout}
           />
           <AdminPortalView currentTab={adminTab} />
           <AdminBottomNav 
             currentTab={adminTab}
-            onSelectTab={setAdminTab}
+            onSelectTab={handleSelectAdminTab}
           />
         </>
       )}
@@ -813,9 +982,9 @@ export default function App() {
       {isGodMode && (
         <GodModeHub
           onExit={() => setIsGodMode(false)}
-          onNavigateRoleAndTab={(role, tab) => {
+          onNavigateRoleAndTab={(role, tab, batchId) => {
             setIsGodMode(false);
-            handleNavigateRoleAndTab(role, tab);
+            handleNavigateRoleAndTab(role, tab, batchId);
           }}
         />
       )}

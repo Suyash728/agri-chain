@@ -2332,3 +2332,39 @@ still static UI with no data flow. Specifically:
 - `npm run build` in `frontend/`: 1,816 modules transformed in 3.58s with 0 errors.
 - `trustlayer audit`: 0 high findings.
 - Live verification: `POST /admin/seed-demo-data` populates all 6 batches across blockchain, SQLite, IPFS, and reviews; verified `/farmer/kpis`, `/logistics/available-produce`, `/darkstore/inbound`, `/batches/BAT-MGO-701/traceability`, and `/quarantine/verify-integrity`.
+
+
+## [Navigation & State — Active Role & Screen Persistence on Refresh] — 2026-10-24
+
+**What was done:**
+- Fixed the issue where refreshing the browser page (F5 / reload) always defaulted to the Consumer marketplace view instead of staying on the user's active screen.
+- Implemented two-tier state synchronization (URL query parameters + `localStorage` fallback):
+  1. **URL Synchronization (`frontend/src/App.jsx`)**:
+     - Synchronizes `activeRole`, active tab per role (`farmerTab`, `logisticTab`, `darkStoreTab`, `consumerTab`, `adminTab`), and `batchId` to `window.location.search` via `window.history.replaceState` in real-time.
+     - Deep links and browser refreshes (`?role=farmer&tab=shipments`, `?role=darkstore&tab=expiry-alerts`, `?role=logistics&tab=transportation`, `?role=admin&tab=all`, etc.) immediately restore the exact screen.
+  2. **`localStorage` Fallback**:
+     - Persists `agrichain_active_role` and role tab keys (`agrichain_farmer_tab`, `agrichain_logistics_tab`, `agrichain_darkstore_tab`, `agrichain_consumer_tab`, `agrichain_admin_tab`).
+     - Even if the URL query string is manually stripped or a user navigates to root `/`, the application reliably restores their last active persona and tab.
+  3. **Multi-Role Integration**:
+     - Updated `frontend/src/Dark_Store/DarkStoreApp.jsx` to accept `currentTab` and `onSelectTab` props and synchronize internal tab state.
+     - Updated `handleSwitchRole`, `handleNavigateRoleAndTab` (supporting `role`, `tab`, and optional `batchId`), and all top header navigation buttons.
+     - Updated `popstate` browser back/forward history handling across all 5 roles.
+
+**Files changed:**
+- `frontend/src/App.jsx`
+- `frontend/src/Dark_Store/DarkStoreApp.jsx`
+- `MEMORY.md`
+
+**Verified (DONE WHEN checks that actually passed):**
+- Automated Playwright QA Test Suite (`scratch/test_refresh_persistence.py`):
+  1. Farmer -> Shipments: refreshed page, verified still on Farmer -> Shipments.
+  2. Logistics -> Transportation: refreshed page, verified still on Logistics -> Transportation.
+  3. Dark Store -> Expiry / Alerts: refreshed page, verified still on Dark Store -> Expiry / Alerts.
+  4. Admin -> Master Governance: refreshed page, verified still on Admin.
+  5. Consumer -> Products: refreshed page, verified still on Consumer -> Products.
+  6. Bare navigation (`http://localhost:3000/` without params): verified `localStorage` restored last active persona and screen.
+  All 6 automated refresh tests passed 100%.
+- Vite Production Build: 1,816 modules transformed in 3.49s with 0 errors (`npm run build`).
+- Full Backend Test Suite: 13/13 passed in 5.55s (`pytest tests/`).
+- Smart Contract Suite: 22/22 passed in 679ms (`npx hardhat test`).
+- TrustLayer Audit: 0 high findings.

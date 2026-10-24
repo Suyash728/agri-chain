@@ -24,8 +24,20 @@ import { RecordSaleModal } from './Modals/RecordSaleModal';
 import { NotificationsModal } from '../Farmer/Modals/NotificationsModal';
 import { MoreMenuSheet } from '../Farmer/Modals/MoreMenuSheet';
 
-export const DarkStoreApp = () => {
-  const [darkStoreTab, setDarkStoreTab] = useState('dashboard');
+export const DarkStoreApp = ({ currentTab, onSelectTab }) => {
+  const [internalTab, setInternalTab] = useState(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('role') === 'darkstore' && params.get('tab')) {
+        return params.get('tab');
+      }
+      return localStorage.getItem('agrichain_darkstore_tab') || 'dashboard';
+    } catch {
+      return 'dashboard';
+    }
+  });
+
+  const darkStoreTab = currentTab !== undefined ? currentTab : internalTab;
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
 
@@ -45,7 +57,14 @@ export const DarkStoreApp = () => {
   };
 
   const handleSelectTab = (tabId) => {
-    setDarkStoreTab(tabId);
+    if (onSelectTab) {
+      onSelectTab(tabId);
+    } else {
+      setInternalTab(tabId);
+    }
+    try {
+      localStorage.setItem('agrichain_darkstore_tab', tabId);
+    } catch (_) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
