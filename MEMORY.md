@@ -2523,7 +2523,11 @@ still static UI with no data flow. Specifically:
   - Brand green primary: \#3D4E2A  - Accent / badge text: \#556B2F  - Hover states: \#2A371B  - Surface containers: \#FAF7F0  - Borders: \#E6E1D5- Preserved 100% of state logic, API wiring, modal workflows, and contract interactions. Zero backend or contract changes were introduced.
 
 **Files changed:**
-- \rontend/src/components/AdminSidebar.jsx- \rontend/src/components/AdminPortalView.jsx- \rontend/src/components/LoginModal.jsx- \rontend/src/App.jsx- \MEMORY.md
+- \
+rontend/src/components/AdminSidebar.jsx- \
+rontend/src/components/AdminPortalView.jsx- \
+rontend/src/components/LoginModal.jsx- \
+rontend/src/App.jsx- \MEMORY.md
 **Verified:**
 - pm run build\ passed cleanly with 0 errors (1,817 modules transformed).
 - Live Vite dev server HMR updated cleanly on port 3000.
@@ -2531,12 +2535,14 @@ still static UI with no data flow. Specifically:
 
 ## Task: Enforce Farmer Dashboard as Default Landing View
 **What was done:**
-- Updated role initialization logic in rontend/src/App.jsx so that any visit to the base URL (http://localhost:3000/) always defaults to the **Farmer Dashboard** (
+- Updated role initialization logic in 
+rontend/src/App.jsx so that any visit to the base URL (http://localhost:3000/) always defaults to the **Farmer Dashboard** (
 ole=farmer, 	ab=dashboard), rather than falling back to stale localStorage roles (such as admin).
 - Specific roles remain fully accessible via direct navigation or role switcher buttons (?role=farmer, ?role=logistics, ?role=darkstore, ?role=consumer, ?role=admin).
 
 **Files changed:**
-- rontend/src/App.jsx
+- 
+rontend/src/App.jsx
 - MEMORY.md
 
 **Verified:**
@@ -2807,3 +2813,18 @@ pm run build passed cleanly with 0 errors.
 - Ran smart contract tests: `cd contracts && npx hardhat test` (all 22 tests passed).
 - Ran frontend production build: `cd frontend && npm run build` (compiled 1,817 modules in 2.71s with 0 errors).
 - Tested 1-click showcase scenarios across all 5 roles: verified 100% operational.
+## Task: Generate Comprehensive Technical Reference & Viva Voce Master Guide (DOCX & PDF)
+
+**What was done:**
+- Merged the complete technical stack matrix, dataflow pipeline, mathematical anomaly detection formulations, gas optimizations, and examiner Q&A into a comprehensive Viva Voce Reference Guide.
+- Created scripts/generate_viva_guide_docs.py using python-docx with custom emerald/navy styling, shaded table borders, formula callout boxes, and proportional margins.
+- Rendered publication-grade documents:
+  - AgriChain_Viva_Master_Reference_Guide.docx (50,824 bytes)
+  - AgriChain_Viva_Master_Reference_Guide.pdf (383,280 bytes) via native Word COM (win32com.client).
+- Document covers:
+  1. Master Technology Stack & Library Matrix (15 technologies detailed with versions and justifications).
+  2. End-to-End Operational Pipeline (7-step sequential sensor-to-blockchain lifecycle).
+  3. Granular File-by-File & Program Breakdown (Backend, Trust Layer, Contracts, Frontend).
+  4. Technical Deep-Dives (GIGO Oracle Problem, Isolation Forest path lengths, 58.5% single-slot packed struct gas optimization, zero-float integer rules).
+  5. 8 Detailed Examiner Viva Questions & Model Answers.
+  6. Quick Code Location Cheat Sheet ('Where is it in the code?').
