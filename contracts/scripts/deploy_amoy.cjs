@@ -86,6 +86,11 @@ async function main() {
   fs.writeFileSync(backendOutPath, JSON.stringify(deploymentData, null, 2));
   console.log(`[OK] Backend deployment manifest written to: ${backendOutPath}`);
 
+  // Also write to frontend folder for seamless consumption
+  const frontendOutPath = path.join(__dirname, "..", "..", "frontend", "src", "utils", "modular-deployments.json");
+  fs.writeFileSync(frontendOutPath, JSON.stringify(deploymentData, null, 2));
+  console.log(`[OK] Frontend deployment manifest written to: ${frontendOutPath}`);
+
   console.log("\n===============================================================");
   console.log(" MODULAR CONTRACTS DEPLOYMENT COMPLETE!");
   console.log("===============================================================");

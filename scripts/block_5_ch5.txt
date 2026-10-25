@@ -1,0 +1,56 @@
+5:Results
+[180] (normal) 5.1 AI Trust Layer Performance Evaluation
+[181] (normal) The AI Trust Layer evaluates incoming IoT telemetry before it is considered for blockchain recording. The evaluation documented in the project repository uses 1,000 synthetic sensor transmissions covering seven scenarios: normal readings, thermal spikes, refrigeration failure, sensor freeze, calibration drift, GPS deviations, and replay attacks. The Isolation Forest model uses an 11-dimensional feature vector to identify unusual telemetry patterns. Physical plausibility checks, crop-specific policy rules, and SHA-256-based replay detection complement the machine-learning model. The recorded evaluation metrics are presented in Table 5.1.
+[182] (normal) Table 5.1: Recorded performance metrics of the AI Trust Layer
+[183] (normal) The recorded accuracy indicates that the model correctly classifies a high proportion of the evaluated samples. Precision measures the proportion of predicted anomalies that are actually anomalous, while recall measures the proportion of anomalous samples detected by the model. The F1-score combines precision and recall into a single measure. The reported inference latency indicates the time required for model inference per reading under the documented evaluation conditions.
+[184] (normal) 
+[185] (normal) Figure 5.1: Confusion Matrix of the AI-Based Anomaly Detection Model
+[186] (normal) 5.2 Telemetry Fault Detection
+[187] (normal) The framework evaluates telemetry under different simulated operating conditions to examine its ability to identify abnormal sensor behavior. The documented simulator includes seven profiles: nominal readings, thermal spikes, refrigeration failure, sensor freeze, calibration drift, GPS teleportation, and replay attacks.
+[188] (normal) Rule-based checks identify readings that violate configured crop policies or physical constraints. The feature extraction and Isolation Forest stages identify unusual patterns, while replay detection identifies repeated payloads within the configured detection window. Records identified as suspicious are directed to the quarantine mechanism rather than being treated as eligible telemetry for blockchain recording.
+[189] (normal) 
+[190] (normal) Figure 5.2: AI-Based Telemetry Anomaly Detection and Quarantine
+[191] (normal) 5.3 Automated Testing and System Verification
+[192] (normal) The project repository records 147 passing tests for the AI Trust Layer. These tests cover the implemented data validation, anomaly detection, integrity checks, and related processing components. The repository also documents an end-to-end verification script covering the major system functions. The recorded output reports successful completion of all eight verification stages, including smart-contract checks, AI anomaly detection, the multi-role supply chain workflow, IoT breach handling, decentralized document storage, dark-store receiving, consumer review submission, and price-fairness calculation.
+[193] (normal) The principal verification outcomes are summarized in Table 5.2.
+[194] (normal) Table 5.2: Recorded end-to-end system verification outcomes
+[195] (normal) The recorded verification results indicate that the tested components operate together across the documented supply chain workflow.
+[196] (normal) 5.4 Smart-Contract Gas Optimization
+[197] (normal) The framework uses modular smart contracts to manage product registration, custody transfers, environmental-condition records, crop policies, and role-based permissions. The condition monitoring contract also supports batched recording of multiple validated readings in a single transaction. The recorded gas benchmark compares individual sensor-recording transactions with batched transactions. The results are presented in Table 5.3.
+[198] (normal) Table 5.3: Recorded Gas Consumption for Individual and Batched Condition Writes
+[199] (normal) The benchmark reports a gas reduction of 52.71% for a batch of 20 readings compared with recording the readings individually. Batching reduces the average gas consumption per reading and can improve the efficiency of recording validated environmental data on the blockchain.
+[200] (normal) 5.5 Supply Chain Traceability and Price Transparency
+[201] (normal) The proposed framework tracks agricultural products from their origin to the final consumer. The process involves product registration by the farmer, transportation and custody updates by logistics providers, AI-based telemetry validation, product receiving at the dark store, and consumer access to traceability information. The following interfaces demonstrate the working of the system across these stages. The process begins with the farmer registering the agricultural product and its batch information. This establishes the product’s identity and provides the initial information required for tracking its movement through the supply chain.
+[202] (normal) 
+[203] (normal) Figure 5.3: Farmer Dashboard for Agricultural Product and Batch Registration
+[204] (normal) After registration, the product moves through the logistics stage. Logistics providers record relevant dispatch, transportation, location, and custody information. These updates help maintain continuity in the product’s journey between supply chain participants.
+[205] (normal) 
+[206] (normal) Figure 5.4: Logistics Dashboard for Product Dispatch and Tracking
+[207] (normal) The logistics interface also supports the monitoring and updating of product movement during transportation. The recorded information helps stakeholders follow the product and access relevant custody details.
+[208] (normal) 
+[209] (normal) Figure 5.5: Logistics Interface for Product Movement and Custody Updates
+[210] (normal) During product handling and transportation, IoT telemetry is evaluated by the AI Trust Layer before eligible data is prepared for handoff to the blockchain integration layer. The validation process examines incoming sensor data to identify physically implausible readings, unusual patterns, and suspicious or repeated events. Data classified as anomalous can be quarantined, while data with insufficient supporting evidence can be placed on hold. This validation stage helps improve the reliability of the information associated with the product journey.
+[211] (normal) 
+[212] (normal) Figure 5.6: AI Trust Layer for IoT Telemetry Validation
+[213] (normal) Once the product reaches the dark store, the receiving and inventory operations can be recorded. This stage maintains the connection between the product’s previous custody information and its availability at the next point in the supply chain.
+[214] (normal) 
+[215] (normal) Figure 5.7: Dark-Store Dashboard for Product Receiving and Inventory Management
+[216] (normal) The administrative interface provides an overview of the system’s management functions and the information available to authorized participants. It complements the rolespecific interfaces used by farmers, logistics providers, and dark-store operators.
+[217] (normal) 
+[218] (normal) Figure 5.8: Administrative Dashboard for Supply Chain Management
+[219] (normal) At the consumer stage, the QR-based interface provides access to available product information. Consumers can use the associated QR code to retrieve relevant details about the product and its recorded movement through the supply chain.
+[220] (normal) 
+[221] (normal) Figure 5.9: Consumer Interface for QR-Based Product Traceability
+[222] (normal) The product journey view brings together relevant traceability information from the different supply chain stages. It helps users understand how the product has moved from its origin through logistics and retail handling to the consumer.
+[223] (normal) 
+[224] (normal) Figure 5.10: Product Journey Across Agricultural Supply Chain Stages
+[225] (normal) The digital validation certificate provides an additional view of the validation or trace-ability information supported by the system. Its role depends on the information displayed in the certificate and complements the product journey information available to authorized users.
+[226] (normal) 
+[227] (normal) Figure 5.11: Digital Validation Certificate for Product Traceability
+[228] (normal) Overall, the interfaces demonstrate how product registration, logistics updates, AI-based telemetry validation, receiving operations, system administration, and consumer traceability are connected within the proposed framework. Blockchain-supported records and the QR-based interface help make relevant product information more accessible across the agricultural supply chain.
+[229] (normal) 5.6 Overall Discussion
+[230] (normal) The recorded evaluation combines AI performance measurements, automated tests, end-to-end verification, and smart-contract gas benchmarks. The AI evaluation uses 1,000 synthetic samples and reports 97.20% accuracy, 96.30% precision, 98.18% recall, an F1-score of 0.9722, and a mean inference latency of 1.84 ms per reading. The recorded test suite contains 147 passing tests. 
+[231] (normal) The gas benchmark reports a reduction of 52.71% for batched recording of 20 environmental condition readings. Together, these results demonstrate the intended contribution of combining AI-based telemetry validation with blockchain-supported traceability. The Trust Layer assesses in-coming data before it is considered for blockchain recording, while modular smart contracts manage product registration, custody changes, and validated condition records. 
+[232] (normal) Cloud storage and decentralized document storage support application records and product documentation, and the web interface provides supply chain stakeholders with access to relevant information.
+[233] (normal) The AI metrics are based on synthetic telemetry, and the gas figures describe the documented benchmark scenario. These results should therefore be interpreted within the conditions of the reported tests and benchmarks rather than as evidence of performance across all real-world agricultural supply chains.
+[234] (normal) 

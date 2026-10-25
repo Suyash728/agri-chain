@@ -2979,3 +2979,61 @@ pm run build passed cleanly with 0 errors.
 - `npm run build` in `frontend/`: 1,819 modules transformed, compiled in 2.96s with 0 errors.
 - `pytest tests/ trust-layer/tests/`: All 163 tests PASSED in 105.34s.
 - `npx hardhat test` in `contracts/`: All 22 tests PASSED in 672ms.
+
+
+---
+
+## [Final System Health & Comprehensive Verification Audit] — 2026-10-26
+
+**What was done:**
+- Executed an exhaustive full-stack verification audit across all project subsystems:
+  1. Smart Contracts & EVM Test Suite.
+  2. Local Modular Deployment & Role Synchronization on Hardhat.
+  3. FastAPI Backend Test Suite (`tests/`).
+  4. AI Trust Layer Test Suite (`trust-layer/tests/`).
+  5. Frontend Production Bundle Build (`frontend/`).
+  6. Live Active Daemons & REST API Health Checks.
+
+**Verified:**
+- `npx hardhat test` in `contracts/`: **22/22 tests PASSED** in 1s with 0 errors.
+- Modular contracts deployed to local Hardhat node (`http://127.0.0.1:8545`):
+  - `ProductRegistry`: `0x4C2F7092C2aE51D986bEFEe378e50BD4dB99C901`
+  - `CustodyTransfer`: `0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9`
+  - `ColdChainMonitor`: `0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff`
+  - `PolicyConfig`: `0x4631BCAbD6dF18D94796344963cB60d44a4136b6`
+- `pytest tests/`: **16/16 tests PASSED** in 17.41s with 0 failures.
+- `pytest trust-layer/tests/`: **147/147 tests PASSED** in 63.17s with 0 failures.
+- Total automated tests passing: **185 tests (100% pass rate)**.
+- `npm run build` in `frontend/`: Compiled 1,819 modules in 5.93s with **0 errors**.
+- Live Background Services:
+  - Hardhat JSON-RPC node running on port `8545` (Healthy).
+  - FastAPI backend running on port `8000` (Healthy, verified `/farmer/quality-rating` and `/logistics/ai-trust`).
+  - Vite dev server running on port `3000` (HTTP 200 OK).
+- Git status verified: working directory safe, no unapproved pushes to remote main.
+
+
+---
+
+## [Contract Address Synchronization & PostgreSQL Decimal Fix] — 2026-10-26
+
+**What was done:**
+- Fixed contract address synchronization between frontend and backend:
+  - Created `frontend/src/utils/modular-deployments.json` mirroring `backend/modular-deployments.json`.
+  - Updated `frontend/src/utils/contracts.js` to automatically import active contract addresses from `modular-deployments.json`.
+  - Updated `contracts/scripts/deploy_amoy.cjs` to write deployment manifests to both backend and frontend directories on deployment.
+- Fixed PostgreSQL Decimal arithmetic bug in `GET /darkstore/revenue`:
+  - Resolved `TypeError: unsupported operand type(s) for *: 'decimal.Decimal' and 'float'` by casting PostgreSQL `SUM(price_paise)` to `int`.
+  - Verified `GET /darkstore/revenue` now responds with HTTP 200 and complete financial analytics.
+- Redeployed modular contracts to fresh local Hardhat node:
+  - `ProductRegistry`: `0x5FbDB2315678afecb367f032d93F642f64180aa3`
+  - `CustodyTransfer`: `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512`
+  - `ColdChainMonitor`: `0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0`
+  - `PolicyConfig`: `0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9`
+- Relaunched all 3 active services: Hardhat node (:8545), FastAPI backend (:8000), Vite frontend (:3000).
+
+**Verified:**
+- `GET /darkstore/revenue`: 200 OK with accurate revenue table, daily charts, and category breakdowns.
+- `npx hardhat test`: 22/22 tests PASSED.
+- `pytest tests/`: 16/16 tests PASSED.
+- `npm run build` in `frontend/`: Compiled 1,820 modules in 4.36s with 0 errors.
+- All 3 background daemons verified active and healthy.

@@ -61,3 +61,6 @@ Thumbs.db
 
 # ---------- IPFS Local Storage Cache ----------
 backend/ipfs_storage/
+
+# ---------- Office Temporary Files ----------
+~$*

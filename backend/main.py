@@ -3530,7 +3530,7 @@ def get_darkstore_revenue():
         raw_days = []
         for r in rows:
             orders = r["orders_count"]
-            gross_rupees = (r["total_paise"] or 0) // 100
+            gross_rupees = int(r["total_paise"] or 0) // 100
             if gross_rupees > max_gross:
                 max_gross = gross_rupees
             discount_rupees = int(gross_rupees * 0.05)
@@ -3574,12 +3574,12 @@ def get_darkstore_revenue():
         source_bar_data = []
         max_src_val = 1
         for s in sources:
-            val = (s["total_paise"] or 0) // 100
+            val = int(s["total_paise"] or 0) // 100
             if val > max_src_val:
                 max_src_val = val
         for s in sources:
             name = s["origin_farm"].split("||")[0].strip() if s["origin_farm"] else (s["farmer_name"] or "Local Farm")
-            val = (s["total_paise"] or 0) // 100
+            val = int(s["total_paise"] or 0) // 100
             width_pct = int((val / max_src_val) * 85) + 10 if max_src_val > 0 else 50
             source_bar_data.append({
                 "name": name,
@@ -3598,10 +3598,10 @@ def get_darkstore_revenue():
             ORDER BY total_paise DESC
             """
         ).fetchall()
-        total_cat_paise = sum((r["total_paise"] or 0) for r in cat_rows) or 1
+        total_cat_paise = sum(int(r["total_paise"] or 0) for r in cat_rows) or 1
         category_breakdown = []
         for cr in cat_rows:
-            paise = cr["total_paise"] or 0
+            paise = int(cr["total_paise"] or 0)
             share_pct = round((paise / total_cat_paise) * 100, 1)
             category_breakdown.append({
                 "name": cr["crop_name"].capitalize(),
@@ -3610,7 +3610,7 @@ def get_darkstore_revenue():
             })
 
         total_orders = sum(r["orders_count"] for r in rows)
-        total_gross = sum((r["total_paise"] or 0) // 100 for r in rows)
+        total_gross = sum(int(r["total_paise"] or 0) // 100 for r in rows)
         avg_order = (total_gross // total_orders) if total_orders > 0 else 0
 
         payment_breakdown = []

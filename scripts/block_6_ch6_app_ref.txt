@@ -1,0 +1,71 @@
+6: Conclusions and Future Scope
+[236] (normal) 6.1 Conclusion
+[237] (normal) The project, titled A Decentralized IoT-Blockchain Framework with Customized Smart Contracts for Transparent and Traceable Agricultural Supply Chains, presents a framework designed to improve transparency, traceability, and trust in the agricultural supply chain. The system integrates Internet of Things (IoT) technology, an AI-based trust layer, blockchain-based smart contracts, and a web-based interface to support the monitoring and verification of agricultural products as they move from farmers to consumers. The IoT component collects relevant telemetry data, including environmental and location-related information, during product handling and transportation. The AI Trust Layer evaluates this data using physical and temporal plausibility checks, anomaly detection, and integrity verification. Based on the available evidence, the system classifies telemetry as valid, anomalous, or insufficient in evidence. This helps identify suspicious readings, detect potential data inconsistencies, and prevent unreliable telemetry from being forwarded for further processing. The blockchain component supports traceability and controlled supply chain operations through customized smart contracts, while the web interface provides rolebased access to the relevant information for supply-chain stakeholders. Consumers can use QR-based access
+[238] (normal) 6.2 Future Scope
+[239] (normal) 1. Advanced AI-Based Data Validation
+The proposed AI Trust Layer can be enhanced using advanced machine-learning and deep learning models to detect abnormal, manipulated, or unreliable IoT sensor readings. Future models could analyze historical sensor data, identify unusual patterns, assign confidence scores, and flag suspicious readings before they are recorded on the blockchain. This would improve the reliability of agricultural supply-chain information.
+[240] (normal) 
+[241] (normal) 2. Real-Time IoT Device Integration
+The system can be extended by integrating physical IoT sensors and devices to collect real-time information about temperature, humidity, storage conditions, location, and transportation. This would enable continuous monitoring of agricultural produce from the farm to warehouses, distributors, and retailers, helping stakeholders maintain product quality and reduce postharvest losses.
+[242] (normal) 3. Automated and Transparent Farmer Payments
+Customized smart contracts can be enhanced to automate payment-related processes according to predefined conditions, such as verified delivery, agreed prices, quality parameters, and confirmation of product receipt. This could improve transaction transparency, reduce disputes between farmers and intermediaries, and provide farmers with a verifiable record of payment status. Actual payment automation would require integration with suitable payment systems and compliance with applicable regulations.
+[243] (normal) 4. Scalability and Large-Scale Deployment
+The proposed framework can be expanded to support multiple farms, agricultural markets, warehouses, distributors, and retailers across different regions. Future implementation could explore scalable blockchain platforms, efficient data storage, and off-chain storage for large sensor datasets, while recording important verification results and transaction references on chain. This would help manage increasing data volumes without unnecessarily increasing blockchain costs.
+[244] (normal) 5. Farmer-Friendly Mobile Application
+A dedicated mobile application can be developed to help farmers access the platform easily. Through the application, farmers could register agricultural batches, view product movement, check transaction histories, receive payment-status notifications, and verify relevant quality records. A multilingual interface and support for low-connectivity environments could improve accessibility for farmers in rural areas.
+[245] (normal) 
+[246] (normal) 
+[247] (normal) 6. Predictive Analytics for Agricultural Supply Chains
+Historical IoT readings, transportation records, and supply-chain events could be analyzed using predictive machine-learning models. These models may help forecast product deterioration, transportation delays, storage risks, and potential post-harvest losses. Early warnings would allow farmers and other stakeholders to take corrective action before significant losses occur.
+[248] (normal) 7. Integration with Agricultural Marketplaces and Government Platforms 
+[249] (normal) The framework could be integrated with agricultural marketplaces, digital trading platforms, and relevant government systems wherever suitable APIs and permissions are available. Such integration could improve the exchange of verified product information, support price transparency, and simplify the verification of agricultural transactions and supporting documents.
+[250] (normal) 8.Blockchain Interoperability and Smart Contract Enhancement
+Future development could support interoperability between different blockchain networks and external agricultural platforms. Customized smart contracts could also be expanded to handle additional supply-chain rules, including quality-based pricing, delivery confirmation, dispute management, and conditional payments. Security audits and formal verification would be important before deploying these contracts in real-world transactions.
+[251] (normal) 9. Improved Data Security and Privacy
+Future versions could introduce stronger identity management, role-based access control, encrypted communication, and privacy-preserving data-sharing mechanisms. Sensitive information, such as personal details, commercial agreements, and payment information, could remain off-chain, while the blockchain stores appropriate proofs or references. This would balance traceability with data confidentiality.
+[252] (normal) 
+[253] (normal) Appendices
+[254] (normal) The appendices provide supplementary technical information supporting the implementation and evaluation of the proposed framework. They include the system workflow, AI Trust Layer decision process, testing details, and blockchain performance evaluation.
+[255] (normal) Appendix I: System Workflow
+[256] (normal) The proposed framework follows a sequence of operations to support agricultural product traceability. The workflow begins with the collection of telemetry data from IoT devices during product handling and transportation. The collected data is evaluated by the AI Trust Layer before it is forwarded for further processing. The main stages of the workflow are:
+[257] (normal) 1. Telemetry Collection: IoT devices collect relevant environmental and location related information associated with the agricultural product.
+[258] (normal) 2. Data Validation:  The AI Trust Layer checks the physical plausibility, temporal consistency, and integrity of the received data.
+[259] (normal) 3. Anomaly Detection: Machine-learning-based evaluation identifies potentially abnormal telemetry patterns.
+[260] (normal) 4. Verdict Generation: The system classifies the telemetry as VALID, ANOMALOUS, or INSUFFICIENT EVIDENCE.
+[261] (normal) 5. Handoff Decision: Data that satisfies the required validation conditions can be prepared for the Oracle handoff. Anomalous data is quarantined, while data with insufficient evidence is placed on hold.
+[262] (normal) 6. Blockchain Processing: The blockchain component uses customized smart contracts to support product registration, custody transfers, and traceability operations.
+[263] (normal) 7. Product Tracking: The web interface provides relevant supply-chain information to authorized stakeholders and enables consumers to access product journey information through a QR code.
+[264] (normal) Appendix II: AI Trust Layer Verdicts
+[265] (normal) The AI Trust Layer evaluates incoming IoT telemetry using rule-based validation, anomaly detection, event fingerprinting, and replay checks. Based on the available evidence, it assigns one of the following verdicts.
+[266] (normal) 1. VALID: The telemetry satisfies the implemented validation checks, including measurement plausibility, temporal consistency, and integrity checks. It is considered eligible for the next processing stage and may be forwarded to the blockchain integration layer.
+[267] (normal) 2. ANOMALOUS: The telemetry contains detected irregularities, such as implausible measurements, suspicious location changes, integrity failures, or replayed events. Such records are quarantined for further inspection and are not automatically forwarded to the blockchain layer.
+[268] (normal) 3. INSUFFICIENT EVIDENCE: The available information is insufficient to make a reliable validation decision, for example, due to missing or incomplete telemetry. The record is placed on hold until sufficient evidence becomes available, rather than being automatically accepted as valid.
+[269] (normal) 
+[270] (normal) 
+[271] (normal) 
+[272] (normal) 
+[273] (normal) 
+[274] (normal) Bibliography
+[275] (normal) [1] A. Agrawal et al., “Optimizing Supply Chain Management With IoE and AI,” 2025.
+[276] (normal) [2] M. Mohamed, A. Al-Saleh, A. Sharma, and M. Tejani, “Zero-Day Exploits Detection with Adaptive WavePCA-Autoencoder (AWPA) Adaptive Hybrid Exploit Detection Net-work (AHEDNet),” Scientific Reports, 2025.
+[277] (normal) [3] A. Maurya et al., “Blockchain-Driven Security for IoT Networks: State-of-the-Art, Challenges and Future Directions,” Peer-to-Peer Networking and Applications, 2025.
+[278] (normal) [4] D. Dudczyk, M. Dunston, and M. Crosby, “Blockchain Technology for Global Supply Chain Management: A Survey of Applications, Challenges, Opportunities and Implica-tions,” IEEE Access, 2024.
+[279] (normal) [5] S. Yavaprabhas, R. Kurnia, M. Seyedghorban, and D. Samson, “Demystifying the Impact of Blockchain on Trust in Emerging and Established Relationships: A Case of Organic Food Supply Chains,” 2024
+[280] (normal) 
+[281] (normal) 
+[282] (normal) 
+[283] (normal) 
+[284] (normal) 
+[285] (normal) 
+[286] (normal) 
+[287] (normal) 
+[288] (normal) 
+[289] (normal) 
+[290] (normal) 
+[291] (normal) 
+[292] (normal) 
+[293] (normal) 
+[294] (normal) 
+[295] (normal) Publication Details
+[296] (normal) 
+[297] (normal) 
