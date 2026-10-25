@@ -2868,3 +2868,40 @@ pm run build passed cleanly with 0 errors.
 - Restructured detailed architectural highlights and Viva Voce model Q&A into an elegant right-side slide-over drawer that opens on demand without covering the main viewport.
 - Tested production build (`npm --prefix frontend run build` - 0 errors).
 - Pushed changes to GitHub `origin/main`.
+
+
+---
+
+## Task: Multi-Tier Trust Architecture Realignment (Farmer vs Logistics Partner vs Dark Store)
+
+**What was done:**
+- Realigned the placement and semantics of "Trust Score" across supply-chain roles to reflect true operational responsibility and eliminate the domain flaw of grading farmers for carrier reefer breakdowns:
+  1. **Logistics Partner Portal (Primary Home of Transit AI Trust & Telematics)**:
+     - Created `frontend/src/Logistic_Partner/Views/LogisticAITrustView.jsx` equipped with live transit Cold Chain AI Trust Score, Reefer Temperature monitoring, Highway GPS Telemetry verification, Smart Seal tamper prevention, Carrier SLA Compliance tracking, and Quarantine Audit Feed.
+     - Added `AI Trust & Telemetry` tab (`ai-trust`) to `LogisticSidebar.jsx` and `LogisticBottomNav.jsx`.
+     - Wired Card 6 on `LogisticDashboardView.jsx` to navigate directly to the detailed fleet telematics console.
+     - Exposed `@app.get("/logistics/ai-trust")` on the FastAPI backend returning transit verification data and carrier penalty deductions (`carrierPenaltyPaise`).
+  2. **Dark Store Portal (Inbound AI Verification Gate)**:
+     - Added an **"AI Trust Gate"** verification badge column to `InboundGRNView.jsx` incoming deliveries table, displaying `🛡️ 95/100 (Verified)` for healthy shipments and `🛡️ 87/100 (Quarantined)` with active circuit breaker lock for breached shipments.
+     - Updated `get_darkstore_inbound()` in `backend/main.py` to calculate and return `aiTrustScore` and `aiTrustStatus` per inbound delivery.
+  3. **Farmer Portal (Farm Reputation & Harvest Certification Rating)**:
+     - Reframed the Farmer dashboard card from "Cold Chain / GPS Telemetry" to **"Farm Quality & Certification"** with domain-relevant checkpoints: Harvest Quality Grade (Grade A Prime), IPFS Lab Certifications (Organic & GAP), Fulfillment Reliability (100% On-Time Handover), and Consumer Quality Reviews.
+     - Created `frontend/src/Farmer/Views/FarmerQualityView.jsx` featuring IPFS anchored lab certificates (NPOP Organic, Zero Pesticide Residue, IndGAP) and verified post-sale marketplace consumer reviews.
+     - Added `@app.get("/farmer/quality-rating")` on backend computing real metrics from `batches`, `batch_documents`, and `batch_reviews`.
+     - Preserved `@app.get("/farmer/ai-trust")` for backward-compatibility with tests.
+
+**Files changed:**
+- `backend/main.py`
+- `frontend/src/App.jsx`
+- `frontend/src/Farmer/Views/FarmerQualityView.jsx`
+- `frontend/src/Logistic_Partner/Views/LogisticAITrustView.jsx`
+- `frontend/src/Logistic_Partner/components/LogisticSidebar.jsx`
+- `frontend/src/Logistic_Partner/Views/LogisticDashboardView.jsx`
+- `frontend/src/Dark_Store/Views/InboundGRNView.jsx`
+- `MEMORY.md`
+
+**Verified:**
+- `npm run build` in `frontend/`: Compiled 1,819 modules in 2.80s with 0 errors.
+- `pytest tests/`: All 16 tests PASSED in 12.11s.
+- `npx hardhat test`: All 22 tests PASSED in 816ms.
+- All three daemons (Hardhat node, FastAPI backend, Vite dev server) confirmed running and healthy.

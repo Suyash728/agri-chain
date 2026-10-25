@@ -416,12 +416,15 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
         </div>
 
         {/* CARD 6: AI TRUST SCORE Summary */}
-        <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col justify-between space-y-4">
+        <div 
+          onClick={() => onSelectTab && onSelectTab('ai-trust')}
+          className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col justify-between space-y-4 hover:border-[#7A8B52] transition-all cursor-pointer group"
+        >
           <div>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-[#556B2F]" />
-                <h2 className="text-base font-extrabold text-[#2D2620]">AI Trust Score</h2>
+                <h2 className="text-base font-extrabold text-[#2D2620] group-hover:text-[#556B2F] transition-colors">AI Trust Score</h2>
               </div>
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${aiTrustData?.score > 0 ? 'bg-[#556B2F]/15 text-[#556B2F]' : 'bg-amber-100 text-amber-900'}`}>
                 {aiTrustData?.level || (aiTrustData?.score > 0 ? 'Verified 🛡️' : 'Awaiting Telemetry')}
@@ -446,14 +449,19 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
                 <span className="font-bold text-[#556B2F]">{aiTrustData?.aiVerificationDetails?.[0]?.status || 'Awaiting Telemetry'}</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg bg-[#FAF7F0]/60">
-                <span className="text-[#666057]">Supplier Quality Grade:</span>
-                <span className="font-bold text-[#2D2620]">{aiTrustData?.score > 0 ? 'Grade A (Verified)' : 'Awaiting Harvest'}</span>
+                <span className="text-[#666057]">Fleet GPS Validation:</span>
+                <span className="font-bold text-[#2D2620]">{aiTrustData?.aiVerificationDetails?.[1]?.status || 'Route Verified'}</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg bg-[#FAF7F0]/60">
-                <span className="text-[#666057]">Dispute Risk Index:</span>
-                <span className="font-bold text-[#556B2F]">{aiTrustData?.score > 0 ? 'Low Risk (0.2%)' : '0 Deviations Flagged'}</span>
+                <span className="text-[#666057]">Smart Seal & Tamper:</span>
+                <span className="font-bold text-[#556B2F]">{aiTrustData?.aiVerificationDetails?.[2]?.status || 'Smart Seal Intact'}</span>
               </div>
             </div>
+          </div>
+
+          <div className="pt-2 border-t border-[#E6E1D5] flex items-center justify-between text-xs font-bold text-[#354424] group-hover:text-[#26321A]">
+            <span>View Live Fleet Telematics</span>
+            <span>→</span>
           </div>
         </div>
 

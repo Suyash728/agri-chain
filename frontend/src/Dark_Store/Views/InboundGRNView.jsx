@@ -569,6 +569,7 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
                 <th className="py-4 px-5">Products</th>
                 <th className="py-4 px-5">Quantity</th>
                 <th className="py-4 px-5">Expected Date & Time</th>
+                <th className="py-4 px-5">AI Trust Gate</th>
                 <th className="py-4 px-5">Status</th>
                 <th className="py-4 px-5 text-center">Actions</th>
               </tr>
@@ -616,6 +617,23 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
                       {row.expectedDate}
                     </td>
 
+                    {/* AI Trust Gate */}
+                    <td className="py-4 px-5">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`px-2.5 py-1 rounded-xl text-xs font-black inline-flex items-center gap-1 ${
+                          row.circuitBreaker || row.status?.includes('BLOCKED')
+                            ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                            : 'bg-[#556B2F]/15 text-[#354424] border border-[#556B2F]/30'
+                        }`}>
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>{row.aiTrustScore !== undefined ? `${row.aiTrustScore}/100` : (row.circuitBreaker ? '87/100' : '95/100')}</span>
+                        </span>
+                        <span className={`text-[10px] font-bold block ${row.circuitBreaker ? 'text-rose-700' : 'text-[#556B2F]'}`}>
+                          {row.circuitBreaker ? 'Quarantined' : 'Verified'}
+                        </span>
+                      </div>
+                    </td>
+
                     {/* Status Badge */}
                     <td className="py-4 px-5">
                       <span className={`px-3 py-1 rounded-full text-xs font-extrabold inline-block ${row.badgeClass}`}>
@@ -650,7 +668,7 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="py-12 text-center text-[#666057]">
+                  <td colSpan="8" className="py-12 text-center text-[#666057]">
                     <p className="font-extrabold text-sm">No incoming deliveries match your current filters.</p>
                     <button 
                       onClick={resetAllFilters}

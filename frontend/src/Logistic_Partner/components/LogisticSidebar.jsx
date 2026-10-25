@@ -8,7 +8,8 @@ import {
   Package, 
   User, 
   LogOut,
-  Sprout
+  Sprout,
+  ShieldCheck
 } from 'lucide-react';
 
 export const logisticNavItems = [
@@ -17,6 +18,7 @@ export const logisticNavItems = [
   { id: 'procurement-orders', label: 'Procurement / Orders', icon: ShoppingBag },
   { id: 'transportation', label: 'Transportation', icon: Truck },
   { id: 'shipment-tracking', label: 'Shipment Tracking', icon: MapPin },
+  { id: 'ai-trust', label: 'AI Trust & Telemetry', icon: ShieldCheck },
   { id: 'traceability', label: 'Traceability', icon: Link2 },
   { id: 'profile', label: 'Profile', icon: User },
 ];
