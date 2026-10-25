@@ -2905,3 +2905,25 @@ pm run build passed cleanly with 0 errors.
 - `pytest tests/`: All 16 tests PASSED in 12.11s.
 - `npx hardhat test`: All 22 tests PASSED in 816ms.
 - All three daemons (Hardhat node, FastAPI backend, Vite dev server) confirmed running and healthy.
+
+
+---
+
+## Task: Top Navigation Bar Simplification & Unified Account Switcher
+
+**What was done:**
+- **Removed `God Mode` button from role switcher**: Eliminated the redundant `✨ God Mode` button from the top navigation role switcher pill bar (`Farmer`, `Logistics`, `Dark Store`, `Consumer`, `Admin`), keeping the role switcher strictly focused on real supply-chain personas while preserving God Mode launch access via the Presenter Walkthrough Banner.
+- **Removed redundant right-most account button**: Removed the separate `(R) Rahul [Switch]` button and divider from the far right of the top navigation bar.
+- **Unified account switching into the digital identity button**: Empowered the primary account button (`WalletConnect`: `• ₹ [User Name] [Role] v`) with the complete account switching functionality. Clicking it immediately opens the `LoginModal` for 1-click persona switching (Farmer, Logistics, Dark Store, Consumer, Admin), credential sign in, and user registration.
+- **Integrated Web3 Auditor toggle inside `LoginModal`**: Added MetaMask connection management into the unified account modal footer so users can toggle Web3 Auditor mode without cluttering the main navigation bar.
+
+**Files changed:**
+- `frontend/src/App.jsx`
+- `frontend/src/components/WalletConnect.jsx`
+- `frontend/src/components/LoginModal.jsx`
+- `MEMORY.md`
+
+**Verified:**
+- `npm run build` in `frontend/`: Compiled 1,819 modules in 3.32s with 0 errors.
+- `pytest tests/`: All 16 tests passed in 12.45s.
+- All three daemons (Hardhat node, FastAPI backend, Vite dev server) confirmed running and healthy.

@@ -174,12 +174,26 @@ export const WalletProvider = ({ children }) => {
   );
 };
 
-export const WalletConnect = ({ activeRole = 'farmer' }) => {
+export const WalletConnect = ({ activeRole = 'farmer', currentUser, onSwitchAccount }) => {
   const { account, role, connectWallet, disconnectWallet, isConnecting } = useWallet();
   const [showDropdown, setShowDropdown] = useState(false);
   const [metaMaskNotice, setMetaMaskNotice] = useState('');
 
-  const currentIdentity = ROLE_IDENTITIES[activeRole] || ROLE_IDENTITIES.farmer;
+  const roleKey = currentUser?.role || activeRole;
+  const currentIdentity = ROLE_IDENTITIES[roleKey] || ROLE_IDENTITIES[activeRole] || ROLE_IDENTITIES.farmer;
+  const displayName = currentUser?.name || currentIdentity.name;
+  const displayRole = currentUser?.role 
+    ? (currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)) 
+    : currentIdentity.roleTitle;
+  const badgeStyle = ROLE_IDENTITIES[roleKey]?.badge || currentIdentity.badge;
+
+  const handleClick = () => {
+    if (onSwitchAccount) {
+      onSwitchAccount();
+    } else {
+      setShowDropdown(!showDropdown);
+    }
+  };
 
   const handleMetaMaskConnect = async () => {
     const res = await connectWallet();
@@ -203,8 +217,9 @@ export const WalletConnect = ({ activeRole = 'farmer' }) => {
     return (
       <div className="relative flex-shrink-0">
         <button
-          onClick={() => setShowDropdown(!showDropdown)}
+          onClick={handleClick}
           className="w-[210px] sm:w-[220px] h-[34px] px-2.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center justify-between gap-1.5 hover:bg-[#FAF7F0] transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
+          title="Switch Account / Web3 Identity"
         >
           <div className="flex items-center gap-1.5 min-w-0">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
@@ -239,16 +254,24 @@ export const WalletConnect = ({ activeRole = 'farmer' }) => {
               <span className="font-extrabold text-[#354424]">{role}</span>
             </div>
 
-            <div className="text-[10px] text-[#786E65] bg-emerald-50/60 p-2 rounded-xl border border-emerald-200/60">
-              💡 <b>Academic / Auditor Mode Active:</b> Transactions will be signed directly via your connected Web3 wallet.
-            </div>
+            {onSwitchAccount && (
+              <button
+                onClick={() => {
+                  setShowDropdown(false);
+                  onSwitchAccount();
+                }}
+                className="w-full py-2 rounded-xl bg-[#354424] text-white text-xs font-extrabold hover:bg-[#2B381D] transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+              >
+                <span>👥 Switch Account / Personas</span>
+              </button>
+            )}
 
             <button
               onClick={() => {
                 disconnectWallet();
                 setShowDropdown(false);
               }}
-              className="w-full mt-1 py-1.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-xs font-extrabold text-[#A8422B] hover:bg-rose-50 transition-colors cursor-pointer"
+              className="w-full py-1.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-xs font-extrabold text-[#A8422B] hover:bg-rose-50 transition-colors cursor-pointer"
             >
               Disconnect (Return to Rupee Mode)
             </button>
@@ -262,19 +285,19 @@ export const WalletConnect = ({ activeRole = 'farmer' }) => {
   return (
     <div className="relative flex-shrink-0">
       <button
-        onClick={() => setShowDropdown(!showDropdown)}
+        onClick={handleClick}
         className="w-[210px] sm:w-[220px] h-[34px] px-2.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center justify-between gap-1.5 hover:bg-[#FAF7F0] transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
-        title="Verified Indian Rupee Digital Identity"
+        title="Switch Account / Digital Identity"
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
           <span className="text-emerald-700 font-black flex-shrink-0">₹</span>
           <span className="font-extrabold text-[#2D2620] truncate text-xs text-left">
-            {currentIdentity.name}
+            {displayName}
           </span>
         </div>
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border flex-shrink-0 ml-1.5 ${currentIdentity.badge}`}>
-          {currentIdentity.roleTitle}
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border flex-shrink-0 ml-1.5 ${badgeStyle}`}>
+          {displayRole}
         </span>
         <ChevronDown className="w-3.5 h-3.5 text-[#666057] flex-shrink-0 ml-1" />
       </button>
@@ -296,9 +319,21 @@ export const WalletConnect = ({ activeRole = 'farmer' }) => {
               <span>Account Holder</span>
               <span className="font-mono text-[#3D4E2A] font-extrabold">{currentIdentity.id}</span>
             </div>
-            <span className="text-xs font-black text-[#2D2620]">{currentIdentity.name}</span>
+            <span className="text-xs font-black text-[#2D2620]">{displayName}</span>
             <span className="text-[11px] text-[#786E65]">{currentIdentity.org}</span>
           </div>
+
+          {onSwitchAccount && (
+            <button
+              onClick={() => {
+                setShowDropdown(false);
+                onSwitchAccount();
+              }}
+              className="w-full py-2 rounded-xl bg-[#354424] text-white text-xs font-extrabold hover:bg-[#2B381D] transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+            >
+              <span>👥 Switch Account / Personas</span>
+            </button>
+          )}
 
           <div className="p-2.5 rounded-xl bg-white border border-[#E6E1D5] flex flex-col gap-1.5 text-xs">
             <div className="flex items-center justify-between">

@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
+import { useWallet } from './WalletConnect';
 
 export const LoginModal = ({ 
   isOpen, 
@@ -22,6 +23,8 @@ export const LoginModal = ({
   onLoginSuccess,
   currentRole = 'farmer'
 }) => {
+  const { account, connectWallet, disconnectWallet, isConnecting } = useWallet();
+  const [metaMaskNotice, setMetaMaskNotice] = useState('');
   const [activeTab, setActiveTab] = useState('personas'); // 'personas' | 'signin' | 'register'
   const [personas, setPersonas] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -37,6 +40,18 @@ export const LoginModal = ({
   const [regEmail, setRegEmail] = useState('');
   const [regRole, setRegRole] = useState('farmer');
   const [regPhone, setRegPhone] = useState('');
+
+  const handleMetaMaskConnect = async () => {
+    const res = await connectWallet();
+    if (!res || !res.success) {
+      if (res?.reason === 'NOT_INSTALLED') {
+        setMetaMaskNotice('MetaMask extension not found. You are operating in Native Rupee Mode with automated relayer sponsorship.');
+      } else {
+        setMetaMaskNotice('Connection request dismissed. Continuing in Native Rupee Mode.');
+      }
+      setTimeout(() => setMetaMaskNotice(''), 5000);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -439,10 +454,45 @@ export const LoginModal = ({
           )}
         </div>
 
+        {/* Web3 Auditor Option */}
+        <div className="px-6 py-2.5 bg-[#F4F5E6]/60 border-t border-[#E6E1D5] flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-[#354424]" />
+            <span className="font-bold text-[#2D2620]">Web3 Wallet:</span>
+            <span className="text-[11px] text-[#666057]">
+              {account ? `${account.slice(0, 6)}...${account.slice(-4)} (Auditor Active)` : 'Native Rupee Mode'}
+            </span>
+          </div>
+
+          {account ? (
+            <button
+              type="button"
+              onClick={disconnectWallet}
+              className="text-xs font-bold text-rose-700 hover:underline cursor-pointer"
+            >
+              Disconnect Wallet
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleMetaMaskConnect}
+              disabled={isConnecting}
+              className="px-3 py-1 rounded-xl bg-white border border-[#E6E1D5] hover:bg-emerald-50 text-xs font-bold text-[#354424] transition-colors cursor-pointer shadow-2xs"
+            >
+              {isConnecting ? 'Connecting...' : 'Connect MetaMask'}
+            </button>
+          )}
+        </div>
+        {metaMaskNotice && (
+          <p className="px-6 py-1.5 text-[10px] text-amber-800 bg-amber-50 border-t border-amber-200">
+            {metaMaskNotice}
+          </p>
+        )}
+
         {/* Footer info */}
-        <div className="px-6 py-3 bg-[#FAF7F0] border-t border-[#E6E1D5] flex items-center justify-between text-[11px] text-[#8C8275]">
+        <div className="px-6 py-2.5 bg-[#FAF7F0] border-t border-[#E6E1D5] flex items-center justify-between text-[11px] text-[#8C8275]">
           <span>Role-Based Access Control (RBAC)</span>
-          <span className="font-bold text-[#354424]">EVM + SQLite Identity</span>
+          <span className="font-bold text-[#354424]">EVM + PostgreSQL Identity</span>
         </div>
 
       </div>

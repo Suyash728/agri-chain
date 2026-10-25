@@ -537,19 +537,6 @@ export default function App() {
               <span>Admin</span>
             </button>
 
-            <button
-              onClick={() => isGodMode ? setIsGodMode(false) : handleLaunchGodMode(null, 1)}
-              className={`px-3 h-[32px] rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
-                isGodMode 
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md ring-2 ring-amber-300' 
-                  : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200'
-              }`}
-              title="Omniscient 4-Party Real-Time Synchronized View"
-            >
-              <span className="text-amber-500">✨</span>
-              <span>God Mode</span>
-            </button>
-
             <div className="h-5 w-px bg-[#E6E1D5] mx-1 flex-shrink-0" />
 
             {/* Universal Notification Bell with Unread Badge */}
@@ -566,26 +553,12 @@ export default function App() {
               )}
             </button>
 
-            <WalletConnect activeRole={activeRole} />
-
-            <div className="h-5 w-px bg-[#E6E1D5] mx-1 flex-shrink-0" />
-
-            {/* Active User Persona & Switch User / Logout Button */}
-            <button
-              onClick={() => setIsLoginModalOpen(true)}
-              className="px-2.5 h-[32px] rounded-xl bg-white hover:bg-[#FAF7F0] border border-[#E6E1D5] flex items-center gap-1.5 text-xs font-bold text-[#2D2620] cursor-pointer transition-colors shadow-2xs flex-shrink-0"
-              title="Switch Account / Sign In"
-            >
-              <div className="w-5 h-5 rounded-full bg-[#354424] text-white flex items-center justify-center text-[10px] font-black">
-                {currentUser ? currentUser.name.charAt(0) : (ROLE_NAMES[activeRole] ? ROLE_NAMES[activeRole].charAt(0) : 'U')}
-              </div>
-              <span className="hidden lg:inline max-w-[120px] truncate text-[11px] font-extrabold text-[#2D2620]">
-                {currentUser ? currentUser.name : (ROLE_NAMES[activeRole] ? ROLE_NAMES[activeRole].split(' ')[0] : 'Sign In')}
-              </span>
-              <span className="text-[10px] font-bold text-[#3D4E2A] bg-[#3D4E2A]/10 px-1.5 py-0.2 rounded hidden xl:inline">
-                Switch
-              </span>
-            </button>
+            {/* Active User Account & Switch Persona Button */}
+            <WalletConnect 
+              activeRole={activeRole} 
+              currentUser={currentUser}
+              onSwitchAccount={() => setIsLoginModalOpen(true)}
+            />
           </div>
         </header>
 
