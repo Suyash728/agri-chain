@@ -2927,3 +2927,22 @@ pm run build passed cleanly with 0 errors.
 - `npm run build` in `frontend/`: Compiled 1,819 modules in 3.32s with 0 errors.
 - `pytest tests/`: All 16 tests passed in 12.45s.
 - All three daemons (Hardhat node, FastAPI backend, Vite dev server) confirmed running and healthy.
+
+
+---
+
+## Task: Remove Redundant Floating Showcase & Demo Lab Button
+
+**What was done:**
+- Removed the floating `Showcase & Demo Lab` trigger button from the bottom-right corner of the screen (`ShowcaseDrawer.jsx`).
+- The full interactive Showcase & Demo Lab drawer remains 100% accessible via the `⚡ Demo Lab` button in the top `PresenterWalkthroughBanner`.
+- Keeps the bottom right view unblocked for dashboard data cards and mobile navigation bars.
+
+**Files changed:**
+- `frontend/src/components/ShowcaseDrawer.jsx`
+- `MEMORY.md`
+
+**Verified:**
+- `npm run build` in `frontend/`: Compiled 1,819 modules in 3.19s with 0 errors.
+- `pytest tests/`: All 16 tests passed in 8.96s.
+- Background daemons (Hardhat node on :8545, FastAPI backend on :8000, Vite dev server on :3000) active and operational.

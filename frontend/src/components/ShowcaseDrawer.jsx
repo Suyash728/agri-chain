@@ -190,17 +190,7 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
 
   return (
     <>
-      {/* 1. Floating Showcase Trigger Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 md:bottom-6 right-5 z-40 bg-gradient-to-r from-[#29452A] to-[#3D5A2B] text-white px-4 py-3 rounded-full shadow-2xl border border-white/20 flex items-center gap-2.5 font-extrabold text-xs sm:text-sm hover:scale-105 active:scale-95 transition-all cursor-pointer group"
-      >
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-        <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-        <span>Showcase & Demo Lab</span>
-      </button>
-
-      {/* 2. Slide-Over Backdrop */}
+      {/* 1. Slide-Over Backdrop */}
       {isOpen && (
         <div 
           onClick={() => setIsOpen(false)}
