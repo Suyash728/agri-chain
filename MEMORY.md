@@ -2946,3 +2946,36 @@ pm run build passed cleanly with 0 errors.
 - `npm run build` in `frontend/`: Compiled 1,819 modules in 3.19s with 0 errors.
 - `pytest tests/`: All 16 tests passed in 8.96s.
 - Background daemons (Hardhat node on :8545, FastAPI backend on :8000, Vite dev server on :3000) active and operational.
+
+
+---
+
+## Task: Documentation System Overhaul & Conciseness Alignment
+
+**What was done:**
+- **`PRD.md`**: Modernized to reflect the completed state of the system rather than two-week phase drafts. Articulated the core problems, the completed 5-role actor model (Farmer, Logistics, Dark Store, Consumer, Admin), role realignment (Transit cold chain to Logistics, Inbound AI Trust Gate to Dark Store, Farm Quality & IPFS certs to Farmer), fair-share price transparency, and non-goals. Reduced from 160 lines to 74 lines.
+- **`ARCHITECTURE.md`**: Stripped obsolete historical essays and deprecated monolithic Solidity code. Documented the actual modern 5-tier architecture: 5 modular smart contracts (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, `AccessControlRoles`), FastAPI backend, dual-mode relational storage (Supabase PostgreSQL + local SQLite fallback), pre-chain AI Trust Layer (11-D features + Isolation Forest $F_1 = 0.9722$), and React 18 frontend with unified account switcher. Reduced from 463 lines to 158 lines.
+- **`RULES.md`**: Updated engineering constraints: integer paise and deci-celsius, telemetry persistence before AI validation, forward-only monotonic custody progression, OpenZeppelin RBAC, style lock, and secrets isolation. Reduced from 124 lines to 74 lines.
+- **`PLAN.md`**: Replaced historical daily calendar schedules with an executive milestone roadmap covering all completed Phases 1 through 13, system verification runbook commands, and maintenance extension guidelines. Reduced from 196 lines to 66 lines.
+- **`TASKS.md`**: Streamlined from 738 lines to 74 lines: marked Phases 1–13 complete, and formalized exact `DONE WHEN` verification commands for smart contracts, backend, AI trust layer, full capstone E2E verification, and hardware simulation.
+- **`README.md`**: Updated role highlights, system architecture diagram, verification commands, and quick-start instructions.
+- **`contracts/README.md`**: Accurately documented 5 modular contracts, forward-only `AT_RETAIL` lifecycle, gas optimization benchmarks, and deployment commands.
+- **`trust-layer/README.md`**: Streamlined from 247 lines to 54 lines: focused on the pre-chain AI gatekeeper pipeline, decision matrix, and test commands without verbose redundant JSON blocks.
+- **`hardware/README.md`**: Cross-platform simulation commands, ESP32 wiring diagram, and PlatformIO flashing instructions.
+
+**Files changed:**
+- `PRD.md`
+- `ARCHITECTURE.md`
+- `RULES.md`
+- `PLAN.md`
+- `TASKS.md`
+- `README.md`
+- `contracts/README.md`
+- `trust-layer/README.md`
+- `hardware/README.md`
+- `MEMORY.md`
+
+**Verified:**
+- `npm run build` in `frontend/`: 1,819 modules transformed, compiled in 2.96s with 0 errors.
+- `pytest tests/ trust-layer/tests/`: All 163 tests PASSED in 105.34s.
+- `npx hardhat test` in `contracts/`: All 22 tests PASSED in 672ms.

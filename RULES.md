@@ -1,124 +1,69 @@
-# RULES.md
+# RULES.md — Hard Engineering Constraints
 
-Hard constraints. Not suggestions. If a task seems to require breaking one of
-these, stop and write the conflict into `MEMORY.md` instead of breaking the
-rule.
+> **Strict, non-negotiable architectural and engineering rules for AgriChain.**
 
-These exist specifically because this project is built by a small local
-model (gpt-oss-20b / gemma-4-12b) with no memory between sessions and a
-tendency, like any LLM, to reach for a plausible-sounding library or API that
-doesn't actually exist or behaves differently than assumed. Every rule below
-closes off a specific way that goes wrong.
+---
 
-## 1. Stack whitelist — nothing outside this list without updating this file first
+## 1. Approved Technology Stack
 
-| Layer | Allowed | Approved Additions (Phases 6–13) | Not allowed |
-|---|---|---|---|
-| Frontend | Vite, React 18, Tailwind CSS, `lucide-react` | `ethers` v6 (for client-side MetaMask Web3 wallet connection & signing) | Any other new npm package. Any router. Any state library (Redux, Zustand). TypeScript conversion. Next.js. |
-| Backend | Python 3.11+, FastAPI, `uvicorn`, `web3.py`, `sqlite3` | `scikit-learn`, `numpy` (Isolation Forest ML trust layer), `httpx`, `pytest` | Django, Flask, Node/Express for the backend. |
-| Blockchain | Solidity ^0.8.20, Hardhat, `hardhat-toolbox` | OpenZeppelin `AccessControl` (RBAC) and `Pausable` (circuit breakers) | Foundry, Truffle, any non-EVM chain. |
-| Storage | SQLite (`backend/agrichain.db`) | Supabase Cloud PostgreSQL (`psycopg2`) via `DATABASE_URL` pooler; Pinata IPFS gateway for certificate pinning | MongoDB, Redis, unauthorized cloud databases. |
+| Layer | Approved Technologies | Prohibited |
+|---|---|---|
+| **Frontend** | React 18, Vite, Tailwind CSS, `lucide-react`, `ethers` v6 | Redux, Zustand, React Router, Next.js, TypeScript conversion, unapproved UI component libraries |
+| **Backend** | Python 3.11+, FastAPI, `uvicorn`, `web3.py`, `pydantic` | Django, Flask, Express/Node backend |
+| **AI Trust Layer** | `scikit-learn` (Isolation Forest), `numpy`, `scipy` | Unvetted ML frameworks or external black-box prediction APIs |
+| **Blockchain** | Solidity 0.8.28, Hardhat, OpenZeppelin (`AccessControl`, `Pausable`) | Foundry, Truffle, non-EVM chains |
+| **Storage** | Supabase Cloud PostgreSQL (`psycopg2`), local SQLite fallback, Pinata IPFS | MongoDB, DynamoDB, unvetted cloud databases |
+| **IoT / Hardware**| C++ (ESP32 Arduino framework / PlatformIO), Python simulator | Proprietary uncompiled binaries |
 
-If a task genuinely needs something not on this list, the correct move is to
-add it to this file with a one-line justification, in the same commit as the
-task that needs it — not to install it silently.
+---
 
-## 2. Never touch `frontend/` visual styling
+## 2. Strict Integer Representation for Money & Temperature
 
-Every file under `frontend/src/` may be edited **only** to:
-- replace a `mockData` / `consumerData` import with a `fetch()` call
-- add a loading state or error state around that fetch (a spinner, a "failed
-  to load" message) using components/classes that already exist elsewhere in
-  the same file or a sibling file
+- **Money is ALWAYS Integer Paise**:
+  - Store and pass prices as `price_paise` (1 INR = 100 paise).
+  - Used uniformly in Solidity (`uint256 pricePaise`), PostgreSQL/SQLite (`INTEGER`), and Python (`int`).
+  - **Floats for money are strictly prohibited.** Conversion to rupees occurs only at the final display layer in the frontend: `(price_paise / 100).toFixed(2)`.
+- **Temperature is ALWAYS Integer Deci-Celsius**:
+  - Temperatures are signed integer tenths of a degree Celsius (`temp_deci_c`, e.g., $24.5^\circ\text{C} = 245$, $-2.0^\circ\text{C} = -20$) in contracts and logic comparisons.
+  - Converted to float representation only for visual UI rendering.
 
-Any edit to a `className` string, any new Tailwind utility class, any change
-to layout, spacing, color, font, or icon choice is out of scope. If a screen
-"looks wrong" after wiring real data, the fix is almost always in the data
-shape (see `ARCHITECTURE.md` §4), not the JSX.
+---
 
-`frontend/DESIGN.md` is the visual specification. It should not need to change
-for the essential build. If you believe it does, stop and write why in
-`MEMORY.md` rather than editing it.
+## 3. Persistence Before AI Validation (Audit Trail Integrity)
 
-## 3. Money is always an integer, never a float
+Every incoming sensor telemetry payload at `POST /telemetry` **must be persisted to the `readings` table before AI evaluation runs**. 
+- Rejecting or dropping unvalidated telemetry prior to logging violates audit integrity.
+- Both `VALID` and `ANOMALOUS` (quarantined) readings remain auditable in the database.
 
-Every price in this system is stored and passed around as `price_paise` — an
-integer number of paise (1 rupee = 100 paise). This applies in:
+---
 
-- Solidity (`uint256 pricePaise`)
-- SQLite (`INTEGER`)
-- Python (plain `int`)
-- Any JSON payload between backend and frontend
+## 4. Forward-Only Monotonic Custody State Transitions
 
-**Never** use a `float`, `double`, or `decimal` for a price at any layer.
-Floating-point rounding errors compound across a chain of custody transfers,
-and a blockchain record with a silently-wrong price defeats the entire point
-of price transparency. Convert to rupees for *display only*, in the frontend,
-at the last possible moment (`(price_paise / 100).toFixed(2)`), and never
-store or pass the converted value back into any function.
+Produce custody transitions strictly advance forward:
+$$\text{REGISTERED} \longrightarrow \text{IN\_TRANSIT} \longrightarrow \text{IN\_STORAGE} \longrightarrow \text{AT\_RETAIL} \longrightarrow \text{SOLD}$$
+- Backward transitions (e.g., `AT_RETAIL → IN_TRANSIT`) are blocked by smart contract logic (`CustodyTransfer.sol`) and backend validators.
 
-The same applies to temperature: store as `int` tenths-of-a-degree
-(`temp_deci_c`), not `float` degrees, anywhere the value is written on-chain
-or compared against a threshold. Convert to a human-readable float only for
-display.
+---
 
-## 4. Every write to SQLite happens before validation runs
+## 5. Smart Contract Safety & Access Control
 
-When a sensor reading arrives at `/telemetry`, it must be inserted into the
-`readings` table **first**, with whatever verdict it eventually gets updated
-to afterward — never validate first and only insert if valid. This preserves
-the full audit trail, including rejected readings, which the quarantine
-feature (E4/E7 in `PRD.md`) depends on entirely. Skipping this is the single
-most likely way to accidentally break the "prove the AI trust layer works"
-requirement.
+- State-mutating functions must be protected by OpenZeppelin role modifiers (`onlyRole(FARMER_ROLE)`, `onlyRole(ORACLE_ROLE)`, etc.) or `onlyOwner`.
+- Telemetry condition writes must support batched execution (`recordConditionsBatch`) to minimize EVM gas costs.
+- Critical operations must respect emergency pauses via `Pausable` circuit breakers.
+- No unbounded loops over dynamic arrays in Solidity.
 
-## 5. Solidity-specific rules
+---
 
-- Every state-changing function that should only be callable by the backend
-  must use the `onlyOwner` modifier (see `ARCHITECTURE.md` §5). Do not write
-  a function that any address can call.
-- No unbounded loops over arrays that could grow without limit. If you find
-  yourself writing `for (uint i = 0; i < someArray.length; i++)` where
-  `someArray` could grow with every batch or every reading, stop — that's the
-  kind of pattern that becomes unusable (or exploitable) once the array is
-  large. Ask whether the data belongs in an event instead (it almost always
-  does — see `ARCHITECTURE.md` §5's note on events vs storage).
-- Custody state transitions are one-directional (`REGISTERED → IN_TRANSIT →
-  IN_STORAGE → AT_RETAIL → SOLD`). The `require(uint8(newState) >
-  uint8(b.state), ...)` check in `AgriChainCore.transferCustody` enforces
-  this — do not remove or weaken it.
-- Every contract change needs at least one Hardhat test before it's
-  considered done. See `TASKS.md` for exactly which tests are required for
-  the essential build.
+## 6. Frontend Consistency & Style Lock
 
-## 6. Never fabricate a data shape
+- **Wire, Never Recreate**: Replace mock imports only with `fetch()` returning identical JSON shapes.
+- **Style Lock**: Preserve existing Tailwind CSS utility classes, color palettes, fonts, and component layout.
+- If a screen renders unexpectedly, fix the backend response data shape rather than editing frontend JSX styling.
 
-Covered in depth in `ARCHITECTURE.md` §4. Restated as a hard rule because
-it's the rule most likely to be silently broken: **before writing any backend
-endpoint that a frontend screen will consume, open the corresponding
-`mockData.js` (or `consumerData.js`) export and copy its exact shape.** Do
-not rename a key because a different name seems clearer. Do not add a field
-the mock doesn't have because it seems useful. Do not omit a field the mock
-has because your database doesn't have that column yet — add the column
-instead.
+---
 
-## 7. Secrets
+## 7. Secrets Management
 
-- `.env` is never committed. Check `.gitignore` includes it before the first
-  commit of any session.
-- The backend's blockchain account (the one that calls `onlyOwner` functions)
-  uses a private key that lives in `.env` only, loaded via environment
-  variable, never hardcoded in `chain.py` or anywhere else.
-- For the essential build, this account is one of Hardhat's default funded
-  local test accounts — these are public, well-known test keys with zero
-  real value, safe to reference in `TASKS.md` and in comments, but still
-  loaded from `.env` rather than typed directly into source, as a habit that
-  carries over correctly once this moves to a real testnet (O5).
-
-## 8. When something isn't covered here
-
-If a situation comes up that isn't addressed by this file, the default is:
-**prefer the smaller, more boring, more reversible option**, and write down
-what you chose and why in `MEMORY.md`. A future session (human or agent) can
-revisit the decision with full context; a silent choice can't be revisited
-because no one will know it was made.
+- Secrets (private keys, `DATABASE_URL`, `PINATA_JWT`) must reside exclusively in `.env` and are loaded via environment variables.
+- Never hardcode credentials, private keys, or database connection strings into source code.
+- `.env` and local database files must remain in `.gitignore`.
