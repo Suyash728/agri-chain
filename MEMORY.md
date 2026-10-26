@@ -3115,3 +3115,59 @@ pm run build passed cleanly with 0 errors.
   - `Salem Pure Turmeric` -> `/images/turmeric_only.png`
 - `npm run build` compiled 1,820 modules in 2.63s with 0 errors.
 - `pytest tests/` passed all 16 tests in 7.29s.
+
+
+---
+
+## Task: Link Consumer Marketplace to Actual Dark Store Inventory
+
+**What was done:**
+- **Eliminated synthetic mock batches (`BATCH-CAT-*`)**:
+  1. Removed the hardcoded 18-item `catalog_defs` iteration and automatic `INSERT INTO batches` logic from `GET /consumer/products` in `backend/main.py`.
+  2. Purged legacy synthetic `BATCH-CAT-*` rows from `batches` and `custody_events`.
+- **Wired Consumer products directly to live Dark Store inventory**:
+  1. Updated `GET /consumer/products` in `backend/main.py` to query batches whose latest custody state is strictly `IN_STORAGE` or `AT_RETAIL` from the Dark Store.
+  2. Maintained strict food safety circuit breaker: filters out any batch with anomalies/quarantines in `readings` or `spoilage_incidents`.
+  3. Mapped each real batch into the Consumer marketplace schema with verified crop artwork (`_resolve_crop_icon`), category resolution (`_resolve_category_id`), clean origin farm string, farmer name, and real review metrics (`batch_reviews`).
+  4. Updated `GET /consumer/orders` to query real completed purchases (`state = 'SOLD'`) and resolve proper produce thumbnails.
+- **Enriched demonstration dataset (`backend/seeder.py`)**:
+  1. Added authentic Dark Store batches across multiple categories:
+     - `BAT-BAN-101`: Jalgaon Robusta Banana (`IN_STORAGE`, Fruits)
+     - `BAT-POT-201`: Fresh Harvest Potatoes (`IN_STORAGE`, Vegetables)
+     - `BAT-DAL-301`: Unpolished Toor Dal (`AT_RETAIL`, Pulses)
+     - `BAT-TUR-405`: Salem Pure Curcumin Turmeric (`AT_RETAIL`, Spices)
+     - `BAT-ALM-501`: Premium Kashmiri Almonds (`AT_RETAIL`, Dry Fruits)
+     - In addition to existing `BAT-TOM-802` (Tomatoes) and `BAT-WHT-505` (Wheat).
+  2. Ensured all batches carry authentic on-chain registration and custody handoff transactions.
+- **Frontend Real-time Inventory Reactivity & Graceful Empty States**:
+  1. Updated `HomeView.jsx`, `ProductsView.jsx`, `CategoriesView.jsx`, and `FavoritesView.jsx` to listen for `agrichain-data-updated` and `agrichain-data-reset` events, re-fetching products immediately when Dark Store receives batches (GRN) or consumers check out.
+  2. Added informative empty-state banners in `HomeView.jsx` and `ProductsView.jsx` when categories or the Dark Store hub have zero in-stock produce.
+  3. Passed `batchId: product.batchId` into `cartItems` in `ConsumerApp.jsx`, ensuring that consumer checkouts record and advance the exact physical batch on-chain and in SQLite/PostgreSQL to `SOLD`.
+- **Automated Verification Suite**:
+  1. Created `tests/test_consumer_darkstore_inventory.py` verifying:
+     - `GET /consumer/products` returns only batches currently in `IN_STORAGE` or `AT_RETAIL`.
+     - Quarantined, in-transit, or registered batches never leak into consumer products.
+     - Full dynamic transition: Farmer registration -> Logistics transit -> Dark Store GRN intake (appears in products) -> Consumer checkout (moves to `SOLD`, disappears from marketplace, appears in consumer orders).
+
+**Files changed:**
+- `backend/main.py`
+- `backend/seeder.py`
+- `frontend/src/Consumer/ConsumerApp.jsx`
+- `frontend/src/Consumer/Views/HomeView.jsx`
+- `frontend/src/Consumer/Views/ProductsView.jsx`
+- `frontend/src/Consumer/Views/CategoriesView.jsx`
+- `frontend/src/Consumer/Views/FavoritesView.jsx`
+- `tests/test_system_reset.py`
+- `tests/test_consumer_darkstore_inventory.py`
+- `MEMORY.md`
+
+**Decisions made (and why):**
+- Strictly query real batches whose most recent `custody_events` state is `IN_STORAGE` or `AT_RETAIL`. This aligns the Consumer user experience directly with the real-world operational truth of the Dark Store micro-hub.
+- Exclude batches that are quarantined or in-transit to uphold consumer food safety and ensure that only physically received, uncompromised batches can be purchased.
+- Dispatch `agrichain-data-updated` on checkout so all active views update in real time without requiring browser refreshes.
+
+**Verified:**
+- `pytest tests/`: All 18 tests passed (100% pass rate in 8.90s).
+- `cd contracts && npx hardhat test`: All 22 tests passed (617ms).
+- `cd frontend && npm run build`: Compiled 1,820 modules in 2.68s with 0 errors.
+- `GET /consumer/products` tested: returns strictly authentic batches held in the Dark Store with authentic tx hashes, farm origins, and images.

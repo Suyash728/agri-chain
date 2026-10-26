@@ -4,15 +4,26 @@ import { Heart, Plus } from 'lucide-react';
 export const FavoritesView = ({ onAddToCart, onToggleFavorite, onProductClick }) => {
   const [products, setProducts] = useState([]);
 
-  useEffect(() => {
+  const fetchFavorites = () => {
     fetch('http://localhost:8000/consumer/products')
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setProducts(data);
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchFavorites();
+    const handleUpdate = () => fetchFavorites();
+    window.addEventListener('agrichain-data-updated', handleUpdate);
+    window.addEventListener('agrichain-data-reset', handleUpdate);
+    return () => {
+      window.removeEventListener('agrichain-data-updated', handleUpdate);
+      window.removeEventListener('agrichain-data-reset', handleUpdate);
+    };
   }, []);
 
   const favoriteItems = products.filter(p => p.isFavorite);

@@ -18,20 +18,32 @@ export const HomeView = ({
 }) => {
   const [products, setProducts] = useState([]);
 
-  useEffect(() => {
+  const fetchProducts = () => {
     fetch('http://localhost:8000/consumer/products')
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           // Deduplicate by product name so each product appears only once
           const uniqueList = Array.from(new Map(data.map(p => [p.name, p])).values());
           setProducts(uniqueList);
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    const handleUpdate = () => fetchProducts();
+    window.addEventListener('agrichain-data-updated', handleUpdate);
+    window.addEventListener('agrichain-data-reset', handleUpdate);
+    return () => {
+      window.removeEventListener('agrichain-data-updated', handleUpdate);
+      window.removeEventListener('agrichain-data-reset', handleUpdate);
+    };
   }, []);
 
   const bestSellers = products.filter(p => p.isBestSeller);
+  const featuredItems = bestSellers.length > 0 ? bestSellers : products;
 
   const productSections = [
     { id: 'fruits', name: 'Fruits' },
@@ -113,29 +125,44 @@ export const HomeView = ({
           </div>
         </div>
 
-        {/* 3. Best Sellers Section */}
-        <div className="flex flex-col gap-3">
-          <div className="flex justify-between items-center">
-            <h3 className="font-extrabold text-sm sm:text-lg text-[#2D2620]">Best Sellers</h3>
-            <button 
-              onClick={() => onNavigate('products')}
-              className="text-xs sm:text-sm font-extrabold text-[#354424] hover:underline cursor-pointer"
-            >
-              View All
-            </button>
+        {/* 3. Empty Inventory Notice (if Dark Store has 0 batches) */}
+        {products.length === 0 && (
+          <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#E6E1D5] shadow-xs text-center flex flex-col items-center justify-center gap-2">
+            <span className="text-3xl">🌱</span>
+            <h4 className="font-extrabold text-sm sm:text-base text-[#2D2620]">
+              Dark Store Inventory Syncing
+            </h4>
+            <p className="text-xs text-[#666057] max-w-md">
+              No produce currently held in storage at your local micro-hub. Batches are dispatched fresh directly from certified partner farms.
+            </p>
           </div>
+        )}
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-            {bestSellers.slice(0, 6).map((product) => (
-              <ProductCard 
-                key={product.id}
-                product={product}
-                onAddToCart={onAddToCart}
-                onProductClick={onProductClick}
-              />
-            ))}
+        {/* 4. Best Sellers / In-Stock Section */}
+        {featuredItems.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-extrabold text-sm sm:text-lg text-[#2D2620]">In-Stock at Dark Store</h3>
+              <button 
+                onClick={() => onNavigate('products')}
+                className="text-xs sm:text-sm font-extrabold text-[#354424] hover:underline cursor-pointer"
+              >
+                View All
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+              {featuredItems.slice(0, 6).map((product) => (
+                <ProductCard 
+                  key={product.id}
+                  product={product}
+                  onAddToCart={onAddToCart}
+                  onProductClick={onProductClick}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 4 - 9. Category-Wise Product Sections (Exactly 2 Product Cards per Category) */}
         {productSections.map((sec) => {

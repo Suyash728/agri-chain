@@ -5,7 +5,7 @@ export const CategoriesView = ({ onBack, onSelectCategory }) => {
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
+  const fetchCategories = () => {
     fetch('http://localhost:8000/consumer/categories')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -16,6 +16,17 @@ export const CategoriesView = ({ onBack, onSelectCategory }) => {
         }
       })
       .catch(() => fallbackCategories());
+  };
+
+  useEffect(() => {
+    fetchCategories();
+    const handleUpdate = () => fetchCategories();
+    window.addEventListener('agrichain-data-updated', handleUpdate);
+    window.addEventListener('agrichain-data-reset', handleUpdate);
+    return () => {
+      window.removeEventListener('agrichain-data-updated', handleUpdate);
+      window.removeEventListener('agrichain-data-reset', handleUpdate);
+    };
   }, []);
 
   const fallbackCategories = () => {

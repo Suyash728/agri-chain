@@ -361,6 +361,185 @@ def seed_optimal_demo_dataset(reset_first: bool = True) -> Dict[str, Any]:
         )
         seeded_batches.append({"batch_id": b6_id, "crop": "Fresh Strawberries", "state": "QUARANTINED"})
 
+        # =====================================================================
+        # 7. BATCH BAT-BAN-101: JALGAON BANANA (IN_STORAGE AT DARK STORE)
+        # =====================================================================
+        b7_id = "BAT-BAN-101"
+        b7_meta = "Khandesh Banana Growers Co-op ||cat=fruits||qty=0.70||price=500.00"
+        tx_reg_b7 = _safe_chain_call(chain.register_batch, b7_id, "Jalgaon Robusta Banana", "Khandesh Banana Growers Co-op", "2026-10-23", farmer_addr)
+        conn.execute(
+            "INSERT INTO batches (batch_id, crop_name, origin_farm, harvest_date, farmer_name) VALUES (?, 'Jalgaon Robusta Banana', ?, '2026-10-23', 'Rahul Patil')",
+            (b7_id, b7_meta),
+        )
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, NULL, 'Rahul Patil', 'REGISTERED', 50000, ?, '2026-10-23 06:30:00')",
+            (b7_id, tx_reg_b7),
+        )
+        tx_trans_b7 = _safe_chain_call(chain.transfer_custody, b7_id, logistics_addr, "IN_TRANSIT", 75000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Rahul Patil', 'Safexpress Cold Chain Logistics', 'IN_TRANSIT', 75000, ?, '2026-10-23 09:30:00')",
+            (b7_id, tx_trans_b7),
+        )
+        tx_store_b7 = _safe_chain_call(chain.transfer_custody, b7_id, dark_store_addr, "IN_STORAGE", 100000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Safexpress Cold Chain Logistics', 'Pune Fresh DarkStore Hub', 'IN_STORAGE', 100000, ?, '2026-10-24 08:00:00')",
+            (b7_id, tx_store_b7),
+        )
+        for temp_c in [13.5, 13.8]:
+            tx_iot = _safe_chain_call(chain.record_condition, b7_id, int(temp_c * 10), 85, False)
+            conn.execute(
+                "INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, ?, 85.0, 'VALID', ?)",
+                (b7_id, temp_c, tx_iot),
+            )
+        conn.execute(
+            "INSERT INTO batch_reviews (batch_id, rating, comment, freshness_score, reviewer_address) VALUES (?, 5, 'Super fresh robusta bananas, ripened perfectly under cold-chain surveillance.', 97, ?)",
+            (b7_id, consumer_addr),
+        )
+        seeded_batches.append({"batch_id": b7_id, "crop": "Jalgaon Robusta Banana", "state": "IN_STORAGE"})
+
+        # =====================================================================
+        # 8. BATCH BAT-POT-201: FRESH POTATOES (IN_STORAGE AT DARK STORE)
+        # =====================================================================
+        b8_id = "BAT-POT-201"
+        b8_meta = "Satara High Plains Farm ||cat=vegetables||qty=1.00||price=600.00"
+        tx_reg_b8 = _safe_chain_call(chain.register_batch, b8_id, "Fresh Harvest Potatoes", "Satara High Plains Farm", "2026-10-22", farmer_addr)
+        conn.execute(
+            "INSERT INTO batches (batch_id, crop_name, origin_farm, harvest_date, farmer_name) VALUES (?, 'Fresh Harvest Potatoes', ?, '2026-10-22', 'Rahul Patil')",
+            (b8_id, b8_meta),
+        )
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, NULL, 'Rahul Patil', 'REGISTERED', 60000, ?, '2026-10-22 07:00:00')",
+            (b8_id, tx_reg_b8),
+        )
+        tx_trans_b8 = _safe_chain_call(chain.transfer_custody, b8_id, logistics_addr, "IN_TRANSIT", 85000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Rahul Patil', 'Safexpress Cold Chain Logistics', 'IN_TRANSIT', 85000, ?, '2026-10-22 11:00:00')",
+            (b8_id, tx_trans_b8),
+        )
+        tx_store_b8 = _safe_chain_call(chain.transfer_custody, b8_id, dark_store_addr, "IN_STORAGE", 110000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Safexpress Cold Chain Logistics', 'Pune Fresh DarkStore Hub', 'IN_STORAGE', 110000, ?, '2026-10-23 09:00:00')",
+            (b8_id, tx_store_b8),
+        )
+        for temp_c in [18.0, 18.2]:
+            tx_iot = _safe_chain_call(chain.record_condition, b8_id, int(temp_c * 10), 65, False)
+            conn.execute(
+                "INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, ?, 65.0, 'VALID', ?)",
+                (b8_id, temp_c, tx_iot),
+            )
+        seeded_batches.append({"batch_id": b8_id, "crop": "Fresh Harvest Potatoes", "state": "IN_STORAGE"})
+
+        # =====================================================================
+        # 9. BATCH BAT-DAL-301: UNPOLISHED TOOR DAL (AT_RETAIL AT DARK STORE)
+        # =====================================================================
+        b9_id = "BAT-DAL-301"
+        b9_meta = "Latur Organic Pulses Hub ||cat=pulses||qty=0.60||price=930.00"
+        tx_reg_b9 = _safe_chain_call(chain.register_batch, b9_id, "Unpolished Toor Dal", "Latur Organic Pulses Hub", "2026-10-21", farmer_addr)
+        conn.execute(
+            "INSERT INTO batches (batch_id, crop_name, origin_farm, harvest_date, farmer_name) VALUES (?, 'Unpolished Toor Dal', ?, '2026-10-21', 'Rahul Patil')",
+            (b9_id, b9_meta),
+        )
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, NULL, 'Rahul Patil', 'REGISTERED', 93000, ?, '2026-10-21 08:00:00')",
+            (b9_id, tx_reg_b9),
+        )
+        tx_trans_b9 = _safe_chain_call(chain.transfer_custody, b9_id, logistics_addr, "IN_TRANSIT", 115000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Rahul Patil', 'Safexpress Cold Chain Logistics', 'IN_TRANSIT', 115000, ?, '2026-10-21 14:00:00')",
+            (b9_id, tx_trans_b9),
+        )
+        tx_store_b9 = _safe_chain_call(chain.transfer_custody, b9_id, dark_store_addr, "IN_STORAGE", 135000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Safexpress Cold Chain Logistics', 'Pune Fresh DarkStore Hub', 'IN_STORAGE', 135000, ?, '2026-10-22 10:00:00')",
+            (b9_id, tx_store_b9),
+        )
+        tx_retail_b9 = _safe_chain_call(chain.transfer_custody, b9_id, dark_store_addr, "AT_RETAIL", 155000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Pune Fresh DarkStore Hub', 'Pune Fresh DarkStore Hub (Bay B Shelf)', 'AT_RETAIL', 155000, ?, '2026-10-22 16:00:00')",
+            (b9_id, tx_retail_b9),
+        )
+        for temp_c in [21.0, 21.5]:
+            tx_iot = _safe_chain_call(chain.record_condition, b9_id, int(temp_c * 10), 50, False)
+            conn.execute(
+                "INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, ?, 50.0, 'VALID', ?)",
+                (b9_id, temp_c, tx_iot),
+            )
+        seeded_batches.append({"batch_id": b9_id, "crop": "Unpolished Toor Dal", "state": "AT_RETAIL"})
+
+        # =====================================================================
+        # 10. BATCH BAT-TUR-405: SALEM TURMERIC (AT_RETAIL AT DARK STORE)
+        # =====================================================================
+        b10_id = "BAT-TUR-405"
+        b10_meta = "Salem Organic Spices Cluster ||cat=spices||qty=0.30||price=450.00"
+        tx_reg_b10 = _safe_chain_call(chain.register_batch, b10_id, "Salem Pure Turmeric", "Salem Organic Spices Cluster", "2026-10-20", farmer_addr)
+        conn.execute(
+            "INSERT INTO batches (batch_id, crop_name, origin_farm, harvest_date, farmer_name) VALUES (?, 'Salem Pure Turmeric', ?, '2026-10-20', 'Rahul Patil')",
+            (b10_id, b10_meta),
+        )
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, NULL, 'Rahul Patil', 'REGISTERED', 45000, ?, '2026-10-20 09:00:00')",
+            (b10_id, tx_reg_b10),
+        )
+        tx_trans_b10 = _safe_chain_call(chain.transfer_custody, b10_id, logistics_addr, "IN_TRANSIT", 55000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Rahul Patil', 'Safexpress Cold Chain Logistics', 'IN_TRANSIT', 55000, ?, '2026-10-21 07:00:00')",
+            (b10_id, tx_trans_b10),
+        )
+        tx_store_b10 = _safe_chain_call(chain.transfer_custody, b10_id, dark_store_addr, "IN_STORAGE", 65000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Safexpress Cold Chain Logistics', 'Pune Fresh DarkStore Hub', 'IN_STORAGE', 65000, ?, '2026-10-21 15:00:00')",
+            (b10_id, tx_store_b10),
+        )
+        tx_retail_b10 = _safe_chain_call(chain.transfer_custody, b10_id, dark_store_addr, "AT_RETAIL", 75000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Pune Fresh DarkStore Hub', 'Pune Fresh DarkStore Hub (Bay B Shelf)', 'AT_RETAIL', 75000, ?, '2026-10-22 11:30:00')",
+            (b10_id, tx_retail_b10),
+        )
+        for temp_c in [23.0]:
+            tx_iot = _safe_chain_call(chain.record_condition, b10_id, int(temp_c * 10), 45, False)
+            conn.execute(
+                "INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, ?, 45.0, 'VALID', ?)",
+                (b10_id, temp_c, tx_iot),
+            )
+        seeded_batches.append({"batch_id": b10_id, "crop": "Salem Pure Turmeric", "state": "AT_RETAIL"})
+
+        # =====================================================================
+        # 11. BATCH BAT-ALM-501: KASHMIRI ALMONDS (AT_RETAIL AT DARK STORE)
+        # =====================================================================
+        b11_id = "BAT-ALM-501"
+        b11_meta = "Kashmir Valley Premium Orchards ||cat=dryfruits||qty=0.25||price=950.00"
+        tx_reg_b11 = _safe_chain_call(chain.register_batch, b11_id, "Premium Kashmiri Almonds", "Kashmir Valley Premium Orchards", "2026-10-19", farmer_addr)
+        conn.execute(
+            "INSERT INTO batches (batch_id, crop_name, origin_farm, harvest_date, farmer_name) VALUES (?, 'Premium Kashmiri Almonds', ?, '2026-10-19', 'Rahul Patil')",
+            (b11_id, b11_meta),
+        )
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, NULL, 'Rahul Patil', 'REGISTERED', 95000, ?, '2026-10-19 10:00:00')",
+            (b11_id, tx_reg_b11),
+        )
+        tx_trans_b11 = _safe_chain_call(chain.transfer_custody, b11_id, logistics_addr, "IN_TRANSIT", 110000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Rahul Patil', 'Safexpress Cold Chain Logistics', 'IN_TRANSIT', 110000, ?, '2026-10-20 08:00:00')",
+            (b11_id, tx_trans_b11),
+        )
+        tx_store_b11 = _safe_chain_call(chain.transfer_custody, b11_id, dark_store_addr, "IN_STORAGE", 125000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Safexpress Cold Chain Logistics', 'Pune Fresh DarkStore Hub', 'IN_STORAGE', 125000, ?, '2026-10-21 12:00:00')",
+            (b11_id, tx_store_b11),
+        )
+        tx_retail_b11 = _safe_chain_call(chain.transfer_custody, b11_id, dark_store_addr, "AT_RETAIL", 140000)
+        conn.execute(
+            "INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash, occurred_at) VALUES (?, 'Pune Fresh DarkStore Hub', 'Pune Fresh DarkStore Hub (Bay B Shelf)', 'AT_RETAIL', 140000, ?, '2026-10-22 14:00:00')",
+            (b11_id, tx_retail_b11),
+        )
+        for temp_c in [20.0]:
+            tx_iot = _safe_chain_call(chain.record_condition, b11_id, int(temp_c * 10), 40, False)
+            conn.execute(
+                "INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash) VALUES (?, ?, 40.0, 'VALID', ?)",
+                (b11_id, temp_c, tx_iot),
+            )
+        seeded_batches.append({"batch_id": b11_id, "crop": "Premium Kashmiri Almonds", "state": "AT_RETAIL"})
+
         conn.commit()
 
         # Compute counts

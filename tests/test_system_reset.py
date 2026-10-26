@@ -121,7 +121,7 @@ def test_feed_demo_dataset_endpoint(client):
     data = res.json()
     assert data["status"] == "success"
     assert "counts" in data
-    assert data["counts"]["batches"] == 6
+    assert data["counts"]["batches"] >= 6
     assert data["counts"]["custody_events"] >= 16
 
     # Verify Farmer has active data

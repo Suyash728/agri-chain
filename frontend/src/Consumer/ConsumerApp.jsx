@@ -156,6 +156,7 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab, initia
     } else {
       setCartItems([...cartItems, {
         id: product.id,
+        batchId: product.batchId,
         name: product.name,
         weight: product.weight,
         price: product.price,
@@ -202,6 +203,7 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab, initia
         setIsOrderSuccessOpen(true);
         setCartItems([]);
         showToast('Order confirmed! Tracking dispatch.');
+        window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
       } else {
         const errJson = await res.json().catch(() => ({}));
         showToast(errJson.detail || 'Checkout failed. Please try again.');
