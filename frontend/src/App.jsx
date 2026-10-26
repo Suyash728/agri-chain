@@ -181,6 +181,11 @@ export default function App() {
       }
       if (cropsRes.status === 'fulfilled' && Array.isArray(cropsRes.value)) {
         setFarmerCrops(cropsRes.value);
+        setSelectedCropCategory(prev => {
+          if (prev && prev.crops && prev.crops.length > 0) return prev;
+          const targetId = typeof window !== 'undefined' ? (localStorage.getItem('agrichain_farmer_crop_category') || 'fruits') : 'fruits';
+          return cropsRes.value.find(c => c.id === targetId || c.name.toLowerCase() === targetId.toLowerCase()) || cropsRes.value[0] || null;
+        });
       }
       if (actRes.status === 'fulfilled' && Array.isArray(actRes.value)) {
         setFarmerActivities(actRes.value);
@@ -313,7 +318,9 @@ export default function App() {
 
   const handleSelectFarmerTab = (tabId) => {
     setFarmerTab(tabId);
-    setSelectedCropCategory(null);
+    if (tabId !== 'crop-details') {
+      setSelectedCropCategory(null);
+    }
     try {
       localStorage.setItem('agrichain_farmer_tab', tabId);
     } catch (_) {}
@@ -374,6 +381,11 @@ export default function App() {
 
   const handleSelectCategory = (category) => {
     setSelectedCropCategory(category);
+    try {
+      if (category?.id) {
+        localStorage.setItem('agrichain_farmer_crop_category', category.id);
+      }
+    } catch (_) {}
     handleSelectFarmerTab('crop-details');
   };
 
@@ -912,6 +924,9 @@ export default function App() {
               <CropDetailsView 
                 category={selectedCropCategory} 
                 onBack={() => handleSelectFarmerTab('my-crops')} 
+                onSelectCrop={(crop) => {
+                  if (crop?.batch_id) handleViewJourney(crop.batch_id);
+                }}
               />
             )}
             {farmerTab === 'inventory' && (

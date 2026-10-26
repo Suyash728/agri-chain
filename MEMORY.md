@@ -3060,3 +3060,29 @@ pm run build passed cleanly with 0 errors.
 
 **Verified:**
 - `GET /admin/users` verified with all 5 participant accounts returning `is_granted_onchain: true`.
+
+
+---
+
+## Task: Fix Farmer Crop Category Details View Navigation & State Persistence
+
+**What was done:**
+- Diagnosed why opening a crop category (e.g. Fruits) in the Farmer portal rendered an empty view titled "Produce Category" with 0 crops, 0.00 tonnes inventory, and ₹0 total value:
+  1. `handleSelectFarmerTab` had an aggressive state reset line: `setSelectedCropCategory(null)` that immediately overwrote `setSelectedCropCategory(category)` inside `handleSelectCategory`, clearing the active category to `null` on every category click.
+  2. If the user refreshed on `tab=crop-details`, `selectedCropCategory` remained `null` with no fallback mechanism.
+  3. `CropDetailsView.jsx` lacked self-healing or auto-fetch from `http://localhost:8000/farmer/crops` when `category` was falsy or empty.
+- Updated `handleSelectFarmerTab` in `frontend/src/App.jsx` to only clear `selectedCropCategory` when navigating away from `crop-details`.
+- Updated `handleSelectCategory` and `fetchFarmerData` in `App.jsx` to persist the selected category ID in `localStorage` (`agrichain_farmer_crop_category`) and restore the full category object on initial load or refresh.
+- Enhanced `frontend/src/Farmer/Views/CropDetailsView.jsx`:
+  - Added self-healing `useEffect` to fetch `/farmer/crops` if `category` prop is missing or empty.
+  - Added rich icon resolution (`getCropIcon`) supporting Mango, Banana, Orange, Apple, Strawberry, Tomato, Potato, Spinach, Capsicum, Wheat, Rice, Chickpeas, Moong, Chilli, Turmeric, Cashew, and Almond.
+  - Linked crop items to open the on-chain batch journey view (`onSelectCrop`).
+
+**Files changed:**
+- `frontend/src/App.jsx`
+- `frontend/src/Farmer/Views/CropDetailsView.jsx`
+- `MEMORY.md`
+
+**Verified:**
+- `npm run build` in `frontend/`: Compiled 1,820 modules in 2.63s with 0 errors.
+- `pytest tests/`: All 16 backend test cases passed in 6.30s.
