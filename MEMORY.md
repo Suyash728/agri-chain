@@ -3037,3 +3037,26 @@ pm run build passed cleanly with 0 errors.
 - `pytest tests/`: 16/16 tests PASSED.
 - `npm run build` in `frontend/`: Compiled 1,820 modules in 4.36s with 0 errors.
 - All 3 background daemons verified active and healthy.
+
+
+---
+
+## Task: Seed Default On-Chain Roles for Logistics and Dark Store Personas
+
+**What was done:**
+- Diagnosed why System Administrator, Farmer, and Consumer were marked `ON-CHAIN` while Logistics and Dark Store showed `OFF-CHAIN`:
+  1. The deployer account (`0xf39Fd6...`) was granted `DEFAULT_ADMIN_ROLE` and `FARMER_ROLE` at deployment, matching Admin and Rahul Patil's assigned address.
+  2. Consumer (`CONSUMER`) requires no restricted smart-contract role check because consumer purchase/verification is public, defaulting to `ON-CHAIN`.
+  3. Safexpress Logistics (`0x7099...`) and Pune Fresh DarkStore (`0x3C44...`) were assigned distinct participant wallet addresses, but `deploy_amoy.cjs` previously only granted roles to the deployer account rather than their specific addresses.
+- Updated `contracts/scripts/deploy_amoy.cjs` to automatically grant `LOGISTICS_ROLE` to Safexpress and `RETAILER_ROLE` to Pune Fresh DarkStore upon deployment.
+- Re-deployed modular contracts on local node: all 5 participant accounts now show verified `ON-CHAIN` status in the Admin governance portal.
+
+**Files changed:**
+- `contracts/scripts/deploy_amoy.cjs`
+- `contracts/amoy-deployments.json`
+- `backend/modular-deployments.json`
+- `frontend/src/utils/modular-deployments.json`
+- `MEMORY.md`
+
+**Verified:**
+- `GET /admin/users` verified with all 5 participant accounts returning `is_granted_onchain: true`.

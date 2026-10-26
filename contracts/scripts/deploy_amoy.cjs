@@ -43,19 +43,30 @@ async function main() {
   const policyAddr = await policyConfig.getAddress();
   console.log(`   PolicyConfig deployed at: ${policyAddr}`);
 
-  // 5. Grant Roles to Deployer / Backend account
+  // 5. Grant Roles to Deployer / Backend account & Default Personas
   console.log("\n5. Granting initial supply-chain roles...");
   const FARMER_ROLE = await productRegistry.FARMER_ROLE();
   const LOGISTICS_ROLE = await custodyTransfer.LOGISTICS_ROLE();
   const RETAILER_ROLE = await custodyTransfer.RETAILER_ROLE();
   const ORACLE_ROLE = await coldChainMonitor.ORACLE_ROLE();
 
+  // Deployer / Relayer gets all roles for automated backend execution
   await (await productRegistry.grantRole(FARMER_ROLE, deployer.address)).wait();
   await (await custodyTransfer.grantRole(FARMER_ROLE, deployer.address)).wait();
   await (await custodyTransfer.grantRole(LOGISTICS_ROLE, deployer.address)).wait();
   await (await custodyTransfer.grantRole(RETAILER_ROLE, deployer.address)).wait();
   await (await coldChainMonitor.grantRole(ORACLE_ROLE, deployer.address)).wait();
   console.log(`   All roles granted to deployer/backend: ${deployer.address}`);
+
+  // Default seeded persona wallet addresses
+  const SAFEXPRESS_LOGISTICS_ADDR = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
+  const PUNE_DARKSTORE_ADDR = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC";
+
+  await (await custodyTransfer.grantRole(LOGISTICS_ROLE, SAFEXPRESS_LOGISTICS_ADDR)).wait();
+  console.log(`   LOGISTICS_ROLE granted to Safexpress: ${SAFEXPRESS_LOGISTICS_ADDR}`);
+
+  await (await custodyTransfer.grantRole(RETAILER_ROLE, PUNE_DARKSTORE_ADDR)).wait();
+  console.log(`   RETAILER_ROLE granted to Pune Fresh DarkStore: ${PUNE_DARKSTORE_ADDR}`);
 
   // 6. Set initial policies in PolicyConfig
   console.log("\n6. Seeding initial on-chain crop policies...");
