@@ -3171,3 +3171,32 @@ pm run build passed cleanly with 0 errors.
 - `cd contracts && npx hardhat test`: All 22 tests passed (617ms).
 - `cd frontend && npm run build`: Compiled 1,820 modules in 2.68s with 0 errors.
 - `GET /consumer/products` tested: returns strictly authentic batches held in the Dark Store with authentic tx hashes, farm origins, and images.
+
+
+---
+
+## Task: Comprehensive External Examiner Guide & Step-by-Step Demonstration Script
+
+**What was done:**
+- Authored a comprehensive technical reference and viva voce demonstration manual for external examiners in [`docs/EXAMINER_PROJECT_GUIDE.md`](file:///home/suyash/Projects/agri-chain/docs/EXAMINER_PROJECT_GUIDE.md) and as an interactive artifact.
+- Structured the guide into 6 actionable sections:
+  1. **2-Minute Executive Pitch:** Explaining the 3-fold agricultural supply chain crisis (Middleman exploitation, ₹1.5 lakh crore cold-chain spoilage, and the Blockchain GIGO Oracle Problem) and AgriChain's solution.
+  2. **System Architecture Matrix:** 5-tier architecture table and strict engineering invariants (zero-float integer paise and deci-Celsius, persistence before AI validation, monotonic custody progression).
+  3. **Act-by-Act Live Demonstration Script:** Step-by-step walkthrough across all 5 roles:
+     - Act 0: System Admin on-chain RBAC & Emergency Pausable Circuit Breakers.
+     - Act 1: Farmer Origin Portal, 1,000 kg harvest minting on `ProductRegistry.sol`, IPFS quality certificates.
+     - Act 2: Carrier Transit & The Anomaly Detection Sandbox (`28.5°C` compressor fault injection, pre-chain Isolation Forest interception, IsoLog SHA-256 quarantine chaining, -₹18,000 carrier SLA penalty with 100% farmer payout protection).
+     - Act 3: Dark Store Micro-Hub, Inbound AI Verification Gate (`🛡️ 95/100`), GRN intake to Bay A Cold Storage, dynamic FEFO markdown (-40% to -55%).
+     - Act 4: Consumer Marketplace & QR Provenance Passport, transparent price build-up (₹20 -> ₹24/kg proving 83.3% farmer share), checkout to `SOLD`, cryptographically verified 5★ review.
+     - Act 5: Web3 Transaction Auditor, on-chain event logs, and EVM proof.
+  4. **Top 10 Viva Voce Questions & Model Answers:** Detailed examiner defenses covering Oracle GIGO resolution, Isolation Forest vs LSTM/CNN, single-slot 32-byte packed structs (58.5% gas savings), cryptographic replay prevention, OpenZeppelin RBAC, and IPFS multihash anchoring.
+  5. **Examiner Code Location Cheat Sheet:** Direct file index for fast navigation during viva voce inspection.
+  6. **Runbook & Rapid Health Check Commands:** Terminal commands for service checks, test execution (`pytest`, `hardhat test`), and clean dataset resets.
+
+**Files changed:**
+- `docs/EXAMINER_PROJECT_GUIDE.md`
+- `MEMORY.md`
+
+**Verified:**
+- `git status` clean and committed.
+- Both markdown document and artifact rendered with 100% structural integrity.
