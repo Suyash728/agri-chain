@@ -1875,6 +1875,60 @@ def _resolve_category_id(crop_name: str, given_cat: str = ""):
     return "fruits" if "mango" in cn else "vegetables"
 
 
+def _resolve_crop_icon(crop_name: str, given_cat: str = "") -> str:
+    cn = (crop_name or "").lower().strip()
+
+    if "tomato" in cn:
+        return "/images/tomato_only.png"
+    if "potato" in cn:
+        return "/images/potato_only.png"
+    if "mango" in cn:
+        return "/images/mango_only.png"
+    if "banana" in cn:
+        return "/images/banana_only.png"
+    if "apple" in cn:
+        return "/images/apple.png"
+    if "turmeric" in cn:
+        return "/images/turmeric_only.png"
+    if "chilli" in cn or "chili" in cn:
+        return "/images/chilli_only.png"
+    if "wheat" in cn or "sharbati" in cn:
+        return "/images/wheat_only.png"
+    if "rice" in cn or "basmati" in cn:
+        return "/images/rice_only.png"
+    if "chickpea" in cn:
+        return "/images/chickpea_only.png"
+    if "moong" in cn or "green gram" in cn or "greengram" in cn:
+        return "/images/greengram_only.png"
+    if "toor" in cn or "tur" in cn:
+        return "/images/toor_dal.png"
+    if "cashew" in cn:
+        return "/images/cashew_only.png"
+    if "almond" in cn:
+        return "/images/almond_only.png"
+    if any(k in cn for k in ["orange", "strawberr", "berry", "grape", "fruit"]):
+        return "/images/fruits_ref.png"
+    if any(k in cn for k in ["onion", "spinach", "capsicum", "carrot", "veg"]):
+        return "/images/vegetables_ref.png"
+
+    # Category fallback
+    cat_id = _resolve_category_id(crop_name, given_cat)
+    if cat_id == "fruits":
+        return "/images/fruits_ref.png"
+    if cat_id == "vegetables":
+        return "/images/vegetables_ref.png"
+    if cat_id == "grains":
+        return "/images/grains_ref.png"
+    if cat_id == "pulses":
+        return "/images/pulses_ref.png"
+    if cat_id == "spices":
+        return "/images/spices_ref.png"
+    if cat_id == "dryfruits":
+        return "/images/dryfruits_ref.png"
+
+    return "/images/vegetables_ref.png"
+
+
 # ---------------- Farmer Dashboard Endpoints ----------------
 
 @app.get("/farmer/kpis")
@@ -2897,7 +2951,7 @@ def get_darkstore_inbound():
                 "location": r["origin_farm"],
                 "productCategory": category_map.get(crop_lower, "Vegetables"),
                 "productSub": f"{r['crop_name'].capitalize()} (Cold-Chain Verified)",
-                "image": crop_images.get(crop_lower, "/images/fruits_ref.png"),
+                "image": _resolve_crop_icon(r["crop_name"]),
                 "quantity": "500 kg",
                 "weightKg": 500,
                 "itemsCount": "1 Batch",
@@ -3346,7 +3400,7 @@ def get_darkstore_expiry_alerts():
                     "qty": "800 kg" if "tomato" in crop_lower else "500 kg",
                     "left": left_str,
                     "leftColor": "text-[#991B1B]",
-                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "image": _resolve_crop_icon(crop),
                     "risk": risk,
                     "expiryDate": "Immediate Quarantine Lock",
                     "breachDetected": True,
@@ -3364,7 +3418,7 @@ def get_darkstore_expiry_alerts():
                     "qty": "600 kg",
                     "left": left_str,
                     "leftColor": "text-[#B85C38]",
-                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "image": _resolve_crop_icon(crop),
                     "risk": risk,
                     "expiryDate": "2 Days (Quick Clearance)",
                     "breachDetected": True,
@@ -3382,7 +3436,7 @@ def get_darkstore_expiry_alerts():
                     "qty": "120 kg",
                     "left": left_str,
                     "leftColor": "text-[#1D4ED8]",
-                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "image": _resolve_crop_icon(crop),
                     "risk": risk,
                     "expiryDate": "1-2 Days (FEFO Clearance)",
                     "breachDetected": False,
@@ -3400,7 +3454,7 @@ def get_darkstore_expiry_alerts():
                     "qty": "500 kg",
                     "left": left_str,
                     "leftColor": "text-[#991B1B]",
-                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "image": _resolve_crop_icon(crop),
                     "risk": risk,
                     "expiryDate": "Immediate Clearance",
                     "breachDetected": (breach > 0),
@@ -3418,7 +3472,7 @@ def get_darkstore_expiry_alerts():
                     "qty": "500 kg",
                     "left": left_str,
                     "leftColor": "text-[#B85C38]",
-                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "image": _resolve_crop_icon(crop),
                     "risk": risk,
                     "expiryDate": f"Expiring in {7 - days_old} Days",
                     "breachDetected": False,
@@ -3436,7 +3490,7 @@ def get_darkstore_expiry_alerts():
                     "qty": "500 kg",
                     "left": left_str,
                     "leftColor": "text-[#D97706]",
-                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "image": _resolve_crop_icon(crop),
                     "risk": risk,
                     "expiryDate": f"Expiring in {15 - days_old} Days",
                     "breachDetected": False,
@@ -3454,7 +3508,7 @@ def get_darkstore_expiry_alerts():
                     "qty": "500 kg",
                     "left": left_str,
                     "leftColor": "text-[#354424]",
-                    "image": crop_images.get(crop_lower, "/images/vegetables_ref.png"),
+                    "image": _resolve_crop_icon(crop),
                     "risk": risk,
                     "expiryDate": "Fresh Stock",
                     "breachDetected": False,
@@ -4467,24 +4521,10 @@ def get_logistics_available_produce():
         ).fetchall()
 
         items = []
-        crop_icons = {
-            "wheat": "/images/wheat_only.png",
-            "rice": "/images/rice_only.png",
-            "tomato": "/images/tomato_only.png",
-            "potato": "/images/potato_only.png",
-            "chickpea": "/images/chickpea_only.png",
-            "greengram": "/images/greengram_only.png",
-            "chilli": "/images/chilli_only.png",
-            "mango": "/images/mango.png",
-            "apple": "/images/apple.png",
-            "banana": "/images/banana.png",
-        }
-
         for idx, r in enumerate(rows):
             cat, qty, price = _parse_batch_meta(r)
             cat_id = _resolve_category_id(r["crop_name"], cat)
-            crop_key = r["crop_name"].lower().split()[0]
-            icon = crop_icons.get(crop_key, "/images/wheat_only.png")
+            icon = _resolve_crop_icon(r["crop_name"], cat)
             farm_clean = r["origin_farm"].split("||")[0].strip()
 
             items.append({

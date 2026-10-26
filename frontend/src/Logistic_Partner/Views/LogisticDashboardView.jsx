@@ -16,6 +16,30 @@ import {
   Link2
 } from 'lucide-react';
 
+const resolveCropIcon = (cropName = '', icon = '') => {
+  if (icon && !icon.includes('wheat_only.png')) return icon;
+  const cn = (cropName || '').toLowerCase();
+  if (cn.includes('tomato')) return '/images/tomato_only.png';
+  if (cn.includes('potato')) return '/images/potato_only.png';
+  if (cn.includes('mango')) return '/images/mango_only.png';
+  if (cn.includes('banana')) return '/images/banana_only.png';
+  if (cn.includes('apple')) return '/images/apple.png';
+  if (cn.includes('turmeric')) return '/images/turmeric_only.png';
+  if (cn.includes('chilli') || cn.includes('chili')) return '/images/chilli_only.png';
+  if (cn.includes('wheat') || cn.includes('sharbati')) return '/images/wheat_only.png';
+  if (cn.includes('rice') || cn.includes('basmati')) return '/images/rice_only.png';
+  if (cn.includes('chickpea')) return '/images/chickpea_only.png';
+  if (cn.includes('moong') || cn.includes('gram')) return '/images/greengram_only.png';
+  if (cn.includes('toor')) return '/images/toor_dal.png';
+  if (cn.includes('cashew')) return '/images/cashew_only.png';
+  if (cn.includes('almond')) return '/images/almond_only.png';
+  if (cn.includes('fruit') || cn.includes('orange') || cn.includes('strawberr')) return '/images/fruits_ref.png';
+  if (cn.includes('spice')) return '/images/spices_ref.png';
+  if (cn.includes('pulse')) return '/images/pulses_ref.png';
+  if (cn.includes('grain')) return '/images/grains_ref.png';
+  return icon || '/images/vegetables_ref.png';
+};
+
 export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
   const [procurementFilter, setProcurementFilter] = useState('All');
   const [availableProduce, setAvailableProduce] = useState([]);
@@ -32,7 +56,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
         if (Array.isArray(data)) {
           const mapped = data.map((p) => ({
             name: p.crop || p.name,
-            icon: p.icon || '/images/tomato_only.png',
+            icon: resolveCropIcon(p.crop || p.name, p.icon),
             qty: p.qty || p.quantity || '500 kg',
             price: p.price || '₹ 2,000',
             status: p.status || 'In Stock',
@@ -171,7 +195,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
                 availableProduce.slice(0, 4).map((item, idx) => (
                   <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF7F0]/60 border border-[#E6E1D5]/60">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <img src={item.icon} alt={item.name} className="w-6 h-6 object-contain flex-shrink-0" />
+                      <img src={resolveCropIcon(item.name, item.icon)} alt={item.name} className="w-6 h-6 object-contain flex-shrink-0" />
                       <div className="min-w-0">
                         <h4 className="font-extrabold text-xs text-[#2D2620] truncate">{item.name}</h4>
                         <span className="text-[10px] text-[#666057]">{item.qty}</span>

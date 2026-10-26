@@ -3086,3 +3086,32 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `npm run build` in `frontend/`: Compiled 1,820 modules in 2.63s with 0 errors.
 - `pytest tests/`: All 16 backend test cases passed in 6.30s.
+
+
+---
+
+## Task: Fix Crop Image Resolution in Logistics Partner & Dark Store Views
+
+**What was done:**
+- Diagnosed why non-grain produce (e.g. Organic Tomatoes, Salem Pure Turmeric, fruits, spices) displayed the wheat/grain icon in the Logistics Partner Available Produce / Inventory views:
+  1. `get_logistics_available_produce()` in `backend/main.py` parsed crop keys using `crop_key = r["crop_name"].lower().split()[0]`, which extracted prefix adjectives ("organic", "salem", "fresh", "alphonso") instead of the actual crop name.
+  2. Because "organic", "salem", etc. were not keys in `crop_icons`, the dictionary fell back to `"/images/wheat_only.png"`.
+  3. Similar issues existed in Dark Store inbound deliveries and inventory listings.
+- Implemented `_resolve_crop_icon(crop_name, category)` in `backend/main.py` which:
+  - Performs intelligent substring matching for specific crops (Tomato, Potato, Mango, Banana, Apple, Turmeric, Chilli, Wheat, Rice, Chickpea, Green Gram, Toor Dal, Cashew, Almond).
+  - Falls back cleanly to high-fidelity category reference artworks (`fruits_ref.png`, `vegetables_ref.png`, `spices_ref.png`, `pulses_ref.png`, `dryfruits_ref.png`, `grains_ref.png`).
+- Updated `frontend/src/Logistic_Partner/Views/InventoryView.jsx`, `AvailableProduceView.jsx`, and `LogisticDashboardView.jsx` with a client-side `resolveCropIcon` fallback that prevents non-grain items from ever rendering a wheat illustration.
+
+**Files changed:**
+- `backend/main.py`
+- `frontend/src/Logistic_Partner/Views/InventoryView.jsx`
+- `frontend/src/Logistic_Partner/Views/AvailableProduceView.jsx`
+- `frontend/src/Logistic_Partner/Views/LogisticDashboardView.jsx`
+- `MEMORY.md`
+
+**Verified:**
+- `GET /logistics/available-produce` returns accurate icons:
+  - `Organic Tomatoes` -> `/images/tomato_only.png`
+  - `Salem Pure Turmeric` -> `/images/turmeric_only.png`
+- `npm run build` compiled 1,820 modules in 2.63s with 0 errors.
+- `pytest tests/` passed all 16 tests in 7.29s.

@@ -13,6 +13,30 @@ import {
 } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
 
+const resolveCropIcon = (cropName = '', icon = '') => {
+  if (icon && !icon.includes('wheat_only.png')) return icon;
+  const cn = (cropName || '').toLowerCase();
+  if (cn.includes('tomato')) return '/images/tomato_only.png';
+  if (cn.includes('potato')) return '/images/potato_only.png';
+  if (cn.includes('mango')) return '/images/mango_only.png';
+  if (cn.includes('banana')) return '/images/banana_only.png';
+  if (cn.includes('apple')) return '/images/apple.png';
+  if (cn.includes('turmeric')) return '/images/turmeric_only.png';
+  if (cn.includes('chilli') || cn.includes('chili')) return '/images/chilli_only.png';
+  if (cn.includes('wheat') || cn.includes('sharbati')) return '/images/wheat_only.png';
+  if (cn.includes('rice') || cn.includes('basmati')) return '/images/rice_only.png';
+  if (cn.includes('chickpea')) return '/images/chickpea_only.png';
+  if (cn.includes('moong') || cn.includes('gram')) return '/images/greengram_only.png';
+  if (cn.includes('toor')) return '/images/toor_dal.png';
+  if (cn.includes('cashew')) return '/images/cashew_only.png';
+  if (cn.includes('almond')) return '/images/almond_only.png';
+  if (cn.includes('fruit') || cn.includes('orange') || cn.includes('strawberr')) return '/images/fruits_ref.png';
+  if (cn.includes('spice')) return '/images/spices_ref.png';
+  if (cn.includes('pulse')) return '/images/pulses_ref.png';
+  if (cn.includes('grain')) return '/images/grains_ref.png';
+  return icon || '/images/vegetables_ref.png';
+};
+
 export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }) => {
   // Step state: 'available-produce' (default) | 'storage-warehouse' | 'logistics-orders'
   const [activeStep, setActiveStep] = useState(initialStep);
@@ -39,7 +63,7 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
             price: d.price || '₹ 2,000 / Quintal',
             farm: d.farm || 'Verified Organic Farm',
             status: 'In Stock',
-            icon: d.icon || '/images/tomato_only.png',
+            icon: resolveCropIcon(d.name || d.crop, d.icon),
           }));
           setProduceItems(mapped);
         } else {
@@ -202,7 +226,7 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="w-12 h-12 rounded-xl bg-[#FAF7F0] p-1.5 border border-[#E6E1D5] flex items-center justify-center">
-                        <img src={item.icon} alt={item.name} className="w-full h-full object-contain" />
+                        <img src={resolveCropIcon(item.name, item.icon)} alt={item.name} className="w-full h-full object-contain" />
                       </div>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'In Stock' ? 'bg-[#556B2F]/15 text-[#556B2F]' : 'bg-[#B85C38]/15 text-[#B85C38]'}`}>
                         {item.status}
