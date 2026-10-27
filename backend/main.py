@@ -154,7 +154,12 @@ class TelemetryRequest(BaseModel):
     device_id: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
     timestamp: Optional[str] = None
+    nonce: Optional[int] = None
+    freshness_voc_ppm: Optional[float] = None
+    tamper_status: Optional[str] = None
 
 
 class TelemetryResponse(BaseModel):
@@ -215,6 +220,9 @@ SENSOR_CORRUPTION_CODES = {
 COLD_CHAIN_POLICY_BREACH_CODES = {
     "TEMPERATURE_OUT_OF_POLICY",
     "HUMIDITY_OUT_OF_POLICY",
+    "CRATE_TAMPER_DETECTED",
+    "TRANSIT_MECHANICAL_SHOCK_DETECTED",
+    "ORGANIC_SPOILAGE_GAS_SURGE",
 }
 
 
@@ -258,8 +266,8 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
         if math.isnan(temp_c) or math.isinf(temp_c) or math.isnan(humidity_pct) or math.isinf(humidity_pct):
             raise HTTPException(status_code=400, detail="Invalid non-finite temperature or humidity in telemetry payload")
         device_id = payload.device_id or f"DEV-{payload.batch_id}"
-        latitude = float(payload.latitude) if payload.latitude is not None else 18.5204
-        longitude = float(payload.longitude) if payload.longitude is not None else 73.8567
+        latitude = float(payload.latitude if payload.latitude is not None else (payload.lat if payload.lat is not None else 18.5204))
+        longitude = float(payload.longitude if payload.longitude is not None else (payload.lon if payload.lon is not None else 73.8567))
 
         ts_raw = payload.timestamp
         if ts_raw:
@@ -363,6 +371,22 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
                 r for r in all_reasons
                 if r not in ("ML_ANOMALY", "TEMPERATURE_RATE_EXCEEDED", "HUMIDITY_RATE_EXCEEDED", "ISOLATION_FOREST_OUTLIER")
             ]
+
+        # Check physical tamper & vibration shock reported by hardware node
+        if payload.tamper_status == "TAMPER_OPENED":
+            if "CRATE_TAMPER_DETECTED" not in all_reasons:
+                all_reasons.append("CRATE_TAMPER_DETECTED")
+            verdict.verdict = "ANOMALOUS"
+        elif payload.tamper_status == "SHOCK_DETECTED":
+            if "TRANSIT_MECHANICAL_SHOCK_DETECTED" not in all_reasons:
+                all_reasons.append("TRANSIT_MECHANICAL_SHOCK_DETECTED")
+            verdict.verdict = "ANOMALOUS"
+
+        # Check organic spoilage gas threshold (MQ-135 VOC > 50.0 ppm indicates active fungal/anaerobic rot)
+        if payload.freshness_voc_ppm is not None and payload.freshness_voc_ppm > 50.0:
+            if "ORGANIC_SPOILAGE_GAS_SURGE" not in all_reasons:
+                all_reasons.append("ORGANIC_SPOILAGE_GAS_SURGE")
+            verdict.verdict = "ANOMALOUS"
 
         # Handle initial reading semantics: if physical and integrity pass and no reasons, mark valid
         is_initial_clean = (

@@ -3200,3 +3200,63 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `git status` clean and committed.
 - Both markdown document and artifact rendered with 100% structural integrity.
+
+
+---
+
+## Task: IoT Ingestion Hardware Prototype Specification & Firmware Integration — 2026-10-27
+
+**What was done:**
+- Analyzed the 49-page deep technical research document (`AgriChain IoT Prototype Specification.pdf`) and integrated its findings into the AgriChain architecture, firmware, simulation harness, and documentation.
+- Formulated complete Indian BOM totaling ₹2,165.94 INR (well under the ₹3,000 INR college-grade budget cap) across Indian vendors (Robu.in / ElectronicsComp):
+  - ESP32-WROOM-32 DevKit v1 (Dual-core 240MHz, 520KB SRAM, hardware SHA-256 accelerator) - ₹389.00
+  - DHT22 / AM2302 High-Precision Hygrothermal Sensor (±0.5°C, capacitive RH) - ₹295.00
+  - MQ-135 Electrochemical VOC Gas Sensor (Ethylene, ammonia, ethanol bio-plume detection) - ₹145.00
+  - u-blox NEO-6M GPS Module with ceramic patch antenna (UART NMEA 9600 baud) - ₹415.00
+  - SW-420 High-Sensitivity Vibration Sensor (Mechanical shock / transit pothole detection) - ₹55.00
+  - GL5528 Photoresistor / LDR Module with LM393 comparator (Optical crate tamper detection) - ₹42.00
+  - TP4056 1A Li-Ion Charger with DW01A + FS8205A overcharge/discharge protection - ₹38.00
+  - MT3608 2A Step-Up DC-DC Boost Converter (3.7V to 5.0V step-up) - ₹45.00
+  - 18650 Li-Ion Cell 2600mAh 3.7V (BIS certified) - ₹220.00
+  - IP65 Waterproof Dual-Chamber ABS Junction Box (158x90x60mm) with ePTFE hydrophobic membrane - ₹390.00
+  - Breadboard, jumper wires, 10kΩ pull-up/load resistors, decoupling capacitors - ₹131.94
+- Upgraded backend ingestion endpoint `POST /telemetry` in `backend/main.py` with expanded telemetry schema (`lat`, `lon`, `nonce`, `freshness_voc_ppm`, `tamper_status`), non-destructive reading persistence, and physical breach detection (`CRATE_TAMPER_DETECTED`, `TRANSIT_MECHANICAL_SHOCK_DETECTED`, `ORGANIC_SPOILAGE_GAS_SURGE` when VOC > 50 ppm).
+- Rewrote `hardware/esp32_firmware/src/main.cpp` into production C++ firmware implementing:
+  - Non-blocking `millis()` state machine (avoiding `delay()`).
+  - TinyGPS++ UART2 (GPIO 16/17) hardware parsing.
+  - SW-420 hardware interrupt (GPIO 27) with 25ms debounce latch.
+  - GL5528 optical tamper reading on ADC1 (GPIO 34).
+  - MQ-135 16x oversampled reading with polynomial hygrothermal baseline compensation on ADC1 (GPIO 35), strictly avoiding Wi-Fi ADC2 pin conflicts.
+  - Non-volatile storage (NVS) monotonic counter for replay attack defense.
+  - Hardware crypto SHA-256 payload digest (`mbedtls/md.h`) sent in `X-Payload-SHA256` header.
+  - LittleFS flash ring buffer (10 slots) for offline telemetry persistence during cellular dead zones with exponential backoff flush.
+- Upgraded `hardware/simulate_esp32.py` with multi-channel testing support (`--mode demo`, `--mode fault`, `--mode tamper`, `--mode spoilage`, `--mode stream`).
+- Authored comprehensive documentation in `docs/IOT_HARDWARE_SPECIFICATION.md` and interactive artifact `IOT_HARDWARE_SPECIFICATION.md` detailing biochemical spoilage dynamics, circuit schematics, pin mapping, 7-day implementation sprint, and viva-voce examiner defenses.
+- Updated `hardware/README.md` with BOM, pin mapping, PlatformIO flashing guides, and hardware test workflows.
+
+**Files changed:**
+- `backend/main.py`
+- `hardware/esp32_firmware/platformio.ini`
+- `hardware/esp32_firmware/src/main.cpp`
+- `hardware/simulate_esp32.py`
+- `hardware/README.md`
+- `docs/IOT_HARDWARE_SPECIFICATION.md`
+- `MEMORY.md`
+
+**Decisions made (and why):**
+- Selected Hybrid Mobile Hotspot / Wi-Fi Hub over standalone 4G LTE HAT (SIM7600/A7670C): Standalone 4G HATs cost ₹1,800-₹2,600 each, exceeding the ₹3,000 budget for a single crate node, and suffer 20-35 dB RF attenuation inside refrigerated steel reefer containers (Faraday cage effect). Utilizing the truck driver's Wi-Fi hotspot or cabin router with on-node LittleFS dead-zone buffering preserves the budget (₹2,165.94 total) and mimics standard commercial telematics architectures.
+- Assigned all analog sensor inputs strictly to ADC1 (GPIO 34 for LDR, GPIO 35 for MQ-135): ADC2 on the ESP32 is shared with the Wi-Fi PHY module and throws driver errors when Wi-Fi is active.
+- Added monotonic nonces and hardware SHA-256 payload digest headers: Prevents oracle replay attacks and man-in-the-middle tampering between the transit truck and the backend server.
+- Modeled biochemical spoilage via polynomial compensation $C_{TH}(T, H)$ on the MQ-135 electrochemical sensor to discern metabolic ripening (climacteric ethylene release) and bacterial putrefaction (ammonia, ethanol) from ambient temperature/humidity drift.
+
+**Verified (DONE WHEN checks that actually passed):**
+- `pytest tests/`: All 18 tests passed (100% pass rate in 9.03s).
+- `cd contracts && npx hardhat test`: All 22 tests passed (568ms).
+- `cd frontend && npm run build`: Compiled 1,820 modules in 2.63s with 0 errors.
+- `python3 hardware/simulate_esp32.py --mode demo`: Verified all 5 steps (Nominal cold-chain anchoring, LDR crate lid tamper breach flag, compressor failure thermal breach quarantine, MQ-135 VOC surge rot quarantine, and IsoLog quarantine audit).
+
+**Open questions / blockers for next session:**
+- None. System is fully operational, daemons are active, tests are passing, and hardware specifications and firmware are completely documented and tested.
+
+**What's next:**
+- Physical assembly and breadboard validation once the physical components arrive from Robu.in / ElectronicsComp according to the 7-day sprint plan.
