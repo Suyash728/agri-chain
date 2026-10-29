@@ -3296,3 +3296,28 @@ pm run build passed cleanly with 0 errors.
 - `pytest tests/`: All 18 tests passed (100% pass rate).
 - `cd contracts && npx hardhat test`: All 22 tests passed (568ms).
 - `simulate_esp32.py`: All 5 ingestion stages verified against running backend.
+
+
+---
+
+## Task: Physical ESP32 Toolchain Installation, Flashing & Strobing LED Hardware Test — 2026-10-29
+
+**What was done:**
+- Detected physical ESP32 DevKit board on `/dev/ttyUSB0` (Silicon Labs CP2102 USB-to-UART Bridge, Chip: `ESP32-D0WD-V3` rev 3.1, 4MB Flash, 40MHz crystal, MAC: `e4:65:b8:a2:df:14`).
+- Installed PlatformIO Core (`platformio`) and `esptool` into project environment (`.venv/bin/pio`).
+- Resolved Linux serial device permission with user running `sudo usermod -aG uucp $USER` and `sudo chmod 666 /dev/ttyUSB0`.
+- Authored strobing LED diagnostic test project in `hardware/test_strobe/`:
+  - `hardware/test_strobe/platformio.ini` (configured with `upload_speed = 460800`, `--no-stub` upload flag).
+  - `hardware/test_strobe/src/main.cpp` implementing 4 dynamic strobe patterns (tactical bursts, camera flash, high-frequency pulse, heartbeat pulse) on GPIO 2 (onboard LED), plus GPIO 4/5.
+- Successfully compiled firmware and uploaded binary (384,576 bytes) to the ESP32 in 19.74 seconds.
+- Monitored live serial console at 115200 baud: verified boot sequence, chip diagnostics (Silicon Rev 301, 2 cores @ 240MHz, 4MB flash, 258KB free heap), and verified continuous strobe cycles executing on the physical board.
+
+**Files changed:**
+- `hardware/test_strobe/platformio.ini`
+- `hardware/test_strobe/src/main.cpp`
+- `MEMORY.md`
+
+**Verified:**
+- `esptool` direct chip query on `/dev/ttyUSB0`: verified `ESP32-D0WD-V3` (rev 3.1), 4MB flash.
+- `pio run --target upload`: Wrote 384576 bytes with hash verification and hard reset.
+- Live serial monitor: captured active banner and strobe cycle loops in real time.
