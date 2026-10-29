@@ -3321,3 +3321,36 @@ pm run build passed cleanly with 0 errors.
 - `esptool` direct chip query on `/dev/ttyUSB0`: verified `ESP32-D0WD-V3` (rev 3.1), 4MB flash.
 - `pio run --target upload`: Wrote 384576 bytes with hash verification and hard reset.
 - Live serial monitor: captured active banner and strobe cycle loops in real time.
+
+
+---
+
+## Task: Physical ESP32 Full Subsystems Validation (Wi-Fi, SoftAP, SHA-256, LittleFS, NVS) — 2026-10-29
+
+**What was done:**
+- Created comprehensive hardware subsystem diagnostic suite in `hardware/test_subsystems/`:
+  - `hardware/test_subsystems/platformio.ini` (configured for LittleFS filesystem, 460800 upload speed).
+  - `hardware/test_subsystems/src/main.cpp` covering 6 core on-chip hardware engines:
+    1. Hardware SHA-256 Accelerator (`mbedtls`): 100-iteration telemetry hash benchmark.
+    2. LittleFS Flash Partition: 1,408 KB partition mounting, offline queue write, readback, and eviction.
+    3. NVS Flash Storage: Monotonic counter increment and persistence.
+    4. 2.4GHz Wi-Fi Radio RF Spectrum Scan: Passive scanning across 2.4GHz channels.
+    5. Wi-Fi SoftAP Transmitter: Broadcasting `"AgriChain-IoT-Node"` beacon with WPA2 security.
+    6. Capacitive Touch Channels: Reading capacitive counts on T0 (GPIO 4), T2 (GPIO 2), T7 (GPIO 27).
+- Compiled firmware (999,896 bytes flash) and flashed to `/dev/ttyUSB0` in 24.9 seconds.
+- Verified execution via live serial monitor at 115200 baud:
+  - Hardware SHA-256 Benchmark: Completed 100 hashes in 7,162 us (Average: **71.62 us per payload**).
+  - LittleFS: Verified 1,408 KB partition, 3 buffered records read back with 100% byte fidelity.
+  - NVS: Monotonic counter incremented and persisted across boots.
+  - Wi-Fi Scan: Detected local AP `"Home WiFi"` at `-62 dBm` on Channel 6 (WPA/WPA2).
+  - Wi-Fi SoftAP: Broadcasted `"AgriChain-IoT-Node"` beacon on IP `192.168.4.1`, MAC `E4:65:B8:A2:DF:15`.
+  - Touch Controller: Baseline values T0=1851, T2=0, T7=2125 confirmed active.
+
+**Files changed:**
+- `hardware/test_subsystems/platformio.ini`
+- `hardware/test_subsystems/src/main.cpp`
+- `MEMORY.md`
+
+**Verified:**
+- `pio run --target upload`: Wrote 1013072 bytes with hash verification.
+- Live serial capture confirmed all 6 subsystem tests passed with operational status.
