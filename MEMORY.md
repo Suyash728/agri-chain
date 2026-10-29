@@ -3260,3 +3260,39 @@ pm run build passed cleanly with 0 errors.
 
 **What's next:**
 - Physical assembly and breadboard validation once the physical components arrive from Robu.in / ElectronicsComp according to the 7-day sprint plan.
+
+
+---
+
+## Task: Physical IoT Components Received & Breadboard Wiring Integration — 2026-10-29
+
+**What was done:**
+- Reconciled delivered physical components from Directronics Store (Invoice No. 5707, total ₹1,315.00 INR vs ₹3,000 budget cap):
+  - ESP32-WROOM-32 Type-C Development Board (30-pin)
+  - DHT11 Humidity & Temperature Module (Blue 3-pin breakout with integrated pull-up)
+  - MQ-135 Gas Sensor Module (AO to ADC1 GPIO 34, 5V heater via VIN)
+  - GY-GPS6MV2 NEO-6M GPS Module + Ceramic Patch Antenna (UART2 GPIO 16 RX / GPIO 17 TX)
+  - SW-420 Vibration Sensor Module (LM393 comparator to GPIO 27 interrupt)
+  - 18650 Li-Ion Cell 1200mAh 3.7V + TP4056 Type-C Charger + MT3608 Boost Converter (Phase 2 standalone power)
+  - GL-12 840 Points Breadboard + M-M and F-F Jumper Wires
+- Configured firmware in `hardware/esp32_firmware/src/main.cpp`:
+  - Updated sensor configuration from DHT22 to `#define DHTTYPE DHT11` to match delivered blue module and prevent CRC check failures.
+  - Added `#define ENABLE_LDR_TAMPER false` guard to prevent floating ADC pin triggers when optical tamper LDR is not physically mounted.
+  - Adjusted default poll interval to 10s for rapid lab prototyping and testing.
+  - Set default backend URL placeholder pointing to local workstation IP (`http://192.168.1.103:8000/telemetry`).
+- Created step-by-step breadboard assembly walkthrough in `docs/BREADBOARD_ASSEMBLY_GUIDE.md` and interactive artifact `BREADBOARD_ASSEMBLY_GUIDE.md` with complete pin tables, schematics, and flashing instructions.
+- Relaunched background daemons (Hardhat node `:8545`, FastAPI backend `:8000`, Vite frontend `:3000`) and verified deployment.
+
+**Files changed:**
+- `hardware/esp32_firmware/src/main.cpp`
+- `docs/BREADBOARD_ASSEMBLY_GUIDE.md`
+- `MEMORY.md`
+
+**Decisions made (and why):**
+- Adopted Phase 1 USB Type-C direct powering strategy: Allows immediate plug-and-play prototyping of ESP32, DHT11, MQ-135, SW-420, and GPS directly on the breadboard without requiring soldering iron work on the 18650 battery tabs or TP4056 module.
+- Switched `#define DHTTYPE DHT11`: The physical kit contains the blue DHT11 module, which uses different bit timing and response formats than DHT22. Setting `DHT11` ensures accurate hygrothermal telemetry readings without NaN glitches.
+
+**Verified:**
+- `pytest tests/`: All 18 tests passed (100% pass rate).
+- `cd contracts && npx hardhat test`: All 22 tests passed (568ms).
+- `simulate_esp32.py`: All 5 ingestion stages verified against running backend.

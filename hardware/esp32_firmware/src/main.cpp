@@ -26,18 +26,20 @@
 #include "time.h"
 
 // ==================== 1. HARDWARE PIN DEFINITIONS ====================
-#define PIN_DHT22          4   // Digital Single-Wire (4.7k pull-up to 3.3V)
+#define PIN_DHT            4   // Single-Wire data (connect to DHT11 OUT)
+#define DHTTYPE            DHT11 // DHT11 (Directronics Blue 3-pin module) or DHT22
 #define PIN_GPS_RX         16  // UART2 RX (Connect to NEO-6M TX)
 #define PIN_GPS_TX         17  // UART2 TX (Connect to NEO-6M RX)
-#define PIN_PERIPH_MOSFET  25  // Gate drive for MQ-135 / GPS low-side switch
-#define PIN_SW420_INT      27  // External Interrupt (FALLING edge on vibration)
-#define PIN_MQ135_ADC      34  // ADC1_CH6 (Input-only, 10k/20k divider from 5V)
-#define PIN_LDR_ADC        35  // ADC1_CH7 (Input-only, 10k pull-down to GND)
+#define PIN_PERIPH_MOSFET  25  // Gate drive for MQ-135 / GPS low-side switch (Optional)
+#define PIN_SW420_INT      27  // External Interrupt (Connect to SW-420 DO)
+#define PIN_MQ135_ADC      34  // ADC1_CH6 (Connect to MQ-135 AO)
+#define PIN_LDR_ADC        35  // ADC1_CH7 (Connect to LDR AO if installed)
+#define ENABLE_LDR_TAMPER  false // Set true when physical LDR is connected, false to prevent floating pin false-tamper
 
 // ==================== 2. OPERATIONAL CONSTANTS =======================
-const char* WIFI_SSID     = "AgriChain_Transit_Hotspot";
-const char* WIFI_PASSWORD = "ColdChain2026!";
-const char* FASTAPI_URL   = "http://192.168.43.100:8000/telemetry";
+const char* WIFI_SSID     = "AgriChain_Transit_Hotspot"; // Update with your Wi-Fi / Hotspot SSID
+const char* WIFI_PASSWORD = "ColdChain2026!";           // Update with your Wi-Fi password
+const char* FASTAPI_URL   = "http://192.168.1.103:8000/telemetry"; // Update with your PC's IP
 const char* BATCH_ID      = "BAT-TOM-802";
 const char* NTP_SERVER    = "pool.ntp.org";
 
@@ -45,7 +47,7 @@ const char* NTP_SERVER    = "pool.ntp.org";
 const double FALLBACK_LAT = 19.9975;
 const double FALLBACK_LON = 73.7898;
 
-const uint32_t POLL_INTERVAL_MS   = 60000UL; // 60-second telemetry cycle
+const uint32_t POLL_INTERVAL_MS   = 10000UL; // 10-second telemetry cycle for rapid testing
 const uint32_t BASE_BACKOFF_MS    = 2000UL;  // 2s initial retry backoff
 const uint32_t MAX_BACKOFF_MS     = 32000UL; // 32s max retry ceiling
 const size_t   MAX_OFFLINE_RECORDS = 10;     // LittleFS circular buffer cap
@@ -60,7 +62,7 @@ const int   LDR_TAMPER_THRESHOLD = 1800;     // 12-bit ADC threshold (>150 lux)
 const uint32_t SHOCK_COUNT_LIMIT = 5;        // Pulses to flag rough handling
 
 // ==================== 3. GLOBAL OBJECTS & STATE ======================
-DHT dht(PIN_DHT22, DHT22);
+DHT dht(PIN_DHT, DHTTYPE);
 TinyGPSPlus gps;
 HardwareSerial gpsSerial(2);
 Preferences nvs;
@@ -231,9 +233,11 @@ String buildTelemetryPayload() {
   float vocPpm = (tempC > -100.0f) ? readCompensatedVOC_PPM(tempC, humPct)
                                    : readCompensatedVOC_PPM(20.0f, 65.0f);
 
-  int ldrAdc = analogRead(PIN_LDR_ADC);
-  if (ldrAdc > LDR_TAMPER_THRESHOLD) {
-    crateEverUnsealed = true; // Latches breach state permanently
+  if (ENABLE_LDR_TAMPER) {
+    int ldrAdc = analogRead(PIN_LDR_ADC);
+    if (ldrAdc > LDR_TAMPER_THRESHOLD) {
+      crateEverUnsealed = true; // Latches breach state permanently
+    }
   }
 
   noInterrupts();
@@ -309,7 +313,7 @@ void loop() {
   }
 
   // 2. Continuous Optical Tamper Watch (sub-second lid opening detection)
-  if (!crateEverUnsealed && analogRead(PIN_LDR_ADC) > LDR_TAMPER_THRESHOLD) {
+  if (ENABLE_LDR_TAMPER && !crateEverUnsealed && analogRead(PIN_LDR_ADC) > LDR_TAMPER_THRESHOLD) {
     crateEverUnsealed = true;
   }
 
