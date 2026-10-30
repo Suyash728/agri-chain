@@ -3384,3 +3384,31 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `pio run --target upload`: Wrote 305024 bytes with verified hash.
 - Live serial capture confirmed accurate, steady ambient temperature and humidity data streaming continuously.
+
+
+---
+
+## Task: Physical MQ-135 Gas & VOC Sensor Integration & Dual Ingestion Validation — 2026-10-30
+
+**What was done:**
+- Verified physical breadboard connections for the MQ-135 Gas Sensor:
+  - `VCC` connected to ESP32 `VIN` (5V supply from USB-C)
+  - `GND` connected to common ground rail
+  - `AO` connected to ESP32 `GPIO 34` (D34 on ADC1)
+  - `DO` left unconnected
+- Created dual sensor diagnostics project in `hardware/test_climate_gas/`:
+  - `platformio.ini` configured for ESP32 on `/dev/ttyUSB0`.
+  - `src/main.cpp` sampling both DHT11 (temp & humidity) and MQ-135 with 16x oversampling on 12-bit ADC1.
+- Flashed firmware to `/dev/ttyUSB0` at 460800 baud in 15.17 seconds.
+- Verified live readings on serial monitor at 115200 baud:
+  - DHT11: Steady **30.5 °C** and **76.5 % RH**.
+  - MQ-135: SnO2 heating element stabilized cleanly from 1.25V down to 1.20V / 1483 ADC count, registering **🍃 Fresh / Clean Air**.
+
+**Files changed:**
+- `hardware/test_climate_gas/platformio.ini`
+- `hardware/test_climate_gas/src/main.cpp`
+- `MEMORY.md`
+
+**Verified:**
+- `pio run --target upload`: Successful flash.
+- Live serial capture confirms both climate and gas telemetry channels reading concurrently with zero ADC conflicts.
