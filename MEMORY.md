@@ -3412,3 +3412,31 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `pio run --target upload`: Successful flash.
 - Live serial capture confirms both climate and gas telemetry channels reading concurrently with zero ADC conflicts.
+
+
+---
+
+## Task: Physical SW-420 Transit Shock Sensor Integration & Trio Diagnostics — 2026-10-30
+
+**What was done:**
+- Verified physical breadboard connections for the SW-420 Vibration Sensor:
+  - `VCC` connected to right red power rail (3.3V)
+  - `GND` connected to right blue ground rail
+  - `DO` connected to ESP32 `GPIO 27` (D27 external interrupt)
+- Created trio diagnostics test project in `hardware/test_trio/`:
+  - `platformio.ini` configured for ESP32 on `/dev/ttyUSB0`.
+  - `src/main.cpp` configuring sub-microsecond falling-edge hardware interrupt (`attachInterrupt`) with 25ms debounce latch on GPIO 27, while sampling DHT11 (temp & humidity) and MQ-135 (analog VOC).
+- Flashed firmware to `/dev/ttyUSB0` in 17.61 seconds.
+- Verified live readings on serial monitor at 115200 baud:
+  - DHT11: **30.6 °C**, **78.8 % RH**.
+  - MQ-135: Stable **1.12V** (clean air).
+  - SW-420: Hardware interrupt active and baseline reporting **🛡️ [Stable]** (0 shocks).
+
+**Files changed:**
+- `hardware/test_trio/platformio.ini`
+- `hardware/test_trio/src/main.cpp`
+- `MEMORY.md`
+
+**Verified:**
+- `pio run --target upload`: Success.
+- Real-time serial monitor verifies all 3 channels reading simultaneously without pin contention or timing jitter.
