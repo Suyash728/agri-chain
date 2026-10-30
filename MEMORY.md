@@ -3354,3 +3354,33 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `pio run --target upload`: Wrote 1013072 bytes with hash verification.
 - Live serial capture confirmed all 6 subsystem tests passed with operational status.
+
+
+---
+
+## Task: Physical DHT11 Temperature & Humidity Sensor Validation — 2026-10-30
+
+**What was done:**
+- Verified user's physical breadboard wiring for the blue DHT11 module connected to the ESP32:
+  - `+` (VCC) connected to ESP32 `3V3`
+  - `-` (GND) connected to ESP32 `GND`
+  - `out` (Data) connected to ESP32 `GPIO 4` (D4)
+- Created dedicated sensor testing project in `hardware/test_dht11/`:
+  - Configured `platformio.ini` with `adafruit/DHT sensor library @ ^1.4.6` and `adafruit/Adafruit Unified Sensor @ ^1.1.14`.
+  - Implemented `hardware/test_dht11/src/main.cpp` reading temperature, humidity, and computing heat index every 2 seconds with an onboard LED pulse.
+- Uploaded firmware to `/dev/ttyUSB0` at 460800 baud.
+- Streamed live readings via serial monitor at 115200 baud:
+  - Sensor successfully initialized.
+  - Live room temperature: **30.3 °C**
+  - Live humidity: **75.9 % - 76.0 %**
+  - Live heat index: **37.4 °C**
+  - Confirmed 0 checksum errors or dropped packets.
+
+**Files changed:**
+- `hardware/test_dht11/platformio.ini`
+- `hardware/test_dht11/src/main.cpp`
+- `MEMORY.md`
+
+**Verified:**
+- `pio run --target upload`: Wrote 305024 bytes with verified hash.
+- Live serial capture confirmed accurate, steady ambient temperature and humidity data streaming continuously.
