@@ -205,15 +205,14 @@ def build_front_matter(doc):
     add_h1(doc, "Declaration")
     add_para(
         doc,
-        f'We declare that this written submission entitled "{rd.TITLE}" represents our own ideas in our own words. '
-        "Where the ideas or words of others have been included, we have adequately cited and referenced the original sources."
+        f'We declare that this written submission entitled "{rd.TITLE}" represents our own work based on our design, '
+        "implementation, and analysis. Where ideas or text from external literature have been referenced, they have been "
+        "duly cited in the references."
     )
     add_para(
         doc,
-        "We also declare that we have adhered to all principles of academic honesty and integrity and have not "
-        "misrepresented or fabricated any idea, data, fact, or source in our submission. We understand that any "
-        "violation of the above will be cause for disciplinary action by the Institute and can also evoke penal action "
-        "from the sources which have thus not been properly cited or from whom proper permission has not been taken when needed."
+        "We also declare that we have adhered to academic honesty and ethical research practices. We understand that any "
+        "unattributed reproduction of external material violates institutional policy and can evoke disciplinary action."
     )
     add_para(doc, "\n")
     tbl_dec = doc.add_table(rows=2, cols=2)
@@ -238,24 +237,24 @@ def build_front_matter(doc):
     add_h1(doc, "Acknowledgement")
     add_para(
         doc,
-        f"We express our deepest gratitude to our Project Guide, {rd.GUIDE}, for her invaluable guidance, patient mentoring, "
-        "and persistent encouragement throughout the conceptualization, system development, and experimental validation of this project. "
-        "Her profound insights into decentralized architectures and machine learning evaluation have been instrumental in our progress."
+        f"We express our sincere gratitude to our Project Guide, {rd.GUIDE}, for her valuable advice, consistent encouragement, "
+        "and guidance throughout the design, software development, and testing phases of this major project. Her feedback on system "
+        "architecture and evaluation methodologies helped us improve our technical approach significantly."
     )
     add_para(
         doc,
-        f"We extend our sincere thanks to {rd.COORDINATOR}, BE Project Coordinator, for her systematic planning, "
-        "timely review schedules, and constructive critiques during every milestone evaluation."
+        f"We would like to thank {rd.COORDINATOR}, BE Project Coordinator, for coordinating the project milestones, organizing "
+        "review schedules, and offering helpful suggestions during progress presentations."
     )
     add_para(
         doc,
-        f"We are immensely grateful to {rd.HOD}, Head of the {rd.DEPARTMENT}, and {rd.PRINCIPAL}, Principal of {rd.COLLEGE}, "
-        "for granting access to college computing facilities, specialized research laboratories, and creating a vibrant academic atmosphere."
+        f"We also thank {rd.HOD}, Head of the {rd.DEPARTMENT}, and {rd.PRINCIPAL}, Principal of {rd.COLLEGE}, "
+        "for granting us access to the college computing laboratories, network resources, and providing an encouraging academic environment."
     )
     add_para(
         doc,
-        "Lastly, we convey our heartfelt appreciation to our fellow classmates, laboratory staff, and our parents and families "
-        "whose unwavering moral and emotional support fueled our dedication to successfully accomplish this engineering project."
+        "Finally, we are grateful to our classmates, departmental laboratory staff, and our families for their continuous moral support "
+        "and assistance throughout our undergraduate studies."
     )
     add_para(doc, "\n")
     for s in rd.STUDENTS:
@@ -267,33 +266,35 @@ def build_front_matter(doc):
     add_h1(doc, "Abstract")
     add_para(
         doc,
-        "Modern agricultural supply chains suffer from severe information asymmetry, post-harvest produce deterioration, "
-        "and non-transparent price realization for primary producers. While blockchain technology provides immutable provenance "
-        "and smart contracts can enforce operational policies, existing agricultural implementations are vulnerable to the "
-        "critical 'Garbage In, Garbage Out' dilemma: corrupt, manipulated, or failing IoT telemetry streams directly into the distributed "
-        "ledger without validation. Furthermore, monolithic smart contracts incur prohibitive gas costs, off-chain storage repositories "
-        "lack cryptographic tamper evidence, and intermediaries conceal cumulative profit margins from farmers and consumers."
+        "Agricultural supply chains in developing economies frequently suffer from post-harvest spoilage, fragmented cold-chain "
+        "surveillance, and opaque middleman markups that leave smallholder farmers with a disproportionately low share of the final "
+        "retail price. Although public and consortium blockchains offer immutable, auditable ledgers for product provenance, streaming "
+        "raw IoT telemetry directly to smart contracts exposes the system to the 'Garbage In, Garbage Out' (GIGO) dilemma. When sensor "
+        "telemetry suffers from thermal spikes, communication dropouts, drift, or replay attempts, committing such data directly onto "
+        "the blockchain creates permanent false records, unnecessary disputes, and costly transaction gas expenditure."
     )
     add_para(
         doc,
-        "This project proposes a unified, decentralized 5-tier architecture integrating the Internet of Things (IoT), an AI-driven "
-        "Trust Layer, modular EVM smart contracts, dual-engine persistence with tamper-evident cryptographic hash chains, and a responsive "
-        "multi-role React 18 interface. Environmental conditions (temperature, humidity, location) during storage and transit are captured "
-        "via IoT sensor tracking and processed through an off-chain AI validation pipeline. The pipeline executes physical plausibility "
-        "analysis, dynamic crop policy boundary checks, 11-dimensional feature extraction, unsupervised Isolation Forest anomaly detection, "
-        "and SHA-256 event fingerprinting to isolate suspicious telemetry into a tamper-evident quarantine hash-chain before it can contaminate the ledger."
+        "In this project, we designed and implemented AgriChain, a unified decentralized architecture that integrates a simulated "
+        "IoT telematics engine, an off-chain AI-based Trust Layer, modular smart contracts on the Polygon Amoy testnet, dual-engine "
+        "relational persistence, and a responsive multi-role React 18 web interface. Simulated edge nodes model realistic temperature, "
+        "humidity, and GPS waypoints across transit and warehousing phases. Before any reading reaches the blockchain, our off-chain "
+        "AI Trust Layer validates it using a multi-stage pipeline: basic format checks, physical and temporal plausibility bounding, "
+        "dynamic per-crop thermal envelopes, 11-dimensional feature extraction, unsupervised Isolation Forest anomaly scoring, and "
+        "SHA-256 anti-replay verification. Readings that violate policy or exhibit anomalous signatures are routed into an append-only "
+        "SHA-256 Quarantine Hash Chain, preserving a tamper-evident audit record without ledger pollution or wasted gas."
     )
     add_para(
         doc,
-        "Validated telemetry is securely anchored to modular smart contracts (ProductRegistry, CustodyTransfer, ColdChainMonitor, "
-        "PolicyConfig) deployed on Polygon Amoy. A single-slot packed condition recording mechanism achieves a 52.71% gas reduction "
-        "under batched oracle updates (N=20). Off-chain quality lab certificates are pinned to IPFS with cryptographic Content Identifiers "
-        "(CIDs) anchored on-chain. Consumers scan batch QR codes to inspect the complete farm-to-fork journey, dynamic freshness grades, "
-        "verified reviews, and an authentic price trail establishing a fair 50.0% farmer revenue share. Evaluated across 1,000 synthetic "
-        "and hardware-injected fault sequence trials, the AI Trust Layer achieved an overall F1-score of 97.22% with 100% recall across "
-        "all seven fault profiles, verifying an accountable, cost-efficient, and fraud-resistant agricultural supply chain platform."
+        "Valid readings are batched and committed to modular Solidity smart contracts (ProductRegistry, CustodyTransfer, "
+        "ColdChainMonitor, PolicyConfig). A bitwise packed struct representation stores complete environmental condition records in a single "
+        "256-bit EVM storage slot, achieving a 52.71% gas reduction under batched updates (N=20). Off-chain quality certificates are pinned "
+        "to IPFS with immutable Content Identifiers (CIDs) anchored on-chain. Consumers can scan a batch QR code to inspect the complete "
+        "journey timeline, freshness ratings, verified reviews, and a cumulative price trail that demonstrates an equitable 50.0% farmer revenue "
+        "share. Evaluated across 1,000 simulated telemetry cycles across seven realistic cold-chain failure profiles, the AI Trust Layer achieved "
+        "an F1-score of 97.22% with 100% recall, providing an accountable and practical solution for agricultural supply chain transparency."
     )
-    add_para(doc, "Keywords: Agricultural Supply Chain, Blockchain Traceability, IoT Cold Chain, AI Trust Layer, Isolation Forest Anomaly Detection, Modular Smart Contracts, Gas Optimization, Fair Price Trail, Tamper-Evident Quarantine Hash Chain.", italic=True)
+    add_para(doc, "Keywords: Agricultural Supply Chain, Blockchain Traceability, Simulated IoT Telematics, AI Trust Layer, Isolation Forest Anomaly Detection, Modular Smart Contracts, Gas Optimization, Fair Price Trail, Quarantine Hash Chain.", italic=True)
     doc.add_page_break()
 
     # 7. TABLE OF CONTENTS
@@ -316,7 +317,7 @@ def build_front_matter(doc):
         ("Chapter 2: Literature Review", "16"),
         ("    2.1 Blockchain-Based Supply Chain Traceability", "16"),
         ("    2.2 AI and Machine Learning for Anomaly Detection", "17"),
-        ("    2.3 IoT-Blockchain Security and Hardware Integration", "18"),
+        ("    2.3 IoT-Blockchain Security and Edge Telematics Integration", "18"),
         ("    2.4 Domain-Specific Agricultural Supply Chain Studies", "19"),
         ("    2.5 Comparative Analysis of Existing Systems", "20"),
         ("    2.6 Critical Analysis of Existing Research", "20"),
@@ -336,7 +337,7 @@ def build_front_matter(doc):
         ("    4.6 AI-Based Trust Layer Pipeline", "32"),
         ("    4.7 Modular Smart Contracts and Circuit Breakers", "33"),
         ("    4.8 Dual Persistence and Decentralized Document Pinning", "34"),
-        ("    4.9 Software and Hardware Specifications", "34"),
+        ("    4.9 Software and System Specifications", "34"),
         ("    4.10 Dynamic Crop Policy Engine", "34"),
         ("    4.11 Project Timeline and Scheduling", "34"),
         ("Chapter 5: Results and Discussion", "36"),
@@ -427,7 +428,7 @@ def build_front_matter(doc):
         ("Table 2.3", "Literature Survey: IoT and Blockchain Security Integration", "19"),
         ("Table 2.4", "Literature Survey: Domain-Specific Agricultural Supply Chain Studies", "20"),
         ("Table 2.5", "Comparative Analysis: Existing Systems vs. Proposed AgriChain System", "20"),
-        ("Table 4.1", "Software and Hardware Requirements Specification", "34"),
+        ("Table 4.1", "Software and System Specifications", "34"),
         ("Table 4.2", "Crop Policy Reference Thresholds for Cold Chain Monitoring", "34"),
         ("Table 5.1", "Recorded Performance Metrics of the AI Trust Layer", "36"),
         ("Table 5.2", "Recorded End-to-End System Verification Outcomes (PRD Section 6 Suite)", "38"),

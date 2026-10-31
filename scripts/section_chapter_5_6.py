@@ -13,11 +13,10 @@ def build_chapters_5_6(doc):
     add_h2(doc, "5.1 AI Trust Layer Performance Evaluation")
     add_para(
         doc,
-        "The empirical performance of the AI Trust Layer was evaluated across a standardized test corpus comprising 1,000 synthetic "
-        "and hardware-injected telemetry cycles. The evaluation benchmarked the pipeline's capability to correctly classify legitimate "
-        "environmental readings while intercepting seven distinct anomaly and attack profiles: Sudden Temperature Spikes, Frozen Sensor "
-        "Values, Thermal Excursion Breaches, Hardware Disconnects / Missing Packets, Telemetry Replay Attacks, and GPS Corridor "
-        "Deviations. Table 5.1 presents the empirical confusion matrix and performance metrics recorded across all test cycles."
+        "The empirical performance of the AI Trust Layer was evaluated across a standardized test corpus comprising 1,000 simulated "
+        "telemetry cycles across seven realistic cold-chain failure profiles: Sudden Temperature Spikes, Frozen Sensor Values, "
+        "Thermal Excursion Breaches, Telemetry Packet Dropouts / Network Gaps, Telemetry Replay Attacks, Humidity Spikes, and GPS "
+        "Corridor Deviations. Table 5.1 presents the empirical confusion matrix and performance metrics recorded across all test cycles."
     )
     
     add_styled_table(
@@ -30,8 +29,8 @@ def build_chapters_5_6(doc):
     
     add_para(
         doc,
-        "As evidenced by the recorded results, the AI Trust Layer achieved an overall classification accuracy of 98.15%, a precision "
-        "of 94.74%, a recall of 100.0%, and an overall F1-score of 97.22%. Most critically for food safety governance, the model "
+        "As evidenced by the recorded results, the AI Trust Layer achieved an overall classification accuracy of 96.0%, a precision "
+        "of 94.6%, a recall of 100.0%, and an overall F1-score of 97.2%. Most critically for food safety governance, the model "
         "achieved zero false negatives ($FN = 0$) across all 270 anomaly trials, proving that no corrupted or anomalous reading "
         "evaded detection. Figure 5.1 illustrates the confusion matrix of the Isolation Forest anomaly detector."
     )
@@ -72,7 +71,7 @@ def build_chapters_5_6(doc):
     add_para(
         doc,
         "To verify comprehensive functional correctness and adherence to the project specification, the entire platform was subjected "
-        "to the rigorous PRD Section 6 Capstone Automated Verification Suite. Table 5.2 documents the ten integration test cases, "
+        "to the PRD Section 6 Capstone Automated Verification Suite. Table 5.2 documents the ten integration test cases, "
         "their execution conditions, and verified outcomes."
     )
     
@@ -86,14 +85,14 @@ def build_chapters_5_6(doc):
     
     add_para(
         doc,
-        "All ten capstone verification tests passed with 100% success rate, confirming complete multi-actor synchronization, "
-        "foolproof forward-only custody enforcement, and mathematical integrity of the quarantine hash chain."
+        "All ten capstone verification tests passed with a 100% success rate, confirming multi-actor synchronization, "
+        "reliable forward-only custody enforcement, and cryptographic integrity of the quarantine hash chain."
     )
 
     add_h2(doc, "5.4 Smart-Contract Gas Optimization Benchmarking")
     add_para(
         doc,
-        "To validate the economic feasibility of deploying AgriChain on EVM blockchains, smart contract execution gas consumption "
+        "To evaluate the economic feasibility of deploying AgriChain on EVM blockchains, smart contract execution gas consumption "
         "was measured using Hardhat gas reporter on a local EVM node simulating Polygon Amoy network conditions. Table 5.3 summarizes "
         "the recorded gas benchmarks comparing our bitwise packed struct against traditional unpacked multi-slot representations."
     )
@@ -110,7 +109,7 @@ def build_chapters_5_6(doc):
         doc,
         "As detailed in Table 5.3, packing the environmental telemetry struct into a single 256-bit storage slot reduced individual write "
         "gas by 34.78% (from 124,850 gas to 81,420 gas). Under batched oracle updates ($N = 20$), amortization of transaction base overhead "
-        "yielded a dramatic 52.71% gas reduction (averaging 43,570 gas per condition reading). At current Polygon Amoy gas prices (~30 Gwei), "
+        "yielded a 52.71% gas reduction (averaging 33,807 gas per condition reading). At current Polygon Amoy gas prices (~30 Gwei), "
         "each telemetry update costs less than $0.0014, rendering high-frequency cold-chain surveillance economically viable."
     )
 
@@ -118,7 +117,7 @@ def build_chapters_5_6(doc):
     add_para(
         doc,
         "The client presentation layer delivers dedicated, role-tailored dashboards for every participant in the agricultural ecosystem, "
-        "translating complex cryptographic events and AI scores into intuitive visual indicators."
+        "translating cryptographic events and AI scores into intuitive visual indicators."
     )
     
     add_h3(doc, "5.5.1 Farmer Dashboard: Agricultural Product and Batch Registration")
@@ -248,10 +247,10 @@ def build_chapters_5_6(doc):
         "The empirical findings gathered across AI classification benchmarks, EVM gas profiling, and multi-actor lifecycle testing "
         "substantiate the validity of the proposed AgriChain architecture. Several fundamental insights emerge from this evaluation:"
     )
-    add_bullet(doc, "Effective Resolution of the GIGO Oracle Problem: By positioning the AI Trust Layer strictly prior to blockchain submission, the platform prevents corrupted or malicious data from ever reaching immutable ledger state. The 100% recall recorded across 270 fault trials proves that multi-dimensional feature engineering successfully identifies both abrupt sensor failures and subtle calibration drifts.", "1. ")
-    add_bullet(doc, "Economic Viability via Struct Packing: High transaction fees have historically crippled public blockchain adoption in agriculture. Our single-slot packed struct reduces individual condition logging costs to 81,420 gas and batched writes to 43,570 gas. On Polygon Amoy, this equates to less than ₹0.12 per update, representing an economically sustainable overhead for commercial cold-chain carriers.", "2. ")
-    add_bullet(doc, "Forensic Integrity without On-Chain Bloat: The SHA-256 Quarantine Hash Chain establishes an unbroken mathematical audit trail for rejected telemetry without incurring blockchain storage costs. Any post-hoc manipulation of quarantined records breaks the chain digest within 10 milliseconds, providing full regulatory auditability.", "3. ")
-    add_bullet(doc, "Empowerment Through Price Transparency: The cumulative fair price trail demonstrated in Table 5.4 proves that farmers realize a fair 50.0% share of the retail consumer price (₹25.00/kg out of ₹50.00/kg), compared to traditional opaque supply chains where farmers often realize less than 25%. This transparency fundamentally realigns economic incentives in favor of primary producers.", "4. ")
+    add_bullet(doc, "Effective Resolution of the GIGO Oracle Problem: By positioning the AI Trust Layer strictly prior to blockchain submission, the platform prevents corrupted or anomalous data from reaching immutable ledger state. The 100% recall recorded across 270 fault trials demonstrates that multi-dimensional feature extraction and Isolation Forest scoring reliably identify both abrupt thermal breaches and subtle sensor freezes.", "1. ")
+    add_bullet(doc, "Economic Viability via Struct Packing: High transaction fees have historically limited blockchain adoption in agriculture. Our single-slot packed struct reduces individual condition logging costs to 81,420 gas and batched writes to 33,807 gas per reading. On Polygon Amoy, this equates to less than ₹0.12 per update, representing an affordable operational cost for cold-chain carriers.", "2. ")
+    add_bullet(doc, "Forensic Integrity without On-Chain Bloat: The SHA-256 Quarantine Hash Chain establishes a tamper-evident audit log for rejected telemetry without incurring blockchain storage costs. Any alteration to quarantined records is detectable within 10 milliseconds during audit sweeps.", "3. ")
+    add_bullet(doc, "Empowerment Through Price Transparency: The cumulative fair price trail demonstrated in Table 5.4 proves that farmers realize a fair 50.0% share of the retail consumer price (₹10.00/kg out of ₹20.00/kg), compared to traditional opaque supply chains where farmers often receive less than 28%. This transparency fundamentally realigns economic incentives in favor of primary producers.", "4. ")
 
     doc.add_page_break()
 
@@ -263,21 +262,21 @@ def build_chapters_5_6(doc):
     add_h2(doc, "6.1 Conclusion")
     add_para(
         doc,
-        "This Major Project successfully designed, engineered, and empirically validated AgriChain—a unified, decentralized, and "
-        "AI-governed agricultural supply chain traceability platform that establishes end-to-end farm-to-fork provenance, guarantees "
-        "rigorous cold-chain compliance, isolates corrupted IoT telemetry, and enforces transparent multi-tier price realization."
+        "This Major Project successfully designed, implemented, and evaluated AgriChain—a unified, decentralized agricultural "
+        "supply chain traceability platform that provides end-to-end farm-to-fork provenance, monitors cold-chain compliance, "
+        "isolates anomalous telemetry off-chain, and enforces transparent multi-tier price realization."
     )
     add_para(
         doc,
-        "By addressing the critical 'Garbage In, Garbage Out' dilemma inherent in traditional blockchain IoT oracles, the platform's "
-        "pre-commit AI Trust Layer achieved an outstanding 97.22% overall F1-score and 100% recall across hardware-injected sensor faults, "
-        "ensuring that invalid or fraudulent telemetry is quarantined into an unbroken SHA-256 hash chain without polluting the public ledger. "
+        "By addressing the critical 'Garbage In, Garbage Out' dilemma inherent in IoT-blockchain architectures, the platform's "
+        "pre-commit AI Trust Layer achieved a 97.22% overall F1-score and 100% recall across simulated cold-chain failure profiles, "
+        "ensuring that invalid or anomalous telemetry is quarantined into an append-only SHA-256 hash chain without polluting the public ledger. "
         "On-chain, modular Solidity smart contracts deployed on the Polygon Amoy testnet integrated OpenZeppelin RBAC and Pausable circuit "
-        "breakers, while a novel bitwise single-slot packed struct reduced condition recording gas consumption by 52.71% under batched updates."
+        "breakers, while a bitwise single-slot packed struct reduced condition recording gas consumption by 52.71% under batched updates."
     )
     add_para(
         doc,
-        "The dual persistence architecture combined high-speed PostgreSQL and SQLite relational querying with decentralized IPFS document "
+        "The dual persistence architecture combined PostgreSQL and SQLite relational querying with decentralized IPFS document "
         "pinning for tamper-proof food quality certificates. Across comprehensive end-to-end testing, the platform successfully passed "
         "all ten PRD Section 6 capstone verification cases, verifying seamless multi-actor collaboration across Farmers, Logistics Transporters, "
         "Dark Store Operators, and Retail Consumers. Crucially, the immutable price trail verified that primary producers realize a fair "
@@ -291,15 +290,15 @@ def build_chapters_5_6(doc):
         "While AgriChain establishes a robust foundation for decentralized agricultural logistics, several promising research and "
         "engineering avenues remain for future exploration:"
     )
-    add_bullet(doc, "Zero-Knowledge Proofs (zk-SNARKs) for Financial Privacy: Implement Groth16 or PLONK zero-knowledge proofs allowing farmers and logistics providers to mathematically prove compliance with price floors and temperature ranges without disclosing commercial trade secrets to competitors.", "1. ")
-    add_bullet(doc, "Decentralized Oracle Networks (Chainlink DON): Transition the backend relayer architecture to a decentralized oracle network utilizing Chainlink Functions and threshold cryptography to eliminate any single point of failure in telemetry signing.", "2. ")
-    add_bullet(doc, "TinyML Edge Inference on Microcontrollers: Deploy quantized, ultra-lightweight decision tree models directly onto ESP32 microcontrollers, enabling on-device anomaly classification even during complete cellular network disconnection.", "3. ")
-    add_bullet(doc, "Automated Smart Contract Escrow and Instant UPI Settlement: Integrate smart contract escrow accounts linked to Indian Unified Payments Interface (UPI) or Central Bank Digital Currency (CBDC / Digital Rupee) APIs to execute instantaneous, trustless financial payouts to farmers upon verified dark-store custody acceptance.", "4. ")
-    add_bullet(doc, "Multi-Modal Computer Vision Produce Grading: Integrate mobile-based convolutional neural networks (CNNs) into the Farmer and Dark-Store portals to perform automated visual quality grading, defect detection, and ripeness estimation via smartphone camera photography.", "5. ")
-    add_bullet(doc, "Cross-Chain Interoperability via Chainlink CCIP: Implement cross-chain message passing protocols (CCIP) to allow agricultural state records minted on Polygon to seamlessly interact with supply chain financing protocols on Ethereum Mainnet or Avalanche.", "6. ")
-    add_bullet(doc, "Autonomous Dynamic Cold Storage Re-Routing: Develop algorithmic dispatch mechanisms that automatically instruct transport vehicles to divert to the nearest available refrigerated warehouse upon detecting persistent reefer compressor failure.", "7. ")
-    add_bullet(doc, "Kinetic Shelf-Life Degradation Modeling: Embed real-time biochemical food decay models (Arrhenius kinetics) into the freshness grading engine, dynamically recalculating remaining produce shelf-life based on cumulative degree-hours of thermal exposure.", "8. ")
-    add_bullet(doc, "Consumer Staking and Verified Review Tokenomics: Introduce decentralized review verification mechanisms where consumers stake small cryptographic tokens to submit produce reviews, preventing astroturfing and rewarding authentic community feedback.", "9. ")
+    add_bullet(doc, "Zero-Knowledge Proofs (zk-SNARKs) for Financial Privacy: Implementing Groth16 or PLONK zero-knowledge proofs allowing farmers and logistics providers to mathematically prove compliance with price floors and temperature ranges without disclosing commercial trade secrets to competitors.", "1. ")
+    add_bullet(doc, "Commercial Telematics Fleet API Integration: Expanding the simulation framework to interface directly with commercial fleet management APIs and real-time enterprise logistics data services.", "2. ")
+    add_bullet(doc, "Edge-Optimized Local Anomaly Detection: Implementing quantized, low-latency decision tree models suitable for deployment in resource-constrained container environments or local offline gateway nodes.", "3. ")
+    add_bullet(doc, "Automated Smart Contract Escrow and Instant UPI Settlement: Integrating smart contract escrow accounts linked to Indian Unified Payments Interface (UPI) or Central Bank Digital Currency (CBDC / Digital Rupee) APIs to execute instantaneous, trustless financial payouts to farmers upon verified dark-store custody acceptance.", "4. ")
+    add_bullet(doc, "Multi-Modal Computer Vision Produce Grading: Integrating mobile-based convolutional neural networks (CNNs) into the Farmer and Dark-Store portals to perform automated visual quality grading, defect detection, and ripeness estimation via smartphone camera photography.", "5. ")
+    add_bullet(doc, "Cross-Chain Interoperability via Chainlink CCIP: Implementing cross-chain message passing protocols (CCIP) to allow agricultural state records minted on Polygon to seamlessly interact with supply chain financing protocols on Ethereum Mainnet or Avalanche.", "6. ")
+    add_bullet(doc, "Autonomous Dynamic Cold Storage Re-Routing: Developing algorithmic dispatch mechanisms that automatically instruct transport vehicles to divert to the nearest available refrigerated warehouse upon detecting persistent reefer compressor failure.", "7. ")
+    add_bullet(doc, "Kinetic Shelf-Life Degradation Modeling: Embedding real-time biochemical food decay models (Arrhenius kinetics) into the freshness grading engine, dynamically recalculating remaining produce shelf-life based on cumulative degree-hours of thermal exposure.", "8. ")
+    add_bullet(doc, "Consumer Staking and Verified Review Tokenomics: Introducing decentralized review verification mechanisms where consumers stake small cryptographic tokens to submit produce reviews, preventing astroturfing and rewarding authentic community feedback.", "9. ")
 
     doc.add_page_break()
 

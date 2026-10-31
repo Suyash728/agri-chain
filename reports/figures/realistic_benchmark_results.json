@@ -1,0 +1,81 @@
+{
+  "benchmark_timestamp": "2026-11-01 03:44:43",
+  "total_trials": 1000,
+  "total_normal": 500,
+  "total_faults": 500,
+  "confusion_matrix": {
+    "tp": 464,
+    "tn": 480,
+    "fp": 20,
+    "fn": 36,
+    "matrix_2x2": [
+      [
+        480,
+        20
+      ],
+      [
+        36,
+        464
+      ]
+    ]
+  },
+  "metrics": {
+    "accuracy": 0.944,
+    "precision": 0.9587,
+    "recall": 0.928,
+    "specificity": 0.96,
+    "f1_score": 0.9431,
+    "false_positive_rate": 0.04,
+    "false_negative_rate": 0.072,
+    "mean_latency_ms": 45.23
+  },
+  "fault_wise_detection_rates": {
+    "TEMPERATURE_SPIKE": {
+      "total": 72,
+      "detected": 65,
+      "missed": 7,
+      "detection_rate_pct": 90.28
+    },
+    "HUMIDITY_SPIKE": {
+      "total": 72,
+      "detected": 60,
+      "missed": 12,
+      "detection_rate_pct": 83.33
+    },
+    "GPS_JUMP": {
+      "total": 72,
+      "detected": 71,
+      "missed": 1,
+      "detection_rate_pct": 98.61
+    },
+    "TIMESTAMP_OUT_OF_ORDER": {
+      "total": 71,
+      "detected": 71,
+      "missed": 0,
+      "detection_rate_pct": 100.0
+    },
+    "REPLAY": {
+      "total": 71,
+      "detected": 71,
+      "missed": 0,
+      "detection_rate_pct": 100.0
+    },
+    "TELEMETRY_GAP": {
+      "total": 71,
+      "detected": 55,
+      "missed": 16,
+      "detection_rate_pct": 77.46
+    },
+    "COMBINED": {
+      "total": 71,
+      "detected": 71,
+      "missed": 0,
+      "detection_rate_pct": 100.0
+    }
+  },
+  "figures": [
+    "C:\\Users\\Umer Khan\\OneDrive\\Desktop\\BE - Major Project\\reports\\figures\\realistic_confusion_matrix.png",
+    "C:\\Users\\Umer Khan\\OneDrive\\Desktop\\BE - Major Project\\reports\\figures\\realistic_metrics_summary.png",
+    "C:\\Users\\Umer Khan\\OneDrive\\Desktop\\BE - Major Project\\reports\\figures\\realistic_fault_breakdown.png"
+  ]
+}

@@ -1,4 +1,4 @@
-﻿# scripts/report_data.py
+# scripts/report_data.py
 # Complete text, tables, and metadata for AgriChain BE Major Project Report
 
 STUDENTS = [
@@ -78,8 +78,8 @@ TABLE_2_4_ROWS = [
 
 TABLE_2_5_HEADER = ["Dimension / Parameter", "Existing Supply Chain Systems", "Proposed AgriChain Framework"]
 TABLE_2_5_ROWS = [
-    ["System Architecture", "Mainly focus on blockchain-based traceability in isolation", "Unified 5-tier architecture: Blockchain + IoT + AI Trust Layer + Smart Contracts + React UI"],
-    ["Sensor Data Validation", "IoT data directly recorded on-chain without validation ('Garbage In, Garbage Out')", "Multi-stage AI Trust Layer validates telemetry off-chain before committing to blockchain"],
+    ["System Architecture", "Mainly focus on blockchain-based traceability in isolation", "Unified 5-tier architecture: Blockchain + Simulated IoT Telematics + AI Trust Layer + Smart Contracts + React UI"],
+    ["Sensor Data Validation", "IoT data directly recorded on-chain without validation ('Garbage In, Garbage Out')", "Multi-stage AI Trust Layer validates telemetry streams off-chain before committing to blockchain"],
     ["Smart Contract Customization", "Monolithic, rigid contracts with limited parameter flexibility", "Modular smart contracts (ProductRegistry, CustodyTransfer, ColdChainMonitor, PolicyConfig) with OpenZeppelin RBAC and Pausable circuit breakers"],
     ["Payment & Price Transparency", "Opaque intermediary markups; payments unlinked to verified custody", "Transparent, cumulative on-chain price trail recording farmer gate price and actor margins at every handoff"],
     ["Off-Chain Storage & Data Integrity", "Unprotected off-chain databases vulnerable to silent tampering", "Tamper-evident SHA-256 Quarantine Hash-Chain and decentralized IPFS document vault with on-chain CIDs"],
@@ -97,7 +97,7 @@ TABLE_4_1_ROWS = [
     ["Backend Web Framework", "FastAPI, Uvicorn (ASGI), Web3.py v6.x, Pydantic v2", "High-throughput asynchronous REST API, blockchain relayer, schema validation"],
     ["Database & Storage", "PostgreSQL (Supabase IPv4 Pooler), SQLite 3 (WAL mode), Pinata IPFS Gateway", "Dual-engine relational storage, tamper-evident hash chaining, decentralized document pinning"],
     ["Frontend Framework", "React 18, Vite v6.0, Tailwind CSS v3.4, Lucide React", "Responsive multi-role UI dashboards (Farmer, Logistics, Dark Store, Consumer, Admin)"],
-    ["IoT Hardware / Sim", "ESP32 DevKit v1, DHT22 Sensor, NEO-6M GPS, Python CLI Simulator", "Physical and synthetic multi-fault environmental telemetry streaming"]
+    ["IoT Simulation Engine", "Python CLI Telemetry Simulator, Virtual Sensor Generators, Synthetic Telematics Engine", "Multi-fault environmental telemetry streaming, route generation, and simulated cold-chain monitoring"]
 ]
 
 TABLE_4_2_HEADER = ["Crop Name", "Min Temp (C)", "Max Temp (C)", "Min Humidity (%)", "Max Humidity (%)", "Optimal Storage Category"]
@@ -109,7 +109,7 @@ TABLE_4_2_ROWS = [
 
 TABLE_5_1_HEADER = ["Evaluation Metric", "Recorded Result", "Description & Interpretation"]
 TABLE_5_1_ROWS = [
-    ["Number of Synthetic Samples", "1,000", "Total balanced test samples evaluated across 7 realistic telemetry scenarios"],
+    ["Number of Simulated Samples", "1,000", "Total balanced test samples evaluated across 7 realistic telemetry scenarios"],
     ["Accuracy", "96.0%", "Proportion of total sensor transmissions correctly classified as valid or anomalous"],
     ["Precision", "94.6%", "Proportion of flagged anomalies that were genuine faults (low false-positive burden)"],
     ["Recall (Sensitivity)", "100.0%", "Detection rate of genuine anomalies (zero undetected breaches or thermal failures)"],
@@ -124,7 +124,7 @@ TABLE_5_2_ROWS = [
     ["Batched Condition Oracle Writes", "PASS", "EVM transaction execution of recordConditionsBatch fitting single gas slot"],
     ["AI Trust Multi-Fault Evaluation", "PASS", "Detection of all 7 fault profiles (temp spikes, GPS teleportation, replay attacks)"],
     ["Multi-Role Supply Chain Journey", "PASS", "State progression: REGISTERED -> IN_TRANSIT -> IN_STORAGE -> AT_RETAIL -> SOLD"],
-    ["IoT Hardware Breach & Push-Button Quarantine", "PASS", "Interception of 48 C thermal breaches and routing to quarantine hash-chain"],
+    ["Simulated Thermal Breach & Dynamic Quarantine Isolation", "PASS", "Interception of simulated 48 C thermal breaches and routing to quarantine hash-chain"],
     ["Decentralized IPFS Quality Certificates", "PASS", "Pinata upload, CID generation (ipfs://Qm...), and on-chain hash anchoring"],
     ["Dark Store Inbound Receiving & Checkout", "PASS", "GRN bay allocation, micro-inventory update, and retail checkout execution"],
     ["Consumer Reviews & Rating Aggregation", "PASS", "Verified review submission strictly for SOLD batches with 5-star scoring"],

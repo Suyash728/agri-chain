@@ -42,7 +42,8 @@ def build_full_report():
     # Output targets
     target_files = [
         os.path.join(ROOT_DIR, "Final_BE_Report_AgriChain.docx"),
-        os.path.join(ROOT_DIR, "Final_BE_REPORT_2026 (1).docx")
+        os.path.join(ROOT_DIR, "Final_BE_REPORT_2026 (1).docx"),
+        os.path.join(ROOT_DIR, "BE_GRP_08_FINAL_REPORT_2026.docx")
     ]
 
     for target in target_files:

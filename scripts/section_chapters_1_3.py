@@ -13,111 +13,101 @@ def build_chapters_1_3(doc):
     add_h2(doc, "1.1 Introduction and Agricultural Context")
     add_para(
         doc,
-        "Agriculture constitutes the foundational backbone of the Indian socio-economic landscape, providing direct and "
-        "indirect livelihoods to over 54% of the national workforce and contributing approximately 18% to the gross domestic "
-        "product (GDP). Despite this pivotal role, the agricultural supply chain in developing nations suffers from deep-seated "
-        "structural systemic inefficiencies, chronic multi-tiered information asymmetry, and alarming post-harvest food waste. "
-        "Empirical reports published by the Ministry of Food Processing Industries (MoFPI) and the Indian Council of Agricultural "
-        "Research (ICAR) estimate that between 30% and 40% of all harvested fruits and vegetables perish prior to reaching consumer "
-        "retail markets, translating into an astonishing annual economic loss exceeding ₹92,651 crore."
+        "Agriculture forms the primary livelihood for over 54% of India's workforce and contributes approximately 18% to the "
+        "national Gross Domestic Product (GDP). Despite its vital importance, the post-harvest supply chain faces severe logistical "
+        "inefficiencies, high levels of perishability, and multi-tier intermediary markups. According to reports from the Ministry of "
+        "Food Processing Industries (MoFPI) and the Indian Council of Agricultural Research (ICAR), roughly 30% to 40% of fresh fruits "
+        "and vegetables spoil before reaching retail markets, resulting in estimated annual post-harvest losses exceeding ₹92,000 crore."
     )
     add_para(
         doc,
-        "This colossal post-harvest destruction is directly exacerbated by acute deficits in temperature-controlled logistics "
-        "and fragmented cold-storage infrastructure. Perishable crops—such as tomatoes, strawberries, leafy greens, mangoes, "
-        "and dairy products—exhibit severe biochemical and physiological sensitivity to ambient thermal fluctuations. "
-        "When cold-chain integrity is breached during highway transit or transit-hub storage, microbial proliferation and "
-        "enzymatic decomposition accelerate exponentially according to kinetic Arrhenius principles. However, because modern "
-        "logistics corridors lack automated, unalterable sensory surveillance, such temperature excursions frequently go undetected "
-        "or are actively concealed by transport carriers seeking to evade commercial penalties. Consequently, deteriorated produce "
-        "is routinely distributed to urban retail shelves, presenting severe food safety hazards and driving consumer dissatisfaction."
+        "A major cause of this post-harvest loss is the lack of continuous, reliable cold-chain monitoring during transportation "
+        "and warehouse storage. Perishable commodities—including tomatoes, mangoes, leafy vegetables, and dairy—have narrow temperature "
+        "tolerances. When temperature control fails during highway transit or at distribution centers, produce spoilage accelerates. "
+        "Because traditional supply chain logistics lack automated and verifiable tracking, temperature breaches often go unnoticed "
+        "or are concealed by transporters to avoid commercial penalties. As a result, damaged goods frequently reach retail shelves, "
+        "leading to food waste and safety risks."
     )
     add_para(
         doc,
-        "Simultaneously, the traditional agricultural distribution paradigm is paralyzed by opaque intermediary exploitation. "
-        "Between the primary producer (the smallholder farmer) and the final retail consumer sits an intricate hierarchy of "
-        "aggregators, commission agents (arhtiyas), transport syndicates, wholesale brokers, and dark-store distribution hubs. "
-        "Each intermediary layer imposes substantial markups while concealing operational costs and procurement prices from both "
-        "ends of the value chain. As a consequence, smallholder farmers often realize as little as 20% to 28% of the final retail "
-        "price paid by consumers, while bearing virtually 100% of the production risk, input costs, and climate vulnerabilities. "
-        "Conversely, consumers pay inflated prices without receiving any verifiable guarantee regarding the harvest date, botanical "
-        "origin, organic authenticity, or cold-chain history of the food they consume."
+        "In addition to cold-chain failures, agricultural marketing suffers from opaque middleman markups. Between the farmer and the "
+        "final consumer, goods pass through several intermediaries, including local aggregators, commission agents (arhtiyas), transport "
+        "operators, wholesale traders, and retail outlets. Each intermediary adds a margin, yet the purchase prices and operational costs "
+        "remain hidden from both farmers and consumers. Consequently, smallholder farmers often receive only 20% to 28% of the final retail "
+        "price paid by consumers, despite shouldering production expenses and weather risks. At the same time, consumers pay premium prices "
+        "without verifiable confirmation of the harvest date, farming origin, or transit handling conditions."
     )
     add_para(
         doc,
-        "In response to these systemic dilemmas, distributed ledger technology (blockchain) has emerged as a promising paradigm "
-        "for establishing decentralized, tamper-proof provenance and unalterable custody tracking. By persisting state transitions "
-        "across a decentralized network of cryptographic nodes, blockchain eliminates reliance on centralized authorities and provides "
-        "all participants with an auditable single version of the truth. Furthermore, Turing-complete smart contracts enable the "
-        "automated, deterministic enforcement of operational business logic, custody handovers, and compliance standards."
+        "Blockchain technology offers a viable approach to address these transparency challenges. By recording custody transfers "
+        "and status updates on a decentralized, append-only distributed ledger, blockchain provides a shared, tamper-resistant record "
+        "for all participants. Smart contracts further allow deterministic execution of business rules, such as role-gated handovers "
+        "and automated compliance checks, without relying on a central intermediary."
     )
     add_para(
         doc,
-        "However, applying blockchain technology directly to real-world agricultural IoT ecosystems reveals a critical, often fatal "
-        "architectural vulnerability known as the 'Garbage In, Garbage Out' (GIGO) oracle problem. While a blockchain guarantees "
-        "that committed data cannot be modified retroactively, it possesses zero intrinsic capacity to ascertain whether incoming "
-        "data accurately reflects physical reality at the moment of recording. In physical cold chains, IoT sensors deployed in "
-        "reefer vehicles or warehouse storage bays are routinely vulnerable to thermal spikes, power blackouts, transmission packet "
-        "loss, hardware drift, calibration failures, and malicious replay attacks. If faulty or manipulated sensor telemetry is "
-        "streamed directly into immutable smart contracts, the ledger permanently canonizes corrupted data, triggering erroneous "
-        "custody disputes, false contract terminations, and wasted transaction gas fees."
+        "However, applying blockchain directly to sensor-driven supply chains introduces a significant challenge: the 'Garbage In, "
+        "Garbage Out' (GIGO) problem. While a blockchain ensures that recorded data cannot be altered after the fact, it cannot verify "
+        "whether the ingested data was accurate when submitted. In cold-chain logistics, telemetry streams originating from transit "
+        "sensors may contain sudden spikes, communication dropouts, frozen sensor values, or replay attempts. If unverified telemetry "
+        "is committed directly to smart contracts, the ledger permanently stores invalid data, leading to incorrect disputes and "
+        "unnecessary transaction gas costs. Therefore, an intelligent off-chain filtering layer is necessary to inspect and validate "
+        "telemetry before it is committed on-chain."
     )
 
     add_h2(doc, "1.2 Aim and Motivation of the Project")
     add_para(
         doc,
-        "The primary aim of this Major Project is to design, engineer, and empirically evaluate AgriChain—a unified, decentralized, "
-        "and AI-governed agricultural supply chain traceability platform that establishes end-to-end provenance, enforces strict "
-        "cold-chain compliance, isolates corrupt telemetry off-chain, and guarantees transparent multi-tier price realization."
+        "The primary aim of this Major Project is to design, implement, and evaluate AgriChain—a decentralized agricultural supply chain "
+        "traceability platform that provides end-to-end provenance, enforces cold-chain compliance through an AI-based Trust Layer, "
+        "quarantines anomalous telemetry off-chain, and provides transparent multi-stage price tracking."
     )
     add_para(
         doc,
-        "The driving motivation behind this work stems from the urgent necessity to bridge the dangerous chasm between physical IoT "
-        "sensing and on-chain decentralized persistence. Specifically, this project is motivated by four core engineering objectives:"
+        "The motivation for this project arises from several key technical and socio-economic challenges in agricultural logistics:"
     )
-    add_bullet(doc, "Resolving the Blockchain GIGO Dilemma: Engineering an intelligent, multi-stage AI Trust Layer that intercepts, audits, and validates physical IoT environmental readings off-chain before committing state transitions to public smart contracts.", "1. ")
-    add_bullet(doc, "Cost-Efficient Blockchain Execution: Overcoming the prohibitive gas cost barriers of decentralized networks by optimizing smart contract storage schemas, packing multiple sensor telemetry fields into single 256-bit EVM storage slots, and batching condition updates.", "2. ")
-    add_bullet(doc, "Tamper-Evident Off-Chain Integrity: Ensuring that corrupted or anomalous sensor readings are not discarded without accountability, but are permanently logged into an unbroken cryptographic SHA-256 Quarantine Hash Chain that provides forensic auditability without wasting public blockchain gas.", "3. ")
-    add_bullet(doc, "Democratizing Price Transparency: Establishing an immutable, on-chain price trail that records the farmer's gate price alongside each intermediary margin, empowering consumers to verify fair producer compensation and holding middlemen accountable.", "4. ")
+    add_bullet(doc, "Addressing the Blockchain GIGO Problem: Developing an off-chain AI Trust Layer that screens and validates simulated environmental telemetry before committing updates to public smart contracts.", "1. ")
+    add_bullet(doc, "Gas-Efficient Smart Contract Execution: Minimizing Ethereum Virtual Machine (EVM) transaction costs by bitwise packing multiple telemetry fields into a single 256-bit storage slot and supporting batched updates.", "2. ")
+    add_bullet(doc, "Tamper-Evident Off-Chain Quarantine: Storing rejected, breached, or anomalous readings in a cryptographic SHA-256 Quarantine Hash Chain, preserving an auditable log without incurring on-chain transaction gas costs.", "3. ")
+    add_bullet(doc, "Fair-Share Price Transparency: Recording the farmer's initial price and each intermediary markup on-chain, enabling retail consumers to verify that the farmer received an equitable share of the purchase price.", "4. ")
 
     add_h2(doc, "1.3 Scope of the Project")
     add_para(
         doc,
-        "The functional and architectural scope of the AgriChain platform spans the entire post-harvest agricultural journey, "
-        "encompassing the physical and digital boundaries defined below:"
+        "The functional and architectural scope of the AgriChain platform covers the post-harvest supply chain journey, incorporating "
+        "the following components:"
     )
-    add_bullet(doc, "Ecosystem Actors: The platform models and deploys dedicated role-governed interfaces for five primary stakeholders: Primary Producers (Farmers), Logistics Fleet Operators, Dark-Store Fulfillment Hubs, Retail Consumers, and System Administrators.", "• ")
-    add_bullet(doc, "IoT Sensory Monitoring: Real-time environmental tracking encompassing ambient temperature (°C), relative humidity (%), vehicle geographical coordinates (Latitude/Longitude), and transmission timestamps across transit and warehousing phases.", "• ")
-    add_bullet(doc, "AI Ingestion Engine: An unsupervised machine learning pipeline utilizing an 11-dimensional Isolation Forest model, physical plausibility heuristics, crop-specific dynamic thermal bounds, and temporal rate-of-change analysis.", "• ")
-    add_bullet(doc, "Smart Contract Infrastructure: Modular Solidity 0.8.28 contracts (ProductRegistry, CustodyTransfer, ColdChainMonitor, PolicyConfig) deployed on the Polygon Amoy EVM testnet, featuring OpenZeppelin AccessControl RBAC and Pausable emergency circuit breakers.", "• ")
-    add_bullet(doc, "Dual Persistence Architecture: Integration of PostgreSQL (Supabase IPv4 Pooler) for fast relational query indexing, local transactional SQLite, Pinata IPFS gateways for decentralized pinning of food safety certificates, and a cryptographic quarantine ledger.", "• ")
-    add_bullet(doc, "Presentation Layer: A highly responsive React 18 single-page application built with Vite and Tailwind CSS, featuring interactive dashboards, dynamic freshness grade visualizers, cryptographic verification modals, and mobile-friendly QR code scanners.", "• ")
+    add_bullet(doc, "Stakeholder Portals: Role-tailored web interfaces for Farmers, Logistics Transporters, Dark Store Operators, Retail Consumers, and System Administrators.", "• ")
+    add_bullet(doc, "IoT Telemetry Simulation: A software simulation engine generating realistic ambient temperature (°C), relative humidity (%), simulated GPS route waypoints, and sequential timestamps across transit and storage phases.", "• ")
+    add_bullet(doc, "Pre-Commit AI Trust Layer: An off-chain validation pipeline implemented in FastAPI that uses schema validation, plausibility boundaries, dynamic per-crop thermal thresholds, 11-dimensional feature extraction, and an unsupervised Isolation Forest model.", "• ")
+    add_bullet(doc, "Modular Smart Contracts: Solidity 0.8.28 contracts (ProductRegistry, CustodyTransfer, ColdChainMonitor, PolicyConfig) deployed on Polygon Amoy, utilizing OpenZeppelin AccessControl and Pausable circuit breakers.", "• ")
+    add_bullet(doc, "Dual Persistence Architecture: PostgreSQL (Supabase IPv4 Pooler) for fast indexed querying, local SQLite for transaction staging, Pinata IPFS for pinning quality inspection certificates, and an append-only SHA-256 quarantine hash-chain.", "• ")
+    add_bullet(doc, "Presentation Layer: A responsive React 18 single-page application built with Vite and Tailwind CSS, featuring interactive dashboards, dynamic freshness ratings, QR code scanning, and price journey visualizers.", "• ")
 
     add_h2(doc, "1.4 Significant Contributions")
     add_para(
         doc,
-        "This project delivers several significant original engineering and research contributions to the domain of decentralized "
-        "agri-food supply chain architectures:"
+        "This project presents several practical engineering contributions to decentralized agricultural supply chain architectures:"
     )
-    add_bullet(doc, "Multi-Stage Pre-Commit AI Trust Pipeline: Formulated a 7-stage off-chain telemetry auditing pipeline that achieves a 97.22% overall F1-score and 100% recall across hardware-injected sensor faults, ensuring zero ledger pollution.", "1. ")
-    add_bullet(doc, "Single-Slot Packed Storage EVM Architecture: Designed a bitwise packed Solidity struct for environmental conditions, reducing blockchain storage requirements from three storage words to exactly one word, achieving a 52.71% gas reduction under batched updates.", "2. ")
-    add_bullet(doc, "Cryptographically Auditable Quarantine Hash Chain: Pioneered an off-chain SHA-256 chained quarantine ledger that preserves forensic evidence of sensor failures, thermal breaches, and replay attacks without incurring on-chain transaction costs.", "3. ")
-    add_bullet(doc, "Dynamic Crop Policy Engine: Implemented on-chain and off-chain configurable thermal envelopes for diverse agricultural cultivars, replacing rigid hardcoded thresholds with extensible per-crop governance.", "4. ")
-    add_bullet(doc, "Immutable Fair Price Trail: Developed an immutable, cumulative accounting mechanism tracking farmer gate price and intermediary markups, verifying a 50.0% farmer revenue share on consumer provenance scans.", "5. ")
-    add_bullet(doc, "Role-Based Access Control and Circuit Breakers: Integrated audited OpenZeppelin RBAC contracts with automated emergency pause mechanisms that halt compromised supply chain batches during consecutive severe thermal excursions.", "6. ")
-    add_bullet(doc, "End-to-End Empirical Verification: Executed a comprehensive capstone verification suite comprising 10 multi-actor integration tests (PRD Section 6) and 1,000 synthetic fault trials, validating complete system robustness.", "7. ")
+    add_bullet(doc, "Pre-Commit AI Trust Validation Pipeline: Developed a 7-stage off-chain screening pipeline that achieved a 97.22% overall F1-score and 100% recall across simulated sensor fault scenarios, preventing invalid data from reaching the ledger.", "1. ")
+    add_bullet(doc, "Single-Slot Packed EVM Storage: Engineered a bitwise packed Solidity struct for environmental telemetry that fits into a single 256-bit storage word, achieving a 52.71% gas reduction under batched updates (N=20).", "2. ")
+    add_bullet(doc, "Cryptographically Auditable Quarantine Hash Chain: Built an off-chain SHA-256 chained quarantine ledger that maintains an immutable audit trail of rejected readings, thermal breaches, and replay attempts without gas overhead.", "3. ")
+    add_bullet(doc, "Dynamic Crop Policy Engine: Implemented configurable thermal envelopes for diverse crop varieties (e.g., tomato, mango, wheat), replacing rigid global thresholds with per-crop compliance monitoring.", "4. ")
+    add_bullet(doc, "Transparent Cumulative Price Trail: Established an on-chain accounting mechanism that records each actor's price margin during custody handovers, allowing consumers to verify a 50.0% farmer revenue share.", "5. ")
+    add_bullet(doc, "Role-Based Access Control and Circuit Breakers: Integrated OpenZeppelin AccessControl for role separation and emergency pause mechanisms to halt state transitions during detected irregularities.", "6. ")
+    add_bullet(doc, "Comprehensive End-to-End System Verification: Conducted automated testing across 10 multi-actor integration test cases and 1,000 simulated telemetry cycles, validating system reliability and data flow consistency.", "7. ")
 
     add_h2(doc, "1.5 Organization of the Report")
     add_para(
         doc,
-        "The remainder of this Major Project Report is systematically structured into five subsequent chapters, followed by "
-        "appendices and references:"
+        "The remainder of this report is organized as follows:"
     )
-    add_bullet(doc, "Chapter 2 (Literature Review): Conducts an extensive review of existing scholarly literature spanning blockchain traceability, AI/ML anomaly detection, IoT hardware security, and agri-food logistics, culminating in a comparative analysis and formal research gaps.", "• ")
-    add_bullet(doc, "Chapter 3 (Problem Statement and System Requirements): Formulates the rigorous mathematical problem statement, outlines primary and secondary objectives, and details the comprehensive functional and non-functional requirements.", "• ")
-    add_bullet(doc, "Chapter 4 (Proposed Methodology and System Design): Details the 5-tier architecture, operational flowchart, DFD Level 0/1 diagrams, ER relational modeling, use case diagrams, AI trust layer pipeline, modular smart contracts, and project scheduling.", "• ")
-    add_bullet(doc, "Chapter 5 (Results and Discussion): Presents empirical experimental findings, including AI confusion matrices, quarantine dashboards, PRD test suite verification, EVM gas benchmarks, multi-role user dashboards, and in-depth academic discussions.", "• ")
-    add_bullet(doc, "Chapter 6 (Conclusions and Future Scope): Concludes the report with a synthesis of realized contributions and outlines nine promising future research trajectories, followed by appendices and the bibliography.", "• ")
+    add_bullet(doc, "Chapter 2 (Literature Review): Surveys existing research in blockchain traceability, AI/ML anomaly detection, edge telematics security, and agricultural supply chain architectures, identifying key research gaps.", "• ")
+    add_bullet(doc, "Chapter 3 (Problem Statement and System Requirements): Formulates the technical problem statement, system objectives, and functional and non-functional requirements.", "• ")
+    add_bullet(doc, "Chapter 4 (Proposed Methodology and System Design): Explains the 5-tier architecture, operational flowchart, DFD Level 0/1 diagrams, database schema, AI trust pipeline, modular smart contracts, and project schedule.", "• ")
+    add_bullet(doc, "Chapter 5 (Results and Discussion): Presents experimental evaluation results, including AI confusion matrices, quarantine dashboards, gas consumption benchmarks, and multi-role dashboard implementations.", "• ")
+    add_bullet(doc, "Chapter 6 (Conclusions and Future Scope): Concludes the report with a summary of achievements and outlines potential future enhancements.", "• ")
+    add_bullet(doc, "Appendices and References: Provides the operational state transition matrix, anomaly decision rules, and cited bibliography.", "• ")
 
     doc.add_page_break()
 
@@ -127,38 +117,34 @@ def build_chapters_1_3(doc):
     add_h1(doc, "Chapter 2: Literature Review")
     add_para(
         doc,
-        "The convergence of distributed ledger technologies, Internet of Things (IoT) sensing, and machine learning anomaly "
-        "detection represents a rapidly expanding research domain aimed at transforming global logistics and food distribution networks. "
-        "To establish a solid academic and theoretical foundation for the proposed AgriChain platform, this chapter provides a systematic, "
-        "multi-dimensional review of existing scholarly works published across prestigious IEEE, Elsevier, and Springer venues. "
-        "The literature review is organized into four thematic areas, followed by a comparative synthesis, critical analysis, and "
-        "formal identification of research gaps."
+        "The combination of distributed ledger technologies, sensor-based monitoring, and machine learning anomaly detection "
+        "has received increasing attention as a means to improve supply chain transparency and food safety. To establish the context "
+        "for the AgriChain platform, this chapter reviews relevant published literature across IEEE, Elsevier, and Springer venues. "
+        "The review covers four main themes: blockchain-based traceability, AI/ML anomaly detection, edge telematics security, and "
+        "domain-specific agricultural studies, followed by a comparative analysis and research gaps."
     )
 
     add_h2(doc, "2.1 Blockchain-Based Supply Chain Traceability")
     add_para(
         doc,
-        "The foundational premise of utilizing distributed ledgers in supply chains centers on replacing centralized, silod databases "
-        "with immutable, shared state machines. Agrawal et al. (2025) [1] comprehensively investigated the integration of the Internet "
-        "of Everything (IoE) and Artificial Intelligence within modern supply chains, demonstrating that decentralized data capture "
-        "drastically mitigates supplier information asymmetry. However, their study primarily focused on theoretical architectural models, "
-        "acknowledging that transaction throughput bottlenecks on Layer-1 public blockchains present significant scalability hurdles "
-        "when deployed in high-frequency agricultural environments."
+        "Using distributed ledgers in supply chains aims to replace fragmented databases with a shared, tamper-resistant record of custody "
+        "and product status. Agrawal et al. (2025) [1] explored the integration of the Internet of Everything (IoE) and Artificial "
+        "Intelligence in supply chains, noting that decentralized tracking reduces information asymmetry between participants. However, "
+        "they observed that transaction throughput and on-chain storage costs on public blockchains pose scalability challenges for "
+        "high-frequency data recording."
     )
     add_para(
         doc,
-        "Maurya et al. (2025) [3] analyzed blockchain-driven security paradigms for IoT networks, surveying state-of-the-art consensus "
-        "protocols, smart contract vulnerability surfaces, and cryptographic access schemes. Their findings underscored that while "
-        "Proof-of-Stake (PoS) and Layer-2 rollups dramatically diminish cryptographic energy consumption compared to legacy Proof-of-Work "
-        "systems, smart contract state bloat remains a severe constraint. Writing high-frequency IoT telemetry directly to blockchain "
-        "storage slots rapidly becomes financially prohibitive unless rigorous data filtering and struct packing mechanisms are introduced."
+        "Maurya et al. (2025) [3] examined blockchain security mechanisms for IoT networks, surveying consensus protocols and access "
+        "control schemes. Their study highlighted that while Proof-of-Stake (PoS) and Layer-2 networks lower transaction energy and cost, "
+        "smart contract storage bloat remains a key challenge. Storing frequent environmental readings directly on-chain requires careful "
+        "data filtering and efficient storage packing."
     )
     add_para(
         doc,
-        "Dudczyk et al. (2024) [4] conducted a global survey of blockchain applications in supply chain management, highlighting that "
-        "while decentralized provenance enhances stakeholder trust, the vast majority of existing deployments operate in isolated silos "
-        "without integrating real-time automated physical quality verification. Table 2.1 summarizes the pivotal literature concerning "
-        "blockchain-based traceability architectures."
+        "Dudczyk et al. (2024) [4] conducted a survey of blockchain applications in global supply chain management, finding that while "
+        "traceability improves stakeholder trust, most deployments lack automated, real-time quality verification mechanisms. Table 2.1 "
+        "summarizes key literature on blockchain-based traceability architectures."
     )
 
     add_styled_table(
@@ -172,29 +158,25 @@ def build_chapters_1_3(doc):
     add_h2(doc, "2.2 AI and Machine Learning for Anomaly Detection")
     add_para(
         doc,
-        "The deployment of machine learning algorithms for detecting anomalies in industrial time-series streams is vital for filtering "
-        "erroneous or malicious sensory data. Mohamed et al. (2025) [2] proposed an Adaptive WavePCA-Autoencoder (AWPA) coupled with an "
-        "Adaptive Hybrid Exploit Detection Network (AHEDNet) to identify zero-day security breaches and corrupted data points in industrial "
-        "sensor streams. While their deep hybrid architecture exhibited exceptional anomaly detection accuracy exceeding 98%, the extensive "
-        "computational overhead and GPU memory footprint make it impractical for resource-constrained edge gateways or low-latency "
-        "API microservices."
+        "Machine learning models for anomaly detection are essential to screen out faulty or malicious readings from sensor data "
+        "streams. Mohamed et al. (2025) [2] presented an Adaptive WavePCA-Autoencoder (AWPA) combined with an Adaptive Hybrid Exploit "
+        "Detection Network (AHEDNet) for identifying security anomalies in sensor streams. Although the deep learning model showed high "
+        "accuracy, its computational and memory requirements make it less suitable for low-latency API microservices running on standard servers."
     )
     add_para(
         doc,
-        "Zhou et al. (2024) [13] evaluated deep sequential models (LSTM) alongside support vector machines (SVM) for detecting malicious "
-        "tampering and data injection attacks across supply chain workflows. While LSTMs excel at capturing long-term temporal dependencies, "
-        "they exhibit vulnerability to concept drift and require extensive labeled training datasets that are rarely accessible in agricultural "
-        "cold-chain deployments. Conversely, unsupervised methods—such as Liu et al.'s Isolation Forest—isolate anomalous observations "
-        "by recursively partitioning feature spaces using orthogonal decision splits. Because anomalous data points require significantly "
-        "fewer partitions to isolate than normal clustering points, Isolation Forest achieves linear time complexity $O(n)$ with minimal "
-        "computational memory, rendering it uniquely suited for real-time edge telemetry validation."
+        "Zhou et al. (2024) [13] evaluated Long Short-Term Memory (LSTM) networks and Support Vector Machines (SVM) for detecting data "
+        "tampering in supply chain workflows. While recurrent models capture sequential relationships well, they require extensive labeled "
+        "training datasets and are susceptible to concept drift. In contrast, unsupervised methods such as Isolation Forest isolate anomalies "
+        "by recursively partitioning feature values. Because anomalous observations require fewer random partitions to isolate than normal "
+        "points, Isolation Forest operates with linear time complexity $O(n)$ and low memory overhead, making it practical for real-time "
+        "telemetry validation."
     )
     add_para(
         doc,
-        "Kandasamy and Roseline (2025) [14] investigated hybrid deep learning frameworks for detecting Man-in-the-Middle (MitM) and "
-        "telemetry injection attacks across wireless sensor networks, verifying that multi-dimensional feature engineering substantially "
-        "elevates detection sensitivity against subtle, continuous sensor drifts. Table 2.2 provides a structured synthesis of AI and ML "
-        "models applied to anomaly detection."
+        "Kandasamy and Roseline (2025) [14] investigated hybrid deep learning frameworks for detecting data injection attacks in sensor "
+        "networks, demonstrating that multi-dimensional feature engineering improves sensitivity to gradual sensor drift. Table 2.2 "
+        "summarizes AI and ML approaches to anomaly detection."
     )
 
     add_styled_table(
@@ -205,23 +187,21 @@ def build_chapters_1_3(doc):
         caption="Table 2.2: Literature Survey: AI and Machine Learning for Anomaly Detection"
     )
 
-    add_h2(doc, "2.3 IoT-Blockchain Security and Hardware Integration")
+    add_h2(doc, "2.3 IoT-Blockchain Security and Edge Telematics Integration")
     add_para(
         doc,
-        "The physical interface between hardware microcontrollers (e.g., ESP32, Arduino) and decentralized networks represents the most "
-        "vulnerable boundary in end-to-end supply chain architectures. Yavaprabhas et al. (2024) [5] conducted an empirical field investigation "
-        "into the impact of blockchain on stakeholder trust within organic food supply chains. Their research revealed that despite deploying "
-        "smart contracts, consumers and auditors maintained lingering skepticism regarding the integrity of manual data input and unverified "
-        "sensor readings, concluding that cryptographic hardware-level proof-of-reading is essential to eliminate human tampering."
+        "The interface between edge telematics modules and decentralized networks is a critical consideration in supply chain architectures. "
+        "Yavaprabhas et al. (2024) [5] conducted a field study on stakeholder trust in organic food supply chains using blockchain. Their "
+        "findings indicated that despite the presence of smart contracts, consumers and auditors remained cautious regarding manual data "
+        "inputs and unvalidated sensor feeds, emphasizing the need for automated pre-commit screening."
     )
     add_para(
         doc,
-        "Aggarwal et al. (2024) [6] integrated GPS navigation corridors with blockchain smart contracts to monitor perishable agri-food "
-        "transportation. Their system demonstrated automated route compliance, but lacked off-chain cryptographic holding mechanisms "
-        "when telemetry transmission experienced cellular blackout dead-zones. Mangala et al. (2024) [9] and Eghmazi et al. (2024) [12] "
-        "addressed IoT cloud security by implementing decentralized document pinning and cryptographic hash chaining, proving that "
-        "anchoring off-chain IPFS Content Identifiers (CIDs) onto distributed ledgers provides mathematically verifiable tamper evidence "
-        "at a tiny fraction of on-chain storage costs. Table 2.3 synthesizes research concerning IoT-blockchain security integration."
+        "Aggarwal et al. (2024) [6] integrated GPS corridor tracking with smart contracts to monitor perishable agri-food shipments, "
+        "demonstrating route compliance tracking but noting challenges in handling transmission dead-zones. Mangala et al. (2024) [9] "
+        "and Eghmazi et al. (2024) [12] explored decentralized document pinning and hash chaining for IoT security, showing that storing "
+        "cryptographic Content Identifiers (CIDs) on-chain while keeping large files on IPFS provides verifiable tamper evidence at low cost. "
+        "Table 2.3 synthesizes research concerning IoT-blockchain security integration."
     )
 
     add_styled_table(
@@ -235,19 +215,18 @@ def build_chapters_1_3(doc):
     add_h2(doc, "2.4 Domain-Specific Agricultural Supply Chain Studies")
     add_para(
         doc,
-        "Agricultural commodities possess unique biological and perishable characteristics that distinguish them from standard industrial "
-        "manufactured goods. Wu, Jiang, and Cao (2023) [7] engineered a high-efficiency blockchain traceability framework with optimized "
-        "state verification, proving that state pruning and optimized data encoding significantly reduce verification latency. However, "
-        "their architecture treated all agricultural produce under generic threshold parameters, ignoring the reality that optimal storage "
-        "temperatures vary dramatically across cultivars (e.g., tomatoes require +10°C to +15°C, while strawberries perish above +4°C)."
+        "Agricultural goods present distinct challenges due to perishability, seasonal harvesting, and biological decay kinetics. "
+        "Wu, Jiang, and Cao (2023) [7] proposed a high-efficiency blockchain traceability framework with optimized state verification, "
+        "showing that data encoding optimizations reduce verification latency. However, their study applied uniform threshold limits, "
+        "whereas optimal storage conditions differ substantially across crops (e.g., tomatoes require +2°C to +8°C, while tropical mangoes "
+        "require +10°C to +15°C)."
     )
     add_para(
         doc,
-        "Chaker and Damak (2024) [8] examined transparency and security in agri-food chains, observing that traditional intermediary "
-        "cartels actively resist blockchain adoption unless economic incentives and fair pricing mechanisms are directly embedded into "
-        "the operational protocol. Shoomal et al. (2024) [10] and Singh and Dadhich (2023) [11] reinforced the imperative of dynamic "
-        "multi-stakeholder governance, emphasizing that supply chain resilience requires combining real-time IoT surveillance with automated "
-        "contract-enforced accountability. Table 2.4 details domain-specific agricultural supply chain implementations."
+        "Chaker and Damak (2024) [8] examined transparency in agri-food supply chains, observing that intermediaries often resist "
+        "traceability systems unless price transparency mechanisms are clearly defined. Shoomal et al. (2024) [10] and Singh and Dadhich "
+        "(2023) [11] emphasized that supply chain resilience requires combining environmental monitoring with contract-enforced custody "
+        "transitions. Table 2.4 outlines domain-specific agricultural studies."
     )
 
     add_styled_table(
@@ -261,9 +240,8 @@ def build_chapters_1_3(doc):
     add_h2(doc, "2.5 Comparative Analysis of Existing Systems")
     add_para(
         doc,
-        "To clearly establish the technological advancements delivered by AgriChain, Table 2.5 presents a comprehensive comparative "
-        "matrix benchmarking existing state-of-the-art agricultural supply chain implementations against our proposed 5-tier architecture. "
-        "The comparison spans six critical architectural pillars: system architecture, sensor validation, smart contract customization, "
+        "To highlight the specific features of AgriChain, Table 2.5 presents a comparison between existing supply chain implementations "
+        "and our proposed 5-tier architecture across key parameters: system architecture, sensor validation, contract modularity, "
         "price transparency, off-chain storage integrity, and corrupted telemetry handling."
     )
 
@@ -278,27 +256,26 @@ def build_chapters_1_3(doc):
     add_h2(doc, "2.6 Critical Analysis of Existing Research")
     add_para(
         doc,
-        "A rigorous synthesis of the scholarly literature examined above reveals five critical recurring limitations that impede "
-        "the practical real-world adoption of blockchain in agricultural supply chains:"
+        "A critical review of the literature reveals five recurring limitations in current blockchain supply chain implementations:"
     )
-    add_bullet(doc, "Absence of Pre-Commit Sensory Validation: The overwhelming majority of existing blockchain traceability architectures adopt a naive 'stream-to-chain' approach, blindly committing raw IoT telemetry to immutable ledgers without off-chain verification, thereby permanently poisoning public state with faulty or spoofed data.", "1. ")
-    add_bullet(doc, "Prohibitive EVM Storage Costs: Monolithic smart contracts that store independent 256-bit storage words for temperature, humidity, coordinates, and timestamps incur exorbitant gas fees ($0.20 to $1.50 per update on public chains), rendering high-frequency cold-chain tracking economically non-viable for low-margin agricultural produce.", "2. ")
-    add_bullet(doc, "Rigid, Monolithic Contract Design: Existing implementations rely on single, highly coupled smart contracts that merge product registration, custody transfer, policy enforcement, and payment settlement into a single codebase, introducing severe upgrade bottlenecks and single points of failure.", "3. ")
-    add_bullet(doc, "Unverifiable Off-Chain Quarantine: Systems that filter abnormal sensor data off-chain routinely discard rejected readings into standard relational logs without cryptographic anchoring, leaving the system vulnerable to silent tampering by compromised database administrators.", "4. ")
-    add_bullet(doc, "Total Absence of Intermediary Price Accountability: While contemporary systems track botanical provenance, virtually none record the economic handoff prices across intermediate custody transfers, allowing commission cartels to continue exploiting primary producers undetected.", "5. ")
+    add_bullet(doc, "Lack of Pre-Commit Telemetry Screening: Many existing systems stream sensor data directly to smart contracts without off-chain validation, leading to ledger pollution when sensors experience temporary spikes or transmission errors.", "1. ")
+    add_bullet(doc, "High On-Chain Storage Costs: Storing separate 256-bit EVM words for each environmental metric (temperature, humidity, coordinates, timestamp) leads to high gas consumption, making frequent updates impractical.", "2. ")
+    add_bullet(doc, "Monolithic Contract Structures: Relying on a single large contract for registration, tracking, policy enforcement, and access control complicates upgrades and increases security risk.", "3. ")
+    add_bullet(doc, "Unverifiable Off-Chain Logging: Systems that discard anomalous readings into standard relational databases lack cryptographic tamper evidence, leaving logs vulnerable to alteration.", "4. ")
+    add_bullet(doc, "Lack of Intermediary Price Accountability: While many platforms track geographical origin, few record intermediate prices at each custody handover, leaving middleman markups untracked.", "5. ")
 
     add_h2(doc, "2.7 Identified Research Gaps")
     add_para(
         doc,
-        "Based on the critical analysis of prior literature, this project identifies and formally targets seven distinct research gaps (RG):"
+        "Based on these limitations, the following research gaps (RG) were identified and addressed in this project:"
     )
-    add_bullet(doc, "RG-1: Lack of an ultra-lightweight, multi-stage off-chain AI validation pipeline capable of filtering high-velocity IoT telemetry under sub-second latency constraints without requiring resource-heavy deep learning GPU infrastructure.", "• ")
-    add_bullet(doc, "RG-2: Inability of existing EVM smart contracts to persist multi-variable environmental telemetry in a single, packed 256-bit storage slot, creating unnecessary transaction gas inflation.", "• ")
-    add_bullet(doc, "RG-3: Absence of a cryptographically unbroken, tamper-evident hash-chain ledger dedicated exclusively to off-chain telemetry quarantine and explainable fault logging.", "• ")
-    add_bullet(doc, "RG-4: Lack of dynamic, per-crop cold-chain policy governance enabling real-time on-chain enforcement of cultivar-specific thermal thresholds.", "• ")
-    add_bullet(doc, "RG-5: Failure of existing agricultural dApps to combine decentralized document pinning (IPFS) with automated role-based access control (RBAC) and emergency circuit breakers.", "• ")
-    add_bullet(doc, "RG-6: Absence of an immutable, cumulative fair price trail that records farmer gate price alongside intermediate actor markups to verify equitable economic distribution to consumers.", "• ")
-    add_bullet(doc, "RG-7: Lack of end-to-end empirical validation across simulated hardware faults, network latency variations, and complete capstone multi-actor lifecycle integration suites.", "• ")
+    add_bullet(doc, "RG-1: Need for a lightweight, pre-commit AI validation pipeline capable of filtering high-frequency telemetry under sub-second latency constraints without requiring dedicated GPU infrastructure.", "• ")
+    add_bullet(doc, "RG-2: Need for an EVM storage packing strategy that fits multiple environmental metrics into a single 256-bit slot to reduce condition logging gas costs.", "• ")
+    add_bullet(doc, "RG-3: Need for an append-only, cryptographic hash-chain ledger dedicated to logging quarantined readings off-chain with tamper evidence.", "• ")
+    add_bullet(doc, "RG-4: Need for configurable, per-crop cold-chain policy management that supports cultivar-specific environmental bounds.", "• ")
+    add_bullet(doc, "RG-5: Need to integrate decentralized document pinning (IPFS) with on-chain role-based access control and emergency pause circuit breakers.", "• ")
+    add_bullet(doc, "RG-6: Need for an on-chain cumulative price trail that tracks intermediate actor markups and allows consumers to verify fair producer compensation.", "• ")
+    add_bullet(doc, "RG-7: Need for end-to-end verification across simulated sensor anomalies, network latency conditions, and multi-actor supply chain workflows.", "• ")
 
     doc.add_page_break()
 
@@ -310,84 +287,83 @@ def build_chapters_1_3(doc):
     add_h2(doc, "3.1 Problem Statement")
     add_para(
         doc,
-        "Modern agricultural supply chains in developing nations suffer from acute information asymmetry, high post-harvest "
-        "spoilage rates, and non-transparent price realization for primary producers. While blockchain technology provides "
-        "decentralized immutability, existing agricultural implementations are paralyzed by the 'Garbage In, Garbage Out' (GIGO) "
-        "dilemma: corrupt, manipulated, or failing IoT telemetry streams directly into the distributed ledger without validation. "
-        "Furthermore, monolithic smart contracts incur prohibitive gas costs, off-chain storage repositories lack cryptographic "
-        "tamper evidence, and intermediaries conceal cumulative profit margins from farmers and consumers."
+        "Agricultural supply chains often suffer from post-harvest spoilage, lack of verifiable cold-chain surveillance, and opaque "
+        "intermediary pricing that disadvantages smallholder farmers. While distributed ledgers provide tamper-resistant history, "
+        "ingesting raw telemetry directly into smart contracts leads to the 'Garbage In, Garbage Out' (GIGO) problem: corrupted, "
+        "drifted, or replayed readings are permanently committed to the ledger, causing false disputes and wasting transaction gas. "
+        "Additionally, monolithic contract structures result in high gas costs, and off-chain anomaly logs typically lack cryptographic "
+        "tamper evidence."
     )
     add_para(
         doc,
-        "Formally, consider an agricultural produce batch $B_i$ harvested at time $t_0$ by farmer $A_{	ext{farmer}}$. As $B_i$ progresses "
-        "through discrete physical custody states $S = \{S_{	ext{REG}}, S_{	ext{TRANSIT}}, S_{	ext{STORAGE}}, S_{	ext{RETAIL}}, S_{	ext{SOLD}}\}$, "
-        "an edge IoT device generates a time-series telemetry sequence $T_i = \{m_1, m_2, \dots, m_k\}$, where each measurement tuple "
-        "is defined as $m_k = (	au_k, 	heta_k, \phi_k, \lambda_k, \mu_k)$ representing timestamp $	au_k$, temperature $	heta_k$, "
-        "humidity $\phi_k$, latitude $\lambda_k$, and longitude $\mu_k$."
+        "Formally, let an agricultural produce batch $B_i$ be registered at time $t_0$ by farmer $A_{\\text{farmer}}$. As $B_i$ transitions "
+        "through sequential custody states $S = \\{S_{\\text{REG}}, S_{\\text{TRANSIT}}, S_{\\text{STORAGE}}, S_{\\text{RETAIL}}, S_{\\text{SOLD}}\\}$, "
+        "a simulated edge telematics client generates a time-series telemetry sequence $T_i = \\{m_1, m_2, \\dots, m_k\\}$, where each measurement "
+        "tuple is defined as $m_k = (\\tau_k, \\theta_k, \\phi_k, \\lambda_k, \\mu_k)$ representing timestamp $\\tau_k$, temperature $\\theta_k$, "
+        "humidity $\\phi_k$, latitude $\\lambda_k$, and longitude $\\mu_k$."
     )
     add_para(
         doc,
-        "The fundamental technical problem is to design an automated, deterministic verification operator $\mathcal{V}(m_k \mid \mathcal{P}_c)$ "
-        "conditioned on dynamic crop policy $\mathcal{P}_c = (	heta_{\min}, 	heta_{\max}, \phi_{\min}, \phi_{\max})$ such that:"
+        "The technical objective is to design an automated verification operator $\\mathcal{V}(m_k \\mid \\mathcal{P}_c)$ conditioned on "
+        "dynamic crop policy $\\mathcal{P}_c = (\\theta_{\\min}, \\theta_{\\max}, \\phi_{\\min}, \\phi_{\\max})$ such that:"
     )
-    add_bullet(doc, "Telemetry Legitimacy: If $m_k$ is statistically and physically plausible, it is committed to smart contract state $C_{	ext{ColdChain}}$ on Polygon Amoy in a single packed 256-bit storage slot, updating batch freshness and trust score.", "1. ")
-    add_bullet(doc, "Quarantine Isolation: If $m_k$ violates physical plausibility, dynamic crop bounds, or triggers an Isolation Forest anomaly score $s(m_k) > \gamma_{	ext{threshold}}$, $m_k$ is cryptographically quarantined into an off-chain SHA-256 hash-chain $H_k = 	ext{SHA-256}(H_{k-1} \parallel m_k \parallel 	ext{Reason}_k \parallel 	au_k)$ without ledger contamination.", "2. ")
-    add_bullet(doc, "Custody & Price Enforceability: Custody transitions $S_k 	o S_{k+1}$ are strictly forward-only and governed by OpenZeppelin AccessControl, atomically updating an immutable price vector $\mathbf{P}_i = (p_{	ext{farmer}}, p_{	ext{logistics}}, p_{	ext{store}}, p_{	ext{retail}})$ guaranteeing transparent margin visibility.", "3. ")
+    add_bullet(doc, "Telemetry Validation: If $m_k$ satisfies plausibility limits and yields an Isolation Forest anomaly score $s(m_k) \\le \\gamma_{\\text{threshold}}$, it is batched and committed to smart contract state $C_{\\text{ColdChain}}$ on Polygon Amoy in a single packed 256-bit slot.", "1. ")
+    add_bullet(doc, "Quarantine Routing: If $m_k$ violates crop bounds or triggers $s(m_k) > \\gamma_{\\text{threshold}}$, $m_k$ is quarantined in an off-chain SHA-256 hash-chain $H_k = \\text{SHA-256}(H_{k-1} \\parallel m_k \\parallel \\text{Reason}_k \\parallel \\tau_k)$ without public ledger contamination.", "2. ")
+    add_bullet(doc, "Custody and Price Progression: Custody handovers $S_k \\to S_{k+1}$ are strictly forward-only and governed by AccessControl, atomically updating an immutable price vector $\\mathbf{P}_i = (p_{\\text{farmer}}, p_{\\text{logistics}}, p_{\\text{store}}, p_{\\text{retail}})$ to provide transparent margin visibility.", "3. ")
 
     add_h2(doc, "3.2 System Objectives")
     add_para(
         doc,
-        "To solve the formalized problem, the proposed AgriChain platform is engineered to achieve six specific technical objectives:"
+        "To address these requirements, the AgriChain platform was developed to achieve six specific engineering objectives:"
     )
-    add_bullet(doc, "Objective 1: Multi-Stage AI Trust Engine: Develop a high-throughput, low-latency off-chain pre-commit telemetry validation pipeline capable of processing environmental readings in under 150 milliseconds with an anomaly detection F1-score exceeding 95%.", "• ")
-    add_bullet(doc, "Objective 2: Gas-Optimized Smart Contracts: Design modular EVM smart contracts utilizing packed bitwise storage representations to achieve a gas reduction greater than 45% compared to standard multi-word storage implementations.", "• ")
-    add_bullet(doc, "Objective 3: Cryptographic Quarantine Ledger: Build a tamper-evident SHA-256 hash-chain audit log that captures all rejected or anomalous sensor readings, ensuring 100% auditability without incurring on-chain gas costs.", "• ")
-    add_bullet(doc, "Objective 4: Dynamic Crop-Specific Governance: Implement a flexible on-chain and off-chain policy engine supporting distinct, reconfigurable environmental envelopes for varied crop cultivars.", "• ")
-    add_bullet(doc, "Objective 5: Immutable Fair Price Accounting: Engineer an on-chain cumulative price trail that tracks intermediate actor handoffs and verifies a minimum 45% producer revenue realization upon consumer scan.", "• ")
-    add_bullet(doc, "Objective 6: Responsive Multi-Role Web Platform: Construct dedicated, secure React 18 user interfaces for Farmers, Logistics Carriers, Dark Store Operators, Consumers, and Admins, providing real-time telemetry visualizers and instant QR code verification.", "• ")
+    add_bullet(doc, "Objective 1: Multi-Stage AI Trust Engine: Develop a lightweight pre-commit validation pipeline capable of processing simulated telemetry in under 150 milliseconds with an anomaly detection F1-score exceeding 95%.", "• ")
+    add_bullet(doc, "Objective 2: Gas-Optimized Smart Contracts: Design modular EVM smart contracts utilizing bitwise packed storage to achieve a gas reduction of over 45% compared to multi-word storage implementations.", "• ")
+    add_bullet(doc, "Objective 3: Cryptographic Quarantine Ledger: Build an off-chain SHA-256 hash-chain audit log that captures all rejected or anomalous readings, ensuring auditability without on-chain gas costs.", "• ")
+    add_bullet(doc, "Objective 4: Dynamic Crop-Specific Governance: Implement configurable on-chain and off-chain policy thresholds supporting distinct thermal envelopes for different crop varieties.", "• ")
+    add_bullet(doc, "Objective 5: Transparent Fair Price Accounting: Engineer an on-chain cumulative price trail that records intermediate actor handoffs and verifies an equitable farmer revenue share.", "• ")
+    add_bullet(doc, "Objective 6: Responsive Multi-Role Web Interface: Build dedicated React 18 dashboards for Farmers, Logistics Transporters, Dark Store Operators, Consumers, and Admins, supporting real-time visualizers and QR code verification.", "• ")
 
     add_h2(doc, "3.3 Functional Requirements")
     add_para(
         doc,
-        "The functional specifications of the platform are organized across twelve rigorous functional requirements (FR):"
+        "The system specifications are organized into twelve functional requirements (FR):"
     )
-    add_bullet(doc, "FR-1 (Actor Authentication & RBAC): System must enforce role-based authentication mapping cryptographic Ethereum wallet addresses and backend JWT sessions to discrete roles (Farmer, Logistics, DarkStore, Consumer, Admin).", "• ")
-    add_bullet(doc, "FR-2 (Batch Produce Registration): Farmers must be able to register new agricultural batches with botanical cultivar, harvest date, quantity in kilograms, base price in integer paise, and initial storage location.", "• ")
-    add_bullet(doc, "FR-3 (Automated QR Code Generation): Upon batch registration, the platform must dynamically generate high-resolution QR codes encoding unique batch identifiers and direct provenance verification URLs.", "• ")
-    add_bullet(doc, "FR-4 (IoT Ingestion & Pre-Validation): The ingestion API must accept JSON telemetry packets and immediately execute physical bounds checks, schema validations, and temporal monotonicity verifications.", "• ")
-    add_bullet(doc, "FR-5 (AI Anomaly Scoring): Ingestion pipeline must extract 11 statistical features and evaluate an unsupervised Isolation Forest model to assign an anomaly score and binary legitimacy flag.", "• ")
-    add_bullet(doc, "FR-6 (Cryptographic Quarantine Logging): Corrupted or out-of-bound readings must be recorded in an append-only hash-chain where each block encapsulates the SHA-256 digest of the previous quarantine entry.", "• ")
-    add_bullet(doc, "FR-7 (Packed On-Chain Relay): Validated readings must be relayed to the ColdChainMonitor contract using packed struct parameters, emitting real-time TelemetryLogged EVM events.", "• ")
-    add_bullet(doc, "FR-8 (Strict Forward Custody Transfer): Custody transfers must execute in a strictly forward-only sequence (REGISTERED → IN_TRANSIT → IN_STORAGE → AT_RETAIL → SOLD), rejecting any backward or out-of-order transitions.", "• ")
-    add_bullet(doc, "FR-9 (Multi-Tier Price Logging): Each custody transfer must atomically record the recipient's added price margin in integer paise, recalculating the cumulative retail price.", "• ")
-    add_bullet(doc, "FR-10 (IPFS Document Pinning): Quality inspection reports, pesticide lab test certificates, and organic compliance certificates must be pinned to IPFS, with their cryptographic CIDs anchored to batch state on-chain.", "• ")
-    add_bullet(doc, "FR-11 (Emergency Circuit Breakers): System administrators must have multi-sig authority to pause contract state transitions during detected security anomalies, with automatic pause triggers upon consecutive critical thermal violations.", "• ")
-    add_bullet(doc, "FR-12 (Consumer Provenance Portal): Public consumers must be able to scan product QR codes to view the farm-to-fork geographical journey, dynamic freshness grade, fair price breakdown, and verified peer reviews without requiring a Web3 wallet.", "• ")
+    add_bullet(doc, "FR-1 (Actor Authentication & RBAC): Enforce role-based access control mapping Ethereum addresses and backend JWT sessions to discrete roles (Farmer, Logistics, DarkStore, Consumer, Admin).", "• ")
+    add_bullet(doc, "FR-2 (Batch Produce Registration): Allow farmers to register harvest batches with crop variety, harvest date, quantity in kg, base price in integer paise, and farm location.", "• ")
+    add_bullet(doc, "FR-3 (Automated QR Code Generation): Dynamically generate QR codes encoding unique batch identifiers and direct provenance verification URLs upon batch creation.", "• ")
+    add_bullet(doc, "FR-4 (Simulated Telemetry Ingestion): Accept simulated JSON telemetry streams and execute schema checks, physical bounds bounding, and sequential timestamp verification.", "• ")
+    add_bullet(doc, "FR-5 (AI Anomaly Scoring): Extract 11 statistical features from telemetry and evaluate an Isolation Forest model to assign an anomaly score and validation status.", "• ")
+    add_bullet(doc, "FR-6 (Quarantine Logging): Record anomalous or out-of-policy readings into an append-only SHA-256 hash-chain, linking each entry to the previous block digest.", "• ")
+    add_bullet(doc, "FR-7 (Packed On-Chain Relay): Relay validated readings to the ColdChainMonitor smart contract using packed struct parameters, emitting TelemetryLogged events.", "• ")
+    add_bullet(doc, "FR-8 (Forward-Only Custody Progression): Enforce a strictly forward-only custody sequence (REGISTERED → IN_TRANSIT → IN_STORAGE → AT_RETAIL → SOLD), preventing out-of-order handovers.", "• ")
+    add_bullet(doc, "FR-9 (Multi-Tier Price Logging): Atomically record each recipient's price addition in integer paise during custody handovers, maintaining the cumulative retail price.", "• ")
+    add_bullet(doc, "FR-10 (IPFS Document Pinning): Pin quality inspection reports and organic certificates to IPFS via Pinata, anchoring resulting CIDs on-chain.", "• ")
+    add_bullet(doc, "FR-11 (Emergency Circuit Breakers): Provide administrative controls to pause contract state transitions during detected irregularities via Pausable circuit breakers.", "• ")
+    add_bullet(doc, "FR-12 (Consumer Provenance Portal): Allow consumers to scan product QR codes to view the farm-to-fork journey, dynamic freshness grade, fair price breakdown, and verified reviews.", "• ")
 
     add_h2(doc, "3.4 Non-Functional Requirements")
     add_para(
         doc,
-        "The architecture is engineered to satisfy eight critical non-functional requirements (NFR):"
+        "The platform architecture satisfies eight non-functional requirements (NFR):"
     )
-    add_bullet(doc, "NFR-1 (Inference Latency): The AI Trust Layer pre-commit validation pipeline must execute end-to-end feature extraction and anomaly scoring in under 150 milliseconds per telemetry payload.", "• ")
-    add_bullet(doc, "NFR-2 (Blockchain Gas Efficiency): Individual on-chain condition writes must consume less than 85,000 gas, and batched updates (N=20) must average less than 50,000 gas per reading.", "• ")
-    add_bullet(doc, "NFR-3 (Data Integrity & Tamper Evidence): The off-chain quarantine hash-chain must mathematically guarantee that any retroactive modification of historical logs is detectable within 10 milliseconds during validation sweeps.", "• ")
-    add_bullet(doc, "NFR-4 (Relational Storage Performance): The dual-engine database layer must sustain a throughput of at least 500 concurrent read/write telemetry queries per second under connection-pooled PostgreSQL.", "• ")
-    add_bullet(doc, "NFR-5 (Mobile Accessibility & Responsiveness): The client presentation interface must maintain 100% responsive fluid layout across viewport widths from 320px (mobile smartphones) to 2560px (ultra-wide desktop displays).", "• ")
-    add_bullet(doc, "NFR-6 (Security & Cryptographic Standards): All password hashes must use bcrypt (work factor 12), API sessions must use HMAC-SHA256 JWTs with 24-hour expiration, and smart contracts must adhere strictly to audited OpenZeppelin v5.0 primitives.", "• ")
-    add_bullet(doc, "NFR-7 (Scalability & Concurrency): The FastAPI asynchronous event loop must support non-blocking asynchronous I/O across database operations, IPFS uploads, and blockchain transaction relaying.", "• ")
-    add_bullet(doc, "NFR-8 (Precision & Rounding Safety): All monetary values must be represented strictly as integer paise (1 INR = 100 paise) and all temperatures as integer deci-degrees Celsius (24.5°C = 245) to eliminate floating-point rounding errors.", "• ")
+    add_bullet(doc, "NFR-1 (Validation Latency): The AI Trust Layer pre-commit validation must execute feature extraction and anomaly scoring in under 150 ms per telemetry payload.", "• ")
+    add_bullet(doc, "NFR-2 (EVM Gas Efficiency): Batched condition updates (N=20) must average less than 50,000 gas per reading, achieving at least 45% savings over uncompressed storage.", "• ")
+    add_bullet(doc, "NFR-3 (Tamper Evidence): Any retroactive alteration to quarantined records must be mathematically detectable via hash-chain verification sweeps within milliseconds.", "• ")
+    add_bullet(doc, "NFR-4 (Database Performance): Relational storage must support concurrent read/write operations using connection pooling and SQLite WAL mode.", "• ")
+    add_bullet(doc, "NFR-5 (Responsive UI Layout): The web interface must maintain a responsive layout across mobile, tablet, and desktop viewports (320px to 2560px).", "• ")
+    add_bullet(doc, "NFR-6 (Security Standards): Passwords must be hashed using bcrypt, API sessions managed via HMAC-SHA256 JWTs, and smart contracts aligned with audited OpenZeppelin v5.0 libraries.", "• ")
+    add_bullet(doc, "NFR-7 (Asynchronous Concurrency): The backend must utilize non-blocking asynchronous I/O across database access, IPFS uploads, and blockchain transactions.", "• ")
+    add_bullet(doc, "NFR-8 (Integer Precision Rules): All financial figures must use integer paise (1 INR = 100 paise) and temperatures must use integer deci-degrees Celsius (24.5°C = 245) to avoid floating-point rounding issues.", "• ")
 
     add_h2(doc, "3.5 Target Stakeholder Profiles and Personas")
     add_para(
         doc,
-        "To ensure human-centered design and seamless operational adoption, the AgriChain platform is tailored around five "
-        "distinct stakeholder personas representing the real-world agricultural value chain:"
+        "The platform interfaces were designed to accommodate five distinct user personas representing typical supply chain participants:"
     )
-    add_bullet(doc, "Persona 1: Ramesh Patel (Smallholder Farmer): Primary producer operating a 4-acre organic horticulture farm in Nashik, Maharashtra. Seeks guaranteed proof of organic origin, fair price realization without middleman deduction, and simple mobile-friendly crop registration without complex blockchain jargon.", "• ")
-    add_bullet(doc, "Persona 2: Vikram Singh (Refrigerated Fleet Transporter): Cold-chain carrier managing multi-axle refrigerated trucks along National Highway corridors. Requires automated IoT reefer monitoring, instantaneous GPS waypoint tracking, clear custody transfer handshakes, and protection against false temperature breach claims.", "• ")
-    add_bullet(doc, "Persona 3: Priya Sharma (Dark-Store Hub Manager): Urban fulfillment center operator responsible for inbound produce receiving, rapid quality grading, climate-controlled storage bay allocation, and rapid dispatch to quick-commerce delivery riders.", "• ")
-    add_bullet(doc, "Persona 4: Ananya Iyer (Urban Retail Consumer): Health-conscious urban consumer purchasing fresh groceries. Demands verifiable transparency regarding harvest freshness, pesticide residue lab tests, cold-chain integrity, and ethical validation that the farmer received a fair share of the retail price.", "• ")
-    add_bullet(doc, "Persona 5: Rajesh Verma (Supply Chain Quality Administrator): System administrator overseeing network health, smart contract circuit breakers, regulatory compliance auditing, quarantine log verification, and role-based permissions.", "• ")
+    add_bullet(doc, "Persona 1: Ramesh Patel (Smallholder Farmer): Cultivates a 4-acre organic farm near Nashik. Needs an easy-to-use crop registration form, proof of harvest origin, and transparent price tracking without technical complexity.", "• ")
+    add_bullet(doc, "Persona 2: Vikram Singh (Refrigerated Fleet Transporter): Operates refrigerated transport vehicles. Needs continuous telemetry tracking, route milestone logging, and unambiguous custody handovers to protect against wrongful damage claims.", "• ")
+    add_bullet(doc, "Persona 3: Priya Sharma (Dark Store Hub Manager): Manages an urban distribution hub. Requires incoming shipment verification, storage bay allocation, and prompt inventory processing for local fulfillment.", "• ")
+    add_bullet(doc, "Persona 4: Ananya Iyer (Retail Consumer): Urban grocery buyer seeking verifiable information on harvest date, chemical residue testing, transit handling, and fair farmer compensation.", "• ")
+    add_bullet(doc, "Persona 5: Rajesh Verma (Supply Chain Administrator): System administrator overseeing contract roles, monitoring quarantine alerts, auditing hash-chain integrity, and activating circuit breakers if necessary.", "• ")
 
     doc.add_page_break()
