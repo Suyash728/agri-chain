@@ -3440,3 +3440,59 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `pio run --target upload`: Success.
 - Real-time serial monitor verifies all 3 channels reading simultaneously without pin contention or timing jitter.
+
+---
+
+## Task: Physical 5-Channel Telemetry Suite Validation (DHT11, MQ-135, SW-420, LDR, NEO-6M GPS) — 2026-10-31
+
+**What was done:**
+- Verified user's hardware connections for the complete 5-sensor telemetry edge node:
+  - DHT11: Data on GPIO 4 (`D4`), VCC on 3.3V rail, GND on ground rail.
+  - MQ-135: Analog AO on GPIO 34 (`D34`, ADC1_CH6), VCC on 3.3V rail, GND on ground rail.
+  - SW-420: Digital DO on GPIO 27 (`D27`, hardware falling-edge interrupt), VCC on 3.3V rail, GND on ground rail.
+  - LDR Module: Output on GPIO 35 (`D35`, ADC1_CH7), VCC on 3.3V rail, GND on ground rail.
+  - u-blox NEO-6M GPS: TX on GPIO 16 (`RX2`), VCC on 3.3V rail, GND on ground rail, HardwareSerial2 at 9600 baud.
+- Created multi-sensor diagnostic test firmware in `hardware/test_pentad/`:
+  - `platformio.ini` configured with `Adafruit DHT` and `TinyGPSPlus` libraries.
+  - `src/main.cpp` sampling microclimate, gas voltage, shock interrupts, optical tamper levels, and streaming GPS NMEA sentences.
+- Compiled firmware (318,128 bytes flash) and flashed to `/dev/ttyUSB0` at 460800 baud.
+- Verified real-time serial telemetry at 115200 baud:
+  - DHT11: **30.2 °C**, **77.7 % RH** nominal.
+  - MQ-135: **1.40 V** (ADC 1742) steady analog baseline on 3.3V supply.
+  - SW-420: Hardware ISR armed on GPIO 27, baseline reporting **0 Impacts 🛡️ [Stable]**.
+  - LDR: ADC reading on GPIO 35 active.
+  - NEO-6M GPS: Actively streaming NMEA sentences to GPIO 16 (`RX2`) at 9600 baud (~328 characters per cycle processed with 0 framing errors).
+
+**Files changed:**
+- `hardware/test_pentad/platformio.ini`
+- `hardware/test_pentad/src/main.cpp`
+- `MEMORY.md`
+
+**Verified:**
+- `pio run --target upload`: Success (22.68s flash time).
+- Live serial capture confirms all 5 channels executing concurrently without pin contention or Wi-Fi ADC conflicts.
+
+---
+
+## Task: 5-Channel Mission Control Dashboard & One-Click Runner Script — 2026-10-31
+
+**What was done:**
+- Enhanced ESP32 firmware in `hardware/test_pentad/src/main.cpp` to emit structured JSON telemetry packets (`JSON:{...}`) every 1000ms alongside human-readable fallback logs.
+- Built full terminal mission control dashboard in `hardware/monitor_live.py` using `rich`:
+  - 5 detailed sensor cards: DHT11 (deci-°C and % RH), MQ-135 (ADC + Voltage + VOC status), SW-420 (sub-µs IRQ impact count), LDR (ADC + Voltage + sealed crate vs breach), and NEO-6M (GPS 3D fix status, satellites, NMEA byte rate).
+  - Live in-place updating screen layout with header, system uptime, and live event ledger.
+- Created standalone shell launcher script `run_monitor.sh` (in project root and `hardware/`):
+  - Automatically verifies `/dev/ttyUSB0` presence.
+  - Automatically targets `.venv/bin/python`.
+  - Fully executable (`chmod +x run_monitor.sh`).
+- Verified execution: Launched live window in KDE Konsole on `:0` / `wayland-1`, successfully rendering in real time.
+
+**Files changed:**
+- `hardware/test_pentad/src/main.cpp`
+- `hardware/monitor_live.py`
+- `run_monitor.sh`
+- `hardware/run_monitor.sh`
+- `MEMORY.md`
+
+**Verified:**
+- `ps aux | grep monitor_live`: Verified active process running with 0 errors.

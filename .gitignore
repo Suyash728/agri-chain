@@ -56,6 +56,12 @@ Thumbs.db
 *.db-shm
 *.db-wal
 
+# ---------- Embedded / PlatformIO ----------
+.pio/
+.pioenvs/
+.piolibdeps/
+.clangd/
+
 # ---------- Logs ----------
 *.log
 
