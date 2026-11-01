@@ -51,7 +51,7 @@ export const AnalyticsView = ({ onBack }) => {
       <div className="bg-white rounded-3xl p-6 border border-[#E6E1D5] shadow-xs space-y-4">
         <h2 className="text-lg font-extrabold text-[#2D2620]">AI Demand Forecast & Auto-Reorder Matrix</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[550px]">
             <thead>
               <tr className="border-b border-[#E6E1D5] text-[#666057] font-bold uppercase tracking-wider">
                 <th className="pb-3">Crop Category</th>

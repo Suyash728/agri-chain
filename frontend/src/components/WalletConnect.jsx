@@ -218,23 +218,23 @@ export const WalletConnect = ({ activeRole = 'farmer', currentUser, onSwitchAcco
       <div className="relative flex-shrink-0">
         <button
           onClick={handleClick}
-          className="w-[210px] sm:w-[220px] h-[34px] px-2.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center justify-between gap-1.5 hover:bg-[#FAF7F0] transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
+          className="w-auto sm:w-[220px] h-[30px] sm:h-[34px] px-2 sm:px-2.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center justify-between gap-1 sm:gap-1.5 hover:bg-[#FAF7F0] transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
           title="Switch Account / Web3 Identity"
         >
           <div className="flex items-center gap-1.5 min-w-0">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-            <span className="font-mono font-bold text-[#2D2620] truncate text-xs">
+            <span className="font-mono font-bold text-[#2D2620] truncate text-xs hidden sm:inline">
               {shortenAddress(account)}
             </span>
           </div>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold border bg-emerald-50 text-emerald-800 border-emerald-300 flex-shrink-0">
+          <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-extrabold border bg-emerald-50 text-emerald-800 border-emerald-300 flex-shrink-0">
             Auditor
           </span>
-          <ChevronDown className="w-3.5 h-3.5 text-[#666057] flex-shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-[#666057] flex-shrink-0 hidden sm:inline" />
         </button>
 
         {showDropdown && (
-          <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-[#E6E1D5] p-3.5 z-50 flex flex-col gap-2.5">
+          <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-xs sm:w-72 bg-white rounded-2xl shadow-xl border border-[#E6E1D5] p-3.5 z-50 flex flex-col gap-2.5">
             <div className="flex items-center justify-between pb-2 border-b border-[#F4F5E6]">
               <span className="text-[11px] font-bold text-[#666057]">Web3 Auditor Status</span>
               <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
@@ -286,24 +286,24 @@ export const WalletConnect = ({ activeRole = 'farmer', currentUser, onSwitchAcco
     <div className="relative flex-shrink-0">
       <button
         onClick={handleClick}
-        className="w-[210px] sm:w-[220px] h-[34px] px-2.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center justify-between gap-1.5 hover:bg-[#FAF7F0] transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
+        className="w-auto sm:w-[220px] h-[30px] sm:h-[34px] px-2 sm:px-2.5 rounded-xl bg-white border border-[#E6E1D5] shadow-xs text-xs flex items-center justify-between gap-1 sm:gap-1.5 hover:bg-[#FAF7F0] transition-colors cursor-pointer whitespace-nowrap flex-shrink-0"
         title="Switch Account / Digital Identity"
       >
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-          <span className="text-emerald-700 font-black flex-shrink-0">₹</span>
-          <span className="font-extrabold text-[#2D2620] truncate text-xs text-left">
+          <span className="text-emerald-700 font-black flex-shrink-0 text-xs">₹</span>
+          <span className="font-extrabold text-[#2D2620] truncate text-xs text-left hidden sm:inline">
             {displayName}
           </span>
         </div>
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border flex-shrink-0 ml-1.5 ${badgeStyle}`}>
+        <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-extrabold border flex-shrink-0 ml-0.5 sm:ml-1.5 ${badgeStyle}`}>
           {displayRole}
         </span>
-        <ChevronDown className="w-3.5 h-3.5 text-[#666057] flex-shrink-0 ml-1" />
+        <ChevronDown className="w-3.5 h-3.5 text-[#666057] flex-shrink-0 ml-1 hidden sm:inline" />
       </button>
 
       {showDropdown && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-[#E6E1D5] p-3.5 z-50 flex flex-col gap-2.5">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-xs sm:w-80 bg-white rounded-2xl shadow-xl border border-[#E6E1D5] p-3.5 z-50 flex flex-col gap-2.5">
           <div className="flex items-center justify-between pb-2 border-b border-[#F4F5E6]">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500" />

@@ -361,7 +361,7 @@ export const TraceabilityView = () => {
               </div>
 
               <div className="overflow-x-auto rounded-xl border border-[#E6E1D5]">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[600px]">
                   <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5]">
                     <tr className="text-[#666057] font-semibold">
                       <th className="py-2.5 px-3">State</th>

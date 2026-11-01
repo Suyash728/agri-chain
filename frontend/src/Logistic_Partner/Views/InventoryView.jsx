@@ -395,7 +395,7 @@ export const InventoryView = ({ initialStep = 'available-produce', onSelectTab }
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[600px]">
                 <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5]">
                   <tr className="text-[#666057] font-semibold">
                     <th className="py-3 px-4">Batch ID & Crop</th>

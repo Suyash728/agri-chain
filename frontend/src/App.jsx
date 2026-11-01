@@ -480,7 +480,7 @@ export default function App() {
 
         
         {/* Persistent Top Navigation Bar (Role Switcher & Web3 Wallet) */}
-        <header className={`sticky top-0 z-40 bg-[#FAF7F0]/95 backdrop-blur-md border-b border-[#E6E1D5] px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3 shadow-2xs transition-all ${
+        <header className={`sticky top-0 z-40 bg-[#FAF7F0]/95 backdrop-blur-md border-b border-[#E6E1D5] px-3 sm:px-6 lg:px-8 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3 shadow-2xs transition-all ${
           activeRole === 'consumer' ? 'w-full ml-0' : 'w-full md:w-[calc(100%-16rem)] md:ml-64'
         }`}>
           {/* Left: Seamless Merged Logo & Active Portal Indicator */}
@@ -503,10 +503,10 @@ export default function App() {
           </div>
 
           {/* Right: Role Switcher & Web3 Wallet Control Bar */}
-          <div className="flex items-center gap-1.5 p-1 bg-white/95 rounded-2xl border border-[#E6E1D5] shadow-xs max-w-full overflow-x-auto no-scrollbar whitespace-nowrap flex-shrink-0">
+          <div className="flex items-center gap-1 sm:gap-1.5 p-1 bg-white/95 rounded-2xl border border-[#E6E1D5] shadow-xs max-w-[calc(100vw-85px)] sm:max-w-none overflow-x-auto no-scrollbar whitespace-nowrap flex-shrink min-w-0">
             <button
               onClick={() => handleSwitchRole('farmer')}
-              className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+              className={`px-2 sm:px-3 h-[28px] sm:h-[32px] rounded-xl text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'farmer' 
                   ? 'bg-[#3D4E2A] text-white shadow-xs' 
                   : 'text-[#666057] hover:text-[#2D2620]'
@@ -517,7 +517,7 @@ export default function App() {
             </button>
             <button
               onClick={() => handleSwitchRole('logistics')}
-              className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+              className={`px-2 sm:px-3 h-[28px] sm:h-[32px] rounded-xl text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'logistics' 
                   ? 'bg-[#354424] text-white shadow-xs' 
                   : 'text-[#666057] hover:text-[#2D2620]'
@@ -528,7 +528,7 @@ export default function App() {
             </button>
             <button
               onClick={() => handleSwitchRole('darkstore')}
-              className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+              className={`px-2 sm:px-3 h-[28px] sm:h-[32px] rounded-xl text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'darkstore' 
                   ? 'bg-[#3D4E2A] text-white shadow-xs' 
                   : 'text-[#666057] hover:text-[#2D2620]'
@@ -542,7 +542,7 @@ export default function App() {
                 handleSwitchRole('consumer');
                 if (consumerTab === 'onboarding') handleSelectConsumerTab('home');
               }}
-              className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+              className={`px-2 sm:px-3 h-[28px] sm:h-[32px] rounded-xl text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'consumer' 
                   ? 'bg-[#354424] text-white shadow-xs' 
                   : 'text-[#666057] hover:text-[#2D2620]'
@@ -553,7 +553,7 @@ export default function App() {
             </button>
             <button
               onClick={() => handleSwitchRole('admin')}
-              className={`px-3 h-[32px] rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap flex-shrink-0 ${
+              className={`px-2 sm:px-3 h-[28px] sm:h-[32px] rounded-xl text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 whitespace-nowrap flex-shrink-0 ${
                 activeRole === 'admin' 
                   ? 'bg-[#3D4E2A] text-white shadow-xs' 
                   : 'text-[#666057] hover:text-[#2D2620]'
@@ -563,17 +563,17 @@ export default function App() {
               <span>Admin</span>
             </button>
 
-            <div className="h-5 w-px bg-[#E6E1D5] mx-1 flex-shrink-0" />
+            <div className="h-5 w-px bg-[#E6E1D5] mx-0.5 sm:mx-1 flex-shrink-0" />
 
             {/* Universal Notification Bell with Unread Badge */}
             <button
               onClick={() => setIsNotificationsOpen(true)}
-              className="relative p-1.5 h-[32px] w-[32px] rounded-xl bg-white hover:bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] cursor-pointer transition-colors shadow-2xs flex-shrink-0"
+              className="relative p-1 sm:p-1.5 h-[28px] sm:h-[32px] w-[28px] sm:w-[32px] rounded-xl bg-white hover:bg-[#FAF7F0] border border-[#E6E1D5] flex items-center justify-center text-[#2D2620] cursor-pointer transition-colors shadow-2xs flex-shrink-0"
               title="View Live Notifications & Alerts"
             >
-              <Bell className="w-4 h-4 text-[#354424]" />
+              <Bell className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#354424]" />
               {unreadNotifsCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#354424] text-white text-[9px] font-black flex items-center justify-center border border-white">
+                <span className="absolute -top-1 -right-1 w-3.5 sm:w-4 h-3.5 sm:h-4 rounded-full bg-[#354424] text-white text-[8px] sm:text-[9px] font-black flex items-center justify-center border border-white">
                   {unreadNotifsCount}
                 </span>
               )}

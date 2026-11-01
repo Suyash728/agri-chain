@@ -561,7 +561,7 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
       {/* ========================================== */}
       <div className="bg-white rounded-3xl border border-[#E6E1D5] shadow-xs overflow-hidden w-full">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-[#FAF7F0]/60 border-b border-[#E6E1D5] text-[11px] font-extrabold text-[#666057] uppercase tracking-wider">
                 <th className="py-4 px-5">Delivery ID</th>

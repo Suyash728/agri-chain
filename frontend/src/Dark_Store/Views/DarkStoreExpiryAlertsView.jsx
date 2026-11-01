@@ -522,7 +522,7 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
                   <tr className="bg-[#FAF7F0]/60 border-b border-[#E6E1D5] text-[11px] font-extrabold text-[#666057] uppercase tracking-wider">
                     <th className="py-3.5 px-5">ITEM NAME</th>

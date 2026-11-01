@@ -3782,3 +3782,60 @@ pm run build passed cleanly with 0 errors.
 - `npm run build`: Compiled 1,821 modules cleanly in 10.09s with 0 errors.
 - Verified role switching: Switching between Farmer, Logistics, Dark Store, Consumer, Admin happens instantly without intermediate splash screens.
 - Verified sidebar: Logo is seamlessly merged with no white card borders, displaying logo + active role.
+
+
+---
+
+## [Mobile Responsiveness & Viewport Optimization Across Portals] — 2026-11-01
+
+**What was done:**
+- Diagnosed root causes of mobile blowout / sideways horizontal scrolling:
+  - Header right control container had hardcoded `w-[210px] sm:w-[220px]` in `WalletConnect.jsx` alongside 5 fixed-padding role buttons and bell icon, totaling >600px width on ~375px phone screens.
+  - Absence of global viewport overflow boundaries on `html, body`.
+  - Data tables across Dark Store, Logistics, and Farmer portals lacked `min-w-[...]` column containers, causing severe vertical wrapping and crushed columns on mobile.
+  - Custody handoff and GRN action modals lacked max-height boundary constraints on small screens.
+- Implemented comprehensive mobile responsive enhancements:
+  - **Global Viewport & Touch Protection (`index.css`)**:
+    - Added `html, body, #root { max-width: 100vw; overflow-x: hidden; -webkit-overflow-scrolling: touch; }` to permanently lock horizontal pan and enable smooth native mobile momentum scrolling.
+    - Added universal scrollbar hiding classes (`.no-scrollbar`, `.scrollbar-none`).
+  - **Adaptive Header & Compact Role Switcher (`App.jsx`)**:
+    - Constrained header right role container with `max-w-[calc(100vw-85px)] sm:max-w-none overflow-x-auto no-scrollbar whitespace-nowrap flex-shrink min-w-0`.
+    - Made role switcher buttons touch-compact on mobile (`px-2 sm:px-3 h-[28px] sm:h-[32px] text-[11px] sm:text-xs font-extrabold`).
+    - Made notification bell and badge compact for mobile headers.
+  - **Responsive Web3 / Kisan Digital Identity (`WalletConnect.jsx`)**:
+    - Replaced hardcoded fixed width (`w-[210px]`) with responsive dimensions (`w-auto sm:w-[220px] h-[30px] sm:h-[34px] px-2 sm:px-2.5`).
+    - On mobile screens (`< sm`), shows compact icon group (pulsing active status dot, green `₹` symbol, role badge `Farmer`), hiding long truncated username and chevrons.
+    - Set dropdown menus to `w-[calc(100vw-2rem)] max-w-xs sm:w-80 right-0` to guarantee dropdown cards never escape mobile viewport boundaries.
+  - **Tour Banner Mobile Protection (`PresenterWalkthroughBanner.jsx`)**:
+    - Added responsive labels (`<span className="hidden sm:inline">{activeStep.actionLabel}</span><span className="sm:hidden">Next →</span>`).
+    - Constrained walkthrough title with `max-w-[130px] sm:max-w-none truncate`.
+  - **Data Table Mobile Horizontal Scrolling**:
+    - Enhanced all 14 platform data tables (`ProcurementOrdersView`, `AnalyticsView`, `DarkStoreExpiryAlertsView`, `DarkStoreRevenueView`, `DarkStoreSalesView`, `InboundGRNView`, `EarningsView`, `InventoryView`, `TraceabilityView`, `TransactionsView`) with `overflow-x-auto` cards and `min-w-[480px]` - `min-w-[700px]` tables. On mobile screens, columns maintain legible spacing and users can swipe horizontally across rows like a native spreadsheet.
+  - **Modal Mobile Viewport Constraints**:
+    - Added `max-h-[92vh] overflow-hidden flex flex-col` and `overflow-y-auto custom-scrollbar` to `AcceptShipmentModal`, `HandoffRetailerModal`, `ConfirmGRNModal`, and `RecordSaleModal` to ensure accessibility on small height devices or with virtual keyboards open.
+
+**Files changed:**
+- `frontend/src/index.css`: Viewport lock, overflow-x hidden, touch scrolling.
+- `frontend/src/App.jsx`: Responsive header, compact role switcher bar.
+- `frontend/src/components/WalletConnect.jsx`: Responsive button & mobile-safe dropdowns.
+- `frontend/src/components/PresenterWalkthroughBanner.jsx`: Compact action button & truncated mobile title.
+- `frontend/src/Logistic_Partner/Modals/AcceptShipmentModal.jsx`: Mobile viewport height constraint & scrollable body.
+- `frontend/src/Logistic_Partner/Modals/HandoffRetailerModal.jsx`: Mobile viewport height constraint & scrollable body.
+- `frontend/src/Dark_Store/Modals/ConfirmGRNModal.jsx`: Mobile viewport height constraint & scrollable body.
+- `frontend/src/Dark_Store/Modals/RecordSaleModal.jsx`: Mobile viewport height constraint & scrollable body.
+- `frontend/src/Dark_Store/Views/AnalyticsView.jsx`: Table min-width container.
+- `frontend/src/Dark_Store/Views/DarkStoreExpiryAlertsView.jsx`: Table min-width container.
+- `frontend/src/Dark_Store/Views/DarkStoreRevenueView.jsx`: Table min-width container.
+- `frontend/src/Dark_Store/Views/DarkStoreSalesView.jsx`: Table min-width container.
+- `frontend/src/Dark_Store/Views/InboundGRNView.jsx`: Table min-width container.
+- `frontend/src/Farmer/Views/EarningsView.jsx`: Table min-width container.
+- `frontend/src/Logistic_Partner/Views/InventoryView.jsx`: Table min-width container.
+- `frontend/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`: Table min-width containers.
+- `frontend/src/Logistic_Partner/Views/TraceabilityView.jsx`: Table min-width container.
+- `frontend/src/Logistic_Partner/Views/TransactionsView.jsx`: Table min-width container.
+- `MEMORY.md`: Appended task entry.
+
+**Verified:**
+- `npm run build`: Compiled 1,821 modules cleanly in 6.71s with 0 errors.
+- Pytest suite: 165 passed across `tests/` and `trust-layer/tests/` with 0 failures.
+- Zero horizontal viewport blowout on 360px - 480px viewports.

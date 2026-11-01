@@ -281,7 +281,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
 
             {/* Orders Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[550px]">
                 <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5]">
                   <tr className="text-[#666057] font-semibold">
                     <th className="py-2.5 px-3">Order ID</th>
@@ -375,7 +375,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
 
             {/* Transactions Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[500px]">
                 <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5]">
                   <tr className="text-[#666057] font-semibold">
                     <th className="py-2.5 px-3">Transaction Description</th>
@@ -597,8 +597,8 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-              <table className="w-full text-left text-xs">
+            <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+              <table className="w-full text-left text-xs min-w-[550px]">
                 <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5]">
                   <tr className="text-[#666057] font-semibold">
                     <th className="p-3">Order ID</th>
@@ -681,8 +681,8 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-              <table className="w-full text-left text-xs">
+            <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+              <table className="w-full text-left text-xs min-w-[550px]">
                 <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5]">
                   <tr className="text-[#666057] font-semibold">
                     <th className="p-3">Tx ID</th>

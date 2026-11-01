@@ -105,7 +105,7 @@ export const PresenterWalkthroughBanner = ({
               </span>
             </div>
             {!isMinimized && (
-              <p className="font-extrabold text-xs text-[#2D2620] truncate mt-0.5">
+              <p className="font-extrabold text-xs text-[#2D2620] truncate max-w-[130px] sm:max-w-none mt-0.5">
                 {activeStep.title}
               </p>
             )}
@@ -143,9 +143,10 @@ export const PresenterWalkthroughBanner = ({
 
           <button
             onClick={handleNext}
-            className="px-3 py-1.5 rounded-xl bg-[#354424] hover:bg-[#2D3B1E] text-white text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer transition-all"
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#354424] hover:bg-[#2D3B1E] text-white text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer transition-all whitespace-nowrap"
           >
-            <span>{activeStep.actionLabel}</span>
+            <span className="hidden sm:inline">{activeStep.actionLabel}</span>
+            <span className="sm:hidden">Next →</span>
           </button>
 
           <button

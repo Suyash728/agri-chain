@@ -99,8 +99,8 @@ export const RecordSaleModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
   const markupPercent = basePrice > 0 ? ((markupAmount / basePrice) * 100).toFixed(0) : 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl border border-[#E6E1D5] shadow-2xl overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-4">
+      <div className="w-full max-w-md max-h-[92vh] bg-white rounded-3xl border border-[#E6E1D5] shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="p-4 bg-[#FAF7F0] border-b border-[#E6E1D5] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export const RecordSaleModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
         </div>
 
         {/* Content */}
-        <div className="p-5 flex flex-col gap-4">
+        <div className="p-4 sm:p-5 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
           {txHash ? (
             <div className="py-6 flex flex-col items-center justify-center text-center gap-3">
               <div className="w-12 h-12 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700">

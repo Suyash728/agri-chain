@@ -116,7 +116,7 @@ export const TransactionsView = () => {
 
       <div className="bg-white rounded-2xl border border-[#E6E1D5] shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+          <table className="w-full text-left text-xs sm:text-sm min-w-[480px]">
             <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5]">
               <tr className="text-[#666057] font-semibold">
                 <th className="p-4">Transaction Description</th>

@@ -503,7 +503,7 @@ export const DarkStoreSalesView = ({ onBack }) => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[650px]">
             <thead>
               <tr className="bg-[#FAF7F0]/60 border-b border-[#E6E1D5] text-[11px] font-extrabold text-[#666057] uppercase tracking-wider">
                 <th className="py-3.5 px-5">ORDER ID</th>
@@ -669,8 +669,8 @@ export const DarkStoreSalesView = ({ onBack }) => {
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto">
-              <table className="w-full text-left text-xs border-collapse">
+            <div className="flex-1 overflow-auto">
+              <table className="w-full text-left text-xs border-collapse min-w-[550px]">
                 <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5] text-[#666057] font-semibold sticky top-0">
                   <tr>
                     <th className="p-3">Order ID</th>

@@ -237,8 +237,8 @@ export const EarningsView = ({ onBack, onOpenReport }) => {
             </div>
 
             {/* Category Breakdown Table */}
-            <div className="border border-[#E6E1D5] rounded-2xl overflow-hidden">
-              <table className="w-full text-left text-xs">
+            <div className="border border-[#E6E1D5] rounded-2xl overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[400px]">
                 <thead className="bg-[#FAF7F0] border-b border-[#E6E1D5]">
                   <tr className="text-[#666057] font-extrabold">
                     <th className="py-2.5 px-3">Crop Category</th>
