@@ -483,7 +483,7 @@ export const GodModeHub = ({
   if (viewMode === 'guided_window') {
     return (
       <div className={`w-full transition-all animate-fade-in ${activeRole === 'consumer' ? 'w-full ml-0' : 'w-full md:w-[calc(100%-16rem)] md:ml-64'} px-4 sm:px-6 lg:px-8 pt-3 pb-1 select-none`}>
-        <div className="max-w-7xl mx-auto bg-white/95 backdrop-blur-md rounded-2xl border border-[#354424]/20 shadow-xs p-3 sm:p-3.5 flex flex-col gap-2.5 text-xs text-[#2D2620]">
+        <div className="w-full bg-white/95 backdrop-blur-md rounded-2xl border border-[#354424]/20 shadow-xs p-3 sm:p-3.5 flex flex-col gap-2.5 text-xs text-[#2D2620]">
           
           {/* Row 1: Mode Header, Step Pills, Auto-Play, Actions */}
           <div className="flex flex-wrap items-center justify-between gap-2.5">

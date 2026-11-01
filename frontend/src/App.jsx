@@ -628,7 +628,7 @@ export default function App() {
             onLogout={handleLogout}
           />
 
-          <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] px-4 sm:px-6 lg:px-8 max-w-7xl pb-24 md:pb-8 pt-4 sm:pt-6">
+          <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] px-4 sm:px-6 lg:px-8 pb-24 md:pb-8 pt-4 sm:pt-6">
             {logisticTab === 'dashboard' && (
               <LogisticDashboardView 
                 onSelectTab={handleSelectLogisticTab} 
@@ -688,7 +688,7 @@ export default function App() {
             onLogout={handleLogout}
           />
 
-          <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] px-4 sm:px-6 lg:px-8 max-w-7xl pb-24 md:pb-8 pt-4 sm:pt-6">
+          <main className="min-w-0 flex-1 md:ml-64 w-full md:w-[calc(100%-16rem)] px-4 sm:px-6 lg:px-8 pb-24 md:pb-8 pt-4 sm:pt-6">
             {farmerTab === 'dashboard' && (
               <div className="flex flex-col gap-6 animate-fade-in">
                 <FarmerHeader 

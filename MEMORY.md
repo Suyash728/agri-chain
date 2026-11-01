@@ -3839,3 +3839,68 @@ pm run build passed cleanly with 0 errors.
 - `npm run build`: Compiled 1,821 modules cleanly in 6.71s with 0 errors.
 - Pytest suite: 165 passed across `tests/` and `trust-layer/tests/` with 0 failures.
 - Zero horizontal viewport blowout on 360px - 480px viewports.
+
+
+---
+
+## [Full-Stack System Launch & Environment Verification] — 2026-11-01
+
+**What was done:**
+- Initialized and launched all three core subsystems of the AgriChain application:
+  1. **Hardhat Local Blockchain Node** running on port `8545` (`http://127.0.0.1:8545`).
+  2. Deployed modular smart contracts suite (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, `AccessControlRoles`) to the local node and seeded initial on-chain crop policies.
+  3. Synchronized modular contract deployment manifests across `contracts/amoy-deployments.json`, `backend/modular-deployments.json`, and `frontend/src/utils/modular-deployments.json`.
+  4. **FastAPI REST Backend** running on port `8000` (`http://0.0.0.0:8000`) with Web3 contract client, dual-mode relational database adapter, and pre-chain AI Trust Layer anomaly detection.
+  5. **Vite React 18 Frontend Development Server** running on port `3000` (`http://localhost:3000/` and LAN `http://192.168.1.103:3000/`).
+  6. Seeded the optimal multi-role demonstration dataset across all 11 batches, populating authentic custody transitions, condition telemetry, IPFS documents, and consumer reviews.
+
+**Files changed:**
+- `backend/modular-deployments.json`: Synchronized deployment manifest.
+- `contracts/amoy-deployments.json`: Synchronized deployment manifest.
+- `frontend/src/utils/modular-deployments.json`: Synchronized deployment manifest.
+- `MEMORY.md`: Appended session entry.
+
+**Decisions made (and why):**
+- Started all three service processes as long-running daemon background tasks so that the local blockchain, API server, and web user interface remain active and responsive concurrently.
+- Triggered `/admin/seed-demo-data` immediately after startup so that all 5 role portals (Farmer, Logistics Partner, Dark Store, Consumer, Admin) and the Omniscient God Mode Hub launch with complete, realistic, and verifiable on-chain data.
+
+**Verified (DONE WHEN checks that actually passed):**
+- Hardhat node RPC: JSON-RPC `eth_blockNumber` returned active block (`0xa3`).
+- Contract deployment: 22/22 tests passed (`npx hardhat test` in `contracts/`).
+- Backend API: `GET http://127.0.0.1:8000/farmer/kpis` returned live data (`10.75 Tonnes`, `14 Active Orders`, `12 Shipments`, `₹ 16,980`).
+- Frontend UI: HTTP 200 OK verified on `http://localhost:3000/`.
+- Test suite: 18/18 pytest tests passed in `tests/` with 0 failures.
+- Hardware simulator: `python hardware/simulate_esp32.py --mode demo` passed all 5 channels (nominal telemetry on-chain, crate tamper breach, refrigeration compressor breach quarantine, and VOC plume quarantine).
+
+**Status:**
+- All 3 stack layers are active, operational, and connected:
+  - Local Blockchain (Hardhat): `http://127.0.0.1:8545`
+  - REST API & AI Gatekeeper (FastAPI): `http://127.0.0.1:8000` (Docs: `http://127.0.0.1:8000/docs`)
+  - Web Application (React / Vite): `http://localhost:3000`
+
+---
+
+## Task: Desktop Layout Whitespace Fix for Portal Views (Farmer, Logistics, Dark Store, Admin) — 2026-11-01
+
+**What was done:**
+- Diagnosed desktop widescreen layout whitespace bug identified in user screenshot `uploaded_media_1793520764342.jpg`.
+- Identified root cause: Main content container `<main>` across all 4 portal roles (`Farmer`, `Logistics`, `Dark Store`, `Admin`) was constrained with `max-w-7xl` (`80rem = 1280px`). On desktop screens wider than 1280px + 256px sidebar (e.g. 1080p, 1440p), the content stopped at 1280px while the sticky header and top nav stretched full width, leaving an empty cream whitespace margin on the right side.
+- Replaced `max-w-7xl` with responsive full-width layout (`w-full md:w-[calc(100%-16rem)] md:ml-64 px-4 sm:px-6 lg:px-8`) in:
+  - `frontend/src/App.jsx` (Farmer and Logistics `<main>` containers)
+  - `frontend/src/Dark_Store/DarkStoreApp.jsx` (Dark Store `<main>` container)
+  - `frontend/src/components/AdminPortalView.jsx` (Master Admin `<main>` container)
+  - `frontend/src/components/PresenterWalkthroughBanner.jsx` (Interactive demo step banner)
+  - `frontend/src/components/GodModeHub.jsx` (God Mode walkthrough banner)
+- Verified with `npm run build` in `frontend/`: Compiled cleanly in 9.66s with 0 errors.
+
+**Files changed:**
+- `frontend/src/App.jsx`
+- `frontend/src/Dark_Store/DarkStoreApp.jsx`
+- `frontend/src/components/AdminPortalView.jsx`
+- `frontend/src/components/PresenterWalkthroughBanner.jsx`
+- `frontend/src/components/GodModeHub.jsx`
+- `MEMORY.md`
+
+**Verified:**
+- `npm run build`: Success (`built in 9.66s`).
+- Vite HMR updated running dev server automatically.
