@@ -3721,3 +3721,32 @@ pm run build passed cleanly with 0 errors.
 - `npm run build`: Compiled 1,821 modules cleanly in 10.50s with 0 errors.
 - Verified logo asset in `frontend/public/images/agrichain_logo.png` (1.13 MB).
 - Verified splash screen lifecycle: 5.5s duration, role context switching, smooth logo fading and progress bar.
+
+
+---
+
+## [Redesigned Seamless Splash Screen: Cropped Logo, Botanical Leafy Loader & Agricultural Quote] — 2026-11-01
+
+**What was done:**
+- Redesigned the splash screen to meet user feedback:
+  - Removed all card enclosures, rectangular borders, and background box artifacts around the logo.
+  - Automatically cropped extraneous whitespace from `Agrichain_Logo.png` (from 2172x724 down to 1388x538 content bounding box) and converted white pixels to transparent alpha channels with antialiasing (`agrichain_logo_clean.png` and `agrichain_logo_transparent.png`).
+  - Seamlessly merged the logo directly into the `#FAF7F0` canvas using `mix-blend-multiply` and large centered typography.
+  - Removed clutter (no redundant text, no mainnet chips, no card boxes).
+  - Added an inspiring agricultural line centered beneath the logo:
+    *“From sacred soil to every home — honoring the hands that feed the nation.”*
+  - Replaced the generic progress line with a custom **Leafy Loading Line**:
+    - Slender green botanical gradient track (`from-[#4D7C26] via-[#6B9E3A] to-[#88B84D]`).
+    - Traveling sprout icon (`🌱`) that dynamically glides along the tip of the line as it fills from 0% to 100%.
+    - Caption: `🌿 Nurturing from soil to plate... {progress}%`.
+  - Tuned duration to 5.2s with smooth entry fade-in and smooth 600ms exit fade-out.
+
+**Files changed:**
+- `frontend/src/components/SplashScreen.jsx`: Minimalist redesign with centered seamless logo, agricultural quote, and leafy progress line.
+- `frontend/public/images/agrichain_logo_clean.png`: Cropped transparent logo without whitespace bounding box.
+- `frontend/public/images/agrichain_logo.png`: Replaced with cropped transparent logo.
+- `MEMORY.md`: Appended task entry.
+
+**Verified:**
+- `npm run build`: Compiled 1,821 modules cleanly in 12.72s with 0 errors.
+- Verified visual output: Logo is large, sharp, centered, seamlessly merged into canvas with zero box borders, accompanied by an agricultural quote and a leafy loading line with animated sprout.
