@@ -218,8 +218,8 @@ export const LoginModal = ({
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-[#E6E1D5] flex items-center justify-between bg-white/60">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#354424] text-white flex items-center justify-center shadow-xs">
-              <KeyRound className="w-5 h-5 text-[#FAF7F0]" />
+            <div className="w-11 h-11 rounded-2xl bg-white border border-[#E6E1D5] p-1 flex items-center justify-center shadow-xs overflow-hidden flex-shrink-0">
+              <img src="/images/agrichain_logo.png" alt="AgriChain Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h2 className="text-lg font-black text-[#2D2620] leading-tight">

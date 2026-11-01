@@ -3678,3 +3678,46 @@ pm run build passed cleanly with 0 errors.
 - `npm run build`: Compiled 1,820 modules cleanly in 7.28s with 0 errors.
 - `pytest tests/`: 18/18 tests passed in 24.22s.
 - `npx hardhat test`: 22/22 tests passed in 1.0s.
+
+
+---
+
+## [Brand Logo Integration & 5.5s Animated Role Transition Splash Screen] — 2026-11-01
+
+**What was done:**
+- Integrated official brand logo (`Agrichain_Logo.png`) across the entire frontend:
+  - Copied high-resolution logo asset to `frontend/public/images/agrichain_logo.png`.
+  - Added logo as web app browser favicon in `frontend/index.html` and updated title to `AgriChain - Decentralized Agricultural Traceability & AI Trust Layer`.
+  - Embedded logo in the persistent top header navigation bar (`App.jsx`) next to the active role indicator.
+  - Replaced generic placeholder icons with the official logo in all four role sidebars:
+    - Farmer Sidebar (`Farmer/components/Sidebar.jsx`)
+    - Logistics Sidebar (`Logistic_Partner/components/LogisticSidebar.jsx`)
+    - Dark Store Sidebar (`Dark_Store/components/DarkStoreSidebar.jsx`)
+    - Admin Sidebar (`components/AdminSidebar.jsx`)
+  - Added logo to the authentication persona picker header in `components/LoginModal.jsx`.
+- Implemented full-screen animated 5.5-second Splash Screen (`frontend/src/components/SplashScreen.jsx`):
+  - Displays automatically on initial project open and whenever switching between roles (`farmer`, `logistics`, `darkstore`, `consumer`, `admin`).
+  - Features smooth logo fading and pulsing animation:
+    - Initial smooth fade-in and scale-in.
+    - Gentle glowing aura / breathing pulse during loading.
+    - Graceful fade-out at 4.9s before transitioning into the active portal at 5.5s.
+  - Shows dynamic role indicator and role-specific subtitle explaining the portal's decentralized purpose.
+  - Features an animated 0-100% progress bar with rotating decentralized network status messages.
+  - Includes a subtle "Skip" button for evaluator convenience during fast navigation.
+
+**Files changed:**
+- `frontend/public/images/agrichain_logo.png`: Brand logo asset.
+- `frontend/index.html`: Browser favicon and title.
+- `frontend/src/components/SplashScreen.jsx`: 5.5s animated splash screen with fading logo.
+- `frontend/src/App.jsx`: Splash screen triggers on open and role changes, logo in top header.
+- `frontend/src/Farmer/components/Sidebar.jsx`: Official logo in sidebar brand header.
+- `frontend/src/Logistic_Partner/components/LogisticSidebar.jsx`: Official logo in sidebar brand header.
+- `frontend/src/Dark_Store/components/DarkStoreSidebar.jsx`: Official logo in sidebar brand header.
+- `frontend/src/components/AdminSidebar.jsx`: Official logo in sidebar brand header.
+- `frontend/src/components/LoginModal.jsx`: Official logo in authentication modal header.
+- `MEMORY.md`: Appended task entry.
+
+**Verified:**
+- `npm run build`: Compiled 1,821 modules cleanly in 10.50s with 0 errors.
+- Verified logo asset in `frontend/public/images/agrichain_logo.png` (1.13 MB).
+- Verified splash screen lifecycle: 5.5s duration, role context switching, smooth logo fading and progress bar.

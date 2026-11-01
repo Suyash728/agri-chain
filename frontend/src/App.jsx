@@ -60,6 +60,7 @@ import { ShowcaseDrawer } from './components/ShowcaseDrawer';
 import { PresenterWalkthroughBanner } from './components/PresenterWalkthroughBanner';
 import { GodModeHub } from './components/GodModeHub';
 import { LoginModal } from './components/LoginModal';
+import { SplashScreen } from './components/SplashScreen';
 
 export default function App() {
   // Read URL query parameters and localStorage to initialize state
@@ -140,6 +141,10 @@ export default function App() {
   };
 
   const initialUrlState = getInitialState();
+
+  // Splash Screen State
+  const [showSplash, setShowSplash] = useState(true);
+  const [splashRole, setSplashRole] = useState(initialUrlState.role || 'farmer');
 
   // Role Portal State: 'farmer', 'logistics', 'darkstore', 'consumer', or 'admin'
   const [activeRole, setActiveRole] = useState(initialUrlState.role);
@@ -310,10 +315,14 @@ export default function App() {
   };
 
   const handleSwitchRole = (newRole) => {
-    setActiveRole(newRole);
-    try {
-      localStorage.setItem('agrichain_active_role', newRole);
-    } catch (_) {}
+    if (newRole !== activeRole) {
+      setSplashRole(newRole);
+      setShowSplash(true);
+      setActiveRole(newRole);
+      try {
+        localStorage.setItem('agrichain_active_role', newRole);
+      } catch (_) {}
+    }
   };
 
   const handleSelectFarmerTab = (tabId) => {
@@ -476,16 +485,21 @@ export default function App() {
         <header className={`sticky top-0 z-40 bg-[#FAF7F0]/95 backdrop-blur-md border-b border-[#E6E1D5] px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3 shadow-2xs transition-all ${
           activeRole === 'consumer' ? 'w-full ml-0' : 'w-full md:w-[calc(100%-16rem)] md:ml-64'
         }`}>
-          {/* Left: Active Portal Indicator */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#354424] animate-pulse" />
-            <span className="text-xs font-black text-[#2D2620] uppercase tracking-wider hidden sm:inline">
-              {activeRole === 'logistics' && '🚛 SafeXpress Logistics'}
-              {activeRole === 'farmer' && '🌿 Farmer Portal'}
-              {activeRole === 'darkstore' && '🏬 Dark Store Hub'}
-              {activeRole === 'consumer' && '🛒 Consumer Marketplace'}
-              {activeRole === 'admin' && '⚡ Master Governance'}
-            </span>
+          {/* Left: Logo & Active Portal Indicator */}
+          <div className="flex items-center gap-2.5 flex-shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-white border border-[#E6E1D5] p-1 flex items-center justify-center shadow-2xs overflow-hidden flex-shrink-0">
+              <img src="/images/agrichain_logo.png" alt="AgriChain Logo" className="w-full h-full object-contain" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#354424] animate-pulse" />
+              <span className="text-xs font-black text-[#2D2620] uppercase tracking-wider hidden sm:inline">
+                {activeRole === 'logistics' && '🚛 SafeXpress Logistics'}
+                {activeRole === 'farmer' && '🌿 Farmer Portal'}
+                {activeRole === 'darkstore' && '🏬 Dark Store Hub'}
+                {activeRole === 'consumer' && '🛒 Consumer Marketplace'}
+                {activeRole === 'admin' && '⚡ Master Governance'}
+              </span>
+            </div>
           </div>
 
           {/* Right: Role Switcher & Web3 Wallet Control Bar */}
@@ -1048,6 +1062,13 @@ export default function App() {
         }}
       />
 
+      {/* Full-Screen 5.5s Animated Splash Screen with Fading Logo */}
+      {showSplash && (
+        <SplashScreen 
+          role={splashRole} 
+          onFinish={() => setShowSplash(false)} 
+        />
+      )}
 
     </div>
   </WalletProvider>

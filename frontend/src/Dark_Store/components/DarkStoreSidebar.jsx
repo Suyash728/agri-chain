@@ -32,8 +32,8 @@ export const DarkStoreSidebar = ({ currentTab, onSelectTab, onLogout }) => {
       <div className="p-4 sm:p-5 flex flex-col gap-2 overflow-y-auto relative z-10 [ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* App Branding Header */}
         <div className="flex items-center gap-3 px-2 pt-1 mb-2">
-          <div className="w-10 h-10 rounded-full bg-[#3D4E2A] flex items-center justify-center text-white shadow-xs">
-            <Sprout className="w-5 h-5 text-[#FAF7F0]" />
+          <div className="w-10 h-10 rounded-xl bg-white border border-[#B5BEA3] p-1 flex items-center justify-center shadow-xs overflow-hidden flex-shrink-0">
+            <img src="/images/agrichain_logo.png" alt="AgriChain Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="font-extrabold text-xl text-[#2E3A1F] tracking-tight leading-none">
