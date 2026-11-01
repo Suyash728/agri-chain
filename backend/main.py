@@ -2222,8 +2222,102 @@ def list_all_batches():
                 "current_holder": current_holder,
                 "quantity": qty_str,
                 "price_inr": price_inr,
+                "farmer_price_inr": (ev["price_paise"] / 100.0) if (ev and ev["state"] == "REGISTERED" and ev["price_paise"]) else price_inr,
             })
         return result
+    finally:
+        conn.close()
+
+
+@app.get("/batches/{batch_id}")
+def get_batch_by_id(batch_id: str):
+    """Return single batch with current status, farmer base price, latest price, and suggested stage prices."""
+    conn = get_connection()
+    try:
+        r = conn.execute("SELECT * FROM batches WHERE batch_id = ?", (batch_id,)).fetchone()
+        if not r:
+            raise HTTPException(status_code=404, detail=f"Batch {batch_id} not found")
+
+        raw_farm = r["origin_farm"] or ""
+        clean_farm = raw_farm.split("||")[0].strip()
+
+        # Parse quantity and farmer price from metadata
+        qty_val = 0.5
+        farmer_meta_price = None
+        if "||" in raw_farm:
+            for part in raw_farm.split("||"):
+                if part.startswith("qty="):
+                    try:
+                        qty_val = float(part.replace("qty=", "").strip())
+                    except Exception:
+                        pass
+                elif part.startswith("price="):
+                    try:
+                        farmer_meta_price = float(part.replace("price=", "").strip())
+                    except Exception:
+                        pass
+
+        qty_str = f"{int(qty_val * 1000)} kg" if qty_val < 10 else f"{int(qty_val)} kg"
+
+        events = conn.execute(
+            "SELECT * FROM custody_events WHERE batch_id = ? ORDER BY id ASC",
+            (batch_id,)
+        ).fetchall()
+
+        farmer_price_inr = farmer_meta_price or 2500.0
+        latest_price_inr = farmer_price_inr
+        current_state = "REGISTERED"
+        current_holder = r["farmer_name"]
+
+        events_list = []
+        for ev in events:
+            price_val = (ev["price_paise"] / 100.0) if ev["price_paise"] else latest_price_inr
+            if ev["state"] == "REGISTERED" and ev["price_paise"]:
+                farmer_price_inr = price_val
+            latest_price_inr = price_val
+            current_state = ev["state"]
+            current_holder = ev["to_holder"] or current_holder
+            events_list.append({
+                "id": ev["id"],
+                "state": ev["state"],
+                "from_holder": ev["from_holder"],
+                "to_holder": ev["to_holder"],
+                "price_inr": price_val,
+                "price_paise": ev["price_paise"],
+                "tx_hash": ev["tx_hash"],
+                "occurred_at": str(ev["occurred_at"]) if ev["occurred_at"] else None,
+            })
+
+        # Calculate logical suggested markup for each supply chain stage:
+        # Logistics: Farmer MRP + 15% freight (min 500, rounded to nearest 50)
+        logistics_markup = max(500, round((farmer_price_inr * 0.15) / 50) * 50)
+        suggested_logistics_price = round(farmer_price_inr + logistics_markup)
+
+        # Dark Store: Latest Price (Logistics) + 12% cooling/storage (min 400, rounded to nearest 50)
+        darkstore_markup = max(400, round((latest_price_inr * 0.12) / 50) * 50)
+        suggested_darkstore_price = round(latest_price_inr + darkstore_markup)
+
+        # Retail: Latest Price (Dark Store) + 18% consumer delivery (min 600, rounded to nearest 50)
+        retail_markup = max(600, round((latest_price_inr * 0.18) / 50) * 50)
+        suggested_retail_price = round(latest_price_inr + retail_markup)
+
+        return {
+            "batch_id": r["batch_id"],
+            "crop_name": r["crop_name"],
+            "farmer_name": r["farmer_name"],
+            "origin_farm": clean_farm,
+            "harvest_date": r["harvest_date"],
+            "quantity": qty_str,
+            "quantity_val": qty_val,
+            "current_state": current_state,
+            "current_holder": current_holder,
+            "farmer_price_inr": farmer_price_inr,
+            "latest_price_inr": latest_price_inr,
+            "suggested_logistics_price_inr": suggested_logistics_price,
+            "suggested_darkstore_price_inr": suggested_darkstore_price,
+            "suggested_retail_price_inr": suggested_retail_price,
+            "events": events_list,
+        }
     finally:
         conn.close()
 
@@ -2917,6 +3011,7 @@ def get_logistics_orders():
                 "badgeClass": badge,
                 "harvestDate": r["harvest_date"],
                 "price": price_str,
+                "priceInr": price,
             })
         return orders
     finally:

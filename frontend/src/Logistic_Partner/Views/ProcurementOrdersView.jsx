@@ -32,6 +32,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
   const [isAcceptShipmentOpen, setIsAcceptShipmentOpen] = useState(false);
   const [isHandoffOpen, setIsHandoffOpen] = useState(false);
   const [activeCustodyBatchId, setActiveCustodyBatchId] = useState('BATCH-PO-2026-001');
+  const [activeFarmerPrice, setActiveFarmerPrice] = useState(null);
 
   // Modal / View States
   const [activeModal, setActiveModal] = useState(null); // 'all-orders' | 'all-transactions' | 'all-activity' | null
@@ -78,6 +79,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
             badge: d.badgeClass,
             date: d.harvestDate,
             price: d.price,
+            priceInr: d.priceInr || (d.price ? parseFloat(String(d.price).replace(/[^\d.]/g, '')) : null),
             isLiveBatch: true,
           }));
           setOrderList(mapped);
@@ -239,6 +241,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                   onClick={() => {
                     const targetBatchId = orderList.length > 0 ? orderList[0].id : '';
                     setActiveCustodyBatchId(targetBatchId);
+                    setActiveFarmerPrice(orderList.length > 0 ? (orderList[0].priceInr || null) : null);
                     setIsAcceptShipmentOpen(true);
                   }}
                   className="px-2.5 py-1.5 rounded-xl bg-[#354424] text-white text-[11px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
@@ -301,6 +304,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
                             <button
                               onClick={() => {
                                 setActiveCustodyBatchId(ord.id);
+                                setActiveFarmerPrice(ord.priceInr || null);
                                 setIsAcceptShipmentOpen(true);
                               }}
                               className="px-2.5 py-1 rounded-lg bg-[#354424] text-white text-[10px] font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs whitespace-nowrap"
@@ -771,6 +775,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
         isOpen={isAcceptShipmentOpen}
         onClose={() => setIsAcceptShipmentOpen(false)}
         defaultBatchId={activeCustodyBatchId}
+        initialFarmerPrice={activeFarmerPrice}
         onSuccess={() => fetchOrders()}
       />
 

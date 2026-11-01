@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, ClipboardCheck, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2, IndianRupee, ThermometerSnowflake } from 'lucide-react';
+import { X, ClipboardCheck, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2, IndianRupee, ThermometerSnowflake, Sparkles } from 'lucide-react';
 
 export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '' }) => {
   const [batchId, setBatchId] = useState(defaultBatchId);
   const [availableBatches, setAvailableBatches] = useState([]);
   const [retailerHolder, setRetailerHolder] = useState('QuickMart Fresh Retail Outlet');
-  const [receivedPriceInr, setReceivedPriceInr] = useState(1850);
+  const [basePrice, setBasePrice] = useState(0);
+  const [receivedPriceInr, setReceivedPriceInr] = useState(0);
   const [qualityGrade, setQualityGrade] = useState('Grade A (Premium Organic)');
   const [tempChecked, setTempChecked] = useState(4.2);
   const [sealIntact, setSealIntact] = useState(true);
+  const [batchDetails, setBatchDetails] = useState(null);
+  const [fetchingBatch, setFetchingBatch] = useState(false);
   const [loading, setLoading] = useState(false);
   const [txHash, setTxHash] = useState(null);
   const [error, setError] = useState(null);
@@ -19,7 +22,7 @@ export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setAvailableBatches(data);
-          if (!defaultBatchId) {
+          if (!defaultBatchId && !batchId) {
             setBatchId(data[0].batch_id);
           }
         }
@@ -30,6 +33,32 @@ export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
   useEffect(() => {
     if (defaultBatchId) setBatchId(defaultBatchId);
   }, [defaultBatchId, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !batchId.trim()) return;
+
+    let isMounted = true;
+    setFetchingBatch(true);
+
+    fetch(`http://localhost:8000/batches/${batchId.trim().toUpperCase()}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted || !data) return;
+        setBatchDetails(data);
+        const bPrice = Number(data.latest_price_inr) || Number(data.farmer_price_inr) || 0;
+        setBasePrice(bPrice);
+        const suggested = Number(data.suggested_darkstore_price_inr) || (bPrice > 0 ? Math.round(bPrice + 500) : 1850);
+        setReceivedPriceInr(suggested);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setFetchingBatch(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [batchId, isOpen]);
 
   if (!isOpen) return null;
 
@@ -68,6 +97,9 @@ export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
       setLoading(false);
     }
   };
+
+  const markupAmount = Math.max(0, receivedPriceInr - basePrice);
+  const markupPercent = basePrice > 0 ? ((markupAmount / basePrice) * 100).toFixed(0) : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
@@ -123,17 +155,24 @@ export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
             <form onSubmit={handleConfirmGRN} className="flex flex-col gap-3">
               {/* Batch ID */}
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-[#2D2620]">Inbound Batch ID</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-[#2D2620]">Inbound Batch ID</label>
+                  {fetchingBatch && (
+                    <span className="text-[10px] text-[#8C8275] flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Fetching batch...
+                    </span>
+                  )}
+                </div>
                 {availableBatches.length > 0 ? (
                   <select
                     value={batchId}
                     onChange={(e) => setBatchId(e.target.value)}
                     required
-                    className="px-3 py-2 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl text-xs font-mono font-bold text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                    className="px-3 py-2 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl text-xs font-mono font-bold text-[#2D2620] focus:outline-none focus:border-[#354424] cursor-pointer"
                   >
                     {availableBatches.map((b) => (
                       <option key={b.batch_id} value={b.batch_id}>
-                        {b.batch_id} ({b.crop_name})
+                        {b.batch_id} ({b.crop_name} • {b.quantity})
                       </option>
                     ))}
                   </select>
@@ -146,6 +185,12 @@ export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
                     required
                     className="px-3 py-2 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl text-xs font-mono font-bold text-[#2D2620] focus:outline-none focus:border-[#354424]"
                   />
+                )}
+                {batchDetails && (
+                  <div className="text-[10px] text-[#556B2F] font-semibold bg-[#EBF3E8] px-2.5 py-1 rounded-lg border border-[#C2E0B8] flex items-center justify-between">
+                    <span>{batchDetails.crop_name} ({batchDetails.quantity})</span>
+                    <span>State: {batchDetails.current_state}</span>
+                  </div>
                 )}
               </div>
 
@@ -161,17 +206,106 @@ export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
                 />
               </div>
 
+              {/* Quality & Inspection verification */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-[#2D2620]">Quality Grade</label>
+                  <select
+                    value={qualityGrade}
+                    onChange={(e) => setQualityGrade(e.target.value)}
+                    className="px-2.5 py-1.5 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl text-xs font-semibold text-[#2D2620] focus:outline-none focus:border-[#354424] cursor-pointer"
+                  >
+                    <option value="Grade A (Premium Organic)">Grade A (Premium)</option>
+                    <option value="Grade B (Acceptable)">Grade B (Standard)</option>
+                    <option value="Grade C (Clearance)">Grade C (Discounted)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-[#2D2620] flex items-center gap-1">
+                    <ThermometerSnowflake className="w-3 h-3 text-[#2B6CB0]" />
+                    <span>Arrival Temp (°C)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={tempChecked}
+                    onChange={(e) => setTempChecked(parseFloat(e.target.value) || 0)}
+                    required
+                    className="px-2.5 py-1.5 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl text-xs font-bold text-[#2D2620] focus:outline-none focus:border-[#354424]"
+                  />
+                </div>
+              </div>
+
               {/* Price Capture */}
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-bold text-[#2D2620] flex items-center justify-between">
                   <span>Inbound Retail Acquisition Price (₹ INR)</span>
-                  <span className="text-[10px] text-[#666057] font-semibold">Step 4 Price Trail</span>
+                  <span className="text-[10px] text-[#556B2F] font-bold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Inherits Logistics Rate
+                  </span>
                 </label>
+
+                {/* Dynamic Price Breakdown Card */}
+                <div className="p-3 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl flex flex-col gap-2 text-xs">
+                  <div className="flex items-center justify-between text-[#666057]">
+                    <span className="font-medium">Inbound Delivery Base:</span>
+                    <span className="font-extrabold text-[#2D2620]">
+                      ₹ {basePrice > 0 ? Number(basePrice).toLocaleString('en-IN') : '...'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[#556B2F]">
+                    <span className="font-medium">Dark Store Cold-Hub & Intake Margin:</span>
+                    <span className="font-extrabold">
+                      + ₹ {markupAmount.toLocaleString('en-IN')}
+                      {basePrice > 0 && (
+                        <span className="text-[10px] ml-1 font-semibold opacity-85">
+                          ({markupPercent}%)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Quick Markup Adjustments */}
+                  <div className="flex items-center gap-1.5 pt-1.5 border-t border-[#E6E1D5]/70 flex-wrap">
+                    <span className="text-[10px] text-[#786E65] font-bold">Quick Add:</span>
+                    <button
+                      type="button"
+                      onClick={() => setReceivedPriceInr(Math.round(basePrice + 400))}
+                      className="px-2 py-0.5 rounded-md bg-white border border-[#E6E1D5] text-[10px] font-bold text-[#2D2620] hover:bg-[#E6E1D5] cursor-pointer transition-colors"
+                    >
+                      +₹400
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReceivedPriceInr(Math.round(basePrice + 600))}
+                      className="px-2 py-0.5 rounded-md bg-white border border-[#E6E1D5] text-[10px] font-bold text-[#2D2620] hover:bg-[#E6E1D5] cursor-pointer transition-colors"
+                    >
+                      +₹600
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReceivedPriceInr(Math.round(basePrice * 1.10))}
+                      className="px-2 py-0.5 rounded-md bg-white border border-[#E6E1D5] text-[10px] font-bold text-[#2D2620] hover:bg-[#E6E1D5] cursor-pointer transition-colors"
+                    >
+                      +10%
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReceivedPriceInr(Math.round(basePrice * 1.15))}
+                      className="px-2 py-0.5 rounded-md bg-white border border-[#E6E1D5] text-[10px] font-bold text-[#2D2620] hover:bg-[#E6E1D5] cursor-pointer transition-colors"
+                    >
+                      +15%
+                    </button>
+                  </div>
+                </div>
+
                 <div className="relative">
                   <IndianRupee className="w-4 h-4 text-[#666057] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="number"
-                    min="0"
+                    min={basePrice || 0}
                     step="10"
                     value={receivedPriceInr}
                     onChange={(e) => setReceivedPriceInr(parseFloat(e.target.value) || 0)}
@@ -180,46 +314,6 @@ export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
                   />
                 </div>
               </div>
-
-              {/* Inspection Details */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] font-bold text-[#2D2620]">Arrival Temp (°C)</label>
-                  <div className="relative">
-                    <ThermometerSnowflake className="w-3.5 h-3.5 text-[#556B2F] absolute left-2.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="number"
-                      step="0.1"
-                      value={tempChecked}
-                      onChange={(e) => setTempChecked(parseFloat(e.target.value) || 0)}
-                      className="w-full pl-8 pr-2 py-1.5 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl text-xs font-bold text-[#2D2620]"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] font-bold text-[#2D2620]">Quality Grade</label>
-                  <select
-                    value={qualityGrade}
-                    onChange={(e) => setQualityGrade(e.target.value)}
-                    className="w-full px-2 py-1.5 bg-[#FAF7F0] border border-[#E6E1D5] rounded-xl text-xs font-semibold text-[#2D2620]"
-                  >
-                    <option value="Grade A (Premium Organic)">Grade A (Organic)</option>
-                    <option value="Grade B (Standard)">Grade B (Standard)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Seal check */}
-              <label className="flex items-center gap-2 p-2 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] text-xs font-semibold text-[#2D2620] cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={sealIntact}
-                  onChange={(e) => setSealIntact(e.target.checked)}
-                  className="accent-[#354424]"
-                />
-                <span>IoT Cold-Chain & Tamper-Evident Seal Verified</span>
-              </label>
 
               {error && (
                 <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
@@ -236,12 +330,12 @@ export const ConfirmGRNModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
                 {loading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Signing On-Chain GRN...</span>
+                    <span>Anchoring GRN to Blockchain...</span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    <span>Confirm GRN & Move to AT_RETAIL</span>
+                    <span>Confirm & Anchor GRN</span>
                   </>
                 )}
               </button>

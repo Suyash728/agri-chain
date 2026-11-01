@@ -3635,3 +3635,46 @@ pm run build passed cleanly with 0 errors.
 - `pytest tests/`: 18/18 passed in 17.38s.
 - `npx hardhat test`: 22/22 passed in 882ms.
 - `npm run build`: Compiled 1,820 modules cleanly in 5.16s with 0 errors.
+
+
+---
+
+## [Dynamic Custody Price Inheritance Across Supply Chain Modals] — 2026-11-01
+
+**What was done:**
+- Resolved static default price issue (`₹1,200`) across supply chain custody transitions:
+  - Eliminated hardcoded price initializations in `AcceptShipmentModal`, `HandoffRetailerModal`, `ConfirmGRNModal`, and `RecordSaleModal`.
+  - Implemented dynamic price inheritance: each actor automatically inherits the cumulative price from the preceding stage and applies their domain-specific markup:
+    - Logistics Acceptance (`AcceptShipmentModal`): Automatically inherits the registered farmer farm-gate base price (MRP) and suggests a +15% / +₹600 reefer freight markup.
+    - Logistics Handoff (`HandoffRetailerModal`): Inherits the In-Transit logistics rate and adds wholesale transport & handling margin (+12% / +₹400-₹600).
+    - Dark Store GRN Intake (`ConfirmGRNModal`): Inherits the inbound delivery rate from logistics and adds cold storage quality intake margin (+10% / +₹400-₹600).
+    - Dark Store Consumer Sale (`RecordSaleModal`): Inherits the warehouse intake rate and adds retail packaging & doorstep delivery margin (+18% / +₹600-₹1,000).
+- Created `GET /batches/{batch_id}` endpoint in `backend/main.py` returning:
+  - `farmer_price_inr`, `latest_price_inr`, `current_state`, `current_holder`.
+  - Recommended stage prices: `suggested_logistics_price_inr`, `suggested_darkstore_price_inr`, `suggested_retail_price_inr`.
+  - Full on-chain custody event history.
+- Enhanced modal UIs:
+  - Added transparent price breakdown cards showing previous stage base price, calculated added markup amount & percentage, and resulting custody value.
+  - Added one-click quick markup adjustment chips (`+₹500`, `+₹800`, `+15%`, `+20%`).
+  - Added batch metadata badge confirming crop name, lot weight, origin farm, and current on-chain state.
+
+**Files changed:**
+- `backend/main.py`: Added `GET /batches/{batch_id}` and exposed `priceInr` on `/logistics/orders` and `farmer_price_inr` on `/batches`.
+- `frontend/src/Logistic_Partner/Modals/AcceptShipmentModal.jsx`: Dynamic inheritance from farmer registered price, breakdown card, and quick chips.
+- `frontend/src/Logistic_Partner/Modals/HandoffRetailerModal.jsx`: Dynamic inheritance from in-transit price with wholesale markup.
+- `frontend/src/Dark_Store/Modals/ConfirmGRNModal.jsx`: Dynamic inheritance from logistics delivery with cold-hub intake markup.
+- `frontend/src/Dark_Store/Modals/RecordSaleModal.jsx`: Dynamic inheritance from storage base with retail/delivery margin.
+- `frontend/src/Logistic_Partner/Views/ProcurementOrdersView.jsx`: Passed initial farmer price from order row to `AcceptShipmentModal`.
+- `MEMORY.md`: Appended task entry.
+
+**Verified:**
+- `GET /batches/QTRA-1793506272`: Verified returns `farmer_price_inr: 2500.0`, `suggested_logistics_price_inr: 3000` (instead of old hardcoded `1200`).
+- End-to-end lifecycle verification with fresh batch `BATCH-INHERIT-QA1`:
+  - Registered batch with farmer price ₹3,500.
+  - Logistics modal inherited ₹3,500 and accepted custody at ₹4,000 (+₹500 freight).
+  - Dark store modal inherited ₹4,000 and confirmed GRN at ₹4,500 (+₹500 intake).
+  - Sale modal inherited ₹4,500 and recorded consumer sale at ₹5,300 (+₹800 retail).
+  - Traceability verified monotonic progression: ₹14.00/kg → ₹16.00/kg → ₹18.40/kg → ₹24.90/kg.
+- `npm run build`: Compiled 1,820 modules cleanly in 7.28s with 0 errors.
+- `pytest tests/`: 18/18 tests passed in 24.22s.
+- `npx hardhat test`: 22/22 tests passed in 1.0s.
