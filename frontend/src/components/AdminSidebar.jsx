@@ -22,19 +22,16 @@ export const AdminSidebar = ({ currentTab = 'all', onSelectTab, onLogout }) => {
     <aside className="w-64 bg-[#C2CBAD] min-h-screen flex flex-col justify-between border-r border-[#B5BEA3] fixed left-0 top-0 bottom-0 z-30 hidden md:flex select-none overflow-hidden text-[#2E3A1F]">
       {/* Upper Navigation Section */}
       <div className="p-4 sm:p-5 flex flex-col gap-2.5 overflow-y-auto relative z-10 custom-scrollbar">
-        {/* App Branding Header */}
-        <div className="flex items-center gap-3 px-2 pt-1 mb-1">
-          <div className="w-10 h-10 rounded-xl bg-white border border-[#B5BEA3] p-1 flex items-center justify-center shadow-xs overflow-hidden flex-shrink-0">
-            <img src="/images/agrichain_logo.png" alt="AgriChain Logo" className="w-full h-full object-contain" />
-          </div>
-          <div>
-            <h1 className="font-extrabold text-xl text-[#2E3A1F] tracking-tight leading-none">
-              AgriChain
-            </h1>
-            <span className="text-xs font-bold text-[#556B2F] tracking-wider uppercase block mt-0.5">
-              Master Admin
-            </span>
-          </div>
+        {/* App Branding Header - Seamless Merged Logo & Role */}
+        <div className="px-2 pt-1 mb-1 flex flex-col gap-1">
+          <img 
+            src="/images/agrichain_logo_clean.png" 
+            alt="AgriChain Logo" 
+            className="w-36 h-auto object-contain mix-blend-multiply" 
+          />
+          <span className="text-xs font-black text-[#2E3A1F] tracking-widest uppercase pl-0.5">
+            Master Admin
+          </span>
         </div>
 
         {/* Navigation Links */}

@@ -3750,3 +3750,35 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `npm run build`: Compiled 1,821 modules cleanly in 12.72s with 0 errors.
 - Verified visual output: Logo is large, sharp, centered, seamlessly merged into canvas with zero box borders, accompanied by an agricultural quote and a leafy loading line with animated sprout.
+
+
+---
+
+## [Removed Role-Switch Splash Screen & Seamless Sidebar Brand Header] — 2026-11-01
+
+**What was done:**
+- Removed splash screen execution during role switching:
+  - Updated `handleSwitchRole` in `frontend/src/App.jsx` to switch roles instantly without triggering the 5-second splash screen.
+  - The 5.2s animated splash screen now runs exclusively once upon initial application load.
+- Redesigned the sidebar branding across all four role portals:
+  - Eliminated the white card container and redundant text `<h1>AgriChain</h1>` shown in user screenshot.
+  - Placed the clean transparent logo directly onto the `#C2CBAD` sidebar canvas with `mix-blend-multiply`, completely merging with the sidebar background.
+  - Displayed only the official logo and the active role of the opened page underneath:
+    - Farmer Sidebar (`Farmer/components/Sidebar.jsx`): Logo + `FARMER`
+    - Logistics Sidebar (`Logistic_Partner/components/LogisticSidebar.jsx`): Logo + `LOGISTICS`
+    - Dark Store Sidebar (`Dark_Store/components/DarkStoreSidebar.jsx`): Logo + `DARK STORE`
+    - Admin Sidebar (`components/AdminSidebar.jsx`): Logo + `MASTER ADMIN`
+- Updated the top navbar brand icon in `App.jsx` to use the seamless transparent merged logo without the white container box.
+
+**Files changed:**
+- `frontend/src/App.jsx`: Removed splash screen trigger on role change; merged top navbar logo.
+- `frontend/src/Farmer/components/Sidebar.jsx`: Seamless merged logo + `FARMER` role text.
+- `frontend/src/Logistic_Partner/components/LogisticSidebar.jsx`: Seamless merged logo + `LOGISTICS` role text.
+- `frontend/src/Dark_Store/components/DarkStoreSidebar.jsx`: Seamless merged logo + `DARK STORE` role text.
+- `frontend/src/components/AdminSidebar.jsx`: Seamless merged logo + `MASTER ADMIN` role text.
+- `MEMORY.md`: Appended task entry.
+
+**Verified:**
+- `npm run build`: Compiled 1,821 modules cleanly in 10.09s with 0 errors.
+- Verified role switching: Switching between Farmer, Logistics, Dark Store, Consumer, Admin happens instantly without intermediate splash screens.
+- Verified sidebar: Logo is seamlessly merged with no white card borders, displaying logo + active role.

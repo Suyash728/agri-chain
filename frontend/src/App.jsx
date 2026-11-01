@@ -316,8 +316,6 @@ export default function App() {
 
   const handleSwitchRole = (newRole) => {
     if (newRole !== activeRole) {
-      setSplashRole(newRole);
-      setShowSplash(true);
       setActiveRole(newRole);
       try {
         localStorage.setItem('agrichain_active_role', newRole);
@@ -485,19 +483,21 @@ export default function App() {
         <header className={`sticky top-0 z-40 bg-[#FAF7F0]/95 backdrop-blur-md border-b border-[#E6E1D5] px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3 shadow-2xs transition-all ${
           activeRole === 'consumer' ? 'w-full ml-0' : 'w-full md:w-[calc(100%-16rem)] md:ml-64'
         }`}>
-          {/* Left: Logo & Active Portal Indicator */}
-          <div className="flex items-center gap-2.5 flex-shrink-0">
-            <div className="w-8 h-8 rounded-xl bg-white border border-[#E6E1D5] p-1 flex items-center justify-center shadow-2xs overflow-hidden flex-shrink-0">
-              <img src="/images/agrichain_logo.png" alt="AgriChain Logo" className="w-full h-full object-contain" />
-            </div>
+          {/* Left: Seamless Merged Logo & Active Portal Indicator */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <img 
+              src="/images/agrichain_logo_clean.png" 
+              alt="AgriChain Logo" 
+              className="h-7 w-auto object-contain mix-blend-multiply flex-shrink-0" 
+            />
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#354424] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-[#354424] animate-pulse" />
               <span className="text-xs font-black text-[#2D2620] uppercase tracking-wider hidden sm:inline">
-                {activeRole === 'logistics' && '🚛 SafeXpress Logistics'}
-                {activeRole === 'farmer' && '🌿 Farmer Portal'}
-                {activeRole === 'darkstore' && '🏬 Dark Store Hub'}
-                {activeRole === 'consumer' && '🛒 Consumer Marketplace'}
-                {activeRole === 'admin' && '⚡ Master Governance'}
+                {activeRole === 'logistics' && 'SafeXpress Logistics'}
+                {activeRole === 'farmer' && 'Farmer Portal'}
+                {activeRole === 'darkstore' && 'Dark Store Hub'}
+                {activeRole === 'consumer' && 'Consumer Marketplace'}
+                {activeRole === 'admin' && 'Master Governance'}
               </span>
             </div>
           </div>
