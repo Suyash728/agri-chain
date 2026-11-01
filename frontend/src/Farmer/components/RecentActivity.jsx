@@ -1,6 +1,26 @@
 import React from 'react';
 import { ShoppingBag, Truck, Clock, CheckCircle2 } from 'lucide-react';
 
+const formatDisplayDate = (val) => {
+  if (!val) return '';
+  if (typeof val !== 'string') return String(val);
+  if (val === 'Just now' || val.includes('ago') || val.includes('Today')) return val;
+  if (val.includes('T') || val.includes('+') || val.endsWith('Z')) {
+    try {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${mins}`;
+      }
+    } catch (e) {}
+  }
+  return val;
+};
+
 export const RecentActivity = ({ activities, onViewAll }) => {
   return (
     <div className="bg-white border border-[#E6E1D5] rounded-2xl p-4 sm:p-5 flex flex-col justify-between overflow-hidden relative shadow-xs">
@@ -58,7 +78,7 @@ export const RecentActivity = ({ activities, onViewAll }) => {
                         {item.title}
                       </h4>
                       <span className="text-[11px] font-semibold text-[#786E65] block">
-                        {item.date}
+                        {formatDisplayDate(item.date)}
                       </span>
                     </div>
                   </div>

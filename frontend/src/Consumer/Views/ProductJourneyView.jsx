@@ -131,6 +131,8 @@ export const ProductJourneyView = ({
         date: s.timestamp,
         location: s.location,
         pricePaise: s.pricePaise || 0,
+        rateFormatted: s.rateFormatted || null,
+        stageDetail: s.stageDetail || null,
       }))
     : timelineSteps;
 
@@ -351,38 +353,69 @@ export const ProductJourneyView = ({
           </div>
 
           {/* Right Column: Vertical Stepper Timeline */}
-          <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col gap-5 relative">
-            <div className="absolute left-[31px] top-7 bottom-7 w-0.5 bg-[#354424]" />
-
-            {stepsToRender.map((step, idx) => (
-              <div key={idx} className="flex items-start gap-3.5 relative z-10">
-                <div className="w-7 h-7 rounded-full bg-[#354424] text-white flex items-center justify-center flex-shrink-0 shadow-xs border-2 border-white">
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                </div>
-
-                <div className="flex-1 flex flex-col gap-0.5">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-extrabold text-xs sm:text-sm text-[#2D2620]">
-                      {step.title}
-                    </h4>
-                    {step.pricePaise > 0 && (
-                      <span className="text-[11px] font-black text-[#354424] bg-[#EBF3E8] px-2 py-0.5 rounded-full border border-[#C2E0B8]">
-                        ₹{(step.pricePaise / 100).toLocaleString('en-IN')}
-                      </span>
-                    )}
+          <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex flex-col gap-4 relative">
+            {/* Solution A: Farm-to-Fork Unit Rate Transparency Banner */}
+            {journeyData?.priceTrail && (
+              <div className="p-3.5 rounded-xl bg-[#FAF7F0] border border-[#E6E1D5] flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs">⚖️</span>
+                    <span className="text-xs font-extrabold text-[#2D2620]">Normalized Price Trail (₹ / kg)</span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs font-medium text-[#666057]">
-                    <span>{step.date}</span>
-                    {step.location && (
-                      <>
-                        <span>|</span>
-                        <span className="font-semibold text-[#354424]">{step.location}</span>
-                      </>
-                    )}
-                  </div>
+                  <span className="text-[10px] font-black text-[#354424] bg-[#EBF3E8] px-2 py-0.5 rounded-full border border-[#C2E0B8]">
+                    {journeyData.priceTrail.farmerSharePct}% Direct Farmer Share
+                  </span>
                 </div>
+                <p className="text-[10px] text-[#666057] font-medium leading-relaxed">
+                  Bulk harvest lot ({journeyData.priceTrail.batchQtyKg} kg) disaggregated into consumer retail packs ({journeyData.priceTrail.packKg} kg). Every value-addition stage builds up transparently on-chain.
+                </p>
               </div>
-            ))}
+            )}
+
+            <div className="flex flex-col gap-5 relative">
+              <div className="absolute left-[31px] top-7 bottom-7 w-0.5 bg-[#354424]" />
+
+              {stepsToRender.map((step, idx) => (
+                <div key={idx} className="flex items-start gap-3.5 relative z-10">
+                  <div className="w-7 h-7 rounded-full bg-[#354424] text-white flex items-center justify-center flex-shrink-0 shadow-xs border-2 border-white">
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                  </div>
+
+                  <div className="flex-1 flex flex-col gap-0.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-extrabold text-xs sm:text-sm text-[#2D2620]">
+                        {step.title}
+                      </h4>
+                      {step.rateFormatted ? (
+                        <div className="flex flex-col items-end flex-shrink-0">
+                          <span className="text-[11px] font-black text-[#354424] bg-[#EBF3E8] px-2.5 py-0.5 rounded-full border border-[#C2E0B8]">
+                            {step.rateFormatted}
+                          </span>
+                          {step.stageDetail && (
+                            <span className="text-[9.5px] font-semibold text-[#786E65] mt-0.5 text-right">
+                              {step.stageDetail}
+                            </span>
+                          )}
+                        </div>
+                      ) : step.pricePaise > 0 ? (
+                        <span className="text-[11px] font-black text-[#354424] bg-[#EBF3E8] px-2 py-0.5 rounded-full border border-[#C2E0B8]">
+                          ₹{(step.pricePaise / 100).toLocaleString('en-IN')}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-medium text-[#666057]">
+                      <span>{step.date}</span>
+                      {step.location && (
+                        <>
+                          <span>|</span>
+                          <span className="font-semibold text-[#354424]">{step.location}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

@@ -49,6 +49,24 @@ PARTICIPANT_ADDRESSES = {
 }
 
 
+def format_local_timestamp(dt_val, fmt="%Y-%m-%d %H:%M") -> str:
+    """Converts a database datetime or ISO string from UTC to local system time (IST, UTC+5:30)."""
+    if not dt_val:
+        return ""
+    if isinstance(dt_val, str):
+        try:
+            clean_str = dt_val.replace("Z", "+00:00")
+            dt_val = datetime.fromisoformat(clean_str)
+        except Exception:
+            return dt_val[:16]
+    if isinstance(dt_val, datetime):
+        if dt_val.tzinfo is None:
+            dt_val = dt_val.replace(tzinfo=timezone.utc)
+        local_dt = dt_val.astimezone()
+        return local_dt.strftime(fmt)
+    return str(dt_val)[:16]
+
+
 def init_baseline_anomaly_model():
     """Train Isolation Forest on representative normal operational baselines (stationary + transit produce)."""
     import numpy as np
@@ -1143,7 +1161,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "BATCH_ONCHAIN",
                     "title": f"Harvest Registered: #{b['batch_id']}",
                     "desc": f"Batch {b['crop_name']} anchored on blockchain for farmer {b['farmer_name']}. Ready for procurement pickup.",
-                    "time": str(b["created_at"])[:16],
+                    "time": format_local_timestamp(b["created_at"]),
                     "icon": "ShieldCheck",
                     "color": "text-[#3D5220]",
                     "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1158,7 +1176,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "desc": f"Transit failure at {sp['stage']}. {sp['loss_goods_kg']} kg degraded. Net impact: -₹{sp['total_loss_inr']:,.2f}. Fault: {sp['custodian_at_fault']}.",
                     "loss_goods_kg": sp["loss_goods_kg"],
                     "loss_money_inr": sp["total_loss_inr"],
-                    "time": str(sp["created_at"])[:16],
+                    "time": format_local_timestamp(sp["created_at"]),
                     "icon": "AlertTriangle",
                     "color": "text-red-600",
                     "bgColor": "bg-red-50 border-red-200",
@@ -1171,7 +1189,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "AI_BREACH_ALERT",
                     "title": f"AI Cold-Chain Quarantine: #{q['batch_id']}",
                     "desc": f"Reading quarantined by AI Trust Layer: {q['reason']} ({q['temp_c']}°C, {q['humidity_pct']}% RH). SHA-256 IsoLog chained.",
-                    "time": str(q["created_at"])[:16],
+                    "time": format_local_timestamp(q["created_at"]),
                     "icon": "AlertTriangle",
                     "color": "text-rose-600",
                     "bgColor": "bg-rose-50 border-rose-200",
@@ -1187,7 +1205,7 @@ def get_universal_notifications(role: Optional[str] = None):
                         "category": "BATCH_ONCHAIN",
                         "title": f"Batch Registered On-Chain: #{c['batch_id']}",
                         "desc": f"{c['crop_name']} origin lot anchored on ProductRegistry.sol. Base rate: ₹{price_inr:,.2f}.",
-                        "time": str(c["occurred_at"])[:16],
+                        "time": format_local_timestamp(c["occurred_at"]),
                         "icon": "ShieldCheck",
                         "color": "text-[#3D5220]",
                         "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1199,7 +1217,7 @@ def get_universal_notifications(role: Optional[str] = None):
                         "category": "DISPATCH",
                         "title": f"Produce Dispatched: #{c['batch_id']}",
                         "desc": f"Handed off to carrier {c['to_holder']}. Stage transfer markup logged: ₹{price_inr:,.2f}.",
-                        "time": str(c["occurred_at"])[:16],
+                        "time": format_local_timestamp(c["occurred_at"]),
                         "icon": "Truck",
                         "color": "text-[#B85C38]",
                         "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1211,7 +1229,7 @@ def get_universal_notifications(role: Optional[str] = None):
                         "category": "FINAL_SALE",
                         "title": f"Retail Sale Complete: #{c['batch_id']}",
                         "desc": f"Batch #{c['batch_id']} reached consumer doorstep. Farmer fair-share guaranteed payout settled.",
-                        "time": str(c["occurred_at"])[:16],
+                        "time": format_local_timestamp(c["occurred_at"]),
                         "icon": "CheckCircle2",
                         "color": "text-purple-600",
                         "bgColor": "bg-purple-50 border-purple-200",
@@ -1224,7 +1242,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "VERIFIED_REVIEW",
                     "title": f"Consumer Review Received: #{rv['batch_id']}",
                     "desc": f"Rated {rv['rating']}★ (Freshness {rv['freshness_score']}%): \"{rv['comment']}\"",
-                    "time": str(rv["created_at"])[:16],
+                    "time": format_local_timestamp(rv["created_at"]),
                     "icon": "ShieldCheck",
                     "color": "text-amber-600",
                     "bgColor": "bg-amber-50 border-amber-200",
@@ -1251,7 +1269,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "PROCUREMENT_ORDER",
                     "title": f"Procurement Order Ready: #{b['batch_id']}",
                     "desc": f"Pickup available for {b['crop_name']} from {b['farmer_name']} ({b['origin_farm'].split('||')[0].strip()}). Assign reefer vehicle.",
-                    "time": str(b["created_at"])[:16],
+                    "time": format_local_timestamp(b["created_at"]),
                     "icon": "Truck",
                     "color": "text-[#3D5220]",
                     "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1267,7 +1285,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "desc": f"{sp['details']} Carrier penalty liability: ₹{sp['total_loss_inr']:,.2f}.",
                     "loss_goods_kg": sp["loss_goods_kg"],
                     "loss_money_inr": sp["total_loss_inr"],
-                    "time": str(sp["created_at"])[:16],
+                    "time": format_local_timestamp(sp["created_at"]),
                     "icon": "Truck",
                     "color": "text-amber-700",
                     "bgColor": "bg-amber-50 border-amber-200",
@@ -1280,7 +1298,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "TELEMETRY_ALERT",
                     "title": f"Reefer Telematics Alert: #{q['batch_id']}",
                     "desc": f"IoT Sensor Violation: {q['reason']} (Temp: {q['temp_c']}°C, Humidity: {q['humidity_pct']}%).",
-                    "time": str(q["created_at"])[:16],
+                    "time": format_local_timestamp(q["created_at"]),
                     "icon": "AlertTriangle",
                     "color": "text-rose-600",
                     "bgColor": "bg-rose-50 border-rose-200",
@@ -1295,7 +1313,7 @@ def get_universal_notifications(role: Optional[str] = None):
                         "category": "PROCUREMENT_ORDER",
                         "title": f"Procurement Order Ready: #{c['batch_id']}",
                         "desc": f"Pickup available from {c['farmer_name']} ({c['origin_farm'].split('||')[0].strip()}).",
-                        "time": str(c["occurred_at"])[:16],
+                        "time": format_local_timestamp(c["occurred_at"]),
                         "icon": "Truck",
                         "color": "text-[#3D5220]",
                         "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1307,7 +1325,7 @@ def get_universal_notifications(role: Optional[str] = None):
                         "category": "DELIVERY_COMPLETE",
                         "title": f"Delivery Confirmed at Dark Store: #{c['batch_id']}",
                         "desc": f"Shipment accepted into custody by {c['to_holder']}. Handoff verified on-chain.",
-                        "time": str(c["occurred_at"])[:16],
+                        "time": format_local_timestamp(c["occurred_at"]),
                         "icon": "CheckCircle2",
                         "color": "text-emerald-700",
                         "bgColor": "bg-emerald-50 border-emerald-200",
@@ -1334,7 +1352,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "INBOUND_SCHEDULED",
                     "title": f"Incoming Harvest Lot: #{b['batch_id']}",
                     "desc": f"Farmer {b['farmer_name']} registered {b['crop_name']}. Scheduled for warehouse intake bay allocation.",
-                    "time": str(b["created_at"])[:16],
+                    "time": format_local_timestamp(b["created_at"]),
                     "icon": "Package",
                     "color": "text-[#3D5220]",
                     "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1347,7 +1365,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "STORAGE_ALERT",
                     "title": f"Cold-Chain Quality Alert: #{q['batch_id']}",
                     "desc": f"Sensor anomaly detected ({q['temp_c']}°C, {q['humidity_pct']}% RH). Pre-intake bay inspection required.",
-                    "time": str(q["created_at"])[:16],
+                    "time": format_local_timestamp(q["created_at"]),
                     "icon": "AlertTriangle",
                     "color": "text-rose-600",
                     "bgColor": "bg-rose-50 border-rose-200",
@@ -1362,7 +1380,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "desc": f"{sp['loss_goods_kg']} kg damaged during transit. Inventory write-off: -₹{sp['total_loss_inr']:,.2f}. Return GRN logged.",
                     "loss_goods_kg": sp["loss_goods_kg"],
                     "loss_money_inr": sp["total_loss_inr"],
-                    "time": str(sp["created_at"])[:16],
+                    "time": format_local_timestamp(sp["created_at"]),
                     "icon": "AlertCircle",
                     "color": "text-rose-700",
                     "bgColor": "bg-rose-50 border-rose-200",
@@ -1378,7 +1396,7 @@ def get_universal_notifications(role: Optional[str] = None):
                         "category": "INBOUND_SCHEDULED",
                         "title": f"Inbound Shipment In Transit: #{c['batch_id']}",
                         "desc": f"Reefer vehicle en route from {c['from_holder']}. Estimated arrival at loading bay.",
-                        "time": str(c["occurred_at"])[:16],
+                        "time": format_local_timestamp(c["occurred_at"]),
                         "icon": "Truck",
                         "color": "text-[#B85C38]",
                         "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1390,7 +1408,7 @@ def get_universal_notifications(role: Optional[str] = None):
                         "category": "GRN_RECEIVED",
                         "title": f"GRN Received & Stored: #{c['batch_id']}",
                         "desc": f"{c['crop_name']} verified and allocated to cold bay. Intake valuation: ₹{price_inr:,.2f}.",
-                        "time": str(c["occurred_at"])[:16],
+                        "time": format_local_timestamp(c["occurred_at"]),
                         "icon": "ShieldCheck",
                         "color": "text-emerald-700",
                         "bgColor": "bg-emerald-50 border-emerald-200",
@@ -1402,7 +1420,7 @@ def get_universal_notifications(role: Optional[str] = None):
                         "category": "RETAIL_SALE",
                         "title": f"Consumer Sale Finalized: #{c['batch_id']}",
                         "desc": f"Produce lot checked out and sold at retail price of ₹{price_inr:,.2f}.",
-                        "time": str(c["occurred_at"])[:16],
+                        "time": format_local_timestamp(c["occurred_at"]),
                         "icon": "CheckCircle2",
                         "color": "text-[#3D5220]",
                         "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1429,7 +1447,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "FRESH_ARRIVALS",
                     "title": f"Fresh Harvest Available: {b['crop_name']}",
                     "desc": f"Direct farm harvest #{b['batch_id']} from {b['farmer_name']} ({b['origin_farm'].split('||')[0].strip()}) is now available for doorstep delivery.",
-                    "time": str(b["created_at"])[:16],
+                    "time": format_local_timestamp(b["created_at"]),
                     "icon": "ShieldCheck",
                     "color": "text-[#3D5220]",
                     "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1442,7 +1460,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "QUALITY_AUDIT",
                     "title": f"Quality Shield Audit: #{q['batch_id']}",
                     "desc": f"AI Trust Layer intercepted sub-optimal cold-chain conditions. 100% farm freshness guarantee applied.",
-                    "time": str(q["created_at"])[:16],
+                    "time": format_local_timestamp(q["created_at"]),
                     "icon": "ShieldCheck",
                     "color": "text-emerald-700",
                     "bgColor": "bg-emerald-50 border-emerald-200",
@@ -1457,7 +1475,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "title": f"AgriChain Freshness Recall: #{sp['batch_id']}",
                     "desc": f"Cold-chain temperature breach detected in transit ({sp['crop_name']}). Intercepted before delivery. ₹{consumer_refund:,.2f} refunded.",
                     "refund_inr": consumer_refund,
-                    "time": str(sp["created_at"])[:16],
+                    "time": format_local_timestamp(sp["created_at"]),
                     "icon": "ShieldCheck",
                     "color": "text-emerald-700",
                     "bgColor": "bg-emerald-50 border-emerald-200",
@@ -1472,7 +1490,7 @@ def get_universal_notifications(role: Optional[str] = None):
                         "category": "FRESH_ARRIVALS",
                         "title": f"Fresh Harvest in Stock: {c['crop_name']}",
                         "desc": f"Direct farm harvest #{c['batch_id']} from {c['farmer_name']} is now available for doorstep delivery.",
-                        "time": str(c["occurred_at"])[:16],
+                        "time": format_local_timestamp(c["occurred_at"]),
                         "icon": "ShieldCheck",
                         "color": "text-[#3D5220]",
                         "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1484,7 +1502,7 @@ def get_universal_notifications(role: Optional[str] = None):
                         "category": "ORDER_DELIVERED",
                         "title": f"Order Delivered: #{c['batch_id']}",
                         "desc": f"Your farm-fresh {c['crop_name']} has been delivered. View immutable QR provenance on-chain.",
-                        "time": str(c["occurred_at"])[:16],
+                        "time": format_local_timestamp(c["occurred_at"]),
                         "icon": "CheckCircle2",
                         "color": "text-emerald-700",
                         "bgColor": "bg-emerald-50 border-emerald-200",
@@ -1497,7 +1515,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "REVIEW_CONFIRMED",
                     "title": f"Verified Review Published: #{rv['batch_id']}",
                     "desc": f"Thank you for rating your produce! Your {rv['rating']}★ review is published on the blockchain.",
-                    "time": str(rv["created_at"])[:16],
+                    "time": format_local_timestamp(rv["created_at"]),
                     "icon": "ShieldCheck",
                     "color": "text-amber-600",
                     "bgColor": "bg-amber-50 border-amber-200",
@@ -1523,7 +1541,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "PRODUCT_REGISTRY",
                     "title": f"Product Registry Anchor: #{b['batch_id']}",
                     "desc": f"Batch {b['crop_name']} tokenized under farmer role. Contract ProductRegistry.sol verified.",
-                    "time": str(b["created_at"])[:16],
+                    "time": format_local_timestamp(b["created_at"]),
                     "icon": "ShieldCheck",
                     "color": "text-[#3D5220]",
                     "bgColor": "bg-[#FAF7F0] border-[#E6E1D5]",
@@ -1535,7 +1553,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "PRE_CHAIN_SECURITY",
                     "title": f"Pre-Chain Quarantine Flagged: #{q['batch_id']}",
                     "desc": f"Anomaly isolated before on-chain commit. Reason: {q['reason']}.",
-                    "time": str(q["created_at"])[:16],
+                    "time": format_local_timestamp(q["created_at"]),
                     "icon": "AlertTriangle",
                     "color": "text-rose-600",
                     "bgColor": "bg-rose-50 border-rose-200",
@@ -1547,7 +1565,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "category": "SLA_BREACH",
                     "title": f"Supply Chain SLA Claim Logged: #{sp['batch_id']}",
                     "desc": f"Liable: {sp['custodian_at_fault']}. Financial write-off: ₹{sp['total_loss_inr']:,.2f}.",
-                    "time": str(sp["created_at"])[:16],
+                    "time": format_local_timestamp(sp["created_at"]),
                     "icon": "AlertTriangle",
                     "color": "text-amber-700",
                     "bgColor": "bg-amber-50 border-amber-200",
@@ -2113,7 +2131,7 @@ def get_farmer_activity():
         for e in events:
             ev_id = f"act-{e['id']}"
             state = e["state"]
-            date_str = str(e["occurred_at"])[:16]
+            date_str = format_local_timestamp(e["occurred_at"])
 
             if state == "REGISTERED":
                 activities.append({
@@ -2222,26 +2240,107 @@ def get_batch_traceability(batch_id: str):
         raw_farm = batch_row["origin_farm"] or ""
         clean_farm = raw_farm.split("||")[0].strip()
 
-        # Parse quantity string
-        qty_str = "500 kg"
+        # Parse quantity in kg (e.g. 0.25 tonnes = 250 kg)
+        qty_kg = 500.0
         if "||qty=" in raw_farm:
             for part in raw_farm.split("||"):
                 if part.startswith("qty="):
                     try:
                         q = float(part.replace("qty=", "").strip())
-                        qty_str = f"{int(q * 1000)} kg" if q < 10 else f"{int(q)} kg"
+                        qty_kg = q * 1000.0 if q < 20.0 else q
                     except Exception:
                         pass
+        qty_str = f"{int(qty_kg)} kg" if qty_kg >= 1 else f"{qty_kg:.1f} kg"
 
         events = conn.execute(
             "SELECT * FROM custody_events WHERE batch_id = ? ORDER BY id ASC",
             (batch_id,),
         ).fetchall()
 
+        # Extract stage lot values from events
+        farm_price_inr = 0.0
+        transit_price_inr = 0.0
+        storage_price_inr = 0.0
+        retail_price_inr = 0.0
+
+        if events and events[0]["price_paise"]:
+            farm_price_inr = events[0]["price_paise"] / 100.0
+        if farm_price_inr <= 0 and "||price=" in raw_farm:
+            for part in raw_farm.split("||"):
+                if part.startswith("price="):
+                    try:
+                        farm_price_inr = float(part.replace("price=", "").strip())
+                    except Exception:
+                        pass
+
+        for ev in events:
+            st = ev["state"]
+            amt = (ev["price_paise"] or 0) / 100.0
+            if st == "IN_TRANSIT" and amt > 0:
+                transit_price_inr = amt
+            elif st in ("IN_STORAGE", "AT_RETAIL") and amt > 0:
+                storage_price_inr = amt
+            elif st == "SOLD" and amt > 0:
+                retail_price_inr = amt
+
+        # Compute Solution A: Normalized Unit Rates (₹/kg)
+        if transit_price_inr > 0:
+            transit_rate = round(transit_price_inr / qty_kg, 2)
+        else:
+            transit_rate = 32.0
+
+        if farm_price_inr >= 1000:
+            farm_rate = round(farm_price_inr / qty_kg, 2)
+        elif farm_price_inr > 0 and farm_price_inr < 200:
+            farm_rate = round(farm_price_inr, 2)
+        else:
+            farm_rate = max(15.0, round(transit_rate * 0.875, 2))
+
+        if storage_price_inr > 0:
+            storage_rate = round(storage_price_inr / qty_kg, 2)
+        else:
+            storage_rate = round(transit_rate * 1.08, 2)
+
+        if retail_price_inr >= storage_price_inr and storage_price_inr > 0:
+            # Whole lot checked out at retail
+            pack_kg = qty_kg
+            retail_rate = round(retail_price_inr / qty_kg, 2)
+        elif retail_price_inr > 0:
+            # Disaggregated consumer retail pack/crate (e.g. ₹650 for a 15 kg crate)
+            pack_kg = max(5.0, round(retail_price_inr / max(25.0, storage_rate * 1.25), 0))
+            retail_rate = round(retail_price_inr / pack_kg, 2)
+        else:
+            pack_kg = 15.0
+            retail_rate = round(storage_rate * 1.25, 2)
+
+        # Enforce progressive monotonic price trail
+        transit_rate = max(transit_rate, round(farm_rate + 2.0, 2))
+        storage_rate = max(storage_rate, round(transit_rate + 2.40, 2))
+        retail_rate = max(retail_rate, round(storage_rate + 6.50, 2))
+
+        # Build price transparency breakdown model
+        farmer_share_pct = round((farm_rate / retail_rate) * 100.0, 1)
+        logistics_share_pct = round(((transit_rate - farm_rate) / retail_rate) * 100.0, 1)
+        darkstore_share_pct = round(((storage_rate - transit_rate) / retail_rate) * 100.0, 1)
+        retail_share_pct = max(0.0, round(100.0 - (farmer_share_pct + logistics_share_pct + darkstore_share_pct), 1))
+
+        price_trail = {
+            "farmerRate": farm_rate,
+            "logisticsRate": transit_rate,
+            "darkstoreRate": storage_rate,
+            "retailRate": retail_rate,
+            "farmerSharePct": farmer_share_pct,
+            "logisticsSharePct": logistics_share_pct,
+            "darkstoreSharePct": darkstore_share_pct,
+            "retailSharePct": retail_share_pct,
+            "packKg": int(pack_kg),
+            "batchQtyKg": int(qty_kg),
+        }
+
         steps = []
         step_num = 1
 
-        reg_time = str(batch_row["created_at"])[:16]
+        reg_time = format_local_timestamp(batch_row["created_at"])
         steps.append({
             "step": step_num,
             "name": "Farm Registration",
@@ -2249,7 +2348,10 @@ def get_batch_traceability(batch_id: str):
             "timestamp": reg_time,
             "location": clean_farm,
             "holder": batch_row["farmer_name"],
-            "pricePaise": 0,
+            "pricePaise": int(farm_rate * qty_kg * 100),
+            "unitRateInr": farm_rate,
+            "rateFormatted": f"₹{farm_rate:.2f} / kg",
+            "stageDetail": f"Farm-Gate Base ({int(qty_kg)} kg Lot)",
         })
         step_num += 1
 
@@ -2258,7 +2360,7 @@ def get_batch_traceability(batch_id: str):
 
         for ev in events:
             st = ev["state"]
-            t_str = str(ev["occurred_at"])[:16]
+            t_str = format_local_timestamp(ev["occurred_at"])
             latest_state = st
             if ev["to_holder"]:
                 latest_holder = ev["to_holder"]
@@ -2274,6 +2376,9 @@ def get_batch_traceability(batch_id: str):
                     "location": f"Farm gate pickup with {ev['to_holder']}",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
+                    "unitRateInr": farm_rate,
+                    "rateFormatted": f"₹{farm_rate:.2f} / kg",
+                    "stageDetail": "Procurement Handoff",
                 })
                 step_num += 1
             elif st == "IN_TRANSIT":
@@ -2285,6 +2390,9 @@ def get_batch_traceability(batch_id: str):
                     "location": f"In Transit with {ev['to_holder']}",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
+                    "unitRateInr": transit_rate,
+                    "rateFormatted": f"₹{transit_rate:.2f} / kg",
+                    "stageDetail": f"Bulk Reefer Fleet (Lot: ₹{int(transit_price_inr):,})" if transit_price_inr > 0 else "Reefer Highway Transit",
                 })
                 step_num += 1
             elif st == "IN_STORAGE":
@@ -2296,6 +2404,9 @@ def get_batch_traceability(batch_id: str):
                     "location": f"{ev['to_holder']} (Cold Storage Bay)",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
+                    "unitRateInr": storage_rate,
+                    "rateFormatted": f"₹{storage_rate:.2f} / kg",
+                    "stageDetail": f"Cold Hub Intake (Lot: ₹{int(storage_price_inr):,})" if storage_price_inr > 0 else "Cold Hub Storage",
                 })
                 step_num += 1
             elif st == "AT_RETAIL":
@@ -2307,6 +2418,9 @@ def get_batch_traceability(batch_id: str):
                     "location": f"{ev['to_holder']}",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
+                    "unitRateInr": storage_rate,
+                    "rateFormatted": f"₹{storage_rate:.2f} / kg",
+                    "stageDetail": "Retail Merchandising",
                 })
                 step_num += 1
             elif st == "SOLD":
@@ -2318,6 +2432,9 @@ def get_batch_traceability(batch_id: str):
                     "location": "Consumer Doorstep",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
+                    "unitRateInr": retail_rate,
+                    "rateFormatted": f"₹{retail_rate:.2f} / kg",
+                    "stageDetail": f"Retail Pack ({int(pack_kg)} kg @ ₹{int(retail_price_inr):,})" if retail_price_inr < storage_price_inr and retail_price_inr > 0 else f"Final Delivery ({int(qty_kg)} kg)",
                 })
                 step_num += 1
 
@@ -2402,6 +2519,7 @@ def get_batch_traceability(batch_id: str):
             "qualityScore": quality_score,
             "freshnessPct": freshness_pct,
             "qualityGrade": quality_grade,
+            "priceTrail": price_trail,
         }
     finally:
         conn.close()
@@ -4252,7 +4370,7 @@ def get_farmer_orders():
                 "batchId": r["batch_id"],
                 "buyer": r["to_holder"] or "Regional Aggregator / Safexpress",
                 "items": f"{r['crop_name'].title()} ({int(qty * 1000)} kg)",
-                "date": r["occurred_at"] or r["harvest_date"],
+                "date": format_local_timestamp(r["occurred_at"]) or str(r["harvest_date"]),
                 "status": status,
                 "statusType": status_type,
                 "totalAmount": price_str,
@@ -4303,10 +4421,10 @@ def confirm_farmer_order(batch_id: str):
 
         conn.execute(
             """
-            INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, occurred_at, tx_hash)
-            VALUES (?, ?, ?, 'CONFIRMED', ?, ?, ?)
+            INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash)
+            VALUES (?, ?, ?, 'CONFIRMED', ?, ?)
             """,
-            (real_batch_id, from_holder, to_holder, price_paise, now_str, tx_hash)
+            (real_batch_id, from_holder, to_holder, price_paise, tx_hash)
         )
         conn.commit()
 
@@ -4363,10 +4481,10 @@ def complete_farmer_order(batch_id: str):
 
         conn.execute(
             """
-            INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, occurred_at, tx_hash)
-            VALUES (?, ?, ?, 'SOLD', ?, ?, ?)
+            INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, tx_hash)
+            VALUES (?, ?, ?, 'SOLD', ?, ?)
             """,
-            (real_batch_id, from_holder, to_holder, price_paise, now_str, tx_hash)
+            (real_batch_id, from_holder, to_holder, price_paise, tx_hash)
         )
         conn.commit()
 
@@ -4447,7 +4565,7 @@ def get_farmer_shipments():
                 "orderId": f"ORD-{b_id[:8]}",
                 "cropName": r["crop_name"].title(),
                 "transporter": transporter,
-                "date": str(r["occurred_at"])[:16] if r["occurred_at"] else "Today",
+                "date": format_local_timestamp(r["occurred_at"]) if r["occurred_at"] else "Today",
                 "status": status,
                 "statusType": status_type,
                 "temp": temp_c,
@@ -4539,7 +4657,7 @@ def get_logistics_available_produce():
             JOIN custody_events c ON c.id = (
                 SELECT id FROM custody_events WHERE batch_id = b.batch_id ORDER BY id DESC LIMIT 1
             )
-            WHERE c.state = 'REGISTERED'
+            WHERE c.state IN ('REGISTERED', 'CONFIRMED')
             ORDER BY b.created_at DESC
             """
         ).fetchall()

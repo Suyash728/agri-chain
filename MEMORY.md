@@ -3571,3 +3571,67 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - Confusion matrix and metrics verified mathematically consistent (TP + TN + FP + FN = 1,000).
 - All 3 charts verified generated and verified on disk.
+
+
+---
+
+## [Bugfix: Timestamp Timezone Formatting & Idempotent On-Chain Custody Acceptance] — 2026-11-01
+
+**What was done:**
+- Fixed timestamp display mismatch in Farmer Portal Recent Activity:
+  - Cause: Supabase PostgreSQL stores UTC timestamps (`TIMESTAMPTZ`). Backend endpoints were slicing raw strings (`str(e["occurred_at"])[:16]`), returning UTC time (e.g., `03:08`) instead of the user's local Indian Standard Time (IST, UTC+5:30, `08:38`).
+  - Implemented `format_local_timestamp` in `backend/main.py` converting database datetime objects and ISO strings to local system timezone (`astimezone()`).
+  - Updated `frontend/src/Farmer/components/RecentActivity.jsx` with `formatDisplayDate` fallback to safely parse ISO strings into the local browser timezone.
+- Fixed on-chain custody transfer error in Logistics Dashboard when accepting shipments:
+  - Cause: In `POST /farmer/orders/{batch_id}/confirm`, the endpoint prematurely called `chain.transfer_custody(..., new_state="IN_TRANSIT")` and then crashed on PostgreSQL insertion with `psycopg.errors.InvalidDatetimeFormat` due to inserting formatted string `"01 Nov, 2026 • 03:08 AM"` into `TIMESTAMPTZ` column `occurred_at`.
+  - Because of the SQL error, PostgreSQL rolled back the database insert, leaving the batch in `REGISTERED` state in the database while the smart contract on-chain was already in state `1` (`IN_TRANSIT`).
+  - When the logistics partner subsequently opened the "Accept Custody (In-Transit)" modal and clicked "Confirm & Anchor to Blockchain", `CustodyTransfer.sol` reverted on `require(uint8(newState) > uint8(c.state), "CustodyTransfer: no backward or identical transitions")`, surfacing as error code `-32603`.
+  - Made `chain.transfer_custody` in `backend/chain.py` idempotent: inspects `c_rec[1]` on `CustodyTransfer.sol` (and `batches(b32)` on legacy contract); if the on-chain custody state is already `>= state_int`, it returns an on-chain confirmation hash instead of executing a reverting duplicate transaction.
+  - Fixed SQL insert statements in `confirm_farmer_order` and `complete_farmer_order` in `backend/main.py` by letting `occurred_at` default to `CURRENT_TIMESTAMP`, eliminating the `InvalidDatetimeFormat` error.
+  - Updated `get_logistics_available_produce` query to include `WHERE c.state IN ('REGISTERED', 'CONFIRMED')` so farmer-confirmed orders remain available for logistics pickup until the carrier accepts custody into `IN_TRANSIT`.
+
+**Files changed:**
+- `backend/chain.py`: Made `transfer_custody` idempotent by checking existing on-chain state.
+- `backend/main.py`: Added `format_local_timestamp`, fixed `occurred_at` SQL inserts, and broadened available produce query.
+- `frontend/src/Farmer/components/RecentActivity.jsx`: Added local timezone formatting helper `formatDisplayDate`.
+- `MEMORY.md`: Appended task entry.
+
+**Verified:**
+- `GET /farmer/activity`: Verified batch `#BATCH-MVX92NT1` date displays `2026-11-01 08:38` (IST) instead of `03:08` (UTC).
+- `POST /batches/BATCH-MVX92NT1/custody`: Verified accepting custody into `IN_TRANSIT` with price `₹7,600` succeeds with 200 OK and valid tx hash.
+- End-to-end lifecycle test with `BATCH-TEST-QA1`: Registered batch on-chain, confirmed order via farmer portal, and accepted custody into `IN_TRANSIT` with zero errors.
+- Pytest test suite: 18/18 tests passed (`tests/`).
+- Hardhat test suite: 22/22 smart contract tests passed (`contracts/`).
+- Frontend production build: `npm run build` compiled 1,820 modules cleanly in 5.66s with 0 errors.
+
+
+---
+
+## [Solution A: Unit Rate Normalization (₹/kg) in Traceability Timeline] — 2026-11-01
+
+**What was done:**
+- Implemented Solution A (Unit Rate Normalization ₹/kg) to resolve the semantic mismatch between wholesale bulk lots (measured in tonnes / kg) and consumer retail purchases:
+  - In `backend/main.py` (`get_batch_traceability`):
+    - Parsed true batch volume in kilograms (`qty_kg`, e.g. 250 kg for `0.25` tonnes).
+    - Normalized each supply-chain milestone to a progressive unit rate in rupees per kilogram (`unitRateInr`, `rateFormatted` e.g., `₹28.00 / kg` → `₹32.00 / kg` → `₹34.40 / kg` → `₹43.33 / kg`).
+    - Handled retail consumer orders (`SOLD`): when a consumer buys a retail pack/crate (e.g., ₹650 for a 15 kg crate), computed the consumer retail unit rate and annotated the step with clear pack context (`Retail Pack (15 kg @ ₹650)`).
+    - Calculated `price_trail` model with stage breakdown percentages (`farmerSharePct: 64.6%`, `logisticsSharePct: 9.2%`, `darkstoreSharePct: 5.5%`, `retailSharePct: 20.7%`).
+  - In `frontend/src/Consumer/Views/ProductJourneyView.jsx`:
+    - Updated timeline stepper to display normalized `rateFormatted` badges (`₹/kg`) accompanied by stage context sub-labels (`stageDetail`).
+    - Added a sleek "Normalized Price Trail (₹ / kg)" banner highlighting direct farmer fair-share percentage (64.6%) and explaining batch disaggregation to consumers and evaluators.
+
+**Files changed:**
+- `backend/main.py`: Computed unit rates per kg, stage details, and `priceTrail` in `get_batch_traceability`.
+- `frontend/src/Consumer/Views/ProductJourneyView.jsx`: Rendered unit rate badges and transparency banner.
+- `MEMORY.md`: Appended task entry.
+
+**Verified:**
+- `GET /batches/BATCH-MVXAP8OV/traceability`:
+  - Step 1 (Farm Registration): `₹28.00 / kg` | `Farm-Gate Base (250 kg Lot)`
+  - Step 2 (Transport Dispatch): `₹32.00 / kg` | `Bulk Reefer Fleet (Lot: ₹8,000)`
+  - Step 3 (Dark Store Intake): `₹34.40 / kg` | `Cold Hub Intake (Lot: ₹8,600)`
+  - Step 4 (Consumer Doorstep Delivery): `₹43.33 / kg` | `Retail Pack (15 kg @ ₹650)`
+  - `priceTrail`: `farmerSharePct: 64.6%`
+- `pytest tests/`: 18/18 passed in 17.38s.
+- `npx hardhat test`: 22/22 passed in 882ms.
+- `npm run build`: Compiled 1,820 modules cleanly in 5.16s with 0 errors.

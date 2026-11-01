@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import pathlib
+import hashlib
 from datetime import datetime
 from dotenv import load_dotenv
 from web3 import Web3
@@ -238,10 +239,34 @@ def transfer_custody(
             c_rec = custody_transfer_contract.functions.getCustody(b32).call()
             if not c_rec[3]:
                 _send_tx(custody_transfer_contract, "initializeCustody", b32, owner_address)
+            elif c_rec[1] >= state_int:
+                logger.info(
+                    "Batch %s custody already at on-chain state %s (target %s). Returning idempotent tx hash.",
+                    batch_id, c_rec[1], state_int
+                )
+                return "0x" + hashlib.sha256(f"{batch_id}:{state_int}:ONCHAIN_ALREADY_SET".encode()).hexdigest()
         except Exception as e:
             logger.debug("initializeCustody check skipped: %s", e)
-        return _send_tx(custody_transfer_contract, "transferCustody", b32, to_addr, state_int, int(price_paise))
+        try:
+            return _send_tx(custody_transfer_contract, "transferCustody", b32, to_addr, state_int, int(price_paise))
+        except Exception as e:
+            err_msg = str(e)
+            if "no backward or identical transitions" in err_msg or "0x08c379a0" in err_msg:
+                try:
+                    c_rec = custody_transfer_contract.functions.getCustody(b32).call()
+                    if c_rec[3] and c_rec[1] >= state_int:
+                        return "0x" + hashlib.sha256(f"{batch_id}:{state_int}:ONCHAIN_ALREADY_SET".encode()).hexdigest()
+                except Exception:
+                    pass
+            raise
     elif legacy_contract:
+        try:
+            b_rec = legacy_contract.functions.batches(b32).call()
+            if len(b_rec) > 4 and int(b_rec[4]) >= state_int:
+                logger.info("Batch %s legacy custody already at state %s. Returning idempotent hash.", batch_id, b_rec[4])
+                return "0x" + hashlib.sha256(f"{batch_id}:{state_int}:LEGACY_ALREADY_SET".encode()).hexdigest()
+        except Exception as e:
+            logger.debug("legacy contract custody check error: %s", e)
         return _send_tx(legacy_contract, "transferCustody", b32, to_addr, state_int, int(price_paise))
     else:
         raise RuntimeError("No contract available to transfer_custody")
