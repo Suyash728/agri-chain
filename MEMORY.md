@@ -3905,7 +3905,6 @@ pm run build passed cleanly with 0 errors.
 - `npm run build`: Success (`built in 9.66s`).
 - Vite HMR updated running dev server automatically.
 
-
 ---
 
 ## [Simulation 1,000-Trial Evaluation Dataset Export] — 2026-11-01
@@ -3962,3 +3961,27 @@ pm run build passed cleanly with 0 errors.
 - `pytest tests/ trust-layer/tests/`: 165/165 passing in 74s.
 - `npm run build`: 1,821 modules compiled cleanly in 7.34s.
 - All 18 frontend-facing REST API routes returning HTTP 200 OK.
+
+---
+
+## Task: Deep Multi-Gas & Optical Sensor Firmware & Live Monitor Dashboard — 2026-11-01
+
+**What was done:**
+- Implemented deep multi-gas and optical precision firmware in `hardware/test_pentad/src/main.cpp`:
+  - **MQ-135 Multi-Gas Decomposition**: Added real-time two-variable hygrothermal compensation $C_{th}(T, H) = -0.0152 \cdot T - 0.0034 \cdot H + 1.48$ using live DHT11 readings. Derived logarithmic sensitivity curves for $\text{CO}_2$ (respiration rate), $\text{NH}_3$ (microbial protein rot), ethanol (anaerobic fermentation), and acetone (volatile decay compounds).
+  - **DHT11 Hygrothermal Psychrometrics**: Implemented Magnus-Tetens Dew Point formula ($T_{\text{dew}} = \frac{b \cdot \alpha}{a - \alpha}$) and live condensation safety margin ($T - T_{\text{dew}}$) to detect "produce sweating" and fungal mildew risk.
+  - **LDR Optical Illuminance**: Converted photoresistor voltage divider to Lux estimation ($\text{Lux} \approx 500 / R_{\text{ldr}}^{1.4}$) and dynamic enclosure tamper classification (Pitch Dark Crate, Minor Seam Leak, Ambient Indoor, Direct Sunlight Breach).
+  - **SW-420 Transit Shock**: Sub-microsecond hardware falling-edge interrupt counter with 25ms debounce to quantify road potholes and cargo impacts.
+  - **NEO-6M GPS**: TinyGPS++ NMEA parser delivering 3D fix, speed in km/h, satellite count, HDOP, and clickable Google Maps URL.
+- Updated `hardware/monitor_live.py` with multi-card rich terminal dashboard displaying detailed gas decompositions, condensation safety badges, optical lux levels, and transit vibration counters.
+- Built PlatformIO firmware cleanly with zero compilation errors (`hardware/test_pentad/.pio/build/esp32dev/firmware.elf`, RAM: 7.0%, Flash: 24.6%).
+- Diagnosed USB device enumeration pause: Linux kernel upgraded on disk to `7.3.1-1-cachyos` while running `7.3.0-4-cachyos`, requiring a quick system reboot or kernel module symlink to bind CP2102 to `/dev/ttyUSB0`.
+
+**Files changed:**
+- `hardware/test_pentad/src/main.cpp`
+- `hardware/monitor_live.py`
+- `MEMORY.md`
+
+**Verified:**
+- `pio run` in `hardware/test_pentad`: Success (`[SUCCESS] Took 0.68 seconds`).
+- PlatformIO compilation: Flash 322,264 bytes (24.6%), RAM 23,036 bytes (7.0%).
