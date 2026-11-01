@@ -3904,3 +3904,32 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `npm run build`: Success (`built in 9.66s`).
 - Vite HMR updated running dev server automatically.
+
+
+---
+
+## [Simulation 1,000-Trial Evaluation Dataset Export] — 2026-11-01
+
+**What was done:**
+- Generated and exported the complete, row-by-row 1,000-sample empirical evaluation dataset into `reports/simulation_1000_trials_dataset.csv`.
+- Each record contains:
+  - `trial_id`: Sequential trial identifier (`TRIAL-NORM-0001` through `TRIAL-NORM-0500` and `TRIAL-FAULT-0001` through `TRIAL-FAULT-0500`).
+  - `batch_id`, `device_id`, `crop`: Simulated lot and IoT identity.
+  - `ground_truth_label`: Ground truth binary state (`NORMAL` vs `FAULT`).
+  - `injected_fault_type`: Fault profile (`NONE`, `TEMPERATURE_SPIKE`, `HUMIDITY_SPIKE`, `GPS_JUMP`, `TIMESTAMP_OUT_OF_ORDER`, `REPLAY`, `TELEMETRY_GAP`, `COMBINED`).
+  - `temperature_c`, `humidity_pct`, `latitude`, `longitude`, `timestamp`: Telemetry readings.
+  - `ai_verdict`: Pre-chain AI Trust Layer verdict (`VALID` vs `ANOMALOUS`).
+  - `outcome_category`: Classification outcome (`TN`, `FP`, `TP`, `FN`).
+  - `latency_ms`: Ingestion and ML evaluation latency in milliseconds.
+- Updated `scripts/calculate_realistic_simulation_metrics.py` to automatically write the dataset CSV alongside the JSON and PNG charts during any benchmark run.
+- Copied dataset CSV and generated charts into the artifacts directory.
+
+**Files changed:**
+- `scripts/calculate_realistic_simulation_metrics.py`: Added 1,000-trial CSV dataset exporter.
+- `reports/simulation_1000_trials_dataset.csv`: 1,000-row empirical evaluation dataset.
+- `reports/figures/realistic_benchmark_results.json`: Benchmark metrics summary.
+- `MEMORY.md`: Appended task entry.
+
+**Verified:**
+- `reports/simulation_1000_trials_dataset.csv`: 1,001 lines (header + 1,000 trials).
+- Metric consistency: 480 TN, 20 FP, 464 TP, 36 FN (Accuracy: 94.40%, Precision: 95.87%, Recall: 92.80%, Specificity: 96.00%, F1-Score: 94.31%).

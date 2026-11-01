@@ -1,5 +1,5 @@
 {
-  "benchmark_timestamp": "2026-11-01 03:44:43",
+  "benchmark_timestamp": "2026-11-01 19:56:20",
   "total_trials": 1000,
   "total_normal": 500,
   "total_faults": 500,
@@ -27,7 +27,7 @@
     "f1_score": 0.9431,
     "false_positive_rate": 0.04,
     "false_negative_rate": 0.072,
-    "mean_latency_ms": 45.23
+    "mean_latency_ms": 48.09
   },
   "fault_wise_detection_rates": {
     "TEMPERATURE_SPIKE": {

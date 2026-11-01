@@ -83,6 +83,7 @@ def run_realistic_simulation_benchmark(total_normal=500, total_faults=500, seed=
     }
     
     latencies_ms = []
+    trials_dataset = []
     
     # =========================================================================
     # 1. EVALUATE NORMAL TRIALS (Ground Truth = Normal)
@@ -154,6 +155,24 @@ def run_realistic_simulation_benchmark(total_normal=500, total_faults=500, seed=
             tn += 1
         else:
             fp += 1
+            
+        last_r = sequence[-1]
+        trials_dataset.append({
+            "trial_id": f"TRIAL-NORM-{i+1:04d}",
+            "batch_id": cfg.batch_id,
+            "device_id": cfg.device_id,
+            "crop": crop,
+            "ground_truth_label": "NORMAL",
+            "injected_fault_type": "NONE",
+            "temperature_c": round(last_r.temperature, 2),
+            "humidity_pct": round(last_r.humidity, 2),
+            "latitude": round(last_r.latitude, 6),
+            "longitude": round(last_r.longitude, 6),
+            "timestamp": str(last_r.timestamp),
+            "ai_verdict": target_verdict,
+            "outcome_category": "TN" if target_verdict == "VALID" else "FP",
+            "latency_ms": round(elapsed_ms, 2)
+        })
             
         if (i + 1) % 100 == 0:
             print(f"  Processed {i + 1}/{total_normal} normal trials (Current TN={tn}, FP={fp})...")
@@ -297,6 +316,24 @@ def run_realistic_simulation_benchmark(total_normal=500, total_faults=500, seed=
             else:
                 fn += 1
                 fault_breakdowns[ft.value]["missed"] += 1
+                
+            last_r = sequence[-1]
+            trials_dataset.append({
+                "trial_id": f"TRIAL-FAULT-{fault_trial_idx:04d}",
+                "batch_id": cfg.batch_id,
+                "device_id": cfg.device_id,
+                "crop": crop,
+                "ground_truth_label": "FAULT",
+                "injected_fault_type": ft.value,
+                "temperature_c": round(last_r.temperature, 2),
+                "humidity_pct": round(last_r.humidity, 2),
+                "latitude": round(last_r.latitude, 6),
+                "longitude": round(last_r.longitude, 6),
+                "timestamp": str(last_r.timestamp),
+                "ai_verdict": target_verdict,
+                "outcome_category": "TP" if target_verdict == "ANOMALOUS" else "FN",
+                "latency_ms": round(elapsed_ms, 2)
+            })
                 
     # =========================================================================
     # 3. CALCULATE METRICS
@@ -497,6 +534,20 @@ def run_realistic_simulation_benchmark(total_normal=500, total_faults=500, seed=
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(summary_data, f, indent=2)
     print(f"  [OK] Saved Benchmark Data JSON to: {json_path}")
+    
+    # Save complete 1,000 trials raw dataset CSV
+    import csv
+    csv_path = os.path.join(ROOT_DIR, "reports", "simulation_1000_trials_dataset.csv")
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        fields = [
+            "trial_id", "batch_id", "device_id", "crop", "ground_truth_label",
+            "injected_fault_type", "temperature_c", "humidity_pct", "latitude",
+            "longitude", "timestamp", "ai_verdict", "outcome_category", "latency_ms"
+        ]
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(trials_dataset)
+    print(f"  [OK] Saved 1,000 Trials Raw Dataset CSV to: {csv_path}")
     
     print("\nBENCHMARK RUN COMPLETED SUCCESSFULLY.")
     return summary_data
