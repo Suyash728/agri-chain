@@ -21,7 +21,7 @@
 #define DHTTYPE       DHT11
 #define PIN_MQ135     34
 #define PIN_SW420     27
-#define PIN_LDR       35
+#define PIN_LDR       32
 #define GPS_RX_PIN    16
 #define GPS_TX_PIN    17
 #define ONBOARD_LED   2
