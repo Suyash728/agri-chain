@@ -3985,3 +3985,25 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `pio run` in `hardware/test_pentad`: Success (`[SUCCESS] Took 0.68 seconds`).
 - PlatformIO compilation: Flash 322,264 bytes (24.6%), RAM 23,036 bytes (7.0%).
+
+---
+
+## Task: Responsive Real-Time Telemetry Event Ledger Expansion — 2026-11-02
+
+**What was done:**
+- Expanded the real-time event ledger in [`hardware/monitor_live.py`](file:///home/suyash/Projects/agri-chain/hardware/monitor_live.py) from a fixed 9-row height (capped at 5–6 visible lines) to a fully responsive, proportional layout (`ratio=1`).
+- Replaced the hardcoded 6-item queue limitation with a 500-item historical buffer and dynamic terminal height slicing (`avail_lines = max(8, console.size.height - 24)`), filling the entire remaining terminal window.
+- Terminal height scaling verified:
+  - 35 rows: displays 11 simultaneous log entries.
+  - 45 rows (standard desktop Konsole): displays 21 simultaneous log entries (~3.5x increase, zero empty void).
+  - 60 rows (fullscreen): displays 36 simultaneous log entries.
+- Corrected the LDR pin description in [`hardware/monitor_live.py`](file:///home/suyash/Projects/agri-chain/hardware/monitor_live.py) from GPIO 35 to GPIO 32 matching the physical breadboard connection.
+- Added visual `☀️[LIGHT BREACH]` indicator in the real-time ledger when optical tamper occurs alongside existing `🚨[IMPACT]` shock tags.
+
+**Files changed:**
+- `hardware/monitor_live.py`
+- `MEMORY.md`
+
+**Verified:**
+- `py_compile hardware/monitor_live.py`: Passed cleanly with 0 errors.
+- Dynamic terminal height simulation: Verified at 35, 45, and 60 row viewports.

@@ -25,7 +25,7 @@ def create_dashboard_layout():
     layout.split_column(
         Layout(name="header", size=3),
         Layout(name="sensors", size=18),
-        Layout(name="log", size=9)
+        Layout(name="log", ratio=1)
     )
     return layout
 
@@ -109,7 +109,7 @@ def format_sensor_table(data):
 
     table.add_row(
         "💡 Optical Anti-Tamper",
-        "LDR (GPIO 35, ADC1)",
+        "LDR (GPIO 32, ADC1)",
         f"Est. Light: ~{lux:.0f} Lux | Intensity: {ldr_pct:.1f}%\nRaw: {ldr_v:.2f}V (ADC: {ldr_adc} / 4095)",
         f"{ldr_status}\n{ldr_sub}"
     )
@@ -192,9 +192,10 @@ def main():
                         chars = current_data.get("nmea_chars", 0)
 
                         alert_tag = " [bold red]🚨[IMPACT][/bold red]" if shocks > 0 else ""
-                        log_msg = f"[{now_str}] #{cycle_num:04d} | 🌡️ {temp:.1f}°C | 💨 CO₂: {co2:.0f}ppm, NH₃: {nh3:.1f}ppm | 💡 ~{lux:.0f} Lux | 💥 {shocks} Shocks{alert_tag} | 🛰️ GPS Chars: {chars}"
+                        tamper_tag = " [bold yellow]☀️[LIGHT BREACH][/bold yellow]" if (current_data.get("ldr_adc", 0) > 2500) else ""
+                        log_msg = f"[{now_str}] #{cycle_num:04d} | 🌡️ {temp:.1f}°C | 💨 CO₂: {co2:.0f}ppm, NH₃: {nh3:.1f}ppm | 💡 ~{lux:.0f} Lux{tamper_tag} | 💥 {shocks} Shocks{alert_tag} | 🛰️ GPS Chars: {chars}"
                         recent_logs.append(log_msg)
-                        if len(recent_logs) > 6:
+                        if len(recent_logs) > 500:
                             recent_logs.pop(0)
                     except Exception:
                         pass
@@ -215,9 +216,18 @@ def main():
                 # Update Sensor Table
                 layout["sensors"].update(format_sensor_table(current_data))
 
-                # Update Event Log
-                log_content = "\n".join(recent_logs) if recent_logs else "[dim]Awaiting telemetry packets...[/dim]"
-                layout["log"].update(Panel(log_content, title="📜 Multi-Gas & Optical Event Ledger (1000ms Real-Time)", border_style="green"))
+                # Update Event Log - Dynamically expand to fill all remaining terminal height
+                avail_lines = max(8, console.size.height - 24)
+                visible_logs = recent_logs[-avail_lines:]
+                log_content = "\n".join(visible_logs) if visible_logs else "[dim]Awaiting telemetry packets...[/dim]"
+                layout["log"].update(
+                    Panel(
+                        log_content,
+                        title="📜 Multi-Gas & Optical Event Ledger (1000ms Real-Time Pulse)",
+                        subtitle=f"[dim]Displaying latest {len(visible_logs)} cycles | Log buffer: {len(recent_logs)} packets[/dim]",
+                        border_style="green"
+                    )
+                )
 
             except KeyboardInterrupt:
                 break
