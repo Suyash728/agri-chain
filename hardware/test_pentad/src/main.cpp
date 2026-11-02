@@ -21,7 +21,8 @@
 #define DHTTYPE       DHT11
 #define PIN_MQ135     34
 #define PIN_SW420     27
-#define PIN_LDR       32
+#define PIN_LDR       35
+#define PIN_LDR_ALT   32
 #define GPS_RX_PIN    16
 #define GPS_TX_PIN    17
 #define ONBOARD_LED   2
@@ -81,6 +82,10 @@ void setup() {
   // SW-420 Interrupt Pin
   pinMode(PIN_SW420, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_SW420), onShockISR, FALLING);
+
+  pinMode(35, INPUT);
+  pinMode(32, INPUT);
+  pinMode(33, INPUT);
 
   // ADC1 Setup for MQ-135 and LDR
   analogReadResolution(12);
@@ -159,18 +164,32 @@ void loop() {
     if (ppmAcetone < 0.1f) ppmAcetone = 0.1f;
 
     // 3. Read LDR Light Sensor & Optical Lux Estimation
-    uint32_t ldrAdcSum = 0;
+    // Sample both GPIO 35 and GPIO 32 to guarantee detection
+    uint32_t sum35 = 0, sum32 = 0;
     for (int i = 0; i < 16; i++) {
-      ldrAdcSum += analogRead(PIN_LDR);
+      sum35 += analogRead(PIN_LDR);      // GPIO 35
+      sum32 += analogRead(PIN_LDR_ALT);  // GPIO 32
       delayMicroseconds(100);
     }
-    float ldrAvgAdc = ldrAdcSum / 16.0f;
+    float avg35 = sum35 / 16.0f;
+    float avg32 = sum32 / 16.0f;
+
+    // Select whichever pin is actually receiving the sensor voltage
+    float ldrAvgAdc = (avg35 > 30.0f) ? avg35 : ((avg32 > 30.0f) ? avg32 : avg35);
     float ldrVoltage = (ldrAvgAdc / 4095.0f) * 3.3f;
     float ldrPct = (ldrAvgAdc / 4095.0f) * 100.0f;
 
-    // Estimated Lux based on calibrated optical scale
-    float estimatedLux = powf(ldrAvgAdc / 409.5f, 2.5f);
-    if (estimatedLux > 2000.0f) estimatedLux = 2000.0f;
+    // Realistic optical Lux scaling for GL5528 photoresistor
+    // ADC ~0-100: Pitch dark crate (0-5 Lux)
+    // ADC ~500: Dim light / seam leak (15-30 Lux)
+    // ADC ~1500: Ambient indoor lighting (150-300 Lux)
+    // ADC ~3000+: Direct flashlight or sunlight (800-3000+ Lux)
+    float estimatedLux = 0.0f;
+    if (ldrAvgAdc > 80.0f) {
+      estimatedLux = powf(10.0f, ((ldrAvgAdc / 4095.0f) * 3.5f)) - 1.0f;
+      if (estimatedLux < 0.0f) estimatedLux = 0.0f;
+      if (estimatedLux > 4000.0f) estimatedLux = 4000.0f;
+    }
 
     // 4. Read Shock ISR Count
     noInterrupts();

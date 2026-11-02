@@ -4007,3 +4007,27 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `py_compile hardware/monitor_live.py`: Passed cleanly with 0 errors.
 - Dynamic terminal height simulation: Verified at 35, 45, and 60 row viewports.
+
+---
+
+## Task: LDR Optical Lux Calibration & Multi-Pin Dual-Sampling — 2026-11-02
+
+**What was done:**
+- Diagnosed why LDR readings reported 0 Lux while the onboard indicator LED glowed:
+  - The onboard comparator LED on standard 4-pin LM393 modules is driven by the digital output (`DO`), which triggers a binary threshold switch.
+  - Continuous optical illuminance (Lux) requires reading the analog divider pin (`AO`).
+  - Restored primary pin assignment to `GPIO 35` and implemented dual-pin fallback sampling across `GPIO 35` and `GPIO 32` so the firmware automatically locks onto the active hardware pin.
+  - Replaced the compressed power formula with realistic exponential optical mapping for GL5528 photoresistors with 10k fixed dividers:
+    - ADC ~0–100: 0–5 Lux (`🌑 Sealed Crate`)
+    - ADC ~500: ~15–30 Lux (`🕯️ Seam Leak`)
+    - ADC ~1500: ~150–300 Lux (`⛅ Indoor Warehouse`)
+    - ADC ~3000+: 800–3000+ Lux (`☀️ Direct Sunlight / Tamper Breach`)
+- Compiled and uploaded firmware to ESP32 on `/dev/ttyUSB0` via PlatformIO (`Wrote 327,424 bytes, Hash verified`).
+
+**Files changed:**
+- `hardware/test_pentad/src/main.cpp`
+- `MEMORY.md`
+
+**Verified:**
+- `pio run --target upload`: Uploaded successfully (100% hash verified).
+- Serial diagnostic telemetry sampled: Operating at 1000ms pulse.
