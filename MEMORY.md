@@ -4031,3 +4031,27 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `pio run --target upload`: Uploaded successfully (100% hash verified).
 - Serial diagnostic telemetry sampled: Operating at 1000ms pulse.
+
+---
+
+## Task: SW-420 Sensor Pin Reassignment to GPIO 32 — 2026-11-05
+
+**What was done:**
+- Reassigned the SW-420 transit shock / vibration interrupt data pin from **GPIO 27** to **GPIO 32** across firmware and monitoring scripts:
+  - `hardware/test_pentad/src/main.cpp`: Changed `#define PIN_SW420 32`, configured `pinMode(PIN_SW420, INPUT_PULLUP)` and `attachInterrupt(digitalPinToInterrupt(PIN_SW420), onShockISR, FALLING)`.
+  - Removed secondary LDR dual-sampling on GPIO 32 to grant exclusive digital interrupt ownership to SW-420, with LDR cleanly isolated on `PIN_LDR` (`GPIO 35`).
+  - `hardware/test_trio/src/main.cpp` & `hardware/esp32_firmware/src/main.cpp`: Synchronized `#define PIN_SW420 32` / `#define PIN_SW420_INT 32`.
+  - `hardware/monitor_live.py`: Updated terminal dashboard labels: `SW-420 (GPIO 32, IRQ)` and `LDR (GPIO 35, ADC1)`.
+- Compiled and uploaded firmware to ESP32 on `/dev/ttyUSB0` via PlatformIO (`Wrote 327,328 bytes, Hash verified 100%`).
+- Sampled live serial stream: Confirmed stable telemetry, LDR active on GPIO 35, and SW-420 interrupt listening on GPIO 32.
+
+**Files changed:**
+- `hardware/test_pentad/src/main.cpp`
+- `hardware/test_trio/src/main.cpp`
+- `hardware/esp32_firmware/src/main.cpp`
+- `hardware/monitor_live.py`
+- `MEMORY.md`
+
+**Verified:**
+- `pio run --target upload`: Success (`[SUCCESS] Took 14.71 seconds`).
+- Telemetry stream: Live at 115200 baud on `/dev/ttyUSB0`.

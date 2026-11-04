@@ -83,7 +83,7 @@ def format_sensor_table(data):
     shock_status = "[bold green]🛡️ Stable & Secure[/bold green]" if shocks == 0 else f"[bold red]🚨 {shocks} POTHOLE/IMPACT(S) DETECTED[/bold red]"
     table.add_row(
         "💥 Mechanical Shock",
-        "SW-420 (GPIO 27, IRQ)",
+        "SW-420 (GPIO 32, IRQ)",
         f"{shocks} Shock Event(s) Logged\n[dim]Threshold: 25ms Debounce[/dim]",
         f"{shock_status}\n[dim]Sub-µs Hardware Interrupt Latency[/dim]"
     )
@@ -109,7 +109,7 @@ def format_sensor_table(data):
 
     table.add_row(
         "💡 Optical Anti-Tamper",
-        "LDR (GPIO 32, ADC1)",
+        "LDR (GPIO 35, ADC1)",
         f"Est. Light: ~{lux:.0f} Lux | Intensity: {ldr_pct:.1f}%\nRaw: {ldr_v:.2f}V (ADC: {ldr_adc} / 4095)",
         f"{ldr_status}\n{ldr_sub}"
     )

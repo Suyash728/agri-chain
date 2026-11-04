@@ -20,9 +20,8 @@
 #define PIN_DHT11     4
 #define DHTTYPE       DHT11
 #define PIN_MQ135     34
-#define PIN_SW420     27
+#define PIN_SW420     32
 #define PIN_LDR       35
-#define PIN_LDR_ALT   32
 #define GPS_RX_PIN    16
 #define GPS_TX_PIN    17
 #define ONBOARD_LED   2
@@ -79,13 +78,12 @@ void setup() {
   pinMode(ONBOARD_LED, OUTPUT);
   digitalWrite(ONBOARD_LED, LOW);
 
-  // SW-420 Interrupt Pin
+  // SW-420 Interrupt Pin on GPIO 32
   pinMode(PIN_SW420, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_SW420), onShockISR, FALLING);
 
-  pinMode(35, INPUT);
-  pinMode(32, INPUT);
-  pinMode(33, INPUT);
+  // LDR Light Sensor Pin on GPIO 35
+  pinMode(PIN_LDR, INPUT);
 
   // ADC1 Setup for MQ-135 and LDR
   analogReadResolution(12);
@@ -163,19 +161,13 @@ void loop() {
     if (ppmAlcohol < 0.1f) ppmAlcohol = 0.1f;
     if (ppmAcetone < 0.1f) ppmAcetone = 0.1f;
 
-    // 3. Read LDR Light Sensor & Optical Lux Estimation
-    // Sample both GPIO 35 and GPIO 32 to guarantee detection
-    uint32_t sum35 = 0, sum32 = 0;
+    // 3. Read LDR Light Sensor & Optical Lux Estimation (16x oversampled on GPIO 35)
+    uint32_t ldrAdcSum = 0;
     for (int i = 0; i < 16; i++) {
-      sum35 += analogRead(PIN_LDR);      // GPIO 35
-      sum32 += analogRead(PIN_LDR_ALT);  // GPIO 32
+      ldrAdcSum += analogRead(PIN_LDR);
       delayMicroseconds(100);
     }
-    float avg35 = sum35 / 16.0f;
-    float avg32 = sum32 / 16.0f;
-
-    // Select whichever pin is actually receiving the sensor voltage
-    float ldrAvgAdc = (avg35 > 30.0f) ? avg35 : ((avg32 > 30.0f) ? avg32 : avg35);
+    float ldrAvgAdc = ldrAdcSum / 16.0f;
     float ldrVoltage = (ldrAvgAdc / 4095.0f) * 3.3f;
     float ldrPct = (ldrAvgAdc / 4095.0f) * 100.0f;
 

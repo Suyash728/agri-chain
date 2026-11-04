@@ -31,7 +31,7 @@
 #define PIN_GPS_RX         16  // UART2 RX (Connect to NEO-6M TX)
 #define PIN_GPS_TX         17  // UART2 TX (Connect to NEO-6M RX)
 #define PIN_PERIPH_MOSFET  25  // Gate drive for MQ-135 / GPS low-side switch (Optional)
-#define PIN_SW420_INT      27  // External Interrupt (Connect to SW-420 DO)
+#define PIN_SW420_INT      32  // External Interrupt (Connect to SW-420 DO)
 #define PIN_MQ135_ADC      34  // ADC1_CH6 (Connect to MQ-135 AO)
 #define PIN_LDR_ADC        35  // ADC1_CH7 (Connect to LDR AO if installed)
 #define ENABLE_LDR_TAMPER  false // Set true when physical LDR is connected, false to prevent floating pin false-tamper

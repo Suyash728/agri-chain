@@ -16,7 +16,7 @@
 #define PIN_DHT11     4
 #define DHTTYPE       DHT11
 #define PIN_MQ135     34
-#define PIN_SW420     27
+#define PIN_SW420     32
 #define ONBOARD_LED   2
 
 DHT dht(PIN_DHT11, DHTTYPE);
