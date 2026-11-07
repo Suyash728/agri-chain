@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AgriChain 6-Channel Real-Time Edge Node Mission Control Dashboard
+AgriChain 6-Subsystem Real-Time Edge Node Mission Control Dashboard
 Reads /dev/ttyUSB0, handles automatic offline LittleFS telemetry sync upon PC connect,
 and renders deep detailed multi-gas, optical, and transit shock telemetry.
 """
@@ -8,6 +8,7 @@ import sys
 import os
 import time
 import json
+import argparse
 import serial
 from datetime import datetime
 from rich.console import Console
@@ -27,7 +28,7 @@ def create_dashboard_layout():
     layout = Layout()
     layout.split_column(
         Layout(name="header", size=3),
-        Layout(name="sensors", size=21),
+        Layout(name="sensors", size=18),
         Layout(name="log", ratio=1)
     )
     return layout
@@ -157,28 +158,39 @@ def format_sensor_table(data):
     table.add_row(
         "💾 Edge Flash Buffer",
         "LittleFS (1.4MB Partition)",
-        f"{flash_records} Records Logged ({kb_used:.1f} KB)\n[dim]Zero-loss offline transit buffering[/dim]",
+        f"{flash_records} Records Logged ({kb_used:.1f} KB)\n[dim]Auto-buffered on transit & anomaly[/dim]",
         storage_status
     )
 
     return table
 
-def sync_offline_storage_if_present(ser):
+def sync_offline_storage_if_present(ser, force_clear=False, skip_sync=False):
     """
     Queries ESP32 for offline buffered telemetry and downloads records to disk.
     Returns list of synced record JSON objects.
     """
     os.makedirs(TRANSIT_LOG_DIR, exist_ok=True)
-    time.sleep(1.2)  # Wait for ESP32 boot
+    time.sleep(0.3)
     ser.reset_input_buffer()
 
+    if force_clear:
+        ser.write(b"CMD:CLEAR\n")
+        ser.flush()
+        time.sleep(0.3)
+        ser.reset_input_buffer()
+        console.print("[bold yellow]🧹 LittleFS flash buffer cleared.[/bold yellow]")
+        return []
+
+    if skip_sync:
+        return []
+
+    # Send status query
     ser.write(b"CMD:STATUS\n")
     ser.flush()
-    time.sleep(0.4)
 
     record_count = 0
     start = time.time()
-    while time.time() - start < 2.0:
+    while time.time() - start < 1.5:
         if ser.in_waiting:
             line = ser.readline().decode('utf-8', errors='ignore').strip()
             if line.startswith("STATUS:"):
@@ -189,18 +201,20 @@ def sync_offline_storage_if_present(ser):
                     pass
                 break
         else:
-            time.sleep(0.05)
+            time.sleep(0.03)
 
     if record_count == 0:
         return []
 
-    console.print(f"[bold cyan]📦 Found {record_count} offline records buffered on ESP32 Flash. Syncing to PC...[/bold cyan]")
+    console.print(f"[bold cyan]📦 Found {record_count} offline records in ESP32 Flash. Syncing to PC...[/bold cyan]")
     ser.write(b"CMD:SYNC\n")
     ser.flush()
 
     synced_records = []
+    dump_timeout = max(8.0, record_count * 0.04 + 4.0)
     dump_start = time.time()
-    while time.time() - dump_start < 10.0:
+
+    while time.time() - dump_start < dump_timeout:
         if ser.in_waiting:
             line = ser.readline().decode('utf-8', errors='ignore').strip()
             if line.startswith("OFFLINE_JSON:"):
@@ -212,7 +226,7 @@ def sync_offline_storage_if_present(ser):
             elif "OFFLINE_SYNC_COMPLETE" in line or "OFFLINE_DUMP_COMPLETE" in line:
                 break
         else:
-            time.sleep(0.02)
+            time.sleep(0.01)
 
     if synced_records:
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -220,12 +234,19 @@ def sync_offline_storage_if_present(ser):
         with open(out_filename, "w", encoding="utf-8") as f:
             for rec in synced_records:
                 f.write(json.dumps(rec) + "\n")
-        console.print(f"[bold green]✅ Successfully downloaded {len(synced_records)} transit records to {out_filename}[/bold green]")
-        time.sleep(1.0)
+        console.print(f"[bold green]✅ Downloaded {len(synced_records)} transit records to {out_filename}[/bold green]")
+        time.sleep(0.8)
 
+    # Clean residual buffers
+    ser.reset_input_buffer()
     return synced_records
 
 def main():
+    parser = argparse.ArgumentParser(description="AgriChain Real-Time Telemetry Monitor")
+    parser.add_argument("--clear", action="store_true", help="Clear onboard LittleFS storage before running")
+    parser.add_argument("--skip-sync", action="store_true", help="Skip offline download and start dashboard immediately")
+    args = parser.parse_args()
+
     try:
         ser = serial.Serial(PORT, BAUD, timeout=1)
         ser.dtr = False
@@ -235,7 +256,7 @@ def main():
         sys.exit(1)
 
     # Perform handshake and sync offline transit records
-    synced = sync_offline_storage_if_present(ser)
+    synced = sync_offline_storage_if_present(ser, force_clear=args.clear, skip_sync=args.skip_sync)
 
     recent_logs = []
     if synced:
@@ -311,7 +332,7 @@ def main():
                 layout["sensors"].update(format_sensor_table(current_data))
 
                 # Update Event Log - Dynamically expand to fill all remaining terminal height
-                avail_lines = max(8, console.size.height - 27)
+                avail_lines = max(6, console.size.height - 24)
                 visible_logs = recent_logs[-avail_lines:]
                 log_content = "\n".join(visible_logs) if visible_logs else "[dim]Awaiting telemetry packets...[/dim]"
                 layout["log"].update(

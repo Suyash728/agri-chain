@@ -9,7 +9,7 @@
  *  3. LDR: Optical Lux Estimation (0-1000+ lux), Light Percentage (0-100%), Crate Seal Security State
  *  4. SW-420: Sub-microsecond Hardware Interrupt Shock & Transit Bruising Logger
  *  5. NEO-6M GPS: NMEA 3D Geolocation, Speed (km/h), Altitude, Satellites, HDOP & Clickable Google Maps
- *  6. LittleFS Storage: Resilient onboard flash ring-buffer for offline transit logging until PC reconnection
+ *  6. LittleFS Storage: Resilient onboard flash ring-buffer for offline transit logging with O(1) instant boot
  */
 
 #include <Arduino.h>
@@ -37,8 +37,10 @@
 // ==============================================================================
 #define LOG_FILE_PATH        "/agrichain_log.jsonl"
 #define LOG_FILE_PREV        "/agrichain_log_prev.jsonl"
+#define LOG_COUNT_PATH       "/agrichain_count.bin"
 #define MAX_LOG_BYTES        (1024 * 1024)   // 1 MB flash storage ceiling
-#define SAMPLE_INTERVAL_MS   1000            // 1 Hz telemetry loop
+#define TELEMETRY_PULSE_MS   1000            // 1 Hz live PC stream
+#define OFFLINE_LOG_MS       10000           // 10s periodic offline transit buffer
 #define HEATER_WARMUP_MS     45000           // 45s MQ-135 heater stabilization window
 
 // MQ-135 Calibration Constants (Load Resistor RL = 10k, Clean Air R0 = 10k nominal)
@@ -74,6 +76,8 @@ uint32_t getShockCount() {
 // Telemetry cycle and timing state
 uint32_t cycle = 0;
 unsigned long lastCycleTime = 0;
+unsigned long lastLogTime = 0;
+uint32_t lastLoggedShocks = 0;
 float lastValidTemp = 28.5f;
 float lastValidHum = 68.0f;
 bool liveStreamActive = true;
@@ -245,8 +249,42 @@ GpsMetrics readGps() {
 }
 
 // ==============================================================================
-// ONBOARD LITTLEFS STORAGE SUBSYSTEM
+// ONBOARD LITTLEFS STORAGE SUBSYSTEM (O(1) NON-BLOCKING)
 // ==============================================================================
+void saveRecordCount(uint32_t count) {
+  File cf = LittleFS.open(LOG_COUNT_PATH, "w");
+  if (cf) {
+    cf.write((const uint8_t*)&count, sizeof(count));
+    cf.flush();
+    cf.close();
+  }
+}
+
+void loadRecordCount() {
+  storedRecordCount = 0;
+  if (LittleFS.exists(LOG_COUNT_PATH)) {
+    File cf = LittleFS.open(LOG_COUNT_PATH, "r");
+    if (cf && cf.size() >= sizeof(uint32_t)) {
+      uint32_t c = 0;
+      cf.read((uint8_t*)&c, sizeof(c));
+      storedRecordCount = c;
+      cf.close();
+      return;
+    }
+    if (cf) cf.close();
+  }
+
+  // Instant O(1) estimate from file size if count file was absent
+  if (LittleFS.exists(LOG_FILE_PATH)) {
+    File f = LittleFS.open(LOG_FILE_PATH, "r");
+    if (f) {
+      currentLogSizeBytes = f.size();
+      f.close();
+      storedRecordCount = currentLogSizeBytes / 360;
+    }
+  }
+}
+
 void initStorage() {
   if (!LittleFS.begin(true)) {
     Serial.println("❌ [STORAGE] LittleFS partition mount failed");
@@ -259,26 +297,18 @@ void initStorage() {
     File f = LittleFS.open(LOG_FILE_PATH, "r");
     if (f) {
       currentLogSizeBytes = f.size();
-      storedRecordCount = 0;
-      while (f.available()) {
-        String line = f.readStringUntil('\n');
-        if (line.length() > 5) {
-          storedRecordCount++;
-        }
-      }
       f.close();
     }
   } else {
     currentLogSizeBytes = 0;
-    storedRecordCount = 0;
   }
+
+  loadRecordCount();
 
   size_t total = LittleFS.totalBytes();
   size_t used = LittleFS.usedBytes();
   size_t freeKb = (total > used) ? (total - used) / 1024 : 0;
 
-  Serial.printf("📦 [STORAGE] LittleFS mounted successfully. Records: %u | Size: %u bytes | Free Flash: %u KB\n",
-                (unsigned int)storedRecordCount, (unsigned int)currentLogSizeBytes, (unsigned int)freeKb);
   Serial.printf("STORAGE_ANNOUNCE:{\"records\":%u,\"bytes\":%u,\"free_kb\":%u}\n",
                 (unsigned int)storedRecordCount, (unsigned int)currentLogSizeBytes, (unsigned int)freeKb);
 }
@@ -288,11 +318,11 @@ void appendStorageRecord(const String &jsonPacket) {
 
   // Manage storage ceiling: if over MAX_LOG_BYTES, rotate log file
   if (currentLogSizeBytes >= MAX_LOG_BYTES) {
-    Serial.println("⚠️ [STORAGE] Storage reached 1MB cap. Rotating log to preserve recent transit telemetry.");
     LittleFS.remove(LOG_FILE_PREV);
     LittleFS.rename(LOG_FILE_PATH, LOG_FILE_PREV);
     currentLogSizeBytes = 0;
     storedRecordCount = 0;
+    saveRecordCount(0);
   }
 
   File f = LittleFS.open(LOG_FILE_PATH, "a");
@@ -302,6 +332,7 @@ void appendStorageRecord(const String &jsonPacket) {
     f.close();
     currentLogSizeBytes += written;
     storedRecordCount++;
+    saveRecordCount(storedRecordCount);
   }
 }
 
@@ -314,28 +345,35 @@ void dumpStorageRecords() {
 
   File f = LittleFS.open(LOG_FILE_PATH, "r");
   if (!f) {
-    Serial.println("❌ [STORAGE] Could not open log file for reading.");
+    Serial.println("OFFLINE_DUMP_START:0");
+    Serial.println("OFFLINE_DUMP_COMPLETE:0");
     return;
   }
 
   Serial.printf("OFFLINE_DUMP_START:%u\n", (unsigned int)storedRecordCount);
-  uint32_t streamedCount = 0;
+  uint32_t count = 0;
   while (f.available()) {
     String line = f.readStringUntil('\n');
     line.trim();
     if (line.length() > 0) {
       Serial.print("OFFLINE_JSON:");
       Serial.println(line);
-      streamedCount++;
+      count++;
+      // Feed FreeRTOS watchdog every 20 records
+      if (count % 20 == 0) {
+        vTaskDelay(pdMS_TO_TICKS(1));
+      }
     }
   }
   f.close();
-  Serial.printf("OFFLINE_DUMP_COMPLETE:%u\n", (unsigned int)streamedCount);
+  Serial.printf("OFFLINE_DUMP_COMPLETE:%u\n", (unsigned int)count);
 }
 
 void clearStorageRecords() {
-  if (fsAvailable && LittleFS.exists(LOG_FILE_PATH)) {
+  if (fsAvailable) {
     LittleFS.remove(LOG_FILE_PATH);
+    LittleFS.remove(LOG_FILE_PREV);
+    LittleFS.remove(LOG_COUNT_PATH);
   }
   storedRecordCount = 0;
   currentLogSizeBytes = 0;
@@ -385,20 +423,10 @@ void executeCommand(String cmd) {
     Serial.println("STREAM:RESUMED");
   }
   else if (cmd == "HELP" || cmd == "CMD:HELP" || cmd == "?") {
-    Serial.println("\n╔════════════════════════════════════════════════════════════════════╗");
-    Serial.println("║            AgriChain ESP32 Node Serial Command Interface           ║");
-    Serial.println("╠════════════════════════════════════════════════════════════════════╣");
-    Serial.println("║  CMD:STATUS   - Query flash buffer record count and free memory   ║");
-    Serial.println("║  CMD:DUMP     - Stream all buffered offline records to PC         ║");
-    Serial.println("║  CMD:CLEAR    - Erase flash buffer after successful transfer      ║");
-    Serial.println("║  CMD:SYNC     - Download all offline records and clear storage    ║");
-    Serial.println("║  CMD:PAUSE    - Pause live console telemetry output               ║");
-    Serial.println("║  CMD:RESUME   - Resume live console telemetry output              ║");
-    Serial.println("║  CMD:HELP     - Show this interactive help menu                   ║");
-    Serial.println("╚════════════════════════════════════════════════════════════════════╝\n");
+    Serial.println("HELP:COMMANDS=STATUS,DUMP,CLEAR,SYNC,PAUSE,RESUME");
   }
   else if (cmd.length() > 0) {
-    Serial.printf("⚠️ Unknown command: '%s'. Type 'CMD:HELP' for supported options.\n", cmd.c_str());
+    Serial.printf("CMD_UNKNOWN:%s\n", cmd.c_str());
   }
 }
 
@@ -438,20 +466,17 @@ void setup() {
   // NEO-6M GPS UART Setup (9600 baud, 8N1)
   gpsSerial.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
 
-  delay(600);
+  delay(200);
 
-  Serial.println("\n================================================================================");
-  Serial.println("  🚚 AgriChain Deep Telemetry & Multi-Gas Environmental Suite (LittleFS Ready)");
-  Serial.println("================================================================================");
-
-  // Initialize LittleFS storage
+  // Initialize LittleFS storage (instant O(1))
   initStorage();
 
   // Initialize DHT11 sensor
   dht.begin();
-  delay(500);
+  delay(300);
 
   lastCycleTime = millis();
+  lastLogTime = millis();
 }
 
 // ==============================================================================
@@ -468,7 +493,7 @@ void loop() {
   checkIncomingSerial();
 
   // 3. Periodic Telemetry Sampling (Every 1000ms)
-  if (millis() - lastCycleTime >= SAMPLE_INTERVAL_MS) {
+  if (millis() - lastCycleTime >= TELEMETRY_PULSE_MS) {
     lastCycleTime = millis();
     cycle++;
 
@@ -525,66 +550,20 @@ void loop() {
       gas.isWarmingUp ? "true" : "false"
     );
 
-    // Persist reading to LittleFS onboard flash buffer (ensures zero data loss during offline transit)
-    appendStorageRecord(String(jsonBuf));
+    // Intelligently buffer to LittleFS flash:
+    // Log immediately if an impact shock or optical tamper occurred, OR periodically every 10s
+    bool isAnomaly = (currentShocks > lastLoggedShocks) || optics.tamperBreach;
+    bool timeToLog = (millis() - lastLogTime >= OFFLINE_LOG_MS);
+    if (isAnomaly || timeToLog) {
+      lastLogTime = millis();
+      lastLoggedShocks = currentShocks;
+      appendStorageRecord(String(jsonBuf));
+    }
 
-    // Emit live telemetry to PC if streaming is active
+    // Emit live telemetry stream to PC
     if (liveStreamActive) {
       Serial.print("JSON:");
       Serial.println(jsonBuf);
-
-      // Detailed terminal diagnostic table
-      Serial.printf("\n╔══════════════════════════════════════════════════════════════════════════════════╗\n");
-      Serial.printf("║ 🚚 AgriChain Real-Time Node | Cycle #%04lu | Uptime: %02lu:%02lu:%02lu                  ║\n",
-                    (unsigned long)cycle,
-                    (unsigned long)(millis() / 3600000),
-                    (unsigned long)((millis() / 60000) % 60),
-                    (unsigned long)((millis() / 1000) % 60));
-      Serial.printf("╠══════════════════════════════════════════════════════════════════════════════════╣\n");
-      Serial.printf("║ 🌡️  CLIMATE:    %.1f°C (%.1f°F) | Humidity: %.1f%% RH | Heat Index: %.1f°C        \n",
-                    climate.tempC, (climate.tempC * 1.8f + 32.0f), climate.humPct, climate.heatIndexC);
-      Serial.printf("║    Dew Point:  %.1f°C | Condensation Margin: %.1f°C %s\n",
-                    climate.dewPointC, climate.condMargin,
-                    (climate.condMargin < 2.0f) ? "⚠️ [DEW CONDENSATION RISK]" : "✅ [NO SURFACE CONDENSATION]");
-      Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
-      Serial.printf("║ 💨 GAS (E-NOSE): Voltage: %.2fV (ADC: %lu) | Headspace Ratio: %.2f %s\n",
-                    gas.voltage, (unsigned long)gas.avgAdc, gas.ratio,
-                    gas.isWarmingUp ? "⏳ [HEATER PRE-HEATING]" : "✅ [CALIBRATED]");
-      Serial.printf("║    • CO2 (Respiration):  %6.1f ppm  [%s]\n",
-                    gas.co2Ppm, (gas.co2Ppm < 800.0f) ? "🍃 Fresh Air" : (gas.co2Ppm < 1500.0f) ? "🌱 Normal Respiration" : "⚠️ High Respiration");
-      Serial.printf("║    • NH3 (Rot/Ammonia):  %6.2f ppm  [%s]\n",
-                    gas.nh3Ppm, (gas.nh3Ppm < 10.0f) ? "🍃 Clean" : "🚨 Microbial Rot Decay");
-      Serial.printf("║    • Alcohol (Ferment):  %6.2f ppm  [%s]\n",
-                    gas.alcoholPpm, (gas.alcoholPpm < 25.0f) ? "🍃 Clean" : "⚠️ Anaerobic Fermentation");
-      Serial.printf("║    • Acetone (Volatiles):%6.2f ppm  [%s]\n",
-                    gas.acetonePpm, (gas.acetonePpm < 15.0f) ? "🍃 Clean" : "⚠️ Early Spoilage");
-      Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
-      Serial.printf("║ 💡 LIGHT/TAMPER: Voltage: %.2fV (ADC: %lu | %.1f%%) | Est. Light: ~%.0f Lux\n",
-                    optics.voltage, (unsigned long)optics.avgAdc, optics.lightPct, optics.estimatedLux);
-      Serial.printf("║    Enclosure:   %s\n",
-                    (optics.avgAdc < 250.0f) ? "🌑 Pitch Dark (Crate 100% Sealed & Secure)" :
-                    (optics.avgAdc < 1200.0f) ? "🕯️ Low Light / Minor Seam Leak" :
-                    (optics.avgAdc < 2800.0f) ? "⛅ Ambient Indoor / Warehouse Light" :
-                    "☀️ DIRECT SUNLIGHT / TAMPER BREACH DETECTED!");
-      Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
-      Serial.printf("║ 💥 SHOCK & IRQ:  %lu Shock Events %s\n",
-                    (unsigned long)currentShocks,
-                    (currentShocks > 0) ? "🚨 [POTHOLE IMPACT - BRUISING RISK]" : "🛡️ [Stable & Smooth Transit]");
-      Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
-      if (gpsData.hasFix) {
-        Serial.printf("║ 🛰️  GPS (3D FIX): Lat: %.6f, Lon: %.6f | Alt: %.1fm | Speed: %.1f km/h | Sats: %lu\n",
-                      gpsData.lat, gpsData.lon, gpsData.alt, gpsData.speedKmh, (unsigned long)gpsData.sats);
-        Serial.printf("║    Google Maps: https://www.google.com/maps?q=%.6f,%.6f\n", gpsData.lat, gpsData.lon);
-      } else {
-        Serial.printf("║ 🛰️  GPS STATUS:   Searching for Satellites... (NMEA Bytes: %lu | Sats: %lu)\n",
-                      (unsigned long)gpsData.nmeaChars, (unsigned long)gpsData.sats);
-      }
-      Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
-      Serial.printf("║ 💾 FLASH BUFFER: %u Records (%u bytes) | Free Flash: %u KB | Mode: Auto-Buffered\n",
-                    (unsigned int)storedRecordCount,
-                    (unsigned int)currentLogSizeBytes,
-                    (unsigned int)((fsAvailable && LittleFS.totalBytes() > LittleFS.usedBytes()) ? (LittleFS.totalBytes() - LittleFS.usedBytes()) / 1024 : 0));
-      Serial.printf("╚══════════════════════════════════════════════════════════════════════════════════╝\n");
     }
   }
 }
