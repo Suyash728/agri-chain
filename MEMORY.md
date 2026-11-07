@@ -4130,3 +4130,30 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - Live serial test: Zero crash loops, steady 1 Hz `JSON:` packets.
 - `monitor_live.py`: Tested automatic sync of 79 records followed by instant launch of live telemetry dashboard.
+
+
+---
+
+## Task: Resolve Flash Block Exhaustion & Clarify Non-Blocking GPS Status — 2026-11-08
+
+**What was done:**
+- Diagnosed why the dashboard was frozen at cycle 0 (`Awaiting telemetry packets...`):
+  - **LittleFS Block Exhaustion (`error: No more free space 0x69`)**: Previous rotation logic created `_prev` backup files exceeding the 1.44MB partition, causing LittleFS write calls to fail and flood the UART TX with kernel error logs instead of JSON telemetry.
+  - **GPS Misconception Clarification**: The user observed `Awaiting 4-satellite line-of-sight lock...` and suspected the firmware was stalled waiting for GPS fixes. In reality, GPS ingestion is 100% non-blocking; the node operates regardless of satellite availability.
+- **Implemented Fixes:**
+  - `hardware/test_pentad/src/main.cpp`:
+    - Reduced `MAX_LOG_BYTES` to a safe 350 KB ceiling with a strict 200 KB free-space reserve guard (`MIN_FREE_BYTES`).
+    - Added automated partition wipe (`LittleFS.format()`) when available flash blocks fall below the reserve threshold.
+    - Updated `clearStorageRecords()` to perform clean format.
+  - `hardware/monitor_live.py`:
+    - Updated the indoor GPS status label to `🛰️ Background Acquisition (No Sky Lock)` with `Telemetry Active | Non-blocking GPS` subtext to prevent confusion.
+- Compiled and flashed firmware to ESP32 on `/dev/ttyUSB0` (`Took 16.25 seconds`, hash verified).
+
+**Files changed:**
+- `hardware/test_pentad/src/main.cpp`
+- `hardware/monitor_live.py`
+- `MEMORY.md`
+
+**Verified:**
+- Serial telemetry: Confirmed clean 1 Hz `JSON:` stream with zero LittleFS kernel errors.
+- End-to-end sync: Successfully tested automated sync and live dashboard execution.

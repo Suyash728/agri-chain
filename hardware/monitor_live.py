@@ -135,8 +135,8 @@ def format_sensor_table(data):
         gps_metric = f"Lat: {lat:.6f}, Lon: {lon:.6f} | Alt: {alt:.1f}m\nSpeed: {speed:.1f} km/h | HDOP: {hdop:.2f} | Sats: {sats}\n[link={maps_url}][bold cyan]{maps_url}[/bold cyan][/link]"
         gps_status = "[bold green]🛰️ 3D SATELLITE FIX LOCKED[/bold green]\n[underline bright_white]Click link to open in Google Maps[/underline bright_white]"
     else:
-        gps_metric = f"NMEA Raw Bytes: {chars} | Sats Visible: {sats}\n[dim]Awaiting 4-satellite line-of-sight lock...[/dim]"
-        gps_status = "[bold yellow]🛰️ Searching for Satellites...[/bold yellow]\n[dim]Place ceramic patch antenna near sky[/dim]"
+        gps_metric = f"NMEA Raw Bytes: {chars} | Sats Visible: {sats}\n[dim]Autonomous Background Receiver[/dim]"
+        gps_status = "[bold yellow]🛰️ Background Acquisition (No Sky Lock)[/bold yellow]\n[dim]Telemetry Active | Non-blocking GPS[/dim]"
 
     table.add_row(
         "🛰️ Highway Geolocation",

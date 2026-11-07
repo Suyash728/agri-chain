@@ -36,9 +36,9 @@
 // STORAGE & TELEMETRY CONSTANTS
 // ==============================================================================
 #define LOG_FILE_PATH        "/agrichain_log.jsonl"
-#define LOG_FILE_PREV        "/agrichain_log_prev.jsonl"
 #define LOG_COUNT_PATH       "/agrichain_count.bin"
-#define MAX_LOG_BYTES        (1024 * 1024)   // 1 MB flash storage ceiling
+#define MAX_LOG_BYTES        (350 * 1024)    // 350 KB safe ceiling (out of 1.44MB partition)
+#define MIN_FREE_BYTES       (200 * 1024)    // 200 KB free space reserve guard
 #define TELEMETRY_PULSE_MS   1000            // 1 Hz live PC stream
 #define OFFLINE_LOG_MS       10000           // 10s periodic offline transit buffer
 #define HEATER_WARMUP_MS     45000           // 45s MQ-135 heater stabilization window
@@ -249,7 +249,7 @@ GpsMetrics readGps() {
 }
 
 // ==============================================================================
-// ONBOARD LITTLEFS STORAGE SUBSYSTEM (O(1) NON-BLOCKING)
+// ONBOARD LITTLEFS STORAGE SUBSYSTEM (O(1) NON-BLOCKING & BLOCK-PROTECTED)
 // ==============================================================================
 void saveRecordCount(uint32_t count) {
   File cf = LittleFS.open(LOG_COUNT_PATH, "w");
@@ -287,11 +287,21 @@ void loadRecordCount() {
 
 void initStorage() {
   if (!LittleFS.begin(true)) {
-    Serial.println("❌ [STORAGE] LittleFS partition mount failed");
+    Serial.println("❌ [STORAGE] LittleFS mount failed");
     fsAvailable = false;
     return;
   }
   fsAvailable = true;
+
+  // Auto-recovery: if free flash is below guard threshold, format to prevent block exhaustion
+  size_t total = LittleFS.totalBytes();
+  size_t used = LittleFS.usedBytes();
+  if (total > 0 && (total - used) < MIN_FREE_BYTES) {
+    LittleFS.format();
+    currentLogSizeBytes = 0;
+    storedRecordCount = 0;
+    saveRecordCount(0);
+  }
 
   if (LittleFS.exists(LOG_FILE_PATH)) {
     File f = LittleFS.open(LOG_FILE_PATH, "r");
@@ -305,8 +315,8 @@ void initStorage() {
 
   loadRecordCount();
 
-  size_t total = LittleFS.totalBytes();
-  size_t used = LittleFS.usedBytes();
+  total = LittleFS.totalBytes();
+  used = LittleFS.usedBytes();
   size_t freeKb = (total > used) ? (total - used) / 1024 : 0;
 
   Serial.printf("STORAGE_ANNOUNCE:{\"records\":%u,\"bytes\":%u,\"free_kb\":%u}\n",
@@ -316,10 +326,19 @@ void initStorage() {
 void appendStorageRecord(const String &jsonPacket) {
   if (!fsAvailable) return;
 
-  // Manage storage ceiling: if over MAX_LOG_BYTES, rotate log file
+  // Prevent LittleFS block exhaustion
+  size_t total = LittleFS.totalBytes();
+  size_t used = LittleFS.usedBytes();
+  if (total > 0 && (total - used) < MIN_FREE_BYTES) {
+    LittleFS.format();
+    currentLogSizeBytes = 0;
+    storedRecordCount = 0;
+    saveRecordCount(0);
+  }
+
+  // Rotate/prune when cap is reached
   if (currentLogSizeBytes >= MAX_LOG_BYTES) {
-    LittleFS.remove(LOG_FILE_PREV);
-    LittleFS.rename(LOG_FILE_PATH, LOG_FILE_PREV);
+    LittleFS.remove(LOG_FILE_PATH);
     currentLogSizeBytes = 0;
     storedRecordCount = 0;
     saveRecordCount(0);
@@ -371,9 +390,7 @@ void dumpStorageRecords() {
 
 void clearStorageRecords() {
   if (fsAvailable) {
-    LittleFS.remove(LOG_FILE_PATH);
-    LittleFS.remove(LOG_FILE_PREV);
-    LittleFS.remove(LOG_COUNT_PATH);
+    LittleFS.format();
   }
   storedRecordCount = 0;
   currentLogSizeBytes = 0;
