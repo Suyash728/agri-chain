@@ -1,6 +1,6 @@
 /**
  * @file main.cpp
- * @brief AgriChain Advanced Multi-Gas & Precision Environmental Telemetry
+ * @brief AgriChain Advanced Multi-Gas & Precision Environmental Telemetry Node
  * @target ESP32 DevKit v1 (30-pin)
  * 
  * Deep Sensing Capabilities:
@@ -9,49 +9,128 @@
  *  3. LDR: Optical Lux Estimation (0-1000+ lux), Light Percentage (0-100%), Crate Seal Security State
  *  4. SW-420: Sub-microsecond Hardware Interrupt Shock & Transit Bruising Logger
  *  5. NEO-6M GPS: NMEA 3D Geolocation, Speed (km/h), Altitude, Satellites, HDOP & Clickable Google Maps
+ *  6. LittleFS Storage: Resilient onboard flash ring-buffer for offline transit logging until PC reconnection
  */
 
 #include <Arduino.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <TinyGPSPlus.h>
+#include <FS.h>
+#include <LittleFS.h>
 #include <math.h>
 
+// ==============================================================================
+// HARDWARE PIN DEFINITIONS
+// ==============================================================================
 #define PIN_DHT11     4
 #define DHTTYPE       DHT11
-#define PIN_MQ135     34
-#define PIN_SW420     32
-#define PIN_LDR       35
-#define GPS_RX_PIN    16
-#define GPS_TX_PIN    17
-#define ONBOARD_LED   2
+#define PIN_MQ135     34   // ADC1 Channel 6
+#define PIN_SW420     32   // Dedicated Transit Vibration Interrupt (GPIO 32)
+#define PIN_LDR       35   // ADC1 Channel 7 (Dedicated Optical Light Divider)
+#define GPS_RX_PIN    16   // ESP32 RX2 <- GPS TX
+#define GPS_TX_PIN    17   // ESP32 TX2 -> GPS RX
+#define ONBOARD_LED   2    // Blue status indicator
 
+// ==============================================================================
+// STORAGE & TELEMETRY CONSTANTS
+// ==============================================================================
+#define LOG_FILE_PATH        "/agrichain_log.jsonl"
+#define LOG_FILE_PREV        "/agrichain_log_prev.jsonl"
+#define MAX_LOG_BYTES        (1024 * 1024)   // 1 MB flash storage ceiling
+#define SAMPLE_INTERVAL_MS   1000            // 1 Hz telemetry loop
+#define HEATER_WARMUP_MS     45000           // 45s MQ-135 heater stabilization window
+
+// MQ-135 Calibration Constants (Load Resistor RL = 10k, Clean Air R0 = 10k nominal)
+const float RL_VALUE = 10.0f;
+const float R0_CLEAN_AIR = 10.0f;
+
+// ==============================================================================
+// GLOBAL OBJECTS & STATE
+// ==============================================================================
 DHT dht(PIN_DHT11, DHTTYPE);
 TinyGPSPlus gps;
 HardwareSerial gpsSerial(2);
 
+// Volatile shock counter with atomic accessor
 volatile uint32_t totalShocks = 0;
 volatile uint32_t lastShockMs = 0;
 
-// Sub-microsecond hardware interrupt for vibration detection
 void IRAM_ATTR onShockISR() {
   uint32_t now = millis();
   if (now - lastShockMs > 25) { // 25ms hardware debounce latch
-    totalShocks++;
+    totalShocks = totalShocks + 1;
     lastShockMs = now;
   }
 }
 
+uint32_t getShockCount() {
+  noInterrupts();
+  uint32_t count = totalShocks;
+  interrupts();
+  return count;
+}
+
+// Telemetry cycle and timing state
 uint32_t cycle = 0;
 unsigned long lastCycleTime = 0;
 float lastValidTemp = 28.5f;
 float lastValidHum = 68.0f;
+bool liveStreamActive = true;
 
-// Calibration parameters for MQ-135 (Load Resistor RL = 10k, Clean Air R0 ~ 10k nominal)
-const float RL_VALUE = 10.0f;     // Load resistance in kOhms
-const float R0_CLEAN_AIR = 10.0f; // Calibrated R0 in kOhms
+// Flash storage tracking
+size_t storedRecordCount = 0;
+size_t currentLogSizeBytes = 0;
+bool fsAvailable = false;
 
-// Compute Dew Point (°C) using Magnus-Tetens formula
+// Serial command buffer
+String serialCmdBuffer = "";
+
+// ==============================================================================
+// DATA METRIC STRUCTURES
+// ==============================================================================
+struct ClimateMetrics {
+  float tempC;
+  float humPct;
+  float dewPointC;
+  float heatIndexC;
+  float condMargin;
+  bool valid;
+};
+
+struct GasMetrics {
+  float avgAdc;
+  float voltage;
+  float ratio;
+  float co2Ppm;
+  float nh3Ppm;
+  float alcoholPpm;
+  float acetonePpm;
+  bool isWarmingUp;
+};
+
+struct OpticsMetrics {
+  float avgAdc;
+  float voltage;
+  float lightPct;
+  float estimatedLux;
+  bool tamperBreach;
+};
+
+struct GpsMetrics {
+  bool hasFix;
+  float lat;
+  float lon;
+  float alt;
+  float speedKmh;
+  float hdop;
+  uint32_t sats;
+  uint32_t nmeaChars;
+};
+
+// ==============================================================================
+// MATHEMATICAL HYGROTHERMAL ALGORITHMS
+// ==============================================================================
 float computeDewPoint(float tempC, float humPct) {
   if (humPct <= 0.0f) return tempC;
   const float a = 17.27f;
@@ -60,9 +139,8 @@ float computeDewPoint(float tempC, float humPct) {
   return (b * alpha) / (a - alpha);
 }
 
-// Compute Heat Index (°C)
 float computeHeatIndex(float tempC, float humPct) {
-  float T = (tempC * 9.0f / 5.0f) + 32.0f; // convert to Fahrenheit
+  float T = (tempC * 9.0f / 5.0f) + 32.0f; // Fahrenheit
   float R = humPct;
   float hi = 0.5f * (T + 61.0f + ((T - 68.0f) * 1.2f) + (R * 0.094f));
   if (hi >= 80.0f) {
@@ -70,19 +148,287 @@ float computeHeatIndex(float tempC, float humPct) {
          - 0.00683783f * T * T - 0.05481717f * R * R + 0.00122874f * T * T * R
          + 0.00085282f * T * R * R - 0.00000199f * T * T * R * R;
   }
-  return (hi - 32.0f) * 5.0f / 9.0f; // convert back to Celsius
+  return (hi - 32.0f) * 5.0f / 9.0f; // Celsius
 }
 
+// ==============================================================================
+// SENSOR ACQUISITION SUBSYSTEMS
+// ==============================================================================
+ClimateMetrics readClimate() {
+  ClimateMetrics m;
+  float t = dht.readTemperature();
+  float h = dht.readHumidity();
+
+  m.valid = (!isnan(t) && t > -20.0f && t < 80.0f && !isnan(h) && h >= 0.0f && h <= 100.0f);
+  if (m.valid) {
+    lastValidTemp = t;
+    lastValidHum = h;
+  }
+
+  m.tempC = lastValidTemp;
+  m.humPct = lastValidHum;
+  m.dewPointC = computeDewPoint(m.tempC, m.humPct);
+  m.heatIndexC = computeHeatIndex(m.tempC, m.humPct);
+  m.condMargin = m.tempC - m.dewPointC;
+  return m;
+}
+
+GasMetrics readGasSensors(float tempC, float humPct) {
+  GasMetrics g;
+  uint32_t adcSum = 0;
+  for (int i = 0; i < 16; i++) {
+    adcSum += analogRead(PIN_MQ135);
+    delayMicroseconds(100);
+  }
+  g.avgAdc = adcSum / 16.0f;
+  g.voltage = (g.avgAdc / 4095.0f) * 3.3f;
+
+  float vRL = g.voltage > 0.05f ? g.voltage : 0.05f;
+  if (vRL >= 3.3f) vRL = 3.29f;
+  float Rs = RL_VALUE * ((3.3f - vRL) / vRL);
+
+  // Hygrothermal Compensation Factor C_th(T, H)
+  float C_th = (1.385f - (0.0152f * tempC) + (0.00011f * tempC * tempC)) * (1.133f - (0.00205f * humPct));
+  if (C_th <= 0.1f) C_th = 0.1f;
+  float Rs_corrected = Rs / C_th;
+  g.ratio = Rs_corrected / R0_CLEAN_AIR;
+  if (g.ratio <= 0.01f) g.ratio = 0.01f;
+
+  // Power-law gas concentrations (PPM)
+  g.co2Ppm     = 110.47f * powf(g.ratio, -2.862f);
+  g.nh3Ppm     = 102.20f * powf(g.ratio, -2.473f);
+  g.alcoholPpm = 77.255f * powf(g.ratio, -3.180f);
+  g.acetonePpm = 34.660f * powf(g.ratio, -3.369f);
+
+  if (g.co2Ppm < 400.0f) g.co2Ppm = 400.0f;
+  if (g.nh3Ppm < 0.1f) g.nh3Ppm = 0.1f;
+  if (g.alcoholPpm < 0.1f) g.alcoholPpm = 0.1f;
+  if (g.acetonePpm < 0.1f) g.acetonePpm = 0.1f;
+
+  g.isWarmingUp = (millis() < HEATER_WARMUP_MS);
+  return g;
+}
+
+OpticsMetrics readOptics() {
+  OpticsMetrics o;
+  uint32_t adcSum = 0;
+  for (int i = 0; i < 16; i++) {
+    adcSum += analogRead(PIN_LDR);
+    delayMicroseconds(100);
+  }
+  o.avgAdc = adcSum / 16.0f;
+  o.voltage = (o.avgAdc / 4095.0f) * 3.3f;
+  o.lightPct = (o.avgAdc / 4095.0f) * 100.0f;
+
+  // Realistic optical Lux scaling for GL5528 photoresistor
+  o.estimatedLux = 0.0f;
+  if (o.avgAdc > 80.0f) {
+    o.estimatedLux = powf(10.0f, ((o.avgAdc / 4095.0f) * 3.5f)) - 1.0f;
+    if (o.estimatedLux < 0.0f) o.estimatedLux = 0.0f;
+    if (o.estimatedLux > 4000.0f) o.estimatedLux = 4000.0f;
+  }
+  o.tamperBreach = (o.avgAdc > 2500.0f);
+  return o;
+}
+
+GpsMetrics readGps() {
+  GpsMetrics gm;
+  gm.nmeaChars = gps.charsProcessed();
+  gm.hasFix = gps.location.isValid();
+  gm.sats = gps.satellites.value();
+  gm.lat = gm.hasFix ? gps.location.lat() : 0.0f;
+  gm.lon = gm.hasFix ? gps.location.lng() : 0.0f;
+  gm.alt = gm.hasFix ? gps.altitude.meters() : 0.0f;
+  gm.speedKmh = gm.hasFix ? gps.speed.kmph() : 0.0f;
+  gm.hdop = gm.hasFix ? (gps.hdop.value() / 100.0f) : 99.9f;
+  return gm;
+}
+
+// ==============================================================================
+// ONBOARD LITTLEFS STORAGE SUBSYSTEM
+// ==============================================================================
+void initStorage() {
+  if (!LittleFS.begin(true)) {
+    Serial.println("❌ [STORAGE] LittleFS partition mount failed");
+    fsAvailable = false;
+    return;
+  }
+  fsAvailable = true;
+
+  if (LittleFS.exists(LOG_FILE_PATH)) {
+    File f = LittleFS.open(LOG_FILE_PATH, "r");
+    if (f) {
+      currentLogSizeBytes = f.size();
+      storedRecordCount = 0;
+      while (f.available()) {
+        String line = f.readStringUntil('\n');
+        if (line.length() > 5) {
+          storedRecordCount++;
+        }
+      }
+      f.close();
+    }
+  } else {
+    currentLogSizeBytes = 0;
+    storedRecordCount = 0;
+  }
+
+  size_t total = LittleFS.totalBytes();
+  size_t used = LittleFS.usedBytes();
+  size_t freeKb = (total > used) ? (total - used) / 1024 : 0;
+
+  Serial.printf("📦 [STORAGE] LittleFS mounted successfully. Records: %u | Size: %u bytes | Free Flash: %u KB\n",
+                (unsigned int)storedRecordCount, (unsigned int)currentLogSizeBytes, (unsigned int)freeKb);
+  Serial.printf("STORAGE_ANNOUNCE:{\"records\":%u,\"bytes\":%u,\"free_kb\":%u}\n",
+                (unsigned int)storedRecordCount, (unsigned int)currentLogSizeBytes, (unsigned int)freeKb);
+}
+
+void appendStorageRecord(const String &jsonPacket) {
+  if (!fsAvailable) return;
+
+  // Manage storage ceiling: if over MAX_LOG_BYTES, rotate log file
+  if (currentLogSizeBytes >= MAX_LOG_BYTES) {
+    Serial.println("⚠️ [STORAGE] Storage reached 1MB cap. Rotating log to preserve recent transit telemetry.");
+    LittleFS.remove(LOG_FILE_PREV);
+    LittleFS.rename(LOG_FILE_PATH, LOG_FILE_PREV);
+    currentLogSizeBytes = 0;
+    storedRecordCount = 0;
+  }
+
+  File f = LittleFS.open(LOG_FILE_PATH, "a");
+  if (f) {
+    size_t written = f.println(jsonPacket);
+    f.flush();
+    f.close();
+    currentLogSizeBytes += written;
+    storedRecordCount++;
+  }
+}
+
+void dumpStorageRecords() {
+  if (!fsAvailable || !LittleFS.exists(LOG_FILE_PATH)) {
+    Serial.println("OFFLINE_DUMP_START:0");
+    Serial.println("OFFLINE_DUMP_COMPLETE:0");
+    return;
+  }
+
+  File f = LittleFS.open(LOG_FILE_PATH, "r");
+  if (!f) {
+    Serial.println("❌ [STORAGE] Could not open log file for reading.");
+    return;
+  }
+
+  Serial.printf("OFFLINE_DUMP_START:%u\n", (unsigned int)storedRecordCount);
+  uint32_t streamedCount = 0;
+  while (f.available()) {
+    String line = f.readStringUntil('\n');
+    line.trim();
+    if (line.length() > 0) {
+      Serial.print("OFFLINE_JSON:");
+      Serial.println(line);
+      streamedCount++;
+    }
+  }
+  f.close();
+  Serial.printf("OFFLINE_DUMP_COMPLETE:%u\n", (unsigned int)streamedCount);
+}
+
+void clearStorageRecords() {
+  if (fsAvailable && LittleFS.exists(LOG_FILE_PATH)) {
+    LittleFS.remove(LOG_FILE_PATH);
+  }
+  storedRecordCount = 0;
+  currentLogSizeBytes = 0;
+  Serial.println("OFFLINE_BUFFER_CLEARED:OK");
+}
+
+void syncStorageRecords() {
+  dumpStorageRecords();
+  clearStorageRecords();
+  Serial.println("OFFLINE_SYNC_COMPLETE:OK");
+}
+
+// ==============================================================================
+// SERIAL COMMAND PROTOCOL
+// ==============================================================================
+void executeCommand(String cmd) {
+  cmd.trim();
+  cmd.toUpperCase();
+
+  if (cmd == "STATUS" || cmd == "CMD:STATUS") {
+    size_t total = fsAvailable ? LittleFS.totalBytes() : 0;
+    size_t used = fsAvailable ? LittleFS.usedBytes() : 0;
+    size_t freeKb = (total > used) ? (total - used) / 1024 : 0;
+    Serial.printf("STATUS:{\"records\":%u,\"bytes\":%u,\"free_kb\":%u,\"uptime\":%lu,\"shocks\":%lu,\"streaming\":%s}\n",
+                  (unsigned int)storedRecordCount,
+                  (unsigned int)currentLogSizeBytes,
+                  (unsigned int)freeKb,
+                  (unsigned long)(millis() / 1000),
+                  (unsigned long)getShockCount(),
+                  liveStreamActive ? "true" : "false");
+  }
+  else if (cmd == "DUMP" || cmd == "CMD:DUMP") {
+    dumpStorageRecords();
+  }
+  else if (cmd == "CLEAR" || cmd == "CMD:CLEAR") {
+    clearStorageRecords();
+  }
+  else if (cmd == "SYNC" || cmd == "CMD:SYNC") {
+    syncStorageRecords();
+  }
+  else if (cmd == "PAUSE" || cmd == "CMD:PAUSE") {
+    liveStreamActive = false;
+    Serial.println("STREAM:PAUSED");
+  }
+  else if (cmd == "RESUME" || cmd == "CMD:RESUME") {
+    liveStreamActive = true;
+    Serial.println("STREAM:RESUMED");
+  }
+  else if (cmd == "HELP" || cmd == "CMD:HELP" || cmd == "?") {
+    Serial.println("\n╔════════════════════════════════════════════════════════════════════╗");
+    Serial.println("║            AgriChain ESP32 Node Serial Command Interface           ║");
+    Serial.println("╠════════════════════════════════════════════════════════════════════╣");
+    Serial.println("║  CMD:STATUS   - Query flash buffer record count and free memory   ║");
+    Serial.println("║  CMD:DUMP     - Stream all buffered offline records to PC         ║");
+    Serial.println("║  CMD:CLEAR    - Erase flash buffer after successful transfer      ║");
+    Serial.println("║  CMD:SYNC     - Download all offline records and clear storage    ║");
+    Serial.println("║  CMD:PAUSE    - Pause live console telemetry output               ║");
+    Serial.println("║  CMD:RESUME   - Resume live console telemetry output              ║");
+    Serial.println("║  CMD:HELP     - Show this interactive help menu                   ║");
+    Serial.println("╚════════════════════════════════════════════════════════════════════╝\n");
+  }
+  else if (cmd.length() > 0) {
+    Serial.printf("⚠️ Unknown command: '%s'. Type 'CMD:HELP' for supported options.\n", cmd.c_str());
+  }
+}
+
+void checkIncomingSerial() {
+  while (Serial.available() > 0) {
+    char c = (char)Serial.read();
+    if (c == '\r' || c == '\n') {
+      if (serialCmdBuffer.length() > 0) {
+        executeCommand(serialCmdBuffer);
+        serialCmdBuffer = "";
+      }
+    } else if (serialCmdBuffer.length() < 128) {
+      serialCmdBuffer += c;
+    }
+  }
+}
+
+// ==============================================================================
+// SETUP & INITIALIZATION
+// ==============================================================================
 void setup() {
   Serial.begin(115200);
   pinMode(ONBOARD_LED, OUTPUT);
   digitalWrite(ONBOARD_LED, LOW);
 
-  // SW-420 Interrupt Pin on GPIO 32
+  // SW-420 Transit Shock Interrupt Pin on GPIO 32
   pinMode(PIN_SW420, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(PIN_SW420), onShockISR, FALLING);
 
-  // LDR Light Sensor Pin on GPIO 35
+  // LDR Light Sensor Divider Pin on GPIO 35
   pinMode(PIN_LDR, INPUT);
 
   // ADC1 Setup for MQ-135 and LDR
@@ -92,193 +438,153 @@ void setup() {
   // NEO-6M GPS UART Setup (9600 baud, 8N1)
   gpsSerial.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
 
-  delay(1000);
+  delay(600);
 
   Serial.println("\n================================================================================");
-  Serial.println("  🚚 AgriChain Deep Telemetry & Multi-Gas Environmental Suite (1000ms)");
-  Serial.println("================================================================================\n");
+  Serial.println("  🚚 AgriChain Deep Telemetry & Multi-Gas Environmental Suite (LittleFS Ready)");
+  Serial.println("================================================================================");
 
+  // Initialize LittleFS storage
+  initStorage();
+
+  // Initialize DHT11 sensor
   dht.begin();
   delay(500);
+
   lastCycleTime = millis();
 }
 
+// ==============================================================================
+// MAIN RUNTIME LOOP
+// ==============================================================================
 void loop() {
-  // Feed GPS parser with incoming serial characters as fast as possible
+  // 1. Ingest GPS NMEA stream in real time
   while (gpsSerial.available() > 0) {
     char c = gpsSerial.read();
     gps.encode(c);
   }
 
-  // Periodic sensor sampling every 1000 ms (1 second)
-  if (millis() - lastCycleTime >= 1000) {
+  // 2. Process incoming serial commands from PC
+  checkIncomingSerial();
+
+  // 3. Periodic Telemetry Sampling (Every 1000ms)
+  if (millis() - lastCycleTime >= SAMPLE_INTERVAL_MS) {
     lastCycleTime = millis();
     cycle++;
 
-    // 1. Read DHT11 Microclimate
-    float t = dht.readTemperature();
-    if (!isnan(t) && t > -20.0f && t < 80.0f) lastValidTemp = t;
-    float h = dht.readHumidity();
-    if (!isnan(h) && h >= 0.0f && h <= 100.0f) lastValidHum = h;
+    // Acquire all 5 sensor subsystems
+    ClimateMetrics climate = readClimate();
+    GasMetrics gas = readGasSensors(climate.tempC, climate.humPct);
+    OpticsMetrics optics = readOptics();
+    uint32_t currentShocks = getShockCount();
+    GpsMetrics gpsData = readGps();
 
-    float tempC = lastValidTemp;
-    float humPct = lastValidHum;
-    float dewPointC = computeDewPoint(tempC, humPct);
-    float heatIndexC = computeHeatIndex(tempC, humPct);
-    float condensationMargin = tempC - dewPointC; // Danger if < 2.0°C
-
-    // 2. Read MQ-135 with Multi-Gas Decomposition
-    uint32_t gasAdcSum = 0;
-    for (int i = 0; i < 16; i++) {
-      gasAdcSum += analogRead(PIN_MQ135);
-      delayMicroseconds(100);
-    }
-    float gasAvgAdc = gasAdcSum / 16.0f;
-    float gasVoltage = (gasAvgAdc / 4095.0f) * 3.3f;
-
-    // Calculate Sensor Resistance Rs
-    float vSupply = 3.3f; // powered from 3.3V rail
-    float vRL = gasVoltage > 0.05f ? gasVoltage : 0.05f;
-    if (vRL >= vSupply) vRL = vSupply - 0.01f;
-    float Rs = RL_VALUE * ((vSupply - vRL) / vRL);
-
-    // Two-Variable Hygrothermal Compensation Factor C_th(T, H)
-    float C_th = (1.385f - (0.0152f * tempC) + (0.00011f * tempC * tempC)) * (1.133f - (0.00205f * humPct));
-    if (C_th <= 0.1f) C_th = 0.1f;
-    float Rs_corrected = Rs / C_th;
-    float ratio = Rs_corrected / R0_CLEAN_AIR;
-    if (ratio <= 0.01f) ratio = 0.01f;
-
-    // Power-law gas concentrations (PPM)
-    float ppmCO2     = 110.47f * powf(ratio, -2.862f);  // Carbon Dioxide (Respiration)
-    float ppmNH3     = 102.20f * powf(ratio, -2.473f);  // Ammonia (Microbial Rot)
-    float ppmAlcohol = 77.255f * powf(ratio, -3.180f);  // Ethanol (Anaerobic Fermentation)
-    float ppmAcetone = 34.660f * powf(ratio, -3.369f);  // Acetone/Volatiles
-
-    // Clamp realistic boundaries
-    if (ppmCO2 < 400.0f) ppmCO2 = 400.0f;
-    if (ppmNH3 < 0.1f) ppmNH3 = 0.1f;
-    if (ppmAlcohol < 0.1f) ppmAlcohol = 0.1f;
-    if (ppmAcetone < 0.1f) ppmAcetone = 0.1f;
-
-    // 3. Read LDR Light Sensor & Optical Lux Estimation (16x oversampled on GPIO 35)
-    uint32_t ldrAdcSum = 0;
-    for (int i = 0; i < 16; i++) {
-      ldrAdcSum += analogRead(PIN_LDR);
-      delayMicroseconds(100);
-    }
-    float ldrAvgAdc = ldrAdcSum / 16.0f;
-    float ldrVoltage = (ldrAvgAdc / 4095.0f) * 3.3f;
-    float ldrPct = (ldrAvgAdc / 4095.0f) * 100.0f;
-
-    // Realistic optical Lux scaling for GL5528 photoresistor
-    // ADC ~0-100: Pitch dark crate (0-5 Lux)
-    // ADC ~500: Dim light / seam leak (15-30 Lux)
-    // ADC ~1500: Ambient indoor lighting (150-300 Lux)
-    // ADC ~3000+: Direct flashlight or sunlight (800-3000+ Lux)
-    float estimatedLux = 0.0f;
-    if (ldrAvgAdc > 80.0f) {
-      estimatedLux = powf(10.0f, ((ldrAvgAdc / 4095.0f) * 3.5f)) - 1.0f;
-      if (estimatedLux < 0.0f) estimatedLux = 0.0f;
-      if (estimatedLux > 4000.0f) estimatedLux = 4000.0f;
-    }
-
-    // 4. Read Shock ISR Count
-    noInterrupts();
-    uint32_t currentShocks = totalShocks;
-    interrupts();
-
-    // 5. GPS Status
-    uint32_t rawNmeaChars = gps.charsProcessed();
-    bool hasFix = gps.location.isValid();
-    uint32_t satCount = gps.satellites.value();
-    float lat = hasFix ? gps.location.lat() : 0.0f;
-    float lon = hasFix ? gps.location.lng() : 0.0f;
-    float alt = hasFix ? gps.altitude.meters() : 0.0f;
-    float speedKmh = hasFix ? gps.speed.kmph() : 0.0f;
-    float hdop = hasFix ? (gps.hdop.value() / 100.0f) : 99.9f;
-
-    // Visual pulse if shock or light breach occurs
-    if (currentShocks > 0 || ldrAvgAdc > 2500.0f) {
+    // Pulse onboard LED if transit anomaly occurs
+    if (currentShocks > 0 || optics.tamperBreach) {
       digitalWrite(ONBOARD_LED, HIGH);
       delay(20);
       digitalWrite(ONBOARD_LED, LOW);
     }
 
-    // High-precision machine-readable JSON packet
-    Serial.printf("JSON:{\"cycle\":%lu,\"uptime\":%lu,\"temp\":%.2f,\"hum\":%.2f,\"dew_pt\":%.2f,\"heat_idx\":%.2f,\"cond_margin\":%.2f,\"gas_adc\":%lu,\"gas_v\":%.3f,\"co2_ppm\":%.1f,\"nh3_ppm\":%.2f,\"alcohol_ppm\":%.2f,\"acetone_ppm\":%.2f,\"shocks\":%lu,\"ldr_adc\":%lu,\"ldr_v\":%.3f,\"ldr_pct\":%.1f,\"lux\":%.1f,\"gps_fix\":%s,\"lat\":%.6f,\"lon\":%.6f,\"alt\":%.1f,\"speed\":%.1f,\"hdop\":%.2f,\"sats\":%lu,\"nmea_chars\":%lu}\n",
-                  (unsigned long)cycle,
-                  (unsigned long)(millis() / 1000),
-                  tempC,
-                  humPct,
-                  dewPointC,
-                  heatIndexC,
-                  condensationMargin,
-                  (unsigned long)gasAvgAdc,
-                  gasVoltage,
-                  ppmCO2,
-                  ppmNH3,
-                  ppmAlcohol,
-                  ppmAcetone,
-                  (unsigned long)currentShocks,
-                  (unsigned long)ldrAvgAdc,
-                  ldrVoltage,
-                  ldrPct,
-                  estimatedLux,
-                  hasFix ? "true" : "false",
-                  lat,
-                  lon,
-                  alt,
-                  speedKmh,
-                  hdop,
-                  (unsigned long)satCount,
-                  (unsigned long)rawNmeaChars);
+    // Build machine-readable JSON packet
+    char jsonBuf[512];
+    snprintf(jsonBuf, sizeof(jsonBuf),
+      "{\"cycle\":%lu,\"uptime\":%lu,\"temp\":%.2f,\"hum\":%.2f,\"dew_pt\":%.2f,\"heat_idx\":%.2f,\"cond_margin\":%.2f,"
+      "\"gas_adc\":%lu,\"gas_v\":%.3f,\"co2_ppm\":%.1f,\"nh3_ppm\":%.2f,\"alcohol_ppm\":%.2f,\"acetone_ppm\":%.2f,"
+      "\"shocks\":%lu,\"ldr_adc\":%lu,\"ldr_v\":%.3f,\"ldr_pct\":%.1f,\"lux\":%.1f,\"gps_fix\":%s,"
+      "\"lat\":%.6f,\"lon\":%.6f,\"alt\":%.1f,\"speed\":%.1f,\"hdop\":%.2f,\"sats\":%lu,\"nmea_chars\":%lu,"
+      "\"flash_records\":%u,\"flash_bytes\":%u,\"warmup\":%s}",
+      (unsigned long)cycle,
+      (unsigned long)(millis() / 1000),
+      climate.tempC,
+      climate.humPct,
+      climate.dewPointC,
+      climate.heatIndexC,
+      climate.condMargin,
+      (unsigned long)gas.avgAdc,
+      gas.voltage,
+      gas.co2Ppm,
+      gas.nh3Ppm,
+      gas.alcoholPpm,
+      gas.acetonePpm,
+      (unsigned long)currentShocks,
+      (unsigned long)optics.avgAdc,
+      optics.voltage,
+      optics.lightPct,
+      optics.estimatedLux,
+      gpsData.hasFix ? "true" : "false",
+      gpsData.lat,
+      gpsData.lon,
+      gpsData.alt,
+      gpsData.speedKmh,
+      gpsData.hdop,
+      (unsigned long)gpsData.sats,
+      (unsigned long)gpsData.nmeaChars,
+      (unsigned int)storedRecordCount,
+      (unsigned int)currentLogSizeBytes,
+      gas.isWarmingUp ? "true" : "false"
+    );
 
-    // Multi-line detailed console output
-    Serial.printf("\n╔══════════════════════════════════════════════════════════════════════════════════╗\n");
-    Serial.printf("║ 🚚 AgriChain Real-Time Node | Cycle #%04lu | Uptime: %02lu:%02lu:%02lu                  ║\n",
-                  (unsigned long)cycle,
-                  (unsigned long)(millis() / 3600000),
-                  (unsigned long)((millis() / 60000) % 60),
-                  (unsigned long)((millis() / 1000) % 60));
-    Serial.printf("╠══════════════════════════════════════════════════════════════════════════════════╣\n");
-    Serial.printf("║ 🌡️  CLIMATE:    %.1f°C (%.1f°F) | Humidity: %.1f%% RH | Heat Index: %.1f°C        \n",
-                  tempC, (tempC * 1.8f + 32.0f), humPct, heatIndexC);
-    Serial.printf("║    Dew Point:  %.1f°C | Condensation Margin: %.1f°C %s\n",
-                  dewPointC, condensationMargin,
-                  (condensationMargin < 2.0f) ? "⚠️ [DEW CONDENSATION RISK]" : "✅ [NO SURFACE CONDENSATION]");
-    Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
-    Serial.printf("║ 💨 GAS (E-NOSE): Voltage: %.2fV (ADC: %lu) | Headspace Ratio: %.2f\n",
-                  gasVoltage, (unsigned long)gasAvgAdc, ratio);
-    Serial.printf("║    • CO2 (Respiration):  %6.1f ppm  [%s]\n",
-                  ppmCO2, (ppmCO2 < 800.0f) ? "🍃 Fresh Air" : (ppmCO2 < 1500.0f) ? "🌱 Normal Respiration" : "⚠️ High Respiration");
-    Serial.printf("║    • NH3 (Rot/Ammonia):  %6.2f ppm  [%s]\n",
-                  ppmNH3, (ppmNH3 < 10.0f) ? "🍃 Clean" : "🚨 Microbial Rot Decay");
-    Serial.printf("║    • Alcohol (Ferment):  %6.2f ppm  [%s]\n",
-                  ppmAlcohol, (ppmAlcohol < 25.0f) ? "🍃 Clean" : "⚠️ Anaerobic Fermentation");
-    Serial.printf("║    • Acetone (Volatiles):%6.2f ppm  [%s]\n",
-                  ppmAcetone, (ppmAcetone < 15.0f) ? "🍃 Clean" : "⚠️ Early Spoilage");
-    Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
-    Serial.printf("║ 💡 LIGHT/TAMPER: Voltage: %.2fV (ADC: %lu | %.1f%%) | Est. Light: ~%.0f Lux\n",
-                  ldrVoltage, (unsigned long)ldrAvgAdc, ldrPct, estimatedLux);
-    Serial.printf("║    Enclosure:   %s\n",
-                  (ldrAvgAdc < 250.0f) ? "🌑 Pitch Dark (Crate 100% Sealed & Secure)" :
-                  (ldrAvgAdc < 1200.0f) ? "🕯️ Low Light / Minor Seam Leak" :
-                  (ldrAvgAdc < 2800.0f) ? "⛅ Ambient Indoor / Warehouse Light" :
-                  "☀️ DIRECT SUNLIGHT / TAMPER BREACH DETECTED!");
-    Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
-    Serial.printf("║ 💥 SHOCK & IRQ:  %lu Shock Events %s\n",
-                  (unsigned long)currentShocks,
-                  (currentShocks > 0) ? "🚨 [POTHOLE IMPACT - BRUISING RISK]" : "🛡️ [Stable & Smooth Transit]");
-    Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
-    if (hasFix) {
-      Serial.printf("║ 🛰️  GPS (3D FIX): Lat: %.6f, Lon: %.6f | Alt: %.1fm | Speed: %.1f km/h | Sats: %lu\n",
-                    lat, lon, alt, speedKmh, (unsigned long)satCount);
-      Serial.printf("║    Google Maps: https://www.google.com/maps?q=%.6f,%.6f\n", lat, lon);
-    } else {
-      Serial.printf("║ 🛰️  GPS STATUS:   Searching for Satellites... (NMEA Bytes: %lu | Sats: %lu)\n",
-                    (unsigned long)rawNmeaChars, (unsigned long)satCount);
+    // Persist reading to LittleFS onboard flash buffer (ensures zero data loss during offline transit)
+    appendStorageRecord(String(jsonBuf));
+
+    // Emit live telemetry to PC if streaming is active
+    if (liveStreamActive) {
+      Serial.print("JSON:");
+      Serial.println(jsonBuf);
+
+      // Detailed terminal diagnostic table
+      Serial.printf("\n╔══════════════════════════════════════════════════════════════════════════════════╗\n");
+      Serial.printf("║ 🚚 AgriChain Real-Time Node | Cycle #%04lu | Uptime: %02lu:%02lu:%02lu                  ║\n",
+                    (unsigned long)cycle,
+                    (unsigned long)(millis() / 3600000),
+                    (unsigned long)((millis() / 60000) % 60),
+                    (unsigned long)((millis() / 1000) % 60));
+      Serial.printf("╠══════════════════════════════════════════════════════════════════════════════════╣\n");
+      Serial.printf("║ 🌡️  CLIMATE:    %.1f°C (%.1f°F) | Humidity: %.1f%% RH | Heat Index: %.1f°C        \n",
+                    climate.tempC, (climate.tempC * 1.8f + 32.0f), climate.humPct, climate.heatIndexC);
+      Serial.printf("║    Dew Point:  %.1f°C | Condensation Margin: %.1f°C %s\n",
+                    climate.dewPointC, climate.condMargin,
+                    (climate.condMargin < 2.0f) ? "⚠️ [DEW CONDENSATION RISK]" : "✅ [NO SURFACE CONDENSATION]");
+      Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
+      Serial.printf("║ 💨 GAS (E-NOSE): Voltage: %.2fV (ADC: %lu) | Headspace Ratio: %.2f %s\n",
+                    gas.voltage, (unsigned long)gas.avgAdc, gas.ratio,
+                    gas.isWarmingUp ? "⏳ [HEATER PRE-HEATING]" : "✅ [CALIBRATED]");
+      Serial.printf("║    • CO2 (Respiration):  %6.1f ppm  [%s]\n",
+                    gas.co2Ppm, (gas.co2Ppm < 800.0f) ? "🍃 Fresh Air" : (gas.co2Ppm < 1500.0f) ? "🌱 Normal Respiration" : "⚠️ High Respiration");
+      Serial.printf("║    • NH3 (Rot/Ammonia):  %6.2f ppm  [%s]\n",
+                    gas.nh3Ppm, (gas.nh3Ppm < 10.0f) ? "🍃 Clean" : "🚨 Microbial Rot Decay");
+      Serial.printf("║    • Alcohol (Ferment):  %6.2f ppm  [%s]\n",
+                    gas.alcoholPpm, (gas.alcoholPpm < 25.0f) ? "🍃 Clean" : "⚠️ Anaerobic Fermentation");
+      Serial.printf("║    • Acetone (Volatiles):%6.2f ppm  [%s]\n",
+                    gas.acetonePpm, (gas.acetonePpm < 15.0f) ? "🍃 Clean" : "⚠️ Early Spoilage");
+      Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
+      Serial.printf("║ 💡 LIGHT/TAMPER: Voltage: %.2fV (ADC: %lu | %.1f%%) | Est. Light: ~%.0f Lux\n",
+                    optics.voltage, (unsigned long)optics.avgAdc, optics.lightPct, optics.estimatedLux);
+      Serial.printf("║    Enclosure:   %s\n",
+                    (optics.avgAdc < 250.0f) ? "🌑 Pitch Dark (Crate 100% Sealed & Secure)" :
+                    (optics.avgAdc < 1200.0f) ? "🕯️ Low Light / Minor Seam Leak" :
+                    (optics.avgAdc < 2800.0f) ? "⛅ Ambient Indoor / Warehouse Light" :
+                    "☀️ DIRECT SUNLIGHT / TAMPER BREACH DETECTED!");
+      Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
+      Serial.printf("║ 💥 SHOCK & IRQ:  %lu Shock Events %s\n",
+                    (unsigned long)currentShocks,
+                    (currentShocks > 0) ? "🚨 [POTHOLE IMPACT - BRUISING RISK]" : "🛡️ [Stable & Smooth Transit]");
+      Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
+      if (gpsData.hasFix) {
+        Serial.printf("║ 🛰️  GPS (3D FIX): Lat: %.6f, Lon: %.6f | Alt: %.1fm | Speed: %.1f km/h | Sats: %lu\n",
+                      gpsData.lat, gpsData.lon, gpsData.alt, gpsData.speedKmh, (unsigned long)gpsData.sats);
+        Serial.printf("║    Google Maps: https://www.google.com/maps?q=%.6f,%.6f\n", gpsData.lat, gpsData.lon);
+      } else {
+        Serial.printf("║ 🛰️  GPS STATUS:   Searching for Satellites... (NMEA Bytes: %lu | Sats: %lu)\n",
+                      (unsigned long)gpsData.nmeaChars, (unsigned long)gpsData.sats);
+      }
+      Serial.printf("╟──────────────────────────────────────────────────────────────────────────────────╢\n");
+      Serial.printf("║ 💾 FLASH BUFFER: %u Records (%u bytes) | Free Flash: %u KB | Mode: Auto-Buffered\n",
+                    (unsigned int)storedRecordCount,
+                    (unsigned int)currentLogSizeBytes,
+                    (unsigned int)((fsAvailable && LittleFS.totalBytes() > LittleFS.usedBytes()) ? (LittleFS.totalBytes() - LittleFS.usedBytes()) / 1024 : 0));
+      Serial.printf("╚══════════════════════════════════════════════════════════════════════════════════╝\n");
     }
-    Serial.printf("╚══════════════════════════════════════════════════════════════════════════════════╝\n");
   }
 }

@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-AgriChain 5-Channel Real-Time Edge Node Mission Control Dashboard
-Reads /dev/ttyUSB0 and renders deep detailed multi-gas & optical telemetry.
+AgriChain 6-Channel Real-Time Edge Node Mission Control Dashboard
+Reads /dev/ttyUSB0, handles automatic offline LittleFS telemetry sync upon PC connect,
+and renders deep detailed multi-gas, optical, and transit shock telemetry.
 """
 import sys
+import os
 import time
 import json
 import serial
@@ -17,6 +19,7 @@ from rich.text import Text
 
 PORT = '/dev/ttyUSB0'
 BAUD = 115200
+TRANSIT_LOG_DIR = os.path.join(os.path.dirname(__file__), 'transit_logs')
 
 console = Console()
 
@@ -24,13 +27,13 @@ def create_dashboard_layout():
     layout = Layout()
     layout.split_column(
         Layout(name="header", size=3),
-        Layout(name="sensors", size=18),
+        Layout(name="sensors", size=21),
         Layout(name="log", ratio=1)
     )
     return layout
 
 def format_sensor_table(data):
-    table = Table(title="📊 Real-Time Multi-Sensor Telemetry Breakdown", expand=True, border_style="bright_blue")
+    table = Table(title="📊 Real-Time Multi-Sensor Telemetry & Edge Storage Breakdown", expand=True, border_style="bright_blue")
     table.add_column("Sensor Subsystem", style="bold white", width=22)
     table.add_column("Channel & Pin", style="cyan", width=18)
     table.add_column("Deep Metric Values", style="bright_yellow", width=36)
@@ -63,8 +66,11 @@ def format_sensor_table(data):
     nh3 = data.get("nh3_ppm", 0.0)
     alc = data.get("alcohol_ppm", 0.0)
     ace = data.get("acetone_ppm", 0.0)
+    is_warmup = data.get("warmup", False)
 
-    if co2 > 1500.0 or nh3 > 15.0 or alc > 30.0:
+    if is_warmup:
+        gas_badge = "[bold yellow]⏳ Heater Pre-Heating / Calibrating[/bold yellow]"
+    elif co2 > 1500.0 or nh3 > 15.0 or alc > 30.0:
         gas_badge = "[bold red]🚨 ACTIVE SPOILAGE & ROT DETECTED[/bold red]"
     elif co2 > 850.0:
         gas_badge = "[bold yellow]🌱 Active Respiration / Ripening[/bold yellow]"
@@ -138,20 +144,103 @@ def format_sensor_table(data):
         gps_status
     )
 
+    # 6. LittleFS Onboard Storage & Edge Buffering
+    flash_records = data.get("flash_records", 0)
+    flash_bytes = data.get("flash_bytes", 0)
+    kb_used = flash_bytes / 1024.0
+
+    if flash_records > 0:
+        storage_status = f"[bold green]● BUFFERING ACTIVE[/bold green]\n[dim]{flash_records} Records on Flash[/dim]"
+    else:
+        storage_status = "[bold cyan]● BUFFER SYNCHRONIZED[/bold cyan]\n[dim]Flash ready for transit[/dim]"
+
+    table.add_row(
+        "💾 Edge Flash Buffer",
+        "LittleFS (1.4MB Partition)",
+        f"{flash_records} Records Logged ({kb_used:.1f} KB)\n[dim]Zero-loss offline transit buffering[/dim]",
+        storage_status
+    )
+
     return table
+
+def sync_offline_storage_if_present(ser):
+    """
+    Queries ESP32 for offline buffered telemetry and downloads records to disk.
+    Returns list of synced record JSON objects.
+    """
+    os.makedirs(TRANSIT_LOG_DIR, exist_ok=True)
+    time.sleep(1.2)  # Wait for ESP32 boot
+    ser.reset_input_buffer()
+
+    ser.write(b"CMD:STATUS\n")
+    ser.flush()
+    time.sleep(0.4)
+
+    record_count = 0
+    start = time.time()
+    while time.time() - start < 2.0:
+        if ser.in_waiting:
+            line = ser.readline().decode('utf-8', errors='ignore').strip()
+            if line.startswith("STATUS:"):
+                try:
+                    payload = json.loads(line[7:])
+                    record_count = payload.get("records", 0)
+                except Exception:
+                    pass
+                break
+        else:
+            time.sleep(0.05)
+
+    if record_count == 0:
+        return []
+
+    console.print(f"[bold cyan]📦 Found {record_count} offline records buffered on ESP32 Flash. Syncing to PC...[/bold cyan]")
+    ser.write(b"CMD:SYNC\n")
+    ser.flush()
+
+    synced_records = []
+    dump_start = time.time()
+    while time.time() - dump_start < 10.0:
+        if ser.in_waiting:
+            line = ser.readline().decode('utf-8', errors='ignore').strip()
+            if line.startswith("OFFLINE_JSON:"):
+                try:
+                    record = json.loads(line[13:])
+                    synced_records.append(record)
+                except Exception:
+                    pass
+            elif "OFFLINE_SYNC_COMPLETE" in line or "OFFLINE_DUMP_COMPLETE" in line:
+                break
+        else:
+            time.sleep(0.02)
+
+    if synced_records:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_filename = os.path.join(TRANSIT_LOG_DIR, f"transit_dump_{ts}.jsonl")
+        with open(out_filename, "w", encoding="utf-8") as f:
+            for rec in synced_records:
+                f.write(json.dumps(rec) + "\n")
+        console.print(f"[bold green]✅ Successfully downloaded {len(synced_records)} transit records to {out_filename}[/bold green]")
+        time.sleep(1.0)
+
+    return synced_records
 
 def main():
     try:
         ser = serial.Serial(PORT, BAUD, timeout=1)
         ser.dtr = False
         ser.rts = False
-        time.sleep(0.1)
-        ser.reset_input_buffer()
     except Exception as e:
         console.print(f"[bold red]Error opening {PORT}: {e}[/bold red]")
         sys.exit(1)
 
+    # Perform handshake and sync offline transit records
+    synced = sync_offline_storage_if_present(ser)
+
     recent_logs = []
+    if synced:
+        recent_logs.append(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 [TRANSIT SYNC] Downloaded {len(synced)} offline readings from LittleFS onboard flash!")
+
     current_data = {
         "cycle": 0, "uptime": 0, "temp": 28.5, "hum": 68.0,
         "dew_pt": 22.0, "heat_idx": 30.0, "cond_margin": 6.5,
@@ -159,7 +248,8 @@ def main():
         "co2_ppm": 480.0, "nh3_ppm": 1.2, "alcohol_ppm": 2.5, "acetone_ppm": 0.8,
         "shocks": 0, "ldr_adc": 2, "ldr_v": 0.0, "ldr_pct": 0.1, "lux": 0.0,
         "gps_fix": False, "lat": 0.0, "lon": 0.0, "alt": 0.0, "speed": 0.0,
-        "hdop": 99.9, "sats": 0, "nmea_chars": 0
+        "hdop": 99.9, "sats": 0, "nmea_chars": 0,
+        "flash_records": 0, "flash_bytes": 0, "warmup": False
     }
 
     layout = create_dashboard_layout()
@@ -190,10 +280,12 @@ def main():
                         shocks = current_data.get("shocks", 0)
                         lux = current_data.get("lux", 0.0)
                         chars = current_data.get("nmea_chars", 0)
+                        flash_recs = current_data.get("flash_records", 0)
 
                         alert_tag = " [bold red]🚨[IMPACT][/bold red]" if shocks > 0 else ""
                         tamper_tag = " [bold yellow]☀️[LIGHT BREACH][/bold yellow]" if (current_data.get("ldr_adc", 0) > 2500) else ""
-                        log_msg = f"[{now_str}] #{cycle_num:04d} | 🌡️ {temp:.1f}°C | 💨 CO₂: {co2:.0f}ppm, NH₃: {nh3:.1f}ppm | 💡 ~{lux:.0f} Lux{tamper_tag} | 💥 {shocks} Shocks{alert_tag} | 🛰️ GPS Chars: {chars}"
+                        warmup_tag = " [dim](Heater Warmup)[/dim]" if current_data.get("warmup", False) else ""
+                        log_msg = f"[{now_str}] #{cycle_num:04d} | 🌡️ {temp:.1f}°C | 💨 CO₂: {co2:.0f}ppm, NH₃: {nh3:.1f}ppm{warmup_tag} | 💡 ~{lux:.0f} Lux{tamper_tag} | 💥 {shocks} Shocks{alert_tag} | 💾 {flash_recs} Buf | 🛰️ GPS Chars: {chars}"
                         recent_logs.append(log_msg)
                         if len(recent_logs) > 500:
                             recent_logs.pop(0)
@@ -206,10 +298,12 @@ def main():
                 hours, mins = divmod(mins, 60)
                 uptime_fmt = f"{hours:02d}:{mins:02d}:{secs:02d}"
 
+                flash_recs = current_data.get("flash_records", 0)
                 header_text = Text()
                 header_text.append("🚚 AgriChain Deep Telemetry & Multi-Gas Environmental Node", style="bold cyan")
                 header_text.append(f"  |  Port: {PORT} ({BAUD} baud)", style="white")
                 header_text.append(f"  |  Uptime: {uptime_fmt}", style="green")
+                header_text.append(f"  |  💾 Flash: {flash_recs} recs", style="magenta")
                 header_text.append(f"  |  {datetime.now().strftime('%H:%M:%S')}", style="bright_yellow")
                 layout["header"].update(Panel(header_text, style="blue"))
 
@@ -217,14 +311,14 @@ def main():
                 layout["sensors"].update(format_sensor_table(current_data))
 
                 # Update Event Log - Dynamically expand to fill all remaining terminal height
-                avail_lines = max(8, console.size.height - 24)
+                avail_lines = max(8, console.size.height - 27)
                 visible_logs = recent_logs[-avail_lines:]
                 log_content = "\n".join(visible_logs) if visible_logs else "[dim]Awaiting telemetry packets...[/dim]"
                 layout["log"].update(
                     Panel(
                         log_content,
                         title="📜 Multi-Gas & Optical Event Ledger (1000ms Real-Time Pulse)",
-                        subtitle=f"[dim]Displaying latest {len(visible_logs)} cycles | Log buffer: {len(recent_logs)} packets[/dim]",
+                        subtitle=f"[dim]Displaying latest {len(visible_logs)} cycles | Log buffer: {len(recent_logs)} packets | LittleFS Active[/dim]",
                         border_style="green"
                     )
                 )

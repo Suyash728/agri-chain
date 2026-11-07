@@ -61,6 +61,7 @@ Thumbs.db
 .pioenvs/
 .piolibdeps/
 .clangd/
+hardware/transit_logs/*.jsonl
 
 # ---------- Logs ----------
 *.log

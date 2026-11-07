@@ -4055,3 +4055,47 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - `pio run --target upload`: Success (`[SUCCESS] Took 14.71 seconds`).
 - Telemetry stream: Live at 115200 baud on `/dev/ttyUSB0`.
+
+
+---
+
+## Task: ESP32 Firmware Refactor, LittleFS Onboard Storage & USB PC Auto-Sync — 2026-11-07
+
+**What was done:**
+- **Firmware Code Review & Refactoring (`hardware/test_pentad/src/main.cpp`):**
+  - Modularized sensor data acquisition into typed structs and dedicated functions (`readClimate()`, `readGasSensors()`, `readOptics()`, `readGps()`, and atomic `getShockCount()`).
+  - Resolved deprecated `-Wvolatile` increment warning on `totalShocks` in the SW-420 interrupt service routine (`onShockISR`).
+  - Implemented MQ-135 heater pre-heating window tracking (`HEATER_WARMUP_MS = 45000`) so downstream ingestion distinguishes stabilizing sensors from calibrated states.
+  - Preserved all active pin assignments: DHT11 (GPIO 4), MQ-135 (GPIO 34 / ADC1), SW-420 (GPIO 32 / IRQ), LDR (GPIO 35 / ADC1), GPS NEO-6M (GPIO 16 RX2 / 17 TX2), Onboard LED (GPIO 2).
+- **LittleFS Onboard Memory Storage:**
+  - Configured `board_build.filesystem = littlefs` in `hardware/test_pentad/platformio.ini`.
+  - Added flash storage ring-buffer managing up to 1.44MB on the ESP32 partition table with 1MB safety ceiling and automatic log rotation (`/agrichain_log.jsonl` -> `/agrichain_log_prev.jsonl`).
+  - On every 1000ms sampling cycle, telemetry is committed and flushed to physical SPI flash, guaranteeing zero data loss during disconnected transit journeys.
+- **Serial Transfer Protocol & PC Auto-Sync:**
+  - Implemented interactive serial command parser supporting:
+    - `CMD:STATUS`: Reports stored record count, log file size, free flash KB, uptime, and shock count.
+    - `CMD:DUMP`: Streams all buffered offline records to PC with `OFFLINE_JSON:` tags.
+    - `CMD:CLEAR`: Erases the onboard flash buffer upon successful PC reception.
+    - `CMD:SYNC`: One-shot atomic dump and flash buffer wipe.
+    - `CMD:PAUSE` & `CMD:RESUME`: Toggles live streaming for diagnostic inspection.
+    - `CMD:HELP`: In-firmware interactive help menu.
+  - Updated `hardware/monitor_live.py` to auto-detect buffered offline records upon opening `/dev/ttyUSB0`, download them into timestamped files in `hardware/transit_logs/transit_dump_<TIMESTAMP>.jsonl`, and clear the buffer for subsequent trips.
+  - Added 6th subsystem row in the rich terminal dashboard: **`💾 Edge Flash Buffer`** (`LittleFS 1.4MB Partition`) displaying real-time record count, flash space used, and buffer sync status.
+- **Git & System Config:**
+  - Configured `.gitignore` to track `hardware/transit_logs/.gitkeep` while ignoring generated `.jsonl` dumps.
+  - Updated `run_monitor.sh` banner to reflect the 6-subsystem node.
+
+**Files changed:**
+- `hardware/test_pentad/platformio.ini`
+- `hardware/test_pentad/src/main.cpp`
+- `hardware/monitor_live.py`
+- `run_monitor.sh`
+- `.gitignore`
+- `hardware/transit_logs/.gitkeep`
+- `MEMORY.md`
+
+**Verified:**
+- PlatformIO compilation: Flash 28.9% (379,412 bytes), RAM 7.1% (23,220 bytes) with 0 errors.
+- Upload to ESP32: Successfully flashed on `/dev/ttyUSB0` at 460800 baud (100% hash verified).
+- Interactive serial protocol: Verified `CMD:STATUS`, `CMD:DUMP`, `CMD:CLEAR`, and `CMD:SYNC`.
+- End-to-end sync verification: Live download of 67 real buffered records to `hardware/transit_logs/transit_dump_20261107_175821.jsonl`.

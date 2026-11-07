@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# AgriChain 5-Channel IoT Edge Node Live Telemetry Monitor
+# AgriChain 6-Subsystem IoT & LittleFS Edge Node Live Telemetry Monitor
 # Usage: ./run_monitor.sh
 # ==============================================================================
 
@@ -25,7 +25,7 @@ if [ ! -e "/dev/ttyUSB0" ]; then
 fi
 
 echo "========================================================"
-echo "  🚚 Starting AgriChain 5-Channel Mission Control...    "
+echo "  🚚 Starting AgriChain Edge Telemetry & LittleFS Sync Control...    "
 echo "  Target: ESP32 on /dev/ttyUSB0 (115200 baud)           "
 echo "  Refresh: 1000ms Real-Time Pulse                       "
 echo "========================================================"
