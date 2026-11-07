@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# AgriChain 6-Subsystem IoT & LittleFS Edge Node Live Telemetry Monitor
-# Usage: ./run_monitor.sh
+# AgriChain 7-Subsystem IoT Edge Node Live Telemetry Mission Control
+# Usage: ./run_monitor.sh [--skip-sync] [--clear] [--batch BAT-MGO-701]
 # ==============================================================================
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,4 +30,4 @@ echo "  Target: ESP32 on /dev/ttyUSB0 (115200 baud)           "
 echo "  Refresh: 1000ms Real-Time Pulse                       "
 echo "========================================================"
 
-exec "$VENV_PYTHON" "$MONITOR_SCRIPT"
+exec "$VENV_PYTHON" "$MONITOR_SCRIPT" "$@"

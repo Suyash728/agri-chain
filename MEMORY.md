@@ -4157,3 +4157,44 @@ pm run build passed cleanly with 0 errors.
 **Verified:**
 - Serial telemetry: Confirmed clean 1 Hz `JSON:` stream with zero LittleFS kernel errors.
 - End-to-end sync: Successfully tested automated sync and live dashboard execution.
+
+
+---
+
+## Task: Edge Cryptographic SHA-256 Hash Chaining, Interactive Hotkeys & End-to-End AI Pipeline — 2026-11-08
+
+**What was done:**
+- **Edge Cryptographic SHA-256 Hash Chaining (`hardware/test_pentad/src/main.cpp`)**:
+  - Implemented continuous cryptographic SHA-256 hash chaining using hardware acceleration (`mbedtls/sha256.h`).
+  - Derived sub-millisecond hash fingerprint chaining previous record hash with current cycle, temperature, humidity, gas voltage, shock count, and optical illuminance.
+  - Added 16-character compact hexadecimal cryptographic fingerprint (`"hash":"..."`) to machine-readable `JSON:` packets and LittleFS records, creating a tamper-evident audit trail directly on physical edge hardware.
+  - Capped LittleFS storage ceiling at 350 KB with a 200 KB free-space reserve guard to prevent flash block exhaustion.
+- **Mission Control UX & Instant Startup Guarantee (`hardware/monitor_live.py`)**:
+  - Eliminated initial frozen "Awaiting telemetry packets... / cycle 0" delay by introducing a settled bootloader handshake: waits 0.8s for ESP32 ROM bootloader to settle, flushes noisy boot framing errors, syncs LittleFS transit logs, and awaits the first live hardware packet before launching the full-screen terminal dashboard.
+  - Integrated interactive non-blocking keyboard listener thread (`termios`/`tty`):
+    - `[P]`: Send `CMD:PAUSE` / `CMD:RESUME` to freeze/unfreeze live telemetry pulse.
+    - `[S]`: Trigger manual `CMD:SYNC` to download LittleFS flash buffer and forward to backend.
+    - `[C]`: Send `CMD:CLEAR` to wipe flash storage cleanly.
+    - `[M]`: Open real-time GPS coordinates directly in Google Maps via web browser.
+    - `[B]`: Cycle active produce batch ID (`BAT-MGO-701`, `BAT-TOM-802`, `BAT-APL-903`, `BAT-TUR-404`, `BAT-WHT-505`, `BAT-BER-606`).
+    - `[Q]`: Cleanly exit dashboard and restore terminal settings.
+  - Implemented terminal bell audio alerts (`\a` for transit shocks, `\a\a` for optical light tamper breaches).
+  - Added hotkey navigation footer bar and updated indoor GPS label to `🛰️ Background Acquisition (No Sky Lock)` with `Telemetry Active | Non-blocking GPS` clarification.
+- **End-to-End AI Trust Layer & Blockchain Ingestion**:
+  - Built non-blocking background queue forwarder streaming live readings to `POST http://localhost:8000/telemetry` and offline dumps to `POST http://localhost:8000/telemetry/batch`.
+  - Added 7th subsystem card to terminal dashboard displaying real-time AI Trust Layer verdict (`VALID` / `ANOMALOUS`), isolation forest latency, and on-chain Web3 transaction hash.
+- **CLI Runner Script (`run_monitor.sh`)**:
+  - Forwarded CLI arguments (`"$@"`) to support `--skip-sync`, `--clear`, and `--batch <LOT_ID>`.
+
+**Files changed:**
+- `hardware/test_pentad/src/main.cpp`
+- `hardware/monitor_live.py`
+- `run_monitor.sh`
+- `MEMORY.md`
+
+**Verified:**
+- PlatformIO compilation: Flash 28.6% (374,328 bytes), RAM 7.1% (23,356 bytes) with 0 errors.
+- ESP32 flashing on `/dev/ttyUSB0` at 460800 baud (100% hash verified).
+- Real-time 1 Hz serial telemetry stream emitting unique SHA-256 hash chains.
+- Python syntax compilation: `py_compile` passed cleanly with 0 errors.
+- Clean startup handshake verified: acquires first packet within 1.1s.

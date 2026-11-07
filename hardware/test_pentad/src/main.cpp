@@ -1,15 +1,16 @@
 /**
  * @file main.cpp
- * @brief AgriChain Advanced Multi-Gas & Precision Environmental Telemetry Node
+ * @brief AgriChain Advanced Multi-Gas, Precision Environmental & Tamper-Proof Cryptographic Telemetry Node
  * @target ESP32 DevKit v1 (30-pin)
  * 
- * Deep Sensing Capabilities:
+ * Deep Sensing & Trust Capabilities:
  *  1. DHT11: Temperature (°C, °F, deci-C), Humidity (% RH), Heat Index, Dew Point & Condensation Margin
  *  2. MQ-135: Multi-Gas Decomposition (CO2, NH3 Ammonia, Ethanol/Fermentation Alcohol, Acetone, AQI) with live Hygrothermal Compensation
  *  3. LDR: Optical Lux Estimation (0-1000+ lux), Light Percentage (0-100%), Crate Seal Security State
  *  4. SW-420: Sub-microsecond Hardware Interrupt Shock & Transit Bruising Logger
  *  5. NEO-6M GPS: NMEA 3D Geolocation, Speed (km/h), Altitude, Satellites, HDOP & Clickable Google Maps
  *  6. LittleFS Storage: Resilient onboard flash ring-buffer for offline transit logging with O(1) instant boot
+ *  7. Hardware SHA-256 Hash Chain: Sub-millisecond hardware cryptographic hash chaining for tamper-evident transit ledgering
  */
 
 #include <Arduino.h>
@@ -19,6 +20,7 @@
 #include <FS.h>
 #include <LittleFS.h>
 #include <math.h>
+#include "mbedtls/sha256.h"
 
 // ==============================================================================
 // HARDWARE PIN DEFINITIONS
@@ -89,6 +91,34 @@ bool fsAvailable = false;
 
 // Serial command buffer
 String serialCmdBuffer = "";
+
+// Cryptographic SHA-256 Hash Chaining
+char prevRecordHash[65] = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+char currentRecordHash[65] = "0000000000000000000000000000000000000000000000000000000000000000";
+
+void computeRecordHashChain(uint32_t cycleNum, float tempC, float humPct, float gasV, uint32_t shocks, float lux, char* outShortHash) {
+  char payload[192];
+  snprintf(payload, sizeof(payload), "%s|%lu|%.2f|%.2f|%.3f|%lu|%.1f",
+           prevRecordHash, (unsigned long)cycleNum, tempC, humPct, gasV, (unsigned long)shocks, lux);
+
+  byte shaResult[32];
+  mbedtls_sha256_context ctx;
+  mbedtls_sha256_init(&ctx);
+  mbedtls_sha256_starts(&ctx, 0);
+  mbedtls_sha256_update(&ctx, (const unsigned char*)payload, strlen(payload));
+  mbedtls_sha256_finish(&ctx, shaResult);
+  mbedtls_sha256_free(&ctx);
+
+  for (int i = 0; i < 32; i++) {
+    sprintf(currentRecordHash + (i * 2), "%02x", shaResult[i]);
+  }
+  currentRecordHash[64] = 0;
+  strncpy(prevRecordHash, currentRecordHash, 65);
+
+  // Return 16-character compact hexadecimal fingerprint
+  strncpy(outShortHash, currentRecordHash, 16);
+  outShortHash[16] = 0;
+}
 
 // ==============================================================================
 // DATA METRIC STRUCTURES
@@ -414,13 +444,14 @@ void executeCommand(String cmd) {
     size_t total = fsAvailable ? LittleFS.totalBytes() : 0;
     size_t used = fsAvailable ? LittleFS.usedBytes() : 0;
     size_t freeKb = (total > used) ? (total - used) / 1024 : 0;
-    Serial.printf("STATUS:{\"records\":%u,\"bytes\":%u,\"free_kb\":%u,\"uptime\":%lu,\"shocks\":%lu,\"streaming\":%s}\n",
+    Serial.printf("STATUS:{\"records\":%u,\"bytes\":%u,\"free_kb\":%u,\"uptime\":%lu,\"shocks\":%lu,\"streaming\":%s,\"hash\":\"%.16s\"}\n",
                   (unsigned int)storedRecordCount,
                   (unsigned int)currentLogSizeBytes,
                   (unsigned int)freeKb,
                   (unsigned long)(millis() / 1000),
                   (unsigned long)getShockCount(),
-                  liveStreamActive ? "true" : "false");
+                  liveStreamActive ? "true" : "false",
+                  currentRecordHash);
   }
   else if (cmd == "DUMP" || cmd == "CMD:DUMP") {
     dumpStorageRecords();
@@ -528,14 +559,18 @@ void loop() {
       digitalWrite(ONBOARD_LED, LOW);
     }
 
-    // Build machine-readable JSON packet
+    // Hardware SHA-256 Cryptographic Hash Chaining
+    char shortHash[17];
+    computeRecordHashChain(cycle, climate.tempC, climate.humPct, gas.voltage, currentShocks, optics.estimatedLux, shortHash);
+
+    // Build machine-readable JSON packet with cryptographic fingerprint
     char jsonBuf[512];
     snprintf(jsonBuf, sizeof(jsonBuf),
       "{\"cycle\":%lu,\"uptime\":%lu,\"temp\":%.2f,\"hum\":%.2f,\"dew_pt\":%.2f,\"heat_idx\":%.2f,\"cond_margin\":%.2f,"
       "\"gas_adc\":%lu,\"gas_v\":%.3f,\"co2_ppm\":%.1f,\"nh3_ppm\":%.2f,\"alcohol_ppm\":%.2f,\"acetone_ppm\":%.2f,"
       "\"shocks\":%lu,\"ldr_adc\":%lu,\"ldr_v\":%.3f,\"ldr_pct\":%.1f,\"lux\":%.1f,\"gps_fix\":%s,"
       "\"lat\":%.6f,\"lon\":%.6f,\"alt\":%.1f,\"speed\":%.1f,\"hdop\":%.2f,\"sats\":%lu,\"nmea_chars\":%lu,"
-      "\"flash_records\":%u,\"flash_bytes\":%u,\"warmup\":%s}",
+      "\"flash_records\":%u,\"flash_bytes\":%u,\"hash\":\"%s\",\"warmup\":%s}",
       (unsigned long)cycle,
       (unsigned long)(millis() / 1000),
       climate.tempC,
@@ -564,6 +599,7 @@ void loop() {
       (unsigned long)gpsData.nmeaChars,
       (unsigned int)storedRecordCount,
       (unsigned int)currentLogSizeBytes,
+      shortHash,
       gas.isWarmingUp ? "true" : "false"
     );
 
