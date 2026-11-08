@@ -99,6 +99,24 @@ def post_custody(batch_id: str, payload: CustodyTransferRequest):
         if not batch_row:
             raise HTTPException(status_code=404, detail=f"Batch {batch_id} not found")
 
+        # Enforce Food Safety Circuit Breaker: block custody progression if quarantined or breached
+        is_quarantined = conn.execute(
+            """
+            SELECT 1 FROM readings WHERE batch_id = ? AND verdict IN ('QUARANTINED', 'ANOMALOUS')
+            UNION
+            SELECT 1 FROM spoilage_incidents WHERE batch_id = ? AND status IN ('BATCH_QUARANTINED', 'QUARANTINED')
+            UNION
+            SELECT 1 FROM quarantine q JOIN readings r ON q.reading_id = r.id WHERE r.batch_id = ?
+            """,
+            (batch_id, batch_id, batch_id),
+        ).fetchone() or batch_id.startswith("QUARANTINE-") or batch_id.startswith("REPLAY-")
+
+        if is_quarantined and payload.state.upper() in ("IN_STORAGE", "AT_RETAIL", "SOLD"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Circuit Breaker Active: Custody transfer to {payload.state} blocked! Batch {batch_id} is quarantined due to cold-chain breach.",
+            )
+
         # Determine last holder
         last_event = conn.execute(
             "SELECT to_holder FROM custody_events WHERE batch_id = ? ORDER BY id DESC LIMIT 1",

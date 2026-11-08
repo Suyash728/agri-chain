@@ -93,6 +93,7 @@ def get_consumer_products():
     conn = get_connection()
     try:
         # Query batches whose most recent custody state is IN_STORAGE or AT_RETAIL
+        # Decision 2 Alignment: Two-tier isolation - Suppress any quarantined/compromised batches from the marketplace catalog
         rows = conn.execute(
             """
             SELECT b.batch_id, b.crop_name, b.origin_farm, b.harvest_date, b.farmer_name,
@@ -105,6 +106,13 @@ def get_consumer_products():
               AND b.batch_id NOT LIKE 'QUARANTINE%'
               AND b.batch_id NOT LIKE 'REPLAY%'
               AND b.batch_id NOT LIKE 'BATCH-CAT%'
+              AND b.batch_id NOT IN (
+                  SELECT DISTINCT batch_id FROM readings WHERE verdict IN ('QUARANTINED', 'ANOMALOUS')
+                  UNION
+                  SELECT DISTINCT batch_id FROM spoilage_incidents WHERE status IN ('BATCH_QUARANTINED', 'QUARANTINED')
+                  UNION
+                  SELECT DISTINCT r.batch_id FROM quarantine q JOIN readings r ON q.reading_id = r.id
+              )
             ORDER BY c.id DESC
             """
         ).fetchall()
@@ -374,6 +382,12 @@ def post_consumer_checkout(payload: ConsumerCheckoutPayload):
                           AND b.batch_id NOT LIKE 'REPLAY%'
                           AND NOT EXISTS (
                               SELECT 1 FROM readings r WHERE r.batch_id = b.batch_id AND r.verdict IN ('QUARANTINED', 'ANOMALOUS')
+                          )
+                          AND NOT EXISTS (
+                              SELECT 1 FROM spoilage_incidents s WHERE s.batch_id = b.batch_id AND s.status IN ('BATCH_QUARANTINED', 'QUARANTINED')
+                          )
+                          AND NOT EXISTS (
+                              SELECT 1 FROM quarantine q JOIN readings r ON q.reading_id = r.id WHERE r.batch_id = b.batch_id
                           )
                         ORDER BY b.created_at DESC LIMIT 1
                         """
