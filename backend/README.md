@@ -67,6 +67,6 @@ Swagger API documentation is available at `http://localhost:8000/docs`.
 # Execute capstone 8-stage full system test
 python backend/scripts/verify_final_system.py
 
-# Execute full backend test suite
-pytest tests/
+# Execute full AI Trust Layer test suite
+pytest trust-layer/tests/
 ```

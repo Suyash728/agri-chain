@@ -80,7 +80,7 @@ python backend/scripts/verify_final_system.py
 cd contracts && npx hardhat test && node scripts/benchmark_gas.cjs
 
 # Run full backend and AI test suite (163 passing)
-pytest tests/ trust-layer/tests/
+pytest trust-layer/tests/
 
 # Run ESP32 physical sensor simulation (nominal & breach fault demo)
 python hardware/simulate_esp32.py --mode demo

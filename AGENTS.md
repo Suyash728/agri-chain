@@ -25,5 +25,5 @@ Entry point for AI coding agents. Read this file and `MEMORY.md` before touching
 
 ## 4. Execution Discipline
 - **One task at a time**: Complete one task from `TASKS.md` and execute its `DONE WHEN` check before advancing.
-- **Verify before claiming success**: Run tests (`pytest tests/ trust-layer/tests/`, `npx hardhat test`) to prove changes work.
+- **Verify before claiming success**: Run tests (`pytest trust-layer/tests/`, `npx hardhat test`) to prove changes work.
 - **Commit format**: `[scope] description` (e.g., `[contracts] add circuit breaker`, `[backend] fix telemetry route`). Never commit `.env`, `node_modules/`, `.venv/`, or `.db`.
