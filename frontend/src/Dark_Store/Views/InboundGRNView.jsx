@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { 
   Truck, 
@@ -49,7 +50,7 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
   const [showHelpModal, setShowHelpModal] = useState(false);
 
   const fetchInbound = () => {
-    fetch('http://localhost:8000/darkstore/inbound')
+    fetch(`${API_BASE_URL}/darkstore/inbound`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -73,7 +74,7 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
     setReceiving(true);
     try {
       const batchId = delivery.batchId || delivery.id.replace('DLY #', '');
-      const res = await fetch('http://localhost:8000/darkstore/receive', {
+      const res = await fetch(`${API_BASE_URL}/darkstore/receive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ batch_id: batchId, price_paise: 140000 }),

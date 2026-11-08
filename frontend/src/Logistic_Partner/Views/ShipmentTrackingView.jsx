@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { Truck, MapPin, ShieldCheck, Thermometer, CheckCircle2, Clock, Navigation } from 'lucide-react';
 
@@ -7,7 +8,7 @@ export const ShipmentTrackingView = () => {
   const [batchTraceData, setBatchTraceData] = useState(null);
 
   const loadShipments = () => {
-    fetch('http://localhost:8000/logistics/shipments')
+    fetch(`${API_BASE_URL}/logistics/shipments`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -39,7 +40,7 @@ export const ShipmentTrackingView = () => {
       setBatchTraceData(null);
       return;
     }
-    fetch(`http://localhost:8000/batches/${activeShipment.batchId}/traceability`)
+    fetch(`${API_BASE_URL}/batches/${activeShipment.batchId}/traceability`)
       .then(res => (res.ok ? res.json() : null))
       .then(data => setBatchTraceData(data))
       .catch(() => setBatchTraceData(null));

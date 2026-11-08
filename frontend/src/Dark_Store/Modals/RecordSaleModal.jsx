@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { X, ShoppingBag, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2, IndianRupee, Sparkles } from 'lucide-react';
 
@@ -14,7 +15,7 @@ export const RecordSaleModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:8000/batches')
+    fetch(`${API_BASE_URL}/batches`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -37,7 +38,7 @@ export const RecordSaleModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
     let isMounted = true;
     setFetchingBatch(true);
 
-    fetch(`http://localhost:8000/batches/${batchId.trim().toUpperCase()}`)
+    fetch(`${API_BASE_URL}/batches/${batchId.trim().toUpperCase()}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!isMounted || !data) return;
@@ -69,7 +70,7 @@ export const RecordSaleModal = ({ isOpen, onClose, onSuccess, defaultBatchId = '
 
     try {
       const pricePaise = Math.round(parseFloat(salePriceInr || 0) * 100);
-      const res = await fetch(`http://localhost:8000/batches/${batchId.trim().toUpperCase()}/custody`, {
+      const res = await fetch(`${API_BASE_URL}/batches/${batchId.trim().toUpperCase()}/custody`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

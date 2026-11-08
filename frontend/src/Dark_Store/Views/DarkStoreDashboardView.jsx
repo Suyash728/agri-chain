@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { DarkStoreHeader } from '../components/DarkStoreHeader';
 import { DarkStoreKPICards } from '../components/DarkStoreKPICards';
@@ -30,12 +31,12 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
   const [selectedBatchId, setSelectedBatchId] = useState('');
 
   const loadDashboardData = () => {
-    fetch('http://localhost:8000/darkstore/kpis')
+    fetch(`${API_BASE_URL}/darkstore/kpis`)
       .then((res) => res.json())
       .then((data) => setKpis(data))
       .catch((err) => console.error('Error fetching DarkStore KPIs:', err));
 
-    fetch('http://localhost:8000/darkstore/inbound')
+    fetch(`${API_BASE_URL}/darkstore/inbound`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.length > 0) {
@@ -55,7 +56,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
       })
       .catch((err) => console.error('Error fetching inbound deliveries:', err));
 
-    fetch('http://localhost:8000/incidents/spoilage')
+    fetch(`${API_BASE_URL}/incidents/spoilage`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.incidents && data.incidents.length > 0) {
@@ -74,7 +75,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
       })
       .catch(() => {});
 
-    fetch('http://localhost:8000/farmer/inventory')
+    fetch(`${API_BASE_URL}/farmer/inventory`)
       .then((res) => res.json())
       .then((data) => {
         if (data && Array.isArray(data.items) && data.items.length > 0) {
@@ -91,7 +92,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
       })
       .catch(() => {});
 
-    fetch('http://localhost:8000/batches')
+    fetch(`${API_BASE_URL}/batches`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -101,7 +102,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
       })
       .catch(() => {});
 
-    fetch('http://localhost:8000/darkstore/inventory')
+    fetch(`${API_BASE_URL}/darkstore/inventory`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data)) {
@@ -110,7 +111,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
       })
       .catch(() => {});
 
-    fetch('http://localhost:8000/darkstore/sales')
+    fetch(`${API_BASE_URL}/darkstore/sales`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && Array.isArray(data.topProducts)) {
@@ -119,7 +120,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
       })
       .catch(() => {});
 
-    fetch('http://localhost:8000/darkstore/revenue')
+    fetch(`${API_BASE_URL}/darkstore/revenue`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) {

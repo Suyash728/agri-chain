@@ -50,7 +50,7 @@ export const DarkStoreTraceabilityView = ({ onBack, onOpenNotifications }) => {
   useEffect(() => {
     const cleanId = searchQuery.trim().toUpperCase();
     if (!cleanId) return;
-    fetch(`http://localhost:8000/batches/${cleanId}/traceability`)
+    fetch(`${API_BASE_URL}/batches/${cleanId}/traceability`)
       .then((res) => {
         if (!res.ok) return null;
         return res.json();

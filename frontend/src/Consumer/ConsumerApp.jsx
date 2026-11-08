@@ -188,7 +188,7 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab, initia
       const discount = appliedCoupon ? Math.round(subtotal * 0.2) : 0;
       const grandTotal = Math.max(0, subtotal - discount + (subtotal > 0 ? 20 : 0));
 
-      const res = await fetch('http://localhost:8000/consumer/checkout', {
+      const res = await fetch(`${API_BASE_URL}/consumer/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

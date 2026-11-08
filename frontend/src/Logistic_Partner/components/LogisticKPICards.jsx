@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 
 export const LogisticKPICards = ({ onCardClick }) => {
@@ -9,7 +10,7 @@ export const LogisticKPICards = ({ onCardClick }) => {
   });
 
   useEffect(() => {
-    fetch('http://localhost:8000/logistics/kpis')
+    fetch(`${API_BASE_URL}/logistics/kpis`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.totalShipments !== undefined) {

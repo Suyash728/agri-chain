@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState } from 'react';
 import { X, Plus, Sprout, CheckCircle2, Wallet } from 'lucide-react';
 import { ethers } from 'ethers';
@@ -78,7 +79,7 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
     };
 
     try {
-      const res = await fetch('http://localhost:8000/batches', {
+      const res = await fetch(`${API_BASE_URL}/batches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

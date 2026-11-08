@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
@@ -28,14 +29,14 @@ export const DarkStoreRevenueView = ({ onBack, onOpenNotifications }) => {
   const [revenueData, setRevenueData] = useState(null);
 
   const loadRevenueData = () => {
-    fetch('http://localhost:8000/darkstore/kpis')
+    fetch(`${API_BASE_URL}/darkstore/kpis`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setLiveKpis(data);
       })
       .catch(() => {});
 
-    fetch('http://localhost:8000/darkstore/revenue')
+    fetch(`${API_BASE_URL}/darkstore/revenue`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setRevenueData(data);

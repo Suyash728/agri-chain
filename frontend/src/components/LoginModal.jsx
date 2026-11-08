@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/api';
 import React, { useState, useEffect } from 'react';
 import { 
   X, 
@@ -55,7 +56,7 @@ export const LoginModal = ({
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch('http://localhost:8000/auth/users');
+      const res = await fetch(`${API_BASE_URL}/auth/users`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.users) && data.users.length > 0) {
@@ -91,7 +92,7 @@ export const LoginModal = ({
     setLoading(true);
     setErrorMsg('');
     try {
-      const res = await fetch('http://localhost:8000/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username_or_email: persona.username || persona.email, role: persona.role })
@@ -119,7 +120,7 @@ export const LoginModal = ({
     setLoading(true);
     setErrorMsg('');
     try {
-      const res = await fetch('http://localhost:8000/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -151,7 +152,7 @@ export const LoginModal = ({
     setLoading(true);
     setErrorMsg('');
     try {
-      const createRes = await fetch('http://localhost:8000/admin/users', {
+      const createRes = await fetch(`${API_BASE_URL}/admin/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

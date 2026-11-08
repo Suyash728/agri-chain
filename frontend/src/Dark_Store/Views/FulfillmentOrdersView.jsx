@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ShoppingBag, Clock, CheckCircle2, QrCode, Bike, ArrowRight, Package } from 'lucide-react';
 
@@ -7,8 +8,8 @@ export const FulfillmentOrdersView = ({ onBack }) => {
 
   const loadFulfillmentData = () => {
     Promise.all([
-      fetch('http://localhost:8000/darkstore/inventory').then(r => r.json()).catch(() => []),
-      fetch('http://localhost:8000/darkstore/sales').then(r => r.json()).catch(() => ({ recentOrders: [] }))
+      fetch(`${API_BASE_URL}/darkstore/inventory`).then(r => r.json()).catch(() => []),
+      fetch(`${API_BASE_URL}/darkstore/sales`).then(r => r.json()).catch(() => ({ recentOrders: [] }))
     ]).then(([inventory, sales]) => {
       const liveOrders = [];
       if (Array.isArray(inventory) && inventory.length > 0) {

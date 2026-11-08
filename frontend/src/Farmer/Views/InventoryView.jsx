@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { 
@@ -19,7 +20,7 @@ export const InventoryView = ({ onBack, onAddItem, onOpenAddStock, onSelectItem,
   const [sortAsc, setSortAsc] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:8000/farmer/inventory')
+    fetch(`${API_BASE_URL}/farmer/inventory`)
       .then((res) => res.json())
       .then((data) => setLiveInventory(data))
       .catch(() => {});

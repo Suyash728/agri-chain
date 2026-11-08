@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/api';
 import React, { useState, useEffect } from 'react';
 import { 
   Sparkles,
@@ -64,7 +65,7 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
   const [custodyResult, setCustodyResult] = useState(null);
 
   const fetchBatches = () => {
-    fetch('http://localhost:8000/demo/batches')
+    fetch(`${API_BASE_URL}/demo/batches`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -85,7 +86,7 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
     setRunningScenario(scenarioId);
     setScenarioResult(null);
     try {
-      const res = await fetch(`http://localhost:8000/demo/scenarios/${scenarioId}`, {
+      const res = await fetch(`${API_BASE_URL}/demo/scenarios/${scenarioId}`, {
         method: 'POST'
       });
       const data = await res.json();
@@ -109,7 +110,7 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
     setIotSending(true);
     setIotResult(null);
     try {
-      const res = await fetch('http://localhost:8000/demo/iot/inject', {
+      const res = await fetch(`${API_BASE_URL}/demo/iot/inject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -134,7 +135,7 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
     setProduceCreating(true);
     setProduceResult(null);
     try {
-      const res = await fetch('http://localhost:8000/demo/produce/create', {
+      const res = await fetch(`${API_BASE_URL}/demo/produce/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -167,7 +168,7 @@ export const ShowcaseDrawer = ({ onNavigateRoleAndTab, isOpenExternal, setIsOpen
     setCustodyAdvancing(true);
     setCustodyResult(null);
     try {
-      const res = await fetch('http://localhost:8000/demo/custody/advance', {
+      const res = await fetch(`${API_BASE_URL}/demo/custody/advance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

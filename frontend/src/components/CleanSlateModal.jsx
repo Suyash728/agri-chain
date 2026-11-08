@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/api';
 import React, { useState } from 'react';
 import { AlertTriangle, Trash2, CheckCircle2, RefreshCw, X, ShieldAlert } from 'lucide-react';
 
@@ -12,7 +13,7 @@ export const CleanSlateModal = ({ isOpen, onClose, onResetComplete }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:8000/admin/system-reset', {
+      const res = await fetch(`${API_BASE_URL}/admin/system-reset`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { Heart, Plus } from 'lucide-react';
 
@@ -5,7 +6,7 @@ export const FavoritesView = ({ onAddToCart, onToggleFavorite, onProductClick })
   const [products, setProducts] = useState([]);
 
   const fetchFavorites = () => {
-    fetch('http://localhost:8000/consumer/products')
+    fetch(`${API_BASE_URL}/consumer/products`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data)) {

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { SlidersHorizontal, Plus, Star } from 'lucide-react';
 
@@ -13,7 +14,7 @@ export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'a
   const activeSearch = externalSearchQuery || localSearchQuery;
 
   const fetchProducts = () => {
-    fetch('http://localhost:8000/consumer/products')
+    fetch(`${API_BASE_URL}/consumer/products`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data)) {

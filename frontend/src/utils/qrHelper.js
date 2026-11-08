@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/api';
 /**
  * Universal QR & LAN Network Helper for AgriChain
  * Ensures QR codes generate cross-device accessible URLs that work
@@ -18,7 +19,7 @@ if (typeof window !== 'undefined' && window.location) {
 
 // Dynamically fetch network info from backend if on localhost
 if (typeof window !== 'undefined') {
-  fetch('http://localhost:8000/network/info')
+  fetch(`${API_BASE_URL}/network/info`)
     .then((res) => (res.ok ? res.json() : null))
     .then((info) => {
       if (info?.lan_ip) {

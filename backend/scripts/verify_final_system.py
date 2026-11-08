@@ -144,10 +144,36 @@ def main():
     assert nominal_resp.get("tx_hash"), "Nominal reading must be mined on-chain"
     print(f"  [PASS] ESP32 Nominal Reading: 4.5°C verified & mined on-chain: tx={nominal_resp['tx_hash'][:18]}...")
 
-    # Simulate GPIO 4 Push-button press (injects 48.0°C thermal breach)
+    # Simulate GPIO 4 Push-button press on a dedicated fault test batch (injects 48.0°C thermal breach)
+    quarantine_batch_id = f"QUARANTINE-FAULT-{int(time.time())}"
+    post_json("/batches", {
+        "batch_id": quarantine_batch_id,
+        "crop_name": "Organic Tomatoes",
+        "origin_farm": "Fault Injection Cluster",
+        "harvest_date": "2026-09-23",
+        "farmer_name": "Sensor Fault Persona",
+        "farmer_address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    })
+    post_json(f"/batches/{quarantine_batch_id}/custody", {
+        "to_holder": "Safexpress Cold Chain Logistics",
+        "state": "IN_TRANSIT",
+        "price_paise": 100000
+    })
+
+    # Send nominal baseline reading first for quarantine test batch
+    post_json("/telemetry", {
+        "batch_id": quarantine_batch_id,
+        "device_id": "ESP32-FAULT-01",
+        "latitude": 19.9975,
+        "longitude": 73.7898,
+        "temperature": 4.5,
+        "humidity": 88.0,
+        "timestamp": "2026-09-23T16:20:00Z"
+    })
+
     breach_payload = {
-        "batch_id": batch_id,
-        "device_id": "ESP32-COLDCHAIN-01",
+        "batch_id": quarantine_batch_id,
+        "device_id": "ESP32-FAULT-01",
         "latitude": 19.9975,
         "longitude": 73.7898,
         "temperature": 48.0,
@@ -162,15 +188,42 @@ def main():
 
     # Verify quarantine log
     q_records = get_json("/telemetry/quarantine")
-    assert any(r.get("batchId") == batch_id or r.get("batch_id") == batch_id for r in q_records), "Breach not found in quarantine log"
+    assert any(r.get("batchId") == quarantine_batch_id or r.get("batch_id") == quarantine_batch_id for r in q_records), "Breach not found in quarantine log"
     print(f"  [PASS] Quarantine Log: Incident recorded with full audit evidence and reason codes")
+
+    # Verify Food Safety Circuit Breaker: dark store receiving MUST reject quarantined batch
+    try:
+        post_json("/darkstore/receive", {
+            "batch_id": quarantine_batch_id,
+            "holder_name": "Pune Fresh DarkStore Hub",
+            "price_paise": 155000
+        })
+        raise AssertionError("Circuit Breaker failed: quarantined batch should have been rejected!")
+    except urllib.error.HTTPError as e:
+        assert e.code in (400, 404), f"Expected 400 or 404 for quarantined batch, got {e.code}"
+        print(f"  [PASS] Food Safety Circuit Breaker: Quarantined batch rejected at Dark Store intake (HTTP {e.code})")
 
     # =========================================================================
     # CHECK 4B: Genuine Cold-Chain Breach Mined On-Chain (Gap 3 Solution)
     # =========================================================================
     print("\n--- [CHECK 4B] Genuine Cold-Chain Policy Breach Mined On-Chain with Custody Attribution ---")
+    breach_batch_id = f"BREACH-DEMO-{int(time.time())}"
+    post_json("/batches", {
+        "batch_id": breach_batch_id,
+        "crop_name": "Organic Tomatoes",
+        "origin_farm": "Breach Verification Cluster",
+        "harvest_date": "2026-09-23",
+        "farmer_name": "Breach Test Farmer",
+        "farmer_address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+    })
+    post_json(f"/batches/{breach_batch_id}/custody", {
+        "to_holder": "Safexpress Cold Chain Logistics",
+        "state": "IN_TRANSIT",
+        "price_paise": 100000
+    })
+
     genuine_breach_payload = {
-        "batch_id": batch_id,
+        "batch_id": breach_batch_id,
         "crop_name": "tomato",
         "device_id": "ESP32-COLDCHAIN-REFRIG-01",
         "latitude": 19.9975,
@@ -187,13 +240,13 @@ def main():
     print(f"  [PASS] Genuine Breach Ingested: 14.5°C flagged as BREACH, mined on-chain (tx={gb_resp['tx_hash'][:18]}...), attributed to custodian")
 
     # Verify on-chain condition record has breach == True
-    onchain_records = chain.get_condition_records(batch_id)
+    onchain_records = chain.get_condition_records(breach_batch_id)
     breach_records = [r for r in onchain_records if r.get("breach") is True]
     assert len(breach_records) > 0, "No on-chain condition record has breach == True!"
     print(f"  [PASS] ColdChainMonitor.sol verified: {len(breach_records)} on-chain condition record(s) flagged with breach=true")
 
     # Verify consumer traceability endpoint exposes the breach
-    trace_data = get_json(f"/batches/{batch_id}/traceability")
+    trace_data = get_json(f"/batches/{breach_batch_id}/traceability")
     cond_log = trace_data.get("conditionLog", [])
     assert any(c.get("breach") is True for c in cond_log), "Consumer traceability missing breach=True condition"
     print("  [PASS] Consumer Traceability API: Confirmed breach=true visible in public produce journey")

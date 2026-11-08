@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, TrendingUp } from 'lucide-react';
 
@@ -13,7 +14,7 @@ export const RevenueView = () => {
   });
 
   useEffect(() => {
-    fetch('http://localhost:8000/darkstore/kpis')
+    fetch(`${API_BASE_URL}/darkstore/kpis`)
       .then((res) => res.json())
       .then((kpis) => {
         if (kpis && kpis.revenue) {

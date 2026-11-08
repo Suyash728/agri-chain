@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/api';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles,
@@ -311,7 +312,7 @@ export const GodModeHub = ({
 
   const fetchBatches = async () => {
     try {
-      const res = await fetch('http://localhost:8000/demo/batches');
+      const res = await fetch(`${API_BASE_URL}/demo/batches`);
       if (res.ok) {
         const data = await res.json();
         setBatches(data);
@@ -330,7 +331,7 @@ export const GodModeHub = ({
     setLoading(true);
     try {
       const target = bId || selectedBatchId || 'latest';
-      const res = await fetch(`http://localhost:8000/demo/godmode/${target}`);
+      const res = await fetch(`${API_BASE_URL}/demo/godmode/${target}`);
       if (res.ok) {
         const data = await res.json();
         setGodData(data);
@@ -383,7 +384,7 @@ export const GodModeHub = ({
         step: stepNum,
         batch_id: stepNum === 1 ? null : bId
       };
-      const res = await fetch('http://localhost:8000/demo/godmode/tour-step', {
+      const res = await fetch(`${API_BASE_URL}/demo/godmode/tour-step`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -455,7 +456,7 @@ export const GodModeHub = ({
         simulate_replay: false,
         simulate_breach: temp > 10.0 || temp < 2.0
       };
-      const res = await fetch('http://localhost:8000/demo/iot/inject', {
+      const res = await fetch(`${API_BASE_URL}/demo/iot/inject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

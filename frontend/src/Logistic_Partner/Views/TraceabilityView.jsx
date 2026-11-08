@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Link2, 
@@ -26,7 +27,7 @@ export const TraceabilityView = () => {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   const loadBatches = useCallback(() => {
-    fetch('http://localhost:8000/batches')
+    fetch(`${API_BASE_URL}/batches`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -62,7 +63,7 @@ export const TraceabilityView = () => {
       setLiveBatch(null);
       return;
     }
-    fetch(`http://localhost:8000/batches/${cleanId}/traceability`)
+    fetch(`${API_BASE_URL}/batches/${cleanId}/traceability`)
       .then((res) => {
         if (!res.ok) return null;
         return res.json();

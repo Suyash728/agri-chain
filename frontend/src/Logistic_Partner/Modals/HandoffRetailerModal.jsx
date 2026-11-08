@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { X, Store, ShieldCheck, RefreshCw, AlertCircle, CheckCircle2, IndianRupee, Sparkles } from 'lucide-react';
 
@@ -23,7 +24,7 @@ export const HandoffRetailerModal = ({ isOpen, onClose, onSuccess, defaultBatchI
     let isMounted = true;
     setFetchingBatch(true);
 
-    fetch(`http://localhost:8000/batches/${batchId.trim().toUpperCase()}`)
+    fetch(`${API_BASE_URL}/batches/${batchId.trim().toUpperCase()}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!isMounted || !data) return;
@@ -55,7 +56,7 @@ export const HandoffRetailerModal = ({ isOpen, onClose, onSuccess, defaultBatchI
 
     try {
       const pricePaise = Math.round(parseFloat(priceInr || 0) * 100);
-      const res = await fetch(`http://localhost:8000/batches/${batchId.trim().toUpperCase()}/custody`, {
+      const res = await fetch(`${API_BASE_URL}/batches/${batchId.trim().toUpperCase()}/custody`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, MapPin, Award, Phone, Mail, Settings, LogOut, CheckCircle2 } from 'lucide-react';
 
@@ -16,7 +17,7 @@ export const ProfileView = ({ onBack, onLogout }) => {
   const [profile, setProfile] = useState(defaultFarmerProfile);
 
   useEffect(() => {
-    fetch('http://localhost:8000/farmer/profile')
+    fetch(`${API_BASE_URL}/farmer/profile`)
       .then(res => res.json())
       .then(data => {
         if (data && data.name) setProfile(data);

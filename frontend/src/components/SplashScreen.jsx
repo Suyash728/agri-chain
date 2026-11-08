@@ -64,7 +64,9 @@ export const SplashScreen = ({ role = 'farmer', onFinish }) => {
 
   return (
     <div 
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#FAF7F0] select-none transition-opacity duration-600 ease-in-out p-6 overflow-hidden ${
+      onClick={() => onFinish && onFinish()}
+      title="Click to enter immediately"
+      className={`fixed inset-0 z-[9999] cursor-pointer flex flex-col items-center justify-center bg-[#FAF7F0] select-none transition-opacity duration-600 ease-in-out p-6 overflow-hidden ${
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >

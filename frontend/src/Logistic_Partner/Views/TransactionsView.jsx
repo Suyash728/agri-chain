@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, AlertTriangle } from 'lucide-react';
 
@@ -6,12 +7,12 @@ export const TransactionsView = () => {
   const [liveTransactions, setLiveTransactions] = useState([]);
 
   const loadLedgerData = () => {
-    fetch('http://localhost:8000/incidents/spoilage')
+    fetch(`${API_BASE_URL}/incidents/spoilage`)
       .then((res) => res.json())
       .then((data) => setSpoilageData(data))
       .catch(() => {});
 
-    fetch('http://localhost:8000/logistics/transactions')
+    fetch(`${API_BASE_URL}/logistics/transactions`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {

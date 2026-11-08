@@ -1,3 +1,4 @@
+import { API_BASE_URL } from './utils/api';
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, ArrowRight, Bell } from 'lucide-react';
 import { useNotificationCount } from './utils/useNotificationCount';
@@ -174,11 +175,11 @@ export default function App() {
   const fetchFarmerData = useCallback(async () => {
     try {
       const [kpiRes, cropsRes, actRes, invRes, trustRes] = await Promise.allSettled([
-        fetch('http://localhost:8000/farmer/kpis').then(r => r.json()),
-        fetch('http://localhost:8000/farmer/crops').then(r => r.json()),
-        fetch('http://localhost:8000/farmer/activity').then(r => r.json()),
-        fetch('http://localhost:8000/farmer/inventory').then(r => r.json()),
-        fetch('http://localhost:8000/farmer/quality-rating').then(r => r.json())
+        fetch(`${API_BASE_URL}/farmer/kpis`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/farmer/crops`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/farmer/activity`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/farmer/inventory`).then(r => r.json()),
+        fetch(`${API_BASE_URL}/farmer/quality-rating`).then(r => r.json())
       ]);
 
       if (kpiRes.status === 'fulfilled' && Array.isArray(kpiRes.value)) {
@@ -456,7 +457,7 @@ export default function App() {
   const handleLogout = () => {
     try {
       localStorage.removeItem('agrichain_current_user');
-      fetch('http://localhost:8000/auth/logout', { method: 'POST' }).catch(() => {});
+      fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST' }).catch(() => {});
     } catch (_) {}
     setCurrentUser(null);
     setIsLoginModalOpen(true);

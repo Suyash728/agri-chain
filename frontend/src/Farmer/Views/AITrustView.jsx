@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
@@ -54,7 +55,7 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
   };
 
   const fetchQuarantineLogs = () => {
-    fetch('http://localhost:8000/telemetry/quarantine')
+    fetch(`${API_BASE_URL}/telemetry/quarantine`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -65,7 +66,7 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
   };
 
   const fetchTrustAndInventory = () => {
-    fetch('http://localhost:8000/farmer/ai-trust')
+    fetch(`${API_BASE_URL}/farmer/ai-trust`)
       .then((res) => res.json())
       .then((json) => {
         if (json && json.score !== undefined) {
@@ -74,7 +75,7 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
       })
       .catch(() => {});
 
-    fetch('http://localhost:8000/farmer/inventory')
+    fetch(`${API_BASE_URL}/farmer/inventory`)
       .then((res) => res.json())
       .then((inv) => {
         const items = Array.isArray(inv) ? inv : (Array.isArray(inv?.items) ? inv.items : []);
@@ -144,7 +145,7 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
     };
 
     try {
-      const res = await fetch('http://localhost:8000/telemetry', {
+      const res = await fetch(`${API_BASE_URL}/telemetry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -161,7 +162,7 @@ export const AITrustView = ({ onBack, onOpenDetails }) => {
       window.dispatchEvent(new CustomEvent('agrichain-telemetry-updated', { detail: data }));
       window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
       fetchQuarantineLogs();
-      fetch('http://localhost:8000/farmer/ai-trust')
+      fetch(`${API_BASE_URL}/farmer/ai-trust`)
         .then((res) => res.json())
         .then((json) => {
           if (json && json.score !== undefined) {

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
@@ -85,7 +86,7 @@ export const FarmerQualityView = ({ onBack, onOpenTraceability }) => {
   const [qualityData, setQualityData] = useState(initialQualityData);
 
   const fetchQuality = () => {
-    fetch('http://localhost:8000/farmer/quality-rating')
+    fetch(`${API_BASE_URL}/farmer/quality-rating`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.score !== undefined) {

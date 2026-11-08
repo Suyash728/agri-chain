@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 
@@ -6,7 +7,7 @@ export const OrdersView = ({ onViewOrderDetails }) => {
   const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:8000/consumer/orders')
+    fetch(`${API_BASE_URL}/consumer/orders`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {

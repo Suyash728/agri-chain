@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { ProductCard } from '../components/ProductCard';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
@@ -19,7 +20,7 @@ export const HomeView = ({
   const [products, setProducts] = useState([]);
 
   const fetchProducts = () => {
-    fetch('http://localhost:8000/consumer/products')
+    fetch(`${API_BASE_URL}/consumer/products`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
         if (Array.isArray(data)) {

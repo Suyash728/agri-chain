@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { Truck, MapPin, ShieldCheck, Thermometer, ArrowRight, Gauge, PackageCheck } from 'lucide-react';
 
@@ -5,7 +6,7 @@ export const TransportationView = ({ onNavigate }) => {
   const [fleet, setFleet] = useState([]);
 
   const loadFleet = () => {
-    fetch('http://localhost:8000/logistics/shipments')
+    fetch(`${API_BASE_URL}/logistics/shipments`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

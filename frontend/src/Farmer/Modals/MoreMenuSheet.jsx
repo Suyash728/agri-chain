@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { 
   Truck, 
@@ -21,7 +22,7 @@ export const MoreMenuSheet = ({ isOpen, onClose, onSelectTab, onLogout }) => {
 
   useEffect(() => {
     if (activeSubView === 'admin-roles') {
-      fetch('http://localhost:8000/admin/users')
+      fetch(`${API_BASE_URL}/admin/users`)
         .then((res) => res.json())
         .then((data) => {
           if (data && data.participants) setAdminUsers(data.participants);
@@ -39,7 +40,7 @@ export const MoreMenuSheet = ({ isOpen, onClose, onSelectTab, onLogout }) => {
     setGrantStatus(null);
 
     try {
-      const res = await fetch('http://localhost:8000/admin/roles/grant', {
+      const res = await fetch(`${API_BASE_URL}/admin/roles/grant`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -60,7 +61,7 @@ export const MoreMenuSheet = ({ isOpen, onClose, onSelectTab, onLogout }) => {
       });
 
       // Refresh list
-      const updated = await fetch('http://localhost:8000/admin/users').then((r) => r.json());
+      const updated = await fetch(`${API_BASE_URL}/admin/users`).then((r) => r.json());
       if (updated && updated.participants) setAdminUsers(updated.participants);
       setTargetAddress('');
     } catch (err) {

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { useWallet } from '../../components/WalletConnect';
@@ -66,7 +67,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
   };
 
   const fetchOrders = useCallback(() => {
-    fetch('http://localhost:8000/logistics/orders')
+    fetch(`${API_BASE_URL}/logistics/orders`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -92,7 +93,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
   }, [activeCustodyBatchId]);
 
   const fetchTxs = useCallback(() => {
-    fetch('http://localhost:8000/logistics/transactions')
+    fetch(`${API_BASE_URL}/logistics/transactions`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -141,7 +142,7 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
     }
 
     try {
-      const res = await fetch(`http://localhost:8000/batches/${batchId}/custody`, {
+      const res = await fetch(`${API_BASE_URL}/batches/${batchId}/custody`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

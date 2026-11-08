@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 
 export const DarkStoreKPICards = ({ onCardClick, kpis: externalKpis }) => {
@@ -6,7 +7,7 @@ export const DarkStoreKPICards = ({ onCardClick, kpis: externalKpis }) => {
   useEffect(() => {
     if (externalKpis) return;
     const loadKpis = () => {
-      fetch('http://localhost:8000/darkstore/kpis')
+      fetch(`${API_BASE_URL}/darkstore/kpis`)
         .then((res) => res.json())
         .then((data) => setInternalKpis(data))
         .catch((err) => console.error('Error fetching DarkStore KPIs:', err));

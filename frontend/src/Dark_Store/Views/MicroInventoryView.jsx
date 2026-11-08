@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, ThermometerSnowflake, QrCode, Search, CheckCircle2, ShoppingBag, Clock, Bike, ArrowRight, X, ShieldCheck } from 'lucide-react';
 import { FulfillmentOrdersView } from './FulfillmentOrdersView';
@@ -10,7 +11,7 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
   const [selectedBinQR, setSelectedBinQR] = useState(null);
 
   const fetchInventory = () => {
-    fetch('http://localhost:8000/darkstore/inventory')
+    fetch(`${API_BASE_URL}/darkstore/inventory`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

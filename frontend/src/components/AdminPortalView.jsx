@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/api';
 import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
@@ -63,28 +64,28 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
     setLoading(true);
     try {
       // 1. Fetch participants
-      const usersRes = await fetch('http://localhost:8000/admin/users');
+      const usersRes = await fetch(`${API_BASE_URL}/admin/users`);
       if (usersRes.ok) {
         const data = await usersRes.json();
         if (data.participants) setParticipants(data.participants);
       }
 
       // 2. Fetch contract pause status
-      const statusRes = await fetch('http://localhost:8000/admin/contracts/status');
+      const statusRes = await fetch(`${API_BASE_URL}/admin/contracts/status`);
       if (statusRes.ok) {
         const data = await statusRes.json();
         setContractStatus(data);
       }
 
       // 3. Fetch quarantine verify-integrity
-      const verifyRes = await fetch('http://localhost:8000/quarantine/verify-integrity');
+      const verifyRes = await fetch(`${API_BASE_URL}/quarantine/verify-integrity`);
       if (verifyRes.ok) {
         const data = await verifyRes.json();
         setQuarantineReport(data);
       }
 
       // 4. Fetch latest quarantine incidents
-      const qRes = await fetch('http://localhost:8000/telemetry/quarantine');
+      const qRes = await fetch(`${API_BASE_URL}/telemetry/quarantine`);
       if (qRes.ok) {
         const data = await qRes.json();
         setQuarantineLogs(data.slice(0, 5));
@@ -110,7 +111,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
     setSeeding(true);
     setActionStatus(null);
     try {
-      const res = await fetch('http://localhost:8000/admin/seed-demo-data', {
+      const res = await fetch(`${API_BASE_URL}/admin/seed-demo-data`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -146,7 +147,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
     setActionStatus(null);
 
     try {
-      const res = await fetch('http://localhost:8000/admin/roles/grant', {
+      const res = await fetch(`${API_BASE_URL}/admin/roles/grant`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -178,7 +179,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
     setActionStatus(null);
 
     try {
-      const res = await fetch('http://localhost:8000/admin/roles/revoke', {
+      const res = await fetch(`${API_BASE_URL}/admin/roles/revoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address, role }),
@@ -216,7 +217,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
     setSubmittingUser(true);
     setActionStatus(null);
     try {
-      const res = await fetch('http://localhost:8000/admin/users', {
+      const res = await fetch(`${API_BASE_URL}/admin/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -255,7 +256,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
     setSubmittingUser(true);
     setActionStatus(null);
     try {
-      const res = await fetch(`http://localhost:8000/admin/users/${editingUser.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${editingUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -287,7 +288,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
     if (!confirm(`Are you sure you want to remove participant '${user.name}' (${user.email || user.address}) from the system?`)) return;
     setActionStatus(null);
     try {
-      const res = await fetch(`http://localhost:8000/admin/users/${user.id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${user.id}`, {
         method: 'DELETE',
       });
       const data = await res.json();
@@ -308,7 +309,7 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
     if (!confirm(`Are you sure you want to ${action.toUpperCase()} ${contractName}?`)) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/admin/contracts/${action}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/contracts/${action}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contract: contractName }),

@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
@@ -59,7 +60,7 @@ export const LogisticAITrustView = ({ onBack, onOpenDetails }) => {
   };
 
   const fetchQuarantineLogs = () => {
-    fetch('http://localhost:8000/telemetry/quarantine')
+    fetch(`${API_BASE_URL}/telemetry/quarantine`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -70,7 +71,7 @@ export const LogisticAITrustView = ({ onBack, onOpenDetails }) => {
   };
 
   const fetchTrustAndBatch = () => {
-    fetch('http://localhost:8000/logistics/ai-trust')
+    fetch(`${API_BASE_URL}/logistics/ai-trust`)
       .then((res) => res.json())
       .then((json) => {
         if (json && json.score !== undefined) {
@@ -82,7 +83,7 @@ export const LogisticAITrustView = ({ onBack, onOpenDetails }) => {
       })
       .catch(() => {
         // Fallback to /farmer/ai-trust if needed
-        fetch('http://localhost:8000/farmer/ai-trust')
+        fetch(`${API_BASE_URL}/farmer/ai-trust`)
           .then((res) => res.json())
           .then((json) => {
             if (json && json.score !== undefined) {
@@ -93,7 +94,7 @@ export const LogisticAITrustView = ({ onBack, onOpenDetails }) => {
       });
 
     // Check transactions for any carrier SLA deductions
-    fetch('http://localhost:8000/logistics/transactions')
+    fetch(`${API_BASE_URL}/logistics/transactions`)
       .then((res) => res.json())
       .then((txs) => {
         if (Array.isArray(txs)) {
@@ -105,7 +106,7 @@ export const LogisticAITrustView = ({ onBack, onOpenDetails }) => {
       })
       .catch(() => {});
 
-    fetch('http://localhost:8000/batches')
+    fetch(`${API_BASE_URL}/batches`)
       .then((res) => res.json())
       .then((batches) => {
         if (Array.isArray(batches) && batches.length > 0) {
@@ -171,7 +172,7 @@ export const LogisticAITrustView = ({ onBack, onOpenDetails }) => {
     };
 
     try {
-      const res = await fetch('http://localhost:8000/telemetry', {
+      const res = await fetch(`${API_BASE_URL}/telemetry`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

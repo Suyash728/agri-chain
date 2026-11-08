@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Sprout, ArrowRight } from 'lucide-react';
 
@@ -31,7 +32,7 @@ export const AvailableProduceView = ({ onProcure }) => {
   const [liveProduce, setLiveProduce] = useState([]);
 
   const loadProduce = () => {
-    fetch('http://localhost:8000/logistics/available-produce')
+    fetch(`${API_BASE_URL}/logistics/available-produce`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setLiveProduce(data);

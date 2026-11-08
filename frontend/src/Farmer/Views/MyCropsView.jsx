@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, ChevronRight, X } from 'lucide-react';
 import { cropIllustrationsMap, FruitsIllustration } from '../components/CropIllustrations';
@@ -7,7 +8,7 @@ export const MyCropsView = ({ categories, onBack, onSelectCategory }) => {
   const [fetchedCategories, setFetchedCategories] = useState(null);
 
   const fetchCrops = () => {
-    fetch('http://localhost:8000/farmer/crops')
+    fetch(`${API_BASE_URL}/farmer/crops`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) setFetchedCategories(data);

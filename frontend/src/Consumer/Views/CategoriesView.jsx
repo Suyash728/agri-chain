@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search } from 'lucide-react';
 
@@ -6,7 +7,7 @@ export const CategoriesView = ({ onBack, onSelectCategory }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchCategories = () => {
-    fetch('http://localhost:8000/consumer/categories')
+    fetch(`${API_BASE_URL}/consumer/categories`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -30,7 +31,7 @@ export const CategoriesView = ({ onBack, onSelectCategory }) => {
   }, []);
 
   const fallbackCategories = () => {
-    fetch('http://localhost:8000/consumer/products')
+    fetch(`${API_BASE_URL}/consumer/products`)
       .then((res) => res.json())
       .then((products) => {
         if (Array.isArray(products)) {

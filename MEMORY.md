@@ -66,9 +66,9 @@ AgriChain is a tamper-evident agricultural supply chain platform connecting phys
 - **Verification**: `npx hardhat test` (22/22 tests passing).
 
 ### B. Backend & Storage (`backend/`)
-- **Framework**: FastAPI with Web3.py client (`chain.py`), Pinata IPFS integration (`ipfs.py`), and dual-storage adapter (`db.py`).
+- **Framework**: FastAPI with modular APIRouter architecture (`routers/farmer.py`, `routers/logistics.py`, `routers/darkstore.py`, `routers/consumer.py`, `routers/telemetry.py`, `routers/admin.py`, `routers/batches.py`, `routers/demo.py`, `routers/common.py`), centralized Pydantic schemas (`schemas.py`), Web3.py client (`chain.py`), Pinata IPFS integration (`ipfs.py`), and dual-storage adapter (`db.py`).
 - **Database**: Connects to Supabase PostgreSQL when `DATABASE_URL` is set, with seamless fallback to SQLite (`backend/agrichain.db`).
-- **Endpoints**: Telemetry (`POST /telemetry`, `POST /telemetry/batch`), Batches (`/batches/*`), Dashboards (`/farmer/*`, `/logistics/*`, `/darkstore/*`, `/admin/*`), and Traceability (`GET /batches/{id}/traceability`).
+- **Endpoints**: 80 modular route operations covering Telemetry (`POST /telemetry`, `POST /telemetry/batch`), Batches (`/batches/*`), Dashboards (`/farmer/*`, `/logistics/*`, `/darkstore/*`, `/admin/*`), and Traceability (`GET /batches/{id}/traceability`). All template mock data removed and all frontend fetches centralized to `${API_BASE_URL}`.
 
 ### C. AI Trust Layer (`trust-layer/`)
 - **Pipeline**: Schema validation → Plausibility → Feature Extraction → Isolation Forest → Replay Check → Verdict Engine → IsoLog Quarantine.
@@ -109,9 +109,15 @@ cd backend && uvicorn main:app --reload --port 8000
 cd frontend && npm run dev                     # Port 3000
 
 # 5. Capstone End-to-End System Verification
-python backend/scripts/verify_final_system.py  # 8-stage verification
+python backend/scripts/verify_final_system.py  # 10-phase exhaustive verification
 
-# 6. Physical Hardware Mission Control
+# 6. E2E Playwright Screenshot & Visual Fidelity Inspection
+python scripts/e2e_screenshots_inspection.py   # Full-page screenshots for 12 role views
+
+# 7. E2E Multi-Role Manual Batch Flow Verification
+python scripts/test_full_ui_journey.py         # Full Farmer -> Logistics -> Dark Store -> Consumer flow
+
+# 8. Physical Hardware Mission Control
 ./run_monitor.sh [--skip-sync] [--batch BAT-MGO-701]
 ```
 

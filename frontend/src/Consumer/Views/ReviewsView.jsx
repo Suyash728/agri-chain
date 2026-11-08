@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { Star, CheckCircle } from 'lucide-react';
 
@@ -14,7 +15,7 @@ export const ReviewsView = ({ onWriteReviewClick }) => {
   ]);
 
   useEffect(() => {
-    fetch('http://localhost:8000/consumer/reviews')
+    fetch(`${API_BASE_URL}/consumer/reviews`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) {

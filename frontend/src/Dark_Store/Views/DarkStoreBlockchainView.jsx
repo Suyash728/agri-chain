@@ -59,7 +59,7 @@ export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
       setLiveBatchData(null);
       return;
     }
-    fetch(`http://localhost:8000/batches/${cleanId}/traceability`)
+    fetch(`${API_BASE_URL}/batches/${cleanId}/traceability`)
       .then((res) => {
         if (!res.ok) return null;
         return res.json();
@@ -281,7 +281,7 @@ export const DarkStoreBlockchainView = ({ onBack, onOpenNotifications }) => {
               onClick={() => {
                 const cleanId = searchQuery.trim().toUpperCase();
                 if (!cleanId) return;
-                fetch(`http://localhost:8000/batches/${cleanId}/traceability`)
+                fetch(`${API_BASE_URL}/batches/${cleanId}/traceability`)
                   .then((res) => (res.ok ? res.json() : null))
                   .then((data) => {
                     if (data && (data.batchId || data.batch_id)) {

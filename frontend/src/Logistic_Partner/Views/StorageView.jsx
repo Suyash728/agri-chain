@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { Building2, Thermometer, ShieldCheck } from 'lucide-react';
 
@@ -5,7 +6,7 @@ export const StorageView = () => {
   const [liveWarehouses, setLiveWarehouses] = useState([]);
 
   const loadWarehouses = () => {
-    fetch('http://localhost:8000/logistics/storage')
+    fetch(`${API_BASE_URL}/logistics/storage`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setLiveWarehouses(data);

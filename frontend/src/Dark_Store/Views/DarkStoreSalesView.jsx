@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
@@ -26,7 +27,7 @@ export const DarkStoreSalesView = ({ onBack }) => {
   const [orderSearchModal, setOrderSearchModal] = useState('');
 
   const loadSalesData = () => {
-    fetch('http://localhost:8000/darkstore/sales')
+    fetch(`${API_BASE_URL}/darkstore/sales`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data) setLiveSales(data);

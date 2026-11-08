@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { X, ShieldAlert, AlertTriangle, ThermometerSnowflake, MapPin, Clock, Fingerprint, RefreshCw } from 'lucide-react';
 
@@ -7,7 +8,7 @@ export const QuarantineAuditModal = ({ isOpen, onClose }) => {
 
   const fetchQuarantine = (isBackground = false) => {
     if (!isBackground) setLoading(true);
-    fetch('http://localhost:8000/telemetry/quarantine')
+    fetch(`${API_BASE_URL}/telemetry/quarantine`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

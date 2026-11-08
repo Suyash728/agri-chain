@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 
@@ -7,7 +8,7 @@ export const OrdersView = ({ onBack, onSelectOrder }) => {
   const [confirmingId, setConfirmingId] = useState(null);
 
   const fetchOrders = () => {
-    fetch('http://localhost:8000/farmer/orders')
+    fetch(`${API_BASE_URL}/farmer/orders`)
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data)) setOrders(data);
@@ -23,7 +24,7 @@ export const OrdersView = ({ onBack, onSelectOrder }) => {
     const targetId = ord.batchId || ord.id;
     try {
       setConfirmingId(targetId);
-      const res = await fetch(`http://localhost:8000/farmer/orders/${targetId}/confirm`, {
+      const res = await fetch(`${API_BASE_URL}/farmer/orders/${targetId}/confirm`, {
         method: 'POST',
       });
       if (res.ok) {

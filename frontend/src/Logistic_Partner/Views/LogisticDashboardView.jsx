@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { LogisticHeader } from '../components/LogisticHeader';
 import { LogisticKPICards } from '../components/LogisticKPICards';
@@ -50,7 +51,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
   const [aiTrustData, setAiTrustData] = useState(null);
 
   const loadDashboardData = () => {
-    fetch('http://localhost:8000/logistics/available-produce')
+    fetch(`${API_BASE_URL}/logistics/available-produce`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -69,7 +70,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
       })
       .catch(() => setAvailableProduce([]));
 
-    fetch('http://localhost:8000/logistics/orders')
+    fetch(`${API_BASE_URL}/logistics/orders`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -84,7 +85,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
       })
       .catch(() => setProcurementOrders([]));
 
-    fetch('http://localhost:8000/logistics/shipments')
+    fetch(`${API_BASE_URL}/logistics/shipments`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -104,7 +105,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
       })
       .catch(() => setActiveVehiclesList([]));
 
-    fetch('http://localhost:8000/farmer/inventory')
+    fetch(`${API_BASE_URL}/farmer/inventory`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.summary) {
@@ -113,7 +114,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
       })
       .catch(() => {});
 
-    fetch('http://localhost:8000/logistics/category-allocations')
+    fetch(`${API_BASE_URL}/logistics/category-allocations`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -128,7 +129,7 @@ export const LogisticDashboardView = ({ onSelectTab, onOpenNotifications }) => {
       })
       .catch(() => setInventoryCategories([]));
 
-    fetch('http://localhost:8000/farmer/ai-trust')
+    fetch(`${API_BASE_URL}/farmer/ai-trust`)
       .then((res) => res.json())
       .then((data) => setAiTrustData(data))
       .catch(() => {});
