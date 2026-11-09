@@ -65,6 +65,7 @@ hardware/transit_logs/*.jsonl
 
 # ---------- Logs ----------
 *.log
+logs/
 
 # ---------- IPFS Local Storage Cache ----------
 backend/ipfs_storage/

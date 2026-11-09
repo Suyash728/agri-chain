@@ -471,6 +471,15 @@ def main():
                 try:
                     first_packet = json.loads(line[5:])
                     current_data.update(first_packet)
+                    now_str = datetime.now().strftime("%H:%M:%S")
+                    cycle_num = current_data.get("cycle", 1)
+                    temp = current_data.get("temp", 0.0)
+                    co2 = current_data.get("co2_ppm", 0.0)
+                    shocks = current_data.get("shocks", 0)
+                    lux = current_data.get("lux", 0.0)
+                    flash_recs = current_data.get("flash_records", 0)
+                    rec_hash = current_data.get("hash", "N/A")
+                    recent_logs.append(f"[{now_str}] #{cycle_num:04d} | 🌡️ {temp:.1f}°C | 💨 CO₂:{co2:.0f}ppm | 💡 ~{lux:.0f}Lx | 💥 {shocks} Shk | 💾 {flash_recs} Buf | 🔒 #{rec_hash[:8]}")
                     break
                 except Exception:
                     pass

@@ -133,3 +133,22 @@ python scripts/test_full_ui_journey.py         # Full Farmer -> Logistics -> Dar
 | `BAT-TUR-404` | Salem Pure Turmeric | Curcumin High Grade | Ambient dry |
 | `BAT-WHT-505` | Sharbati Golden Wheat | MP Sehore Dry Storage | Ambient dry |
 | `BAT-BER-606` | Fresh Strawberries | Mahabaleshwar Cold Express | 0–2°C, 90–95% RH |
+
+
+---
+
+## 6. Unified Full-Stack Launchers (Cross-Platform)
+
+- **Linux & macOS**: `./run.sh`
+- **Windows**: `run.bat` (Command Prompt) or `.\run.ps1` (PowerShell)
+- **Direct Python**: `python run.py [--no-browser] [--simulator] [--no-seed] [--kill-ports]`
+- **Orchestration Lifecycle**:
+  1. **Pre-flight Check**: Detects virtual environment Python (`.venv/bin/python` or `.venv\Scripts\python.exe`) and CLI tools (`npx`, `npm`).
+  2. **Port Conflict Resolution**: Audits ports 8545, 8000, 3000 (auto-clears conflicts with `--kill-ports`).
+  3. **Tier 1 (Blockchain)**: Spawns Hardhat EVM node on port 8545 with JSON-RPC readiness polling (`eth_blockNumber`).
+  4. **Tier 2 (Contracts)**: Executes `contracts/scripts/deploy_amoy.cjs --network localhost`, deploying `ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, configuring RBAC roles and manifests.
+  5. **Tier 3 (Backend & AI)**: Spawns FastAPI REST server & AI Trust Layer on port 8000 (`uvicorn main:app`), polling `/docs` for health.
+  6. **Tier 4 (Data Seeding)**: Calls `POST /admin/seed-demo-data` to seed multi-role produce lots, condition metrics, and custody trails.
+  7. **Tier 5 (Web UI)**: Spawns Vite React 18 web client on port 3000.
+  8. **Browser Launch**: Auto-opens default web browser to `http://localhost:3000`.
+  9. **Graceful Teardown**: Captures `Ctrl+C` (SIGINT/SIGTERM) and terminates process groups (`os.killpg` / `taskkill /F /T`), ensuring clean port release.

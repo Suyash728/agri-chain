@@ -41,7 +41,41 @@ AgriChain is an end-to-end farm-to-fork supply chain traceability framework for 
 
 ## 3. Quick Start
 
-### 1. Environment Setup
+### One-Command Unified Launcher (Post-Installation)
+
+Run the entire 5-tier architecture (Hardhat local blockchain, automated contract deployment, FastAPI backend, demonstration data seeding, and Vite React frontend) with a single command:
+
+**Linux & macOS:**
+```bash
+./run.sh
+```
+
+**Windows (Command Prompt / PowerShell):**
+```cmd
+run.bat
+```
+or in PowerShell:
+```powershell
+.\run.ps1
+```
+
+**Cross-Platform Python Direct:**
+```bash
+python run.py
+```
+
+**Optional CLI Flags:**
+- `--no-browser`: Do not automatically open the default web browser (`http://localhost:3000`).
+- `--simulator`: Simultaneously launch the background ESP32 IoT telemetry stream simulator.
+- `--no-seed`: Skip demonstration dataset seeding on startup (retain existing database state).
+- `--kill-ports`: Automatically terminates any conflicting processes holding ports 8545, 8000, or 3000.
+
+> [!TIP]
+> Press `Ctrl+C` at any time to cleanly terminate all child services without leaving orphan processes or locked ports.
+
+---
+
+### Manual Step-by-Step Setup
 ```bash
 git clone https://github.com/Suyash728/agri-chain.git && cd agri-chain
 python3 -m venv .venv && source .venv/bin/activate
