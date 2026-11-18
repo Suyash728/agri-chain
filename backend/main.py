@@ -127,6 +127,7 @@ from routers import (
     consumer_router,
     admin_router,
     demo_router,
+    devices_router,
 )
 
 app.include_router(common_router, tags=["Common & System"])
@@ -138,6 +139,7 @@ app.include_router(darkstore_router, tags=["Dark Store & Inbound GRN"])
 app.include_router(consumer_router, tags=["Consumer & Provenance"])
 app.include_router(admin_router, tags=["Admin & RBAC Governance"])
 app.include_router(demo_router, tags=["Simulation & God Mode"])
+app.include_router(devices_router, tags=["IoT Devices & Batch Linking"])
 
 if __name__ == "__main__":
     import uvicorn

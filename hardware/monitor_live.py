@@ -27,6 +27,7 @@ import threading
 import queue
 import urllib.request
 import urllib.error
+import urllib.parse
 import webbrowser
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -59,15 +60,11 @@ OUTBOX_RETRY_S = 15.0
 LIVE_FORWARD_INTERVAL_S = 2.0
 RECONNECT_INTERVAL_S = 2.0
 
-# Produce lot presets for live interactive cycling
-BATCH_PRESETS = [
-    {"batch_id": "BAT-MGO-701", "crop_name": "Alphonso Mango", "desc": "Ratnagiri GI Cold-Chain"},
-    {"batch_id": "BAT-TOM-802", "crop_name": "Organic Field Tomatoes", "desc": "Nashik Agro Cluster"},
-    {"batch_id": "BAT-APL-903", "crop_name": "Shimla Royal Apples", "desc": "Himachal Controlled Atmos"},
-    {"batch_id": "BAT-TUR-404", "crop_name": "Salem Pure Turmeric", "desc": "Curcumin High Grade"},
-    {"batch_id": "BAT-WHT-505", "crop_name": "Sharbati Golden Wheat", "desc": "MP Sehore Dry Storage"},
-    {"batch_id": "BAT-BER-606", "crop_name": "Fresh Strawberries", "desc": "Mahabaleshwar Cold Express"},
-]
+# Device-to-batch linking: the batch comes from the backend (picked on the website or with [B]).
+LINK_CACHE_PATH = os.path.join(TRANSIT_LOG_DIR, 'device_link.json')
+UNASSIGNED_DIR = os.path.join(OUTBOX_DIR, 'unassigned')   # synced while no batch was linked
+LINK_POLL_S = 5.0
+PICKER_PAGE = 9
 
 console = Console()
 
@@ -131,11 +128,17 @@ def voc_ppm_for(rec):
     return None
 
 
-def to_backend_reading(rec, batch_info, timestamp_iso, last_fix, prev_shocks=None):
+def to_backend_reading(rec, batch_info, timestamp_iso, last_fix, prev_shocks=None, source="offline"):
     lat, lon = (rec.get("lat"), rec.get("lon")) if rec.get("gps_fix") else (last_fix or (None, None))
+    shock_delta = rec.get("shock_delta")
+    if shock_delta is None and prev_shocks is not None and rec.get("shocks") is not None:
+        shock_delta = max(0, rec["shocks"] - prev_shocks)
+    tamper = rec.get("tamper")
+    if tamper is None and "ldr_adc" in rec:
+        tamper = rec["ldr_adc"] > LDR_TAMPER_ADC
     return {
         "batch_id": batch_info["batch_id"],
-        "crop_name": batch_info["crop_name"],
+        "crop_name": batch_info.get("crop_name"),
         "temp_c": rec.get("temp"),
         "humidity_pct": rec.get("hum"),
         "device_id": DEVICE_ID,
@@ -144,6 +147,13 @@ def to_backend_reading(rec, batch_info, timestamp_iso, last_fix, prev_shocks=Non
         "freshness_voc_ppm": voc_ppm_for(rec),
         "tamper_status": tamper_status_for(rec, prev_shocks),
         "timestamp": timestamp_iso,
+        # IoT context kept by the backend in device_telemetry (logistics / dark store tracking)
+        "shocks": rec.get("shocks"),
+        "shock_delta": shock_delta,
+        "tamper": tamper,
+        "gps_fix": rec.get("gps_fix"),
+        "light_lux": rec.get("lux"),
+        "source": source,
     }
 
 
@@ -494,6 +504,82 @@ def post_json(url, payload, timeout):
         return json.loads(resp.read().decode("utf-8"))
 
 
+def get_json(url, timeout):
+    headers = {"X-Device-Key": DEVICE_KEY} if DEVICE_KEY else {}
+    with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def device_path(suffix=""):
+    return f"/devices/{urllib.parse.quote(DEVICE_ID, safe='')}{suffix}"
+
+
+def link_from_assignment(assignment):
+    """Backend assignment JSON -> the batch_info dict used for readings (or None if unlinked)."""
+    if not assignment:
+        return None
+    batch = assignment.get("batch") or {}
+    return {
+        "batch_id": assignment["batchId"],
+        "crop_name": batch.get("cropName"),
+        "state": batch.get("state"),
+        "state_label": batch.get("stateLabel"),
+    }
+
+
+def load_cached_link():
+    try:
+        with open(LINK_CACHE_PATH, encoding="utf-8") as f:
+            return json.load(f).get(DEVICE_ID)
+    except (OSError, ValueError):
+        return None
+
+
+def save_cached_link(link):
+    try:
+        with open(LINK_CACHE_PATH, encoding="utf-8") as f:
+            state = json.load(f)
+    except (OSError, ValueError):
+        state = {}
+    state[DEVICE_ID] = link
+    os.makedirs(TRANSIT_LOG_DIR, exist_ok=True)
+    _write_durable(LINK_CACHE_PATH, json.dumps(state, indent=2))
+
+
+def unassigned_files():
+    try:
+        return sorted(os.path.join(UNASSIGNED_DIR, f) for f in os.listdir(UNASSIGNED_DIR) if f.endswith(".json"))
+    except FileNotFoundError:
+        return []
+
+
+def park_unassigned(records, anchor, name):
+    """Hold synced records until a batch is linked (they are already safe in transit_logs/)."""
+    os.makedirs(UNASSIGNED_DIR, exist_ok=True)
+    path = os.path.join(UNASSIGNED_DIR, f"{name}.json")
+    anchor_d = None if anchor is None else {"boot": anchor.boot, "up_ms": anchor.up_ms, "host_time": anchor.host_time}
+    _write_durable(path, json.dumps({"records": records, "anchor": anchor_d}))
+    return path
+
+
+def release_unassigned(link):
+    """Give parked records to the newly linked batch (option B: current batch at sync/link time)."""
+    moved = 0
+    for path in unassigned_files():
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            continue
+        a = data.get("anchor")
+        anchor = ClockAnchor(a["boot"], a["up_ms"], a["host_time"]) if a else None
+        readings = build_batch_readings(data.get("records", []), link, anchor)
+        enqueue_outbox(readings, os.path.basename(path)[:-len(".json")])
+        os.remove(path)
+        moved += len(readings)
+    return moved
+
+
 def backend_worker(backend_url, telemetry_queue, backend_state, events, stop_event):
     """Single thread for all backend traffic so offline backlog and live readings stay ordered.
 
@@ -503,7 +589,27 @@ def backend_worker(backend_url, telemetry_queue, backend_state, events, stop_eve
     batch_url = f"{backend_url}/telemetry/batch"
     live_url = f"{backend_url}/telemetry"
     next_outbox_try = 0.0
+    next_link_poll = 0.0
     while not stop_event.is_set():
+        # Follow the device's batch link (changed on the website or by another operator)
+        if time.time() >= next_link_poll:
+            next_link_poll = time.time() + LINK_POLL_S
+            started = time.time()
+            try:
+                res = get_json(f"{backend_url}{device_path('/assignment')}", timeout=3.0)
+                backend_state.update(server_link=link_from_assignment(res.get("assignment")),
+                                     link_polled_at=started, link_poll_ok=True)
+            except urllib.error.HTTPError as e:
+                backend_state["link_poll_ok"] = False
+                if e.code == 404:   # backend was reset / device unknown: register again
+                    try:
+                        post_json(f"{backend_url}/devices/register",
+                                  {"device_id": DEVICE_ID, "label": "ESP32 Crate Node (physical)", "kind": "HARDWARE"}, 3.0)
+                    except (urllib.error.URLError, OSError, ValueError):
+                        pass
+            except (urllib.error.URLError, OSError, ValueError):
+                backend_state["link_poll_ok"] = False
+
         pending = outbox_files()
         backend_state["outbox"] = len(pending)
         if pending and time.time() >= next_outbox_try:
@@ -562,7 +668,7 @@ def backend_worker(backend_url, telemetry_queue, backend_state, events, stop_eve
         packet, batch_info = item
         ts_iso, _ = resolve_timestamp(packet, None)
         payload = to_backend_reading(packet, batch_info, ts_iso or datetime.now(timezone.utc).isoformat(),
-                                     backend_state.get("last_fix"))
+                                     backend_state.get("last_fix"), source="live")
         try:
             t0 = time.time()
             res = post_json(live_url, payload, timeout=3.0)
@@ -851,10 +957,42 @@ def run_calibration(link, reset=False):
 
 
 # ==============================================================================
+# [B] BATCH PICKER (terminal)
+# ==============================================================================
+STATE_STYLE = {"IN_TRANSIT": "bright_blue", "IN_STORAGE": "green", "AT_RETAIL": "cyan", "REGISTERED": "yellow", "SOLD": "dim"}
+
+
+def render_batch_picker(picker, current):
+    items, page = picker["items"], picker["page"]
+    pages = max(1, (len(items) + PICKER_PAGE - 1) // PICKER_PAGE)
+    table = Table(expand=True, border_style="bright_yellow", show_lines=False)
+    table.add_column("#", style="bold bright_cyan", width=3, justify="right")
+    table.add_column("Batch", style="bold white")
+    table.add_column("Produce")
+    table.add_column("Where it is now")
+    table.add_column("Sensors linked", style="dim")
+    for i, b in enumerate(items[page * PICKER_PAGE:(page + 1) * PICKER_PAGE], start=1):
+        is_current = current and b["batchId"] == current["batch_id"]
+        table.add_row(
+            str(i),
+            f"{b['batchId']}" + ("  [bold green]◀ current[/bold green]" if is_current else ""),
+            f"{b['cropName']} [dim]· {str(b.get('originFarm') or '').split('||')[0]}[/dim]",
+            f"[{STATE_STYLE.get(b['state'], 'white')}]{b['stateLabel']}[/]",
+            ", ".join(b.get("linkedDevices") or []) or "—",
+        )
+    if not items:
+        table.add_row("", "[dim]No batches yet[/dim]", "", "", "")
+    hint = ("[bold]1-9[/bold] link to batch  •  [bold]N/P[/bold] next/prev page  •  [bold]U[/bold] unlink  •  "
+            "[bold]B/X/Esc[/bold] close   [dim](flash is synced to the current batch before switching)[/dim]")
+    return Panel(table, title=f"🌾 Link {DEVICE_ID} to a produce batch — page {page + 1}/{pages}",
+                 subtitle=hint, border_style="bright_yellow")
+
+
+# ==============================================================================
 # MAIN
 # ==============================================================================
 def main():
-    global DEVICE_KEY
+    global DEVICE_KEY, DEVICE_ID
     parser = argparse.ArgumentParser(description="AgriChain Real-Time Telemetry Monitor")
     parser.add_argument("--port", default=DEFAULT_PORT, help=f"Serial port (default {DEFAULT_PORT})")
     parser.add_argument("--backend", default=DEFAULT_BACKEND,
@@ -863,15 +1001,16 @@ def main():
                         help="X-Device-Key for a production backend (env AGRICHAIN_DEVICE_KEY)")
     parser.add_argument("--clear", action="store_true", help="Delete onboard LittleFS records WITHOUT downloading them")
     parser.add_argument("--skip-sync", action="store_true", help="Skip offline download and start dashboard immediately")
-    parser.add_argument("--batch", type=str, default="BAT-MGO-701", help="Default active produce lot ID")
+    parser.add_argument("--batch", type=str, default=None,
+                        help="Link the device to this batch at start-up (otherwise use the link set on the website / [B])")
+    parser.add_argument("--device-id", default=DEVICE_ID, help=f"Device ID registered with the backend (default {DEVICE_ID})")
     parser.add_argument("--calibrate-r0", action="store_true",
                         help="Calibrate MQ-135 R0 in clean air (sensor pre-heated), store it on the device, and exit")
     parser.add_argument("--reset-r0", action="store_true", help="Erase the stored MQ-135 calibration and exit")
     args = parser.parse_args()
     DEVICE_KEY = args.device_key
+    DEVICE_ID = args.device_id
     args.backend = args.backend.rstrip("/")
-
-    batch_idx = next((i for i, b in enumerate(BATCH_PRESETS) if b["batch_id"] == args.batch), 0)
 
     console.print(Panel(
         Text.assemble(
@@ -890,6 +1029,35 @@ def main():
 
     if args.calibrate_r0 or args.reset_r0:
         sys.exit(run_calibration(link, reset=args.reset_r0))
+
+    # Which batch does this device report to? (backend link -> --batch -> cached last link)
+    active = {"link": None, "changed_at": 0.0}
+    try:
+        post_json(f"{args.backend}/devices/register",
+                  {"device_id": DEVICE_ID, "label": "ESP32 Crate Node (physical)", "kind": "HARDWARE"}, 4.0)
+        if args.batch:
+            res = post_json(f"{args.backend}{device_path('/assign')}", {"batch_id": args.batch, "assigned_by": "monitor-cli"}, 5.0)
+            for w in res.get("warnings", []):
+                console.print(f"[yellow]⚠️  {w}[/yellow]")
+            active["link"] = link_from_assignment(res.get("assignment"))
+        else:
+            active["link"] = link_from_assignment(get_json(f"{args.backend}{device_path('/assignment')}", 4.0).get("assignment"))
+        save_cached_link(active["link"])
+        source = "backend"
+    except urllib.error.HTTPError as e:
+        console.print(f"[bold red]❌ Backend refused the device link request (HTTP {e.code}).[/bold red]")
+        active["link"] = load_cached_link()
+        source = "cache"
+    except (urllib.error.URLError, OSError, ValueError):
+        active["link"] = ({"batch_id": args.batch, "crop_name": None, "state": None, "state_label": None}
+                          if args.batch else load_cached_link())
+        source = "offline --batch" if args.batch else "cache (backend offline)"
+    if active["link"]:
+        console.print(f"[green]📡 {DEVICE_ID} linked to batch {active['link']['batch_id']}"
+                      f"{' (' + active['link']['crop_name'] + ')' if active['link'].get('crop_name') else ''} — via {source}[/green]")
+    else:
+        console.print(f"[yellow]📡 {DEVICE_ID} is not linked to any batch. Link it on the website (Logistics → Live Shipment "
+                      f"Tracking → Manage Sensors) or press [B] in the dashboard. Synced records will be held until then.[/yellow]")
 
     recent_logs = []
     events = queue.Queue()          # log lines from worker threads
@@ -936,16 +1104,49 @@ def main():
             return
         do_sync(log_fn)
 
-    def do_sync(log_fn):
+    def do_sync(log_fn, target_link="current"):
+        """Download flash and hand the records to `target_link` (default: the current batch)."""
+        target = active["link"] if target_link == "current" else target_link
         res = sync_flash(link, log_fn, on_json)
         if res.records:
             log_fn(f"💾 [TRANSIT SYNC] {len(res.records)} records saved to {os.path.relpath(res.path)}")
-            readings = build_batch_readings(res.records, BATCH_PRESETS[batch_idx], res.anchor)
-            unknown_ts = sum(1 for r in readings if r["timestamp"] is None)
-            if enqueue_outbox(readings, os.path.basename(res.path)[:-len(".jsonl")]):
-                note = f" ({unknown_ts} with unknown time)" if unknown_ts else ""
-                log_fn(f"📮 [OUTBOX] {len(readings)} readings queued for /telemetry/batch{note}")
+            name = os.path.basename(res.path)[:-len(".jsonl")]
+            if target:
+                readings = build_batch_readings(res.records, target, res.anchor)
+                unknown_ts = sum(1 for r in readings if r["timestamp"] is None)
+                if enqueue_outbox(readings, name):
+                    note = f" ({unknown_ts} with unknown time)" if unknown_ts else ""
+                    log_fn(f"📮 [OUTBOX] {len(readings)} readings queued for batch {target['batch_id']}{note}")
+            else:
+                park_unassigned(res.records, res.anchor, name)
+                log_fn(f"⏸️ [UNLINKED] No batch linked — {len(res.records)} records held until you link one ([B] or website)")
         log_fn(("✅ " if res.ok else "⚠️ ") + f"[SYNC] {res.message}")
+
+    def apply_link(new_link, why, log_fn):
+        """Switch batches safely: flash recorded for the old batch is synced to it first."""
+        old = active["link"]
+        if (old or {}).get("batch_id") == (new_link or {}).get("batch_id"):
+            active["link"] = new_link or old       # refresh crop/state details
+            return
+        # Always sync before switching (even with --skip-sync, which only skips the start-up download):
+        # otherwise records measured for the old batch would later be uploaded under the new one.
+        if link.connected:
+            log_fn(f"🔄 [LINK] Syncing flash to {old['batch_id'] if old else 'the unlinked queue'} before switching…")
+            try:
+                do_sync(log_fn, target_link=old)
+            except LinkLost as e:
+                log_fn(f"⚠️ [LINK] Sync before switching failed ({e}); stored records stay on the device")
+        active["link"] = new_link
+        active["changed_at"] = time.time()
+        save_cached_link(new_link)
+        if new_link:
+            label = f"{new_link['batch_id']}" + (f" ({new_link['crop_name']})" if new_link.get("crop_name") else "")
+            log_fn(f"📡 [LINK] {DEVICE_ID} now reports to batch {label} — {why}")
+            moved = release_unassigned(new_link)
+            if moved:
+                log_fn(f"📮 [OUTBOX] {moved} held readings assigned to {new_link['batch_id']}")
+        else:
+            log_fn(f"📡 [LINK] {DEVICE_ID} unlinked — {why}; live readings are no longer forwarded")
 
     try:
         handshake(lambda m: console.print(f"[cyan]{m}[/cyan]"), allow_clear=True)
@@ -963,6 +1164,7 @@ def main():
     t_back.start()
 
     stream_paused = False
+    picker = None              # {"items": [...], "page": int} while the [B] batch picker is open
     last_shock_count = None
     last_tamper = False
     last_forward_time = 0.0
@@ -977,16 +1179,59 @@ def main():
                 while not events.empty():
                     log(events.get_nowait())
 
+                # 0b. Follow link changes made on the website (ignore polls older than a local change)
+                if backend_state.get("link_poll_ok") and backend_state.get("link_polled_at", 0) > active["changed_at"]:
+                    srv = backend_state.get("server_link")
+                    if (srv or {}).get("batch_id") != (active["link"] or {}).get("batch_id"):
+                        apply_link(srv, "changed on the website", log)
+                    elif srv:
+                        active["link"] = srv   # refresh crop / custody state labels
+
                 # 1. Hotkeys
                 while not cmd_queue.empty():
                     key = cmd_queue.get_nowait()
                     if key == 'q':
                         log("👋 [SHUTDOWN] Exiting AgriChain mission control cleanly...")
                         return
+                    if picker is not None:
+                        items = picker["items"]
+                        if key in ('b', 'x', '\x1b'):
+                            picker = None
+                        elif key == 'n':
+                            picker["page"] = min(picker["page"] + 1, max(0, (len(items) - 1) // PICKER_PAGE))
+                        elif key == 'p':
+                            picker["page"] = max(0, picker["page"] - 1)
+                        elif key == 'u':
+                            try:
+                                post_json(f"{args.backend}{device_path('/unassign')}", {"reason": "unlinked from monitor"}, 5.0)
+                                apply_link(None, "unlinked in the monitor", log)
+                            except (urllib.error.URLError, OSError, ValueError) as e:
+                                log(f"⚠️ [LINK] Could not unlink: {getattr(e, 'reason', e)}")
+                            picker = None
+                        elif key.isdigit() and key != '0':
+                            idx = picker["page"] * PICKER_PAGE + int(key) - 1
+                            if idx < len(items):
+                                choice = items[idx]
+                                try:
+                                    res = post_json(f"{args.backend}{device_path('/assign')}",
+                                                    {"batch_id": choice["batchId"], "assigned_by": "monitor"}, 5.0)
+                                    for w in res.get("warnings", []):
+                                        log(f"⚠️ [LINK] {w}")
+                                    apply_link(link_from_assignment(res.get("assignment")), "picked in the monitor", log)
+                                except urllib.error.HTTPError as e:
+                                    log(f"⚠️ [LINK] Backend refused the link (HTTP {e.code})")
+                                except (urllib.error.URLError, OSError, ValueError) as e:
+                                    log(f"⚠️ [LINK] Backend unreachable: {getattr(e, 'reason', e)}")
+                                picker = None
+                        continue
                     if key == 'b':
-                        batch_idx = (batch_idx + 1) % len(BATCH_PRESETS)
-                        active_b = BATCH_PRESETS[batch_idx]
-                        log(f"🌾 [BATCH SWITCH] Active produce lot set to {active_b['batch_id']} ({active_b['crop_name']})")
+                        try:
+                            items = get_json(f"{args.backend}/iot/assignable-batches", 4.0)
+                            picker = {"items": items, "page": 0}
+                            if not items:
+                                log("🌾 [LINK] No batches in the backend yet — register one in the Farmer portal")
+                        except (urllib.error.URLError, OSError, ValueError) as e:
+                            log(f"⚠️ [LINK] Can't list batches — backend unreachable ({getattr(e, 'reason', e)})")
                         continue
                     if key == 'm':
                         if current_data.get("gps_fix"):
@@ -1078,10 +1323,11 @@ def main():
                             if is_event or time.time() - last_forward_time >= LIVE_FORWARD_INTERVAL_S:
                                 last_forward_time = time.time()
                                 packet = dict(parsed, shock_delta=shock_delta, tamper=tamper)
-                                try:
-                                    telemetry_queue.put_nowait((packet, BATCH_PRESETS[batch_idx]))
-                                except queue.Full:
-                                    pass  # backend far behind; live packets are best-effort (flash holds the record)
+                                if active["link"]:   # unlinked: nothing to attribute live readings to
+                                    try:
+                                        telemetry_queue.put_nowait((packet, active["link"]))
+                                    except queue.Full:
+                                        pass  # backend far behind; live packets are best-effort (flash holds the record)
                     elif line.startswith(("STORAGE_", "OFFLINE_ACK_REJECTED", "CMD_")):
                         log(f"📟 [DEVICE] {line}")
 
@@ -1089,7 +1335,9 @@ def main():
                 uptime_s = int(current_data.get("uptime", 0))
                 mins, secs = divmod(uptime_s, 60)
                 hours, mins = divmod(mins, 60)
-                active_batch = BATCH_PRESETS[batch_idx]
+                cur = active["link"]
+                active_batch = {"batch_id": cur["batch_id"] if cur else "— not linked —",
+                                "crop_name": (cur or {}).get("crop_name") or "press [B] to link"}
 
                 header_text = Text()
                 header_text.append("🚚 AgriChain Mission Control", style="bold cyan")
@@ -1099,7 +1347,11 @@ def main():
                 else:
                     header_text.append(f"  |  🔌 DISCONNECTED ({link.last_error or 'reconnecting'})", style="bold red")
                 header_text.append(f"  |  💾 Flash: {current_data.get('flash_records', 0)} recs", style="magenta")
-                header_text.append(f"  |  Active Lot: {active_batch['batch_id']}", style="bold bright_yellow")
+                if cur:
+                    header_text.append(f"  |  📡 Batch: {cur['batch_id']}"
+                                       + (f" ({cur['state_label']})" if cur.get("state_label") else ""), style="bold bright_yellow")
+                else:
+                    header_text.append("  |  ⚠️ NOT LINKED — press [B]", style="bold red")
                 if stream_paused:
                     header_text.append("  |  ⏸️ PAUSED", style="bold red")
                 elif link.connected:
@@ -1110,17 +1362,22 @@ def main():
                 layout["sensors"].update(format_sensor_table(current_data, active_batch, backend_state))
 
                 # 5. Event ledger
-                avail_lines = max(5, console.size.height - 27)
-                visible_logs = recent_logs[-avail_lines:]
-                log_content = "\n".join(visible_logs) if visible_logs else "[dim]Awaiting telemetry packets...[/dim]"
-                layout["log"].update(
-                    Panel(
-                        log_content,
-                        title="📜 Multi-Gas, Shock & Optical Event Ledger (1000ms Real-Time Pulse)",
-                        subtitle=f"[dim]Displaying latest {len(visible_logs)} lines | Log buffer: {len(recent_logs)} | Outbox: {backend_state.get('outbox', 0)} file(s)[/dim]",
-                        border_style="green"
+                if picker is not None:
+                    layout["log"].update(render_batch_picker(picker, cur))
+                else:
+                    avail_lines = max(5, console.size.height - 27)
+                    visible_logs = recent_logs[-avail_lines:]
+                    log_content = "\n".join(visible_logs) if visible_logs else "[dim]Awaiting telemetry packets...[/dim]"
+                    held = len(unassigned_files())
+                    layout["log"].update(
+                        Panel(
+                            log_content,
+                            title="📜 Multi-Gas, Shock & Optical Event Ledger (1000ms Real-Time Pulse)",
+                            subtitle=f"[dim]Displaying latest {len(visible_logs)} lines | Log buffer: {len(recent_logs)} | Outbox: {backend_state.get('outbox', 0)} file(s)"
+                                     + (f" | Held (unlinked): {held}" if held else "") + "[/dim]",
+                            border_style="green"
+                        )
                     )
-                )
 
                 # 6. Footer
                 footer_text = Text()
@@ -1129,7 +1386,7 @@ def main():
                     footer_text.append(k, style="bold bright_cyan")
                     footer_text.append(label, style="white")
                 footer_text.append("[B] ", style="bold bright_cyan")
-                footer_text.append(f"Cycle Produce Lot ({active_batch['batch_id']})  ", style="bold bright_yellow")
+                footer_text.append(f"Link Batch ({active_batch['batch_id']})  ", style="bold bright_yellow")
                 footer_text.append("[Q] ", style="bold bright_red")
                 footer_text.append("Quit", style="white")
                 layout["footer"].update(Panel(footer_text, style="bright_blue"))

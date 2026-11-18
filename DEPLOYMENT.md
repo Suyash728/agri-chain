@@ -23,7 +23,7 @@ The keep-alive workflow handles the first two.
 | Route | Development | Production |
 |---|---|---|
 | CORS | any origin | only `ALLOWED_ORIGINS` / `ALLOWED_ORIGIN_REGEX` |
-| `POST /telemetry`, `/telemetry/batch` | open (key checked only if `DEVICE_API_KEY` set) | requires `X-Device-Key` |
+| `POST /telemetry`, `/telemetry/batch`, `/devices/register` | open (key checked only if `DEVICE_API_KEY` set) | requires `X-Device-Key` |
 | `/admin/system-reset`, `/admin/seed-demo-data`, `/demo/reset`, `/demo/seed`, `/telemetry/evaluate` | open | require `X-Admin-Token` **always** |
 | other `/admin/*` writes (roles, pause, users) | open | require `X-Admin-Token`, unless `DEMO_MODE=true` |
 | `/demo/*` (God Mode, scenarios) | open | **404** unless `DEMO_MODE=true` |
@@ -92,7 +92,7 @@ export AGRICHAIN_BACKEND_URL=https://<service>.onrender.com
 export AGRICHAIN_DEVICE_KEY=<DEVICE_API_KEY from Render>
 ./run_monitor.sh
 ```
-The outbox retries every 15 s, so the ~1 minute cold start costs nothing. A 401 (wrong or missing key) keeps the queued batches and retries rather than discarding them. The simulators (`hardware/simulate_esp32.py`, `simulator/simulate.py`) read the same two variables.
+The outbox retries every 15 s, so the ~1 minute cold start costs nothing. A 401 (wrong or missing key) keeps the queued batches and retries rather than discarding them. The simulators (`hardware/simulate_esp32.py`, `simulator/simulate.py`) read the same two variables. On start the monitor registers the device and reports to the batch linked on the website (Manage Sensors), or to `--batch`, or to the one you pick with `[B]`.
 
 ## 7. Before calling it production
 - [ ] Real authentication on role routes (audit #1)

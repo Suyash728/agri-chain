@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 
 import { useNotificationCount } from '../../utils/useNotificationCount';
+import { IoTSensorCard } from '../../components/iot/IoTSensorCard';
+import { IoTLinkModal } from '../../components/iot/IoTLinkModal';
 
 export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
   const { count, markAllAsRead } = useNotificationCount('darkstore');
@@ -48,6 +50,7 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
   const [selectedStore, setSelectedStore] = useState('Nashik Central Store');
   const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [sensorPickerOpen, setSensorPickerOpen] = useState(false);
 
   const fetchInbound = () => {
     fetch(`${API_BASE_URL}/darkstore/inbound`)
@@ -214,6 +217,15 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
 
         {/* Top Right Controls */}
         <div className="flex items-center gap-3 self-end md:self-auto flex-wrap">
+          {/* IoT crate sensors: link a sensor to an inbound batch */}
+          <button
+            type="button"
+            onClick={() => setSensorPickerOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white border border-[#E6E1D5] text-[#2D2620] text-xs font-bold hover:bg-[#FAF7F0] transition-colors cursor-pointer shadow-xs"
+          >
+            <span>📡 Manage Sensors</span>
+          </button>
+
           {/* Confirm Inbound GRN Action Button */}
           <button 
             type="button"
@@ -583,6 +595,20 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
                     <td className="py-4 px-5">
                       <span className="font-extrabold text-[#2D2620] block">{row.id}</span>
                       <span className="text-[10px] text-[#666057] font-semibold">{row.po}</span>
+                      {row.iot?.linked && (
+                        <span className="mt-1 flex flex-wrap items-center gap-1">
+                          <span
+                            title={row.iot.devices.map((d) => `${d.deviceId} (${d.kind === 'SIMULATED' ? 'virtual' : 'hardware'})`).join(', ')}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#556B2F]/10 text-[#556B2F] text-[10px] font-extrabold whitespace-nowrap"
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${row.iot.live ? 'bg-[#556B2F] animate-pulse' : 'bg-[#8C8275]'}`} />
+                            📡 {row.iot.devices.length > 1 ? `${row.iot.devices.length} sensors` : 'Sensor'}
+                          </span>
+                          {row.iot.latest?.tamper && (
+                            <span className="px-1.5 py-0.5 rounded-md bg-red-100 text-red-800 text-[10px] font-extrabold whitespace-nowrap">LID OPEN</span>
+                          )}
+                        </span>
+                      )}
                     </td>
 
                     {/* Supplier / Farm */}
@@ -753,7 +779,7 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
       {/* ========================================== */}
       {selectedDelivery && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 border border-[#E6E1D5] shadow-2xl space-y-5 animate-scale-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-6 border border-[#E6E1D5] shadow-2xl space-y-5 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-[#E6E1D5]">
               <div>
                 <h3 className="text-xl font-extrabold text-[#2D2620]">{selectedDelivery.id} Details</h3>
@@ -802,6 +828,9 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
               </div>
             </div>
 
+            {/* Linked IoT crate sensor: check temperature, impacts and lid seal before receiving */}
+            <IoTSensorCard batchId={selectedDelivery.batchId} title="Crate Sensor at Intake" assignedBy="darkstore-ui" />
+
             <div className="pt-2 flex gap-3">
               {selectedDelivery.status === 'In Transit' && (
                 <button 
@@ -822,6 +851,12 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
           </div>
         </div>
       )}
+
+      <IoTLinkModal
+        isOpen={sensorPickerOpen}
+        onClose={() => setSensorPickerOpen(false)}
+        assignedBy="darkstore-ui"
+      />
 
           {/* Help Center Operations Modal */}
       {showHelpModal && (

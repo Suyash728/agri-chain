@@ -7,8 +7,10 @@ from routers.darkstore import router as darkstore_router
 from routers.consumer import router as consumer_router
 from routers.admin import router as admin_router
 from routers.demo import router as demo_router
+from routers.devices import router as devices_router
 
 __all__ = [
+    "devices_router",
     "common_router",
     "telemetry_router",
     "batches_router",

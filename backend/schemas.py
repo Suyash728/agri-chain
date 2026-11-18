@@ -17,6 +17,13 @@ class TelemetryRequest(BaseModel):
     nonce: Optional[int] = None
     freshness_voc_ppm: Optional[float] = None
     tamper_status: Optional[str] = None
+    # Extra IoT context from the ESP32 bridge / virtual devices (stored in device_telemetry)
+    shocks: Optional[int] = None
+    shock_delta: Optional[int] = None
+    tamper: Optional[bool] = None
+    gps_fix: Optional[bool] = None
+    light_lux: Optional[float] = None
+    source: Optional[str] = None  # live | offline | simulator
 
 
 class TelemetryResponse(BaseModel):

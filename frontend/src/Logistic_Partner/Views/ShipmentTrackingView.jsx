@@ -1,11 +1,14 @@
 import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
-import { Truck, MapPin, ShieldCheck, Thermometer, CheckCircle2, Clock, Navigation } from 'lucide-react';
+import { Truck, MapPin, ShieldCheck, Thermometer, CheckCircle2, Clock, Navigation, Radio } from 'lucide-react';
+import { IoTSensorCard } from '../../components/iot/IoTSensorCard';
+import { IoTLinkModal } from '../../components/iot/IoTLinkModal';
 
 export const ShipmentTrackingView = () => {
   const [shipments, setShipments] = useState([]);
   const [selectedBatchId, setSelectedBatchId] = useState('');
   const [batchTraceData, setBatchTraceData] = useState(null);
+  const [sensorPickerOpen, setSensorPickerOpen] = useState(false);
 
   const loadShipments = () => {
     fetch(`${API_BASE_URL}/logistics/shipments`)
@@ -65,6 +68,12 @@ export const ShipmentTrackingView = () => {
 
         {shipments.length > 0 && (
           <div className="flex items-center gap-2 self-stretch sm:self-auto">
+            <button
+              onClick={() => setSensorPickerOpen(true)}
+              className="px-3 py-2 bg-[#556B2F] text-white rounded-xl text-xs font-extrabold hover:bg-[#354424] flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+            >
+              <Radio className="w-3.5 h-3.5" /> Manage Sensors
+            </button>
             <span className="text-xs font-bold text-[#666057] whitespace-nowrap">Select Shipment:</span>
             <select
               value={activeShipment ? activeShipment.batchId : ''}
@@ -155,6 +164,9 @@ export const ShipmentTrackingView = () => {
                 <span className="text-xs font-extrabold text-[#556B2F] block mt-0.5">{activeShipment.status}</span>
               </div>
             </div>
+
+            {/* Linked IoT crate sensor (real ESP32 or virtual device) */}
+            <IoTSensorCard batchId={activeShipment.batchId} title="IoT Crate Sensor" assignedBy="logistics-ui" />
           </div>
 
           {/* Right Side (5 cols): Dynamic Milestone Audit Log */}
@@ -244,6 +256,14 @@ export const ShipmentTrackingView = () => {
           </div>
         </div>
       )}
+
+      <IoTLinkModal
+        isOpen={sensorPickerOpen}
+        onClose={() => setSensorPickerOpen(false)}
+        initialBatchId={activeShipment?.batchId || null}
+        assignedBy="logistics-ui"
+        onLinked={loadShipments}
+      />
     </div>
   );
 };

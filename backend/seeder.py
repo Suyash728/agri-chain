@@ -540,6 +540,15 @@ def seed_optimal_demo_dataset(reset_first: bool = True) -> Dict[str, Any]:
             )
         seeded_batches.append({"batch_id": b11_id, "crop": "Premium Kashmiri Almonds", "state": "AT_RETAIL"})
 
+        # IoT sensors: the physical ESP32 node (linked by the operator from the picker) and a
+        # virtual sensor already riding with the in-transit apples, so logistics tracking and dark
+        # store intake show a linked device out of the box. No readings are fabricated here; run a
+        # simulator in virtual-device mode (or plug in the ESP32) to stream them.
+        import iot
+        iot.register_device(conn, "ESP32-PENTAD-01", label="ESP32 Crate Node (physical)", kind="HARDWARE")
+        iot.register_device(conn, "SIM-01", label="Virtual Cold-Chain Sensor", kind="SIMULATED")
+        iot.assign_device(conn, "SIM-01", b3_id, assigned_by="demo-seed")
+
         conn.commit()
 
         # Compute counts

@@ -13,6 +13,7 @@ from pydantic import BaseModel
 import chain
 import ipfs
 from db import get_connection, DB_PATH
+import iot
 from common import (
     PARTICIPANT_ADDRESSES,
     SENSOR_CORRUPTION_CODES,
@@ -257,6 +258,11 @@ def get_darkstore_inbound():
             ).fetchone()
             temp_str = f"{reading['temp_c']:.1f}°C" if reading else "4.2°C"
 
+            # A linked IoT sensor (real ESP32 or virtual device) provides the live crate reading
+            iot_view = iot.batch_iot(conn, batch_id, recent=10)
+            if iot_view and iot_view["latest"] and iot_view["latest"]["tempC"] is not None:
+                temp_str = f"{iot_view['latest']['tempC']:.1f}°C"
+
             is_quarantined = conn.execute(
                 """
                 SELECT 1 FROM readings WHERE batch_id = ? AND verdict IN ('QUARANTINED', 'ANOMALOUS')
@@ -302,6 +308,7 @@ def get_darkstore_inbound():
                 "circuitBreaker": bool(is_quarantined),
                 "aiTrustScore": ai_trust_score,
                 "aiTrustStatus": ai_trust_status,
+                "iot": iot_view,
             })
 
         return deliveries
