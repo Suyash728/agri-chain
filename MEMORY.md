@@ -152,3 +152,17 @@ python scripts/test_full_ui_journey.py         # Full Farmer -> Logistics -> Dar
   7. **Tier 5 (Web UI)**: Spawns Vite React 18 web client on port 3000.
   8. **Browser Launch**: Auto-opens default web browser to `http://localhost:3000`.
   9. **Graceful Teardown**: Captures `Ctrl+C` (SIGINT/SIGTERM) and terminates process groups (`os.killpg` / `taskkill /F /T`), ensuring clean port release.
+
+
+---
+
+## 7. Claude Code Project Handoff & IoT Audit Mandate
+
+- **Handoff Document Created**: [`CLAUDE.md`](file:///home/suyash/Projects/agri-chain/CLAUDE.md) at repository root.
+- **Scope & Objectives Documented**:
+  1. Full 5-tier architecture context (ESP32 $\rightarrow$ FastAPI $\rightarrow$ Pre-Chain AI Trust Layer $\rightarrow$ EVM Smart Contracts $\rightarrow$ React 18 Multi-Role UI).
+  2. Active hardware sprint definition: Physical ESP32 DevKit v1 node with DHT11/22, MQ-135, SW-420, LDR, NEO-6M GPS.
+  3. LittleFS offline ring buffer storage protocol, serial wire protocol (`CMD:STATUS`, `CMD:SYNC`, `CMD:CLEAR`), and automatic host download to `hardware/transit_logs/`.
+  4. End-to-end ingestion pipeline into `POST /telemetry` / `POST /telemetry/batch` with pre-validation persistence, Isolation Forest scoring, and on-chain batch anchoring.
+  5. Exhaustive multi-tier stability and accuracy audit directive spanning Firmware, Host Serial Bridge, Backend/AI Trust, Smart Contracts, and Multi-Role UI.
+  6. Non-negotiable engineering rules (integer paise, integer deci-°C, monotonic custody state machine, frontend style lock).
