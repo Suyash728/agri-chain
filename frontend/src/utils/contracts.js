@@ -1,11 +1,21 @@
 import { ethers } from 'ethers';
 import deployments from './modular-deployments.json';
 
-export const CONTRACT_ADDRESSES = deployments?.contracts || {
+const DEFAULT_ADDRESSES = deployments?.contracts || {
   ProductRegistry: '0x4C2F7092C2aE51D986bEFEe378e50BD4dB99C901',
   CustodyTransfer: '0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9',
   ColdChainMonitor: '0x49fd2BE640DB2910c2fAb69bB8531Ab6E76127ff',
   PolicyConfig: '0x4631BCAbD6dF18D94796344963cB60d44a4136b6',
+};
+
+// Hosted builds (e.g. Vercel against Polygon Amoy) set these at build time; local dev keeps
+// using the manifest written by the Hardhat deploy script.
+const env = (typeof import.meta !== 'undefined' && import.meta.env) || {};
+export const CONTRACT_ADDRESSES = {
+  ProductRegistry: env.VITE_PRODUCT_REGISTRY_ADDRESS || DEFAULT_ADDRESSES.ProductRegistry,
+  CustodyTransfer: env.VITE_CUSTODY_TRANSFER_ADDRESS || DEFAULT_ADDRESSES.CustodyTransfer,
+  ColdChainMonitor: env.VITE_COLD_CHAIN_MONITOR_ADDRESS || DEFAULT_ADDRESSES.ColdChainMonitor,
+  PolicyConfig: env.VITE_POLICY_CONFIG_ADDRESS || DEFAULT_ADDRESSES.PolicyConfig,
 };
 
 export const ROLES = {

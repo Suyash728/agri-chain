@@ -305,12 +305,13 @@ def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
                 current_custodian = custody_row["to_holder"]
                 custody_state = custody_row["state"]
             else:
+                # batches has no farmer_address column (schema: farmer_name, origin_farm)
                 batch_info = conn.execute(
-                    "SELECT farmer_address, origin_farm FROM batches WHERE batch_id = ?",
+                    "SELECT farmer_name, origin_farm FROM batches WHERE batch_id = ?",
                     (payload.batch_id,),
                 ).fetchone()
                 current_custodian = (
-                    batch_info["farmer_address"] if batch_info and batch_info["farmer_address"]
+                    batch_info["farmer_name"] if batch_info and batch_info["farmer_name"]
                     else (batch_info["origin_farm"] if batch_info else "FARMER")
                 )
                 custody_state = "REGISTERED"

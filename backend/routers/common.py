@@ -31,8 +31,37 @@ from schemas import *
 router = APIRouter()
 
 @router.get("/health")
-def health():
-    return {"status": "ok"}
+def health(response: Response):
+    """Liveness + dependency probe. Touches the database so a keep-alive ping also keeps a
+    free-tier Supabase project from auto-pausing. Returns 503 if the database is unreachable."""
+    import os
+    import settings
+    from db import is_postgres
+
+    db_ok, db_error = True, None
+    try:
+        conn = get_connection()
+        try:
+            conn.execute("SELECT 1").fetchone()
+        finally:
+            conn.close()
+    except Exception as e:  # report, don't crash the probe
+        db_ok, db_error = False, type(e).__name__
+
+    try:
+        chain_ok = bool(chain.w3.is_connected())
+    except Exception:
+        chain_ok = False
+
+    if not db_ok:
+        response.status_code = 503
+    return {
+        "status": "ok" if db_ok else "degraded",
+        "database": {"backend": "postgres" if is_postgres() else "sqlite", "ok": db_ok, "error": db_error},
+        "chain": {"connected": chain_ok},
+        "ipfs": "pinata" if (os.getenv("PINATA_JWT") or os.getenv("PINATA_API_KEY")) else "local-fallback (not real IPFS)",
+        **settings.describe(),
+    }
 
 
 @router.get("/network/info")

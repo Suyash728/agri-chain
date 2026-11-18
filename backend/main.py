@@ -91,14 +91,30 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Enable CORS for frontend communication (Vite on localhost, LAN IP, and mobile devices)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origin_regex=r"^https?://.*$",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+import settings
+
+
+# Access policy (see settings.py). Registered before CORS so CORS is the outermost layer
+# and denial responses still carry the CORS headers the browser needs to read them.
+@app.middleware("http")
+async def access_policy(request, call_next):
+    if request.method != "OPTIONS":
+        denied = settings.check_access(request.method, request.url.path, request.headers)
+        if denied is not None:
+            return denied
+    return await call_next(request)
+
+
+# CORS: open in development (Vite on localhost / LAN / mobile); ALLOWED_ORIGINS in production
+app.add_middleware(CORSMiddleware, **settings.cors_kwargs())
+
+if settings.IS_PRODUCTION:
+    if not settings.ALLOWED_ORIGINS and not settings.ALLOWED_ORIGIN_REGEX:
+        logger.warning("APP_ENV=production but ALLOWED_ORIGINS is empty: browsers will be blocked by CORS")
+    if not settings.ADMIN_API_TOKEN:
+        logger.warning("APP_ENV=production without ADMIN_API_TOKEN: reset/seed/admin writes are unavailable")
+    if settings.DEMO_MODE:
+        logger.warning("DEMO_MODE=true in production: /demo/* and Admin writes are publicly callable")
 
 # Register modular domain routers
 from routers import (

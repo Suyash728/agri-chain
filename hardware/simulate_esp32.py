@@ -15,6 +15,7 @@ Usage:
 """
 
 import argparse
+import os
 import hashlib
 import json
 import time
@@ -26,7 +27,7 @@ from datetime import datetime, timezone
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
-SERVER_URL = "http://127.0.0.1:8000/telemetry"
+SERVER_URL = os.environ.get("AGRICHAIN_BACKEND_URL", "http://127.0.0.1:8000").rstrip("/") + "/telemetry"
 QUARANTINE_URL = "http://127.0.0.1:8000/telemetry/quarantine"
 BATCH_ID = "BAT-TOM-802"
 DEVICE_ID = "ESP32-COLDCHAIN-01"
@@ -67,7 +68,9 @@ def send_reading(temperature: float, humidity: float, voc_ppm: float = 12.4, tam
         data=data, 
         headers={
             "Content-Type": "application/json",
-            "X-Payload-SHA256": sha256_digest
+            "X-Payload-SHA256": sha256_digest,
+            # Required by a production backend (APP_ENV=production); ignored in development.
+            **({"X-Device-Key": os.environ["AGRICHAIN_DEVICE_KEY"]} if os.environ.get("AGRICHAIN_DEVICE_KEY") else {}),
         }
     )
 

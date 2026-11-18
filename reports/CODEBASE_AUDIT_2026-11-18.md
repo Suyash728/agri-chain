@@ -58,7 +58,8 @@ The comparison also hides some context. A single modular condition write costs *
    - **Location:** a missing location becomes Pune (18.5204, 73.8567).
    - **Timestamp:** a missing timestamp becomes `previous + 900 s`.
    - Both are fed to the plausibility checks as if real.
-10. **Nonce race.** `_send_tx` reads the nonce per call while FastAPI runs sync routes concurrently, so parallel requests can collide. `wait_for_transaction_receipt` also blocks a worker for up to 120 s, and `gasPrice` is hard-coded at 20 gwei.
+10a. **Farm-stage breach crash** *(fixed on branch `deploy/free-tier`)*. A genuine BREACH on a batch with no custody events selected the non-existent column `batches.farmer_address`. The result was HTTP 500 with the reading left `PENDING`. The capstone script missed it because its breach test runs after a custody transfer.
+10. **Nonce race** *(fixed on branch `deploy/free-tier`: a lock around nonce and broadcast, plus fees from the network)*. `_send_tx` reads the nonce per call while FastAPI runs sync routes concurrently, so parallel requests can collide. `wait_for_transaction_receipt` also blocks a worker for up to 120 s, and `gasPrice` is hard-coded at 20 gwei.
 
 ### Medium
 11. **Silent truncation in Solidity.** `ColdChainMonitor` silently truncates with `int64(tempDeciC)` and `uint32(humidityPct)`; explicit narrowing doesn't revert in 0.8, so use `SafeCast`. Events emit the untruncated value, which then disagrees with storage.

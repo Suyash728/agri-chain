@@ -5,6 +5,11 @@ const path = require("path");
 async function main() {
   const { ethers, network } = hre;
   const [deployer] = await ethers.getSigners();
+  if (!["hardhat", "localhost"].includes(network.name) &&
+      deployer.address.toLowerCase() === "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266") {
+    throw new Error(`Refusing to deploy to ${network.name} with Hardhat's public account #0 key. ` +
+      "Set PRIVATE_KEY to a dedicated, faucet-funded wallet.");
+  }
 
   console.log("===============================================================");
   console.log(` DEPLOYING MODULAR SMART CONTRACTS TO: ${network.name.toUpperCase()}`);
@@ -58,15 +63,26 @@ async function main() {
   await (await coldChainMonitor.grantRole(ORACLE_ROLE, deployer.address)).wait();
   console.log(`   All roles granted to deployer/backend: ${deployer.address}`);
 
-  // Default seeded persona wallet addresses
-  const SAFEXPRESS_LOGISTICS_ADDR = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
-  const PUNE_DARKSTORE_ADDR = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC";
+  // Persona wallets. Locally these are Hardhat accounts #1/#2, whose private keys are PUBLIC,
+  // so they must never receive roles on a public network. There, roles go only to addresses
+  // supplied explicitly via LOGISTICS_ADDRESS / RETAILER_ADDRESS (optional).
+  const isLocal = ["hardhat", "localhost"].includes(network.name);
+  const SAFEXPRESS_LOGISTICS_ADDR = process.env.LOGISTICS_ADDRESS || (isLocal ? "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" : null);
+  const PUNE_DARKSTORE_ADDR = process.env.RETAILER_ADDRESS || (isLocal ? "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC" : null);
 
-  await (await custodyTransfer.grantRole(LOGISTICS_ROLE, SAFEXPRESS_LOGISTICS_ADDR)).wait();
-  console.log(`   LOGISTICS_ROLE granted to Safexpress: ${SAFEXPRESS_LOGISTICS_ADDR}`);
+  if (SAFEXPRESS_LOGISTICS_ADDR) {
+    await (await custodyTransfer.grantRole(LOGISTICS_ROLE, SAFEXPRESS_LOGISTICS_ADDR)).wait();
+    console.log(`   LOGISTICS_ROLE granted to Safexpress: ${SAFEXPRESS_LOGISTICS_ADDR}`);
+  } else {
+    console.log("   LOGISTICS_ROLE: no persona wallet on a public network (set LOGISTICS_ADDRESS to grant one)");
+  }
 
-  await (await custodyTransfer.grantRole(RETAILER_ROLE, PUNE_DARKSTORE_ADDR)).wait();
-  console.log(`   RETAILER_ROLE granted to Pune Fresh DarkStore: ${PUNE_DARKSTORE_ADDR}`);
+  if (PUNE_DARKSTORE_ADDR) {
+    await (await custodyTransfer.grantRole(RETAILER_ROLE, PUNE_DARKSTORE_ADDR)).wait();
+    console.log(`   RETAILER_ROLE granted to Pune Fresh DarkStore: ${PUNE_DARKSTORE_ADDR}`);
+  } else {
+    console.log("   RETAILER_ROLE: no persona wallet on a public network (set RETAILER_ADDRESS to grant one)");
+  }
 
   // 6. Set initial policies in PolicyConfig
   console.log("\n6. Seeding initial on-chain crop policies...");

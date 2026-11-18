@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import threading
 import pathlib
 import hashlib
 from datetime import datetime
@@ -28,6 +29,18 @@ if not w3.is_connected():
 # Owner account derived from the private key
 account = w3.eth.account.from_key(PRIVATE_KEY)
 owner_address = account.address
+
+# Hardhat's default account #0 key is published in Hardhat's docs; on a public network anyone
+# could sign with it. Refuse to start a production deployment with it.
+HARDHAT_DEFAULT_ADDRESS = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+if os.getenv("APP_ENV", "").strip().lower() == "production" and owner_address.lower() == HARDHAT_DEFAULT_ADDRESS.lower():
+    raise RuntimeError("APP_ENV=production with the public Hardhat test key: set PRIVATE_KEY to a dedicated relayer key")
+
+# Transaction sending: one lock serialises nonce allocation across FastAPI worker threads.
+_TX_LOCK = threading.Lock()
+TX_RECEIPT_TIMEOUT = int(os.getenv("TX_RECEIPT_TIMEOUT", "120"))
+# Polygon (incl. Amoy) rejects priority fees below ~25-30 gwei; local Hardhat accepts anything.
+MIN_PRIORITY_FEE_WEI = Web3.to_wei(float(os.getenv("MIN_PRIORITY_FEE_GWEI", "0")), "gwei")
 
 
 def load_abi(contract_name: str) -> list | None:
@@ -127,31 +140,54 @@ def to_bytes32(batch_id: str | bytes) -> bytes:
     raise ValueError(f"Unsupported batch_id type: {type(batch_id)}")
 
 
+def _fee_params() -> dict:
+    """Fee fields from the live network instead of a hard-coded gas price.
+
+    EIP-1559 networks (Polygon Amoy, Hardhat) get maxFeePerGas / maxPriorityFeePerGas;
+    legacy networks fall back to the node's gasPrice.
+    """
+    try:
+        base_fee = w3.eth.get_block("latest").get("baseFeePerGas")
+    except Exception:
+        base_fee = None
+    if base_fee is not None:
+        try:
+            priority = w3.eth.max_priority_fee
+        except Exception:
+            priority = Web3.to_wei(1, "gwei")
+        priority = max(priority, MIN_PRIORITY_FEE_WEI)
+        return {"maxPriorityFeePerGas": priority, "maxFeePerGas": base_fee * 2 + priority}
+    return {"gasPrice": max(w3.eth.gas_price, MIN_PRIORITY_FEE_WEI)}
+
+
 def _send_tx(target_contract, method_name: str, *args) -> str:
     """Builds, signs, and sends a transaction calling *method_name* on *target_contract*.
 
     Returns the transaction hash as a hex string with '0x' prefix.
     """
     func = getattr(target_contract.functions, method_name)(*args)
-    nonce = w3.eth.get_transaction_count(owner_address)
-    tx_params = {
-        "chainId": w3.eth.chain_id,
-        "from": owner_address,
-        "nonce": nonce,
-        "gasPrice": w3.to_wei("20", "gwei"),
-    }
 
     try:
         estimated_gas = func.estimate_gas({"from": owner_address})
-        tx_params["gas"] = int(estimated_gas * 1.25)
+        gas_limit = int(estimated_gas * 1.25)
     except Exception:
-        tx_params["gas"] = 3_000_000
+        gas_limit = 3_000_000
 
-    transaction = func.build_transaction(tx_params)
-    signed_tx = w3.eth.account.sign_transaction(transaction, PRIVATE_KEY)
-    raw_tx = getattr(signed_tx, "raw_transaction", None) or getattr(signed_tx, "rawTransaction")
-    tx_hash = w3.eth.send_raw_transaction(raw_tx)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    # Allocate the nonce and broadcast under one lock so concurrent requests can't reuse a
+    # nonce; the (slow) receipt wait happens outside the lock.
+    with _TX_LOCK:
+        tx_params = {
+            "chainId": w3.eth.chain_id,
+            "from": owner_address,
+            "nonce": w3.eth.get_transaction_count(owner_address, "pending"),
+            "gas": gas_limit,
+            **_fee_params(),
+        }
+        transaction = func.build_transaction(tx_params)
+        signed_tx = w3.eth.account.sign_transaction(transaction, PRIVATE_KEY)
+        raw_tx = getattr(signed_tx, "raw_transaction", None) or getattr(signed_tx, "rawTransaction")
+        tx_hash = w3.eth.send_raw_transaction(raw_tx)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=TX_RECEIPT_TIMEOUT)
     if receipt.status != 1:
         raise RuntimeError(f"Transaction reverted on-chain (status=0): {tx_hash.hex()}")
     hex_str = tx_hash.hex()
