@@ -108,30 +108,37 @@ $$h_i = \text{SHA-256}\left(h_{i-1} \parallel \text{cycle} \parallel T \parallel
 The first 16 characters of $h_i$ are transmitted as a compact fingerprint in every packet and stored in LittleFS.
 
 ### 4.4 LittleFS Ring Buffer & Wire Protocol
-- **Storage Boundaries**: Safe ceiling of 350 KB with a 200 KB reserve guard. Auto-rotates if storage approaches capacity.
+- **Storage Boundaries**: Two 175 KB segments (`/agrichain_log.jsonl` current, `/agrichain_log.old.jsonl` previous) = 350 KB ceiling, with a 200 KB free-space reserve guard. Rotation drops only the oldest segment; the filesystem is never silently formatted (a failed mount prints `STORAGE_ERROR:MOUNT_FAILED_REFORMATTING`). Record counts are recovered by scanning the log at boot (no count file); a boot counter lives in `/agrichain_boot.bin`.
+- **Logging cadence**: every 10 s, plus immediately on a new shock (`shock_delta > 0`) or when the lid is first opened (rising edge of `tamper`).
+- **Record fields added for sync**: `boot`, `up_ms`, `ts` (unix s, 0 = unknown), `ts_src` (`gps`/`host`/`none`), `shock_delta` (new shocks this packet), `tamper` (bool), `dht_ok`.
 - **Serial Wire Protocol (115200 baud)**:
   - Live Stream: Emits `JSON:{...}\n` every 1000ms.
   - PC Commands Received:
-    - `CMD:STATUS` $\rightarrow$ replies with `STATUS:{"records":N,"bytes":B,"free_kb":K,"uptime":U,"shocks":S,...}`
-    - `CMD:SYNC` $\rightarrow$ dumps all records line-by-line as `OFFLINE_JSON:{...}\n`, then clears flash and emits `OFFLINE_SYNC_COMPLETE:OK`.
-    - `CMD:CLEAR` $\rightarrow$ formats LittleFS storage and emits `OFFLINE_BUFFER_CLEARED:OK`.
+    - `CMD:STATUS` $\rightarrow$ replies with `STATUS:{"records":N,"bytes":B,"free_kb":K,"uptime":U,"up_ms":M,"boot":N,"ts":T,"ts_src":"...","shocks":S,"pending_ack":bool,...}`
+    - `CMD:TIME:<unix_seconds>` $\rightarrow$ sets the wall clock used for `ts` (GPS UTC overrides once locked); replies `TIME:OK:<t>:<src>` or `TIME:REJECTED`.
+    - `CMD:SYNC` (alias `CMD:DUMP`) $\rightarrow$ **two-phase, does not clear**: `OFFLINE_DUMP_START:N`, N × `OFFLINE_JSON:{...}`, `OFFLINE_DUMP_COMPLETE:N`.
+    - `CMD:ACK:<N>` $\rightarrow$ deletes exactly the records from the last dump (records logged after the dump are kept) and emits `OFFLINE_SYNC_COMPLETE:OK`, or `OFFLINE_ACK_REJECTED:<NO_PENDING_DUMP|STALE|COUNT_MISMATCH:n|BAD_FORMAT|COMPACT_FAILED>`.
+    - `CMD:CLEAR` $\rightarrow$ deletes all log segments and emits `OFFLINE_BUFFER_CLEARED:OK`.
     - `CMD:PAUSE` / `CMD:RESUME` $\rightarrow$ toggles live JSON streaming without halting sensor acquisition.
+    - Command lines over 128 chars are discarded whole (`CMD_REJECTED:TOO_LONG`).
 
 ---
 
 ## 5. Host Bridge & Mission Control (`hardware/monitor_live.py`)
 
 The host Python script connects to `/dev/ttyUSB0` at 115200 baud and orchestrates:
-1. **Settled Bootloader Handshake**: Toggles DTR/RTS cleanly and flushes bootloader garbage without hanging.
-2. **Automatic LittleFS Sync**: On launch, queries `CMD:STATUS`. If stored records exist, queries `CMD:SYNC`, writes them to `hardware/transit_logs/transit_dump_<timestamp>.jsonl`, and posts them via HTTP to `http://localhost:8000/telemetry/batch`.
-3. **Rich Real-Time Dashboard**: Displays a split-column terminal layout:
+1. **Non-Resetting Connect**: Opens the port with pyserial's default DTR+RTS (both asserted = no auto-reset) and never toggles them, so the board's uptime/clock anchor survives the plug-in. Missing device / permission (`uucp`/`dialout`) errors are explained; USB disconnects auto-reconnect every 2 s and re-run the handshake.
+2. **Two-Phase LittleFS Sync** (on connect and on `[S]`): `CMD:STATUS` (clock anchor) → `CMD:TIME` → `CMD:SYNC` → records written + fsync'd to `hardware/transit_logs/transit_dump_<ts>.jsonl` (+ `.meta.json`) → `CMD:ACK:<n>` only if the received count matches. Timestamps come from the record's `ts`, else the same-boot uptime anchor, else `None`.
+3. **Durable Outbox**: synced readings are queued in `hardware/transit_logs/outbox/` and POSTed to `/telemetry/batch` in chunks of 25, retried every 15 s until accepted (HTTP 4xx → `.rejected`). Live `/telemetry` forwarding pauses while the backlog uploads so the backend sees chronological order.
+4. **Backend mapping**: `tamper_status` = `TAMPER_OPENED` (lid) / `SHOCK_DETECTED` (new shock) / `SEALED`; `freshness_voc_ppm` is sent only for calibrated (`gas_cal: true`), post-warm-up gas readings; coordinates are the current or last GPS fix, never invented.
+5. **Rich Real-Time Dashboard**: Displays a split-column terminal layout:
    - Header with Port, Uptime, Flash Record Count, and Active Produce Batch ID.
    - Sensor Diagnostics Table (Microclimate, Gas E-Nose, SW-420 Shock, Optical Tamper, NEO-6M GPS, Flash Buffer, AI Trust Status).
    - Event Ledger with real-time anomaly tags and terminal audio bells (`\a` for shocks, `\a\a` for optical light breaches).
-4. **Interactive Keyboard Controls**:
+6. **Interactive Keyboard Controls**:
    - `[P]`: Pause/Resume live serial stream.
    - `[S]`: Manually trigger LittleFS flash synchronization.
-   - `[C]`: Format/Clear onboard flash storage.
+   - `[C]`: Delete onboard flash records without downloading (press twice within 3 s to confirm).
    - `[M]`: Open current GPS coordinates in Google Maps.
    - `[B]`: Cycle active produce lot preset (`BAT-MGO-701`, `BAT-TOM-802`, `BAT-APL-903`, etc.).
    - `[Q]`: Clean shutdown releasing serial port.

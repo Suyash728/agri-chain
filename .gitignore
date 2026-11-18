@@ -62,6 +62,8 @@ Thumbs.db
 .piolibdeps/
 .clangd/
 hardware/transit_logs/*.jsonl
+hardware/transit_logs/*.meta.json
+hardware/transit_logs/outbox/
 
 # ---------- Logs ----------
 *.log
