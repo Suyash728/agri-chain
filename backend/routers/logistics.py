@@ -13,6 +13,7 @@ from pydantic import BaseModel
 import chain
 import ipfs
 from db import get_connection, DB_PATH
+import iot
 from common import (
     PARTICIPANT_ADDRESSES,
     SENSOR_CORRUPTION_CODES,
@@ -121,6 +122,17 @@ def get_logistics_shipments():
             temp_c = reading["temp_c"] if reading else 4.5
             hum_pct = reading["humidity_pct"] if reading else 88.0
 
+            # A linked IoT sensor (real ESP32 or virtual device) overrides the fallbacks above
+            iot_view = iot.batch_iot(conn, batch_id, recent=10)
+            if iot_view and iot_view["latest"]:
+                latest = iot_view["latest"]
+                if latest["tempC"] is not None:
+                    temp_c = latest["tempC"]
+                if latest["humidityPct"] is not None:
+                    hum_pct = latest["humidityPct"]
+            if iot_view and iot_view["lastFix"]:
+                lat, lon = iot_view["lastFix"]["latitude"], iot_view["lastFix"]["longitude"]
+
             driver_info = drivers[idx % len(drivers)]
 
             clean_origin = r["origin_farm"].split("||")[0].strip()
@@ -189,6 +201,7 @@ def get_logistics_shipments():
                 "priceRupees": r["price_paise"] // 100,
                 "txHash": r["tx_hash"],
                 "occurredAt": r["occurred_at"],
+                "iot": iot_view,
             })
 
         return shipments

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # AgriChain 7-Subsystem IoT Edge Node Live Telemetry Mission Control
-# Usage: ./run_monitor.sh [--skip-sync] [--clear] [--batch BAT-MGO-701]
+# Usage: ./run_monitor.sh [--skip-sync] [--clear] [--batch BAT-APL-903]
 # ==============================================================================
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

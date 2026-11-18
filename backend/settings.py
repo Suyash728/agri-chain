@@ -44,6 +44,7 @@ DESTRUCTIVE_ROUTES = {
 DEVICE_ROUTES = {
     ("POST", "/telemetry"),
     ("POST", "/telemetry/batch"),
+    ("POST", "/devices/register"),
 }
 # Writes outside /admin that are still operator-only (expensive or model-mutating)
 OPERATOR_ROUTES = {

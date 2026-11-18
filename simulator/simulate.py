@@ -16,6 +16,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 
 # Ensure UTF-8 output on Windows console
@@ -73,8 +74,14 @@ def run_simulator(
     endpoint: str = "http://localhost:8000/telemetry",
     fault_name: str | None = None,
     num_readings: int | None = None,
+    device_id: str | None = None,
 ):
-    """Streams telemetry readings for a configurable duration and injects faults."""
+    """Streams telemetry readings for a configurable duration and injects faults.
+
+    `device_id` is only set in --virtual mode; by default readings use DEV-<batch> as before.
+    """
+    device_id = device_id or f"DEV-{batch_id}"
+    virtual = not device_id.startswith("DEV-")
     crop_key = crop_name.lower().strip()
     crop_params = CROP_DEFAULTS.get(crop_key, {"temp": 4.5, "hum": 88.0})
 
@@ -112,7 +119,7 @@ def run_simulator(
     start_lon = 73.8567
     try:
         from app.services.history import history_repository
-        last_reading = history_repository.get_last_reading(device_id=f"DEV-{batch_id}", batch_id=batch_id)
+        last_reading = history_repository.get_last_reading(device_id=device_id, batch_id=batch_id)
         if last_reading:
             if last_reading.timestamp:
                 start_time = last_reading.timestamp + timedelta(seconds=max(60.0, interval_sec))
@@ -126,7 +133,7 @@ def run_simulator(
 
     # Generate sequence via trust-layer simulator service
     sim_config = SimulationConfig(
-        device_id=f"DEV-{batch_id}",
+        device_id=device_id,
         batch_id=batch_id,
         num_readings=total_samples,
         time_step_seconds=max(60.0, interval_sec),  # Realistic time step for physical rates
@@ -147,6 +154,12 @@ def run_simulator(
         elapsed = int(time.time() - start_wall_time)
         payload = reading.model_dump(mode="json")
         payload["crop_name"] = crop_name
+        if virtual:
+            # A pretend crate sensor: sealed lid, no impacts, GPS locked (faults only change temp/hum/GPS)
+            payload["source"] = "simulator"
+            payload["gps_fix"] = True
+            payload["tamper"] = False
+            payload["shock_delta"] = 0
 
         is_injected_fault = (idx == fault_pos) and (fault_type is not None)
         tag = " [FAULT INJECTED]" if is_injected_fault else ""
@@ -198,12 +211,27 @@ def run_simulator(
     }
 
 
+def _api_json(url, body=None):
+    headers = {"Content-Type": "application/json"}
+    if os.environ.get("AGRICHAIN_DEVICE_KEY"):
+        headers["X-Device-Key"] = os.environ["AGRICHAIN_DEVICE_KEY"]
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST" if data else "GET")
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="AgriChain Multi-Fault IoT Telemetry Simulator"
     )
     parser.add_argument(
-        "--batch-id", required=True, help="Batch ID to simulate readings for"
+        "--batch-id", default=None, help="Batch ID to simulate readings for (required unless --virtual)"
+    )
+    parser.add_argument(
+        "--virtual", nargs="?", const="SIM-01", metavar="DEVICE_ID", default=None,
+        help="Act as a virtual IoT device (default SIM-01): register it and stream to the batch it is "
+             "linked to on the website (Manage Sensors). Without this flag behaviour is unchanged.",
     )
     parser.add_argument(
         "--crop-name", default="tomato", help="Crop name: tomato, mango, wheat (default: tomato)"
@@ -257,7 +285,23 @@ def main():
     )
 
     args = parser.parse_args()
+    device_id = None
+    if args.virtual:
+        base = args.endpoint.rsplit("/telemetry", 1)[0]
+        device_id = args.virtual
+        _api_json(f"{base}/devices/register", {"device_id": device_id, "label": "Virtual Cold-Chain Sensor", "kind": "SIMULATED"})
+        assignment = _api_json(f"{base}/devices/{urllib.parse.quote(device_id, safe='')}/assignment").get("assignment")
+        if not assignment:
+            print(f"Virtual device {device_id} is not linked to a batch. Link it on the website "
+                  "(Logistics -> Live Shipment Tracking -> Manage Sensors), then run again.")
+            sys.exit(2)
+        args.batch_id = assignment["batchId"]
+        args.crop_name = ((assignment.get("batch") or {}).get("cropName") or args.crop_name)
+        print(f"Virtual device {device_id} -> batch {args.batch_id}")
+    elif not args.batch_id:
+        parser.error("--batch-id is required (or use --virtual)")
     run_simulator(
+        device_id=device_id,
         batch_id=args.batch_id,
         crop_name=args.crop_name,
         duration_sec=args.duration,

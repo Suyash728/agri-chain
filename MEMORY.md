@@ -184,3 +184,14 @@ python scripts/test_full_ui_journey.py         # Full Farmer -> Logistics -> Dar
   - the `readings` audit table drops device, timestamp, location, VOC and tamper;
   - failed batch anchoring is not retried.
 - **Testing rule**: the repo `.env` targets Supabase and a live chain, so test only on isolated copies (report §6).
+
+---
+
+## 9. IoT Device ↔ Batch Linking (2026-11-19, branch `feature/iot-batch-linking`)
+
+- **Choosing the batch:** the operator links a sensor to a batch from the website (Logistics Shipment Tracking, Dark Store Incoming Deliveries) or from the monitor's `[B]` picker. The monitor follows the website link. Hard-coded batch presets were removed.
+- **Offline records:** they go to the batch linked at sync time. The monitor syncs to the old batch before switching. Unlinked syncs are held and released to the next link.
+- **History and tables:** link history is dated, ready for later time-window allocation. New tables are `iot_devices`, `device_assignments` and `device_telemetry`.
+- **Virtual devices:** simulators run with `--virtual` act as `SIMULATED` devices. Default simulator and God Mode behaviour are unchanged.
+- **Frontend rule relaxed:** small self-contained additions are allowed (sensor picker and sensor card in `frontend/src/components/iot/`). See CLAUDE.md §7.5.
+- **Known interaction:** any ANOMALOUS reading still permanently blocks a batch through the custody circuit breaker (audit #4). A desk-bound ESP32 (29 °C, LDR saturated) will quarantine whatever batch it is linked to.

@@ -129,6 +129,30 @@ where $\text{body}_i$ is the record's exact JSON text up to (not including) the 
 
 ---
 
+## 4.5 IoT Device ↔ Batch Linking (`backend/iot.py`, `backend/routers/devices.py`)
+
+A sensor (the physical ESP32, or a **virtual** simulator device) reports to **one produce batch at a time**, chosen by the operator:
+- **Where you pick:** the website (Logistics → Shipment Tracking → *Manage Sensors* / *Link sensor*, and Dark Store → Incoming Deliveries → *Manage Sensors* or the sensor card in delivery details), or the monitor's `[B]` picker. Both write the same backend link, and the monitor polls it every 5 s, so they stay in sync.
+- **Offline records (option B):** everything synced from flash goes to the batch linked *at sync time*. Before any switch the monitor first syncs flash to the **old** batch, so a trip's records never land on the next batch. While unlinked, synced records are held in `hardware/transit_logs/outbox/unassigned/` and released to the next batch linked.
+- **History:** every link is kept with `assigned_at` / `unassigned_at` (`GET /devices/{id}/history`), so time-window allocation (option A) can be added later without migrating data.
+- **Tables:** `iot_devices`, `device_assignments`, `device_telemetry` (temp, humidity, shocks, `shock_delta`, tamper, GPS, VOC, lux, source `live`/`offline`/`simulator`, verdict). System reset clears links and device telemetry, but keeps registered devices.
+- **Only registered devices are tracked:** the monitor and `--virtual` simulators register explicitly, so ordinary simulator runs (`DEV-<batch>` ids) and God Mode inject behave exactly as before.
+- **API:**
+  - `GET /devices`
+  - `POST /devices/register` (needs a device key in production)
+  - `GET /devices/{id}/assignment`
+  - `POST /devices/{id}/assign` `{batch_id}` (returns warnings: sold, not dispatched, already monitored)
+  - `POST /devices/{id}/unassign`
+  - `GET /iot/assignable-batches`
+  - `GET /batches/{id}/iot`
+
+  `/logistics/shipments` and `/darkstore/inbound` include an `iot` object and use the linked sensor's temperature and GPS when present.
+- **Virtual devices:**
+  - `python simulator/simulate.py --virtual [SIM-01] --num-readings 10`
+  - `python hardware/simulate_esp32.py --virtual SIM-02 --mode stream`
+
+  Each registers as `SIMULATED` and streams to whatever batch it is linked to. The seed data links `SIM-01` to `BAT-APL-903`.
+
 ## 5. Host Bridge & Mission Control (`hardware/monitor_live.py`)
 
 The host Python script connects to `/dev/ttyUSB0` at 115200 baud and orchestrates:
@@ -145,7 +169,7 @@ The host Python script connects to `/dev/ttyUSB0` at 115200 baud and orchestrate
    - `[S]`: Manually trigger LittleFS flash synchronization.
    - `[C]`: Delete onboard flash records without downloading (press twice within 3 s to confirm).
    - `[M]`: Open current GPS coordinates in Google Maps.
-   - `[B]`: Cycle active produce lot preset (`BAT-MGO-701`, `BAT-TOM-802`, `BAT-APL-903`, etc.).
+   - `[B]`: Open the batch picker (real batches from the backend; `1-9` link, `N/P` page, `U` unlink, `B/X/Esc` close).
    - `[Q]`: Clean shutdown releasing serial port.
 
 ---
@@ -199,8 +223,9 @@ Claude Code, you are instructed to perform a rigorous, multi-tiered stability an
 4. **Monotonic Custody Transitions**:
    $$\text{REGISTERED} \longrightarrow \text{IN\_TRANSIT} \longrightarrow \text{IN\_STORAGE} \longrightarrow \text{AT\_RETAIL} \longrightarrow \text{SOLD}$$
    Transitions can only advance forward. No backward transitions are permitted.
-5. **Frontend Wire-Only Rule**:
-   `frontend/` is a finished design. Never replace Tailwind utility classes or recreate views. Replace mock imports only with `fetch()` returning identical JSON shapes.
+5. **Frontend Design Rule**:
+   `frontend/` is a finished design. Never restyle or recreate existing views, change the palette, or add UI libraries. Replace mock imports only with `fetch()` returning identical JSON shapes.
+   *Exception (approved 2026-11-19):* small, self-contained additions are allowed when a feature needs input that the existing UI can't capture, e.g. the IoT sensor picker (`frontend/src/components/iot/`). Build them from the existing palette, `rounded-2xl/3xl` cards, `lucide-react` icons and modal pattern.
 6. **Commit Format**:
    Always format git commits as `[scope] description` (e.g., `[hardware] optimize littlefs flash sync`, `[backend] fix telemetry batch ingestion`). Never commit `.env`, `node_modules/`, `.venv/`, or `*.db`.
 
@@ -232,9 +257,9 @@ pio run -d hardware/test_pentad
 pio run -d hardware/test_pentad -t upload --upload-port /dev/ttyUSB0
 
 # 3. Launch Mission Control Dashboard with LittleFS Sync
-./run_monitor.sh [--skip-sync] [--clear] [--batch BAT-MGO-701]
+./run_monitor.sh [--skip-sync] [--clear] [--batch BAT-APL-903]
 # Or directly via Python:
-.venv/bin/python hardware/monitor_live.py --batch BAT-MGO-701
+.venv/bin/python hardware/monitor_live.py --batch BAT-APL-903
 ```
 
 ### 8.3 Subsystem Test Suites

@@ -13,6 +13,7 @@ from pydantic import BaseModel
 import chain
 import ipfs
 from db import get_connection, DB_PATH
+import iot
 from common import (
     PARTICIPANT_ADDRESSES,
     SENSOR_CORRUPTION_CODES,
@@ -51,7 +52,18 @@ from app.schemas.evaluation import EvaluationConfig, EvaluationReport
 
 @router.post("/telemetry", response_model=TelemetryResponse)
 def post_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
-    """Ingest a telemetry reading with AI trust validation, anomaly detection, and quarantine."""
+    """Ingest a telemetry reading with AI trust validation, anomaly detection, and quarantine.
+
+    Packets that name a device are also stored in device_telemetry (shocks, tamper, GPS, VOC)
+    for logistics / dark store tracking. That step is best-effort and never fails ingestion.
+    """
+    response = _ingest_telemetry(payload, anchor_onchain)
+    iot.record_device_telemetry(payload, response)
+    return response
+
+
+def _ingest_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
+    """Core trust-layer ingestion (persist -> validate -> verdict -> anchor/quarantine)."""
     conn = get_connection()
     try:
         temp_c = payload.temp_c if payload.temp_c is not None else payload.temperature

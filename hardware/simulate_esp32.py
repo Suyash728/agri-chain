@@ -21,14 +21,16 @@ import json
 import time
 import sys
 import urllib.request
+import urllib.parse
 import urllib.error
 from datetime import datetime, timezone
 
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 
-SERVER_URL = os.environ.get("AGRICHAIN_BACKEND_URL", "http://127.0.0.1:8000").rstrip("/") + "/telemetry"
-QUARANTINE_URL = "http://127.0.0.1:8000/telemetry/quarantine"
+BACKEND_URL = os.environ.get("AGRICHAIN_BACKEND_URL", "http://127.0.0.1:8000").rstrip("/")
+SERVER_URL = BACKEND_URL + "/telemetry"
+QUARANTINE_URL = BACKEND_URL + "/telemetry/quarantine"
 BATCH_ID = "BAT-TOM-802"
 DEVICE_ID = "ESP32-COLDCHAIN-01"
 
@@ -49,6 +51,11 @@ def send_reading(temperature: float, humidity: float, voc_ppm: float = 12.4, tam
         "freshness_voc_ppm": voc_ppm,
         "tamper_status": tamper_status,
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        # IoT context shown on logistics / dark store sensor cards
+        "tamper": tamper_status == "TAMPER_OPENED",
+        "shock_delta": 1 if tamper_status == "SHOCK_DETECTED" else 0,
+        "gps_fix": True,
+        "source": "simulator",
     }
 
     serialized_data = json.dumps(payload)
@@ -105,11 +112,42 @@ def check_quarantine():
         print(f"\n[AI Trust Layer] Total quarantined readings in system: {len(records)}")
         return records
 
+def _api(method, path, body=None):
+    headers = {"Content-Type": "application/json"}
+    if os.environ.get("AGRICHAIN_DEVICE_KEY"):
+        headers["X-Device-Key"] = os.environ["AGRICHAIN_DEVICE_KEY"]
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    req = urllib.request.Request(BACKEND_URL + path, data=data, headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=10) as res:
+        return json.loads(res.read().decode("utf-8"))
+
+
+def use_virtual_device(device_id: str):
+    """Register as a SIMULATED device and adopt the batch it is linked to."""
+    global DEVICE_ID, BATCH_ID
+    DEVICE_ID = device_id
+    _api("POST", "/devices/register", {"device_id": device_id, "label": "Virtual Cold-Chain Sensor", "kind": "SIMULATED"})
+    assignment = _api("GET", f"/devices/{urllib.parse.quote(device_id, safe='')}/assignment").get("assignment")
+    if not assignment:
+        print(f"📡 Virtual device {device_id} is registered but not linked to a batch.")
+        print("   Link it on the website (Logistics → Live Shipment Tracking → Manage Sensors), then run again.")
+        sys.exit(2)
+    BATCH_ID = assignment["batchId"]
+    crop = (assignment.get("batch") or {}).get("cropName", "")
+    print(f"📡 Virtual device {device_id} → batch {BATCH_ID} {('(' + crop + ')') if crop else ''}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="AgriChain ESP32 Hardware Simulator")
     parser.add_argument("--mode", choices=["demo", "fault", "tamper", "spoilage", "stream"], default="demo", help="Simulation mode")
     parser.add_argument("--count", type=int, default=3, help="Readings count for stream mode")
+    parser.add_argument("--virtual", nargs="?", const="SIM-01", metavar="DEVICE_ID",
+                        help="Act as a virtual IoT device (default SIM-01): register it and send readings to the batch "
+                             "it is linked to on the website (Manage Sensors). Without this flag nothing changes.")
     args = parser.parse_args()
+
+    if args.virtual:
+        use_virtual_device(args.virtual)
 
     print("================================================================")
     print("   AgriChain Physical ESP32 Cold-Chain Node Simulator           ")

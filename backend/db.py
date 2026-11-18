@@ -148,6 +148,50 @@ CREATE TABLE IF NOT EXISTS spoilage_incidents (
     created_at          TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- IoT device registry, device-to-batch links (with history) and per-device telemetry
+CREATE TABLE IF NOT EXISTS iot_devices (
+    device_id        TEXT PRIMARY KEY,
+    label            TEXT,
+    kind             TEXT NOT NULL DEFAULT 'HARDWARE',
+    registered_at    TEXT NOT NULL,
+    last_seen_epoch  REAL
+);
+
+CREATE TABLE IF NOT EXISTS device_assignments (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id        TEXT NOT NULL,
+    batch_id         TEXT NOT NULL,
+    assigned_at      TEXT NOT NULL,
+    unassigned_at    TEXT,
+    assigned_by      TEXT,
+    unassign_reason  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_device_assignments_device ON device_assignments(device_id, unassigned_at);
+CREATE INDEX IF NOT EXISTS idx_device_assignments_batch ON device_assignments(batch_id, unassigned_at);
+
+CREATE TABLE IF NOT EXISTS device_telemetry (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id        TEXT NOT NULL,
+    batch_id         TEXT,
+    received_at      TEXT NOT NULL,
+    measured_at      TEXT,
+    source           TEXT,
+    temp_c           REAL,
+    humidity_pct     REAL,
+    shocks           INTEGER,
+    shock_delta      INTEGER,
+    tamper           INTEGER,
+    gps_fix          INTEGER,
+    latitude         REAL,
+    longitude        REAL,
+    voc_ppm          REAL,
+    light_lux        REAL,
+    verdict          TEXT,
+    reading_id       INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_device_telemetry_batch ON device_telemetry(batch_id, id);
+CREATE INDEX IF NOT EXISTS idx_device_telemetry_device ON device_telemetry(device_id, id);
+
 CREATE TABLE IF NOT EXISTS users (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     username      TEXT UNIQUE NOT NULL,
@@ -510,6 +554,8 @@ def reset_system_data(preserve_policies: bool = True, db_path: str | pathlib.Pat
         "audit_trail",
         "replay_events",
         "replay_latest_timestamps",
+        "device_telemetry",
+        "device_assignments",
     ]
     counts = {}
     conn = get_connection(db_path=db_path)

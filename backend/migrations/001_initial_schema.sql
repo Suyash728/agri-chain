@@ -179,6 +179,50 @@ BEGIN
 END
 $$;
 
+-- IoT device registry, device-to-batch links (with history) and per-device telemetry
+CREATE TABLE IF NOT EXISTS iot_devices (
+    device_id        TEXT PRIMARY KEY,
+    label            TEXT,
+    kind             TEXT NOT NULL DEFAULT 'HARDWARE',
+    registered_at    TEXT NOT NULL,
+    last_seen_epoch  DOUBLE PRECISION
+);
+
+CREATE TABLE IF NOT EXISTS device_assignments (
+    id               SERIAL PRIMARY KEY,
+    device_id        TEXT NOT NULL,
+    batch_id         TEXT NOT NULL,
+    assigned_at      TEXT NOT NULL,
+    unassigned_at    TEXT,
+    assigned_by      TEXT,
+    unassign_reason  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_device_assignments_device ON device_assignments(device_id, unassigned_at);
+CREATE INDEX IF NOT EXISTS idx_device_assignments_batch ON device_assignments(batch_id, unassigned_at);
+
+CREATE TABLE IF NOT EXISTS device_telemetry (
+    id               SERIAL PRIMARY KEY,
+    device_id        TEXT NOT NULL,
+    batch_id         TEXT,
+    received_at      TEXT NOT NULL,
+    measured_at      TEXT,
+    source           TEXT,
+    temp_c           DOUBLE PRECISION,
+    humidity_pct     DOUBLE PRECISION,
+    shocks           INTEGER,
+    shock_delta      INTEGER,
+    tamper           INTEGER,
+    gps_fix          INTEGER,
+    latitude         DOUBLE PRECISION,
+    longitude        DOUBLE PRECISION,
+    voc_ppm          DOUBLE PRECISION,
+    light_lux        DOUBLE PRECISION,
+    verdict          TEXT,
+    reading_id       INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_device_telemetry_batch ON device_telemetry(batch_id, id);
+CREATE INDEX IF NOT EXISTS idx_device_telemetry_device ON device_telemetry(device_id, id);
+
 -- Add tables to supabase_realtime publication and configure full replica identity
 DO $$
 DECLARE

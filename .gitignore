@@ -65,6 +65,7 @@ hardware/transit_logs/*.jsonl
 hardware/transit_logs/*.meta.json
 hardware/transit_logs/outbox/
 hardware/transit_logs/chain_state.json
+hardware/transit_logs/device_link.json
 
 # ---------- Logs ----------
 *.log
