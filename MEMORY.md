@@ -80,14 +80,17 @@ AgriChain is a tamper-evident agricultural supply chain platform connecting phys
 - **Sensors & Pinout**:
   - `DHT11`: GPIO 4 (Microclimate & Magnus-Tetens dew point)
   - `MQ-135`: GPIO 34 / ADC1 (Two-variable hygrothermally compensated gas e-nose: $\text{CO}_2, \text{NH}_3$, alcohol, acetone)
-  - `SW-420`: GPIO 32 / IRQ (Sub-microsecond falling-edge transit shock counter, 25ms debounce)
-  - `LDR`: GPIO 35 / ADC1 (Optical lux & crate anti-tamper light breach detector)
-  - `NEO-6M GPS`: RX=GPIO 16, TX=GPIO 17 (TinyGPSPlus, 9600 baud, non-blocking)
-  - `LittleFS Flash`: Onboard offline ring-buffer (350 KB safe ceiling, 200 KB reserve guard)
-- **Edge Security**: Hardware-accelerated SHA-256 continuous hash chaining (`mbedtls/sha256.h`) producing 16-hex compact fingerprints.
+  - `SW-420`: GPIO 32 / IRQ (falling-edge impact counter; edges within 200 ms coalesced into one event; `shock_delta` per packet)
+  - `LDR`: GPIO 35 / ADC1 (Optical lux & crate anti-tamper; latches > ADC 2500, clears < 2200)
+  - `NEO-6M GPS`: RX=GPIO 16, TX=GPIO 17 (TinyGPSPlus, 9600 baud, non-blocking; GPS UTC sets the record clock)
+  - `LittleFS Flash`: two 175 KB log segments (350 KB ceiling, 200 KB reserve guard); rotation drops only the oldest segment
+- **Offline Sync (two-phase)**: `CMD:SYNC` only dumps; the host saves + fsyncs the dump, then `CMD:ACK:<n>` deletes exactly those records. Records carry `ts`/`ts_src`/`boot`/`up_ms` so offline timestamps are real (`CMD:TIME` from host, GPS UTC preferred).
+- **MQ-135**: divider-corrected (V_RL = 1.5 × V_pin, Vc = 5 V), eFuse-calibrated ADC; R0 must be calibrated in clean air (`--calibrate-r0`) before gas values (`gas_cal: true`) are forwarded to the backend.
+- **Edge Security**: SHA-256 chain over stored records (`hash = SHA256(prev | body)`, full 64-hex), verified on the host each sync (gaps vs tampering); head persists across reboots.
 - **Mission Control (`run_monitor.sh` / `hardware/monitor_live.py`)**:
-  - Live 1 Hz dashboard with settled bootloader handshake.
-  - Interactive hotkeys: `[P]` Pause/Resume, `[S]` Sync Flash, `[C]` Clear Flash, `[M]` Google Maps, `[B]` Cycle Produce Batch, `[Q]` Clean Quit.
+  - Live 1 Hz dashboard; connects without resetting the board; auto-reconnects on USB disconnect.
+  - Durable outbox (`hardware/transit_logs/outbox/`) retries `/telemetry/batch`; maps tamper to `TAMPER_OPENED` / `SHOCK_DETECTED` / `SEALED`.
+  - Interactive hotkeys: `[P]` Pause/Resume, `[S]` Sync Flash, `[C]` Clear Flash (press twice), `[M]` Google Maps, `[B]` Cycle Produce Batch, `[Q]` Clean Quit.
   - Terminal audio alerts (`\a` for impact shocks, `\a\a` for optical light breach).
 
 ---
