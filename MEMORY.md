@@ -19,7 +19,7 @@ AgriChain is a tamper-evident agricultural supply chain platform connecting phys
 [ Pre-Chain AI Trust Layer ]
   - Range, Rate-of-Change & Haversine Plausibility Checks
   - 11-D Time-Series Feature Engineering
-  - Isolation Forest ML Anomaly Detection (F1 = 0.9722, Latency ~1.8ms)
+  - Isolation Forest ML Anomaly Detection (F1 = 0.9722 on synthetic faults, Latency ~1.8ms)
   - Cryptographic Replay Detection & SHA-256 Fingerprinting
          │
          ├── [ VALID & READY_FOR_ORACLE ]
@@ -28,7 +28,7 @@ AgriChain is a tamper-evident agricultural supply chain platform connecting phys
          │   [ Modular Smart Contracts (Hardhat Port 8545 / Polygon Amoy) ]
          │     ├── ProductRegistry.sol (Metadata, IPFS CID Anchoring, Circuit Breaker)
          │     ├── CustodyTransfer.sol (Monotonic Lifecycle & Cumulative Price Trail)
-         │     ├── ColdChainMonitor.sol (Batched Writes — 52.71% Gas Reduction)
+         │     ├── ColdChainMonitor.sol (Batched Writes — 54.31% Gas Reduction at N=20)
          │     ├── PolicyConfig.sol (Crop Temperature / Humidity Thresholds)
          │     └── AccessControlRoles.sol (OpenZeppelin Role-Based Access Control)
          │
@@ -61,7 +61,7 @@ AgriChain is a tamper-evident agricultural supply chain platform connecting phys
 ### A. Smart Contracts (`contracts/`)
 - **Solidity Version**: `0.8.28` using OpenZeppelin `AccessControl` and `Pausable`.
 - **RBAC Roles**: `DEFAULT_ADMIN_ROLE`, `FARMER_ROLE`, `LOGISTICS_ROLE`, `RETAILER_ROLE`, `ORACLE_ROLE`.
-- **Condition Batching**: `ColdChainMonitor.recordConditionsBatch` delivers **52.71% gas reduction** at $N=20$.
+- **Condition Batching**: `ColdChainMonitor.recordConditionsBatch` reproduces **54.31% gas reduction** at $N=20$ (45.31% at N=5, 51.31% at N=10; re-run 2026-11-18). A single modular write costs 73.6k gas vs 28.7k for the monolithic `AgriChainCore`.
 - **Circuit Breaker**: Emergency pausing locks batch registration, custody transfer, and condition logging during security audits.
 - **Verification**: `npx hardhat test` (22/22 tests passing).
 
@@ -72,7 +72,7 @@ AgriChain is a tamper-evident agricultural supply chain platform connecting phys
 
 ### C. AI Trust Layer (`trust-layer/`)
 - **Pipeline**: Schema validation → Plausibility → Feature Extraction → Isolation Forest → Replay Check → Verdict Engine → IsoLog Quarantine.
-- **Metrics**: Accuracy 97.20%, Precision 96.30%, Recall 98.18%, F1-Score 0.9722 across 7 fault types (temperature spike, humidity spike, GPS jump, timestamp drift, replay, gap, composite).
+- **Metrics (reproduced 2026-11-18, default config, seed 42)**: Precision 94.59%, Recall 100%, F1 0.9722, **false-positive rate on normal data 40%** (35% at 20 sequences/fault). The earlier figures (P 96.30% / R 98.18%) are not reproducible. With the Isolation Forest disabled, F1 = 1.000 and FPR = 0%: the rules catch every synthetic fault and the IF only adds false positives. See `reports/CODEBASE_AUDIT_2026-11-18.md`.
 - **Verification**: `pytest trust-layer/tests/` (147/147 tests passing).
 
 ### D. Physical Hardware IoT Node (`hardware/test_pentad/`)
@@ -169,3 +169,18 @@ python scripts/test_full_ui_journey.py         # Full Farmer -> Logistics -> Dar
   4. End-to-end ingestion pipeline into `POST /telemetry` / `POST /telemetry/batch` with pre-validation persistence, Isolation Forest scoring, and on-chain batch anchoring.
   5. Exhaustive multi-tier stability and accuracy audit directive spanning Firmware, Host Serial Bridge, Backend/AI Trust, Smart Contracts, and Multi-Role UI.
   6. Non-negotiable engineering rules (integer paise, integer deci-°C, monotonic custody state machine, frontend style lock).
+
+---
+
+## 8. Codebase Audit (2026-11-18)
+
+- **Full report**: [`reports/CODEBASE_AUDIT_2026-11-18.md`](reports/CODEBASE_AUDIT_2026-11-18.md). It covers 22/22 contract tests, 147/147 trust-layer tests, the frontend build, and the 10-phase capstone script (passes on an isolated stack).
+- **Critical open defects**:
+  - no backend authentication (passwordless login, unchecked tokens, open CORS) while one relayer key holds every on-chain role;
+  - the consumer price trail synthesizes rates and markups when data is missing or non-monotonic.
+- **High open defects**:
+  - Isolation Forest false positives (35–40%) permanently block custody through the circuit breaker;
+  - the IPFS fallback "CID" is not a real CID;
+  - the `readings` audit table drops device, timestamp, location, VOC and tamper;
+  - failed batch anchoring is not retried.
+- **Testing rule**: the repo `.env` targets Supabase and a live chain, so test only on isolated copies (report §6).

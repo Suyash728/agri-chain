@@ -11,7 +11,8 @@ Entry point for AI coding agents. Read this file and `MEMORY.md` before touching
 2. `PRD.md` — Core problem, requirements, actor model, and success criteria.
 3. `ARCHITECTURE.md` — 5-tier architecture, contract modularity, database, and API contracts.
 4. `RULES.md` — Hard constraints on stack, money representation, and data shapes.
-5. `TASKS.md` — Task checklist with exact `DONE WHEN` verification commands.
+5. `CLAUDE.md` — Current engineering focus (ESP32 edge node), wire protocol, and audit directive.
+6. `reports/CODEBASE_AUDIT_2026-11-18.md` — Verified test results, reproduced metrics, and open defects.
 
 ## 2. Frontend Constraints (`frontend/`)
 - **Wire, never recreate**: `frontend/` is a finished React 18 + Tailwind app. Do not install UI libraries, routers, or state managers.
@@ -24,6 +25,7 @@ Entry point for AI coding agents. Read this file and `MEMORY.md` before touching
 - **State transitions**: Custody is strictly forward-only: `REGISTERED → IN_TRANSIT → IN_STORAGE → AT_RETAIL → SOLD`.
 
 ## 4. Execution Discipline
-- **One task at a time**: Complete one task from `TASKS.md` and execute its `DONE WHEN` check before advancing.
+- **One task at a time**: Finish and verify one change before starting the next.
 - **Verify before claiming success**: Run tests (`pytest trust-layer/tests/`, `npx hardhat test`) to prove changes work.
+- **Never test against the real `.env`**: it points the backend at Supabase (`DATABASE_URL`) and a chain (`RPC_URL` + `PRIVATE_KEY`). Run `pytest` with `SQLITE_DB_PATH=<copy>`, and run the backend from a scratch copy (see the audit report §6).
 - **Commit format**: `[scope] description` (e.g., `[contracts] add circuit breaker`, `[backend] fix telemetry route`). Never commit `.env`, `node_modules/`, `.venv/`, or `.db`.

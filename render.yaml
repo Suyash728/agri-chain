@@ -1,0 +1,52 @@
+# Render Blueprint: FastAPI backend + AI Trust Layer on the free plan.
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo. Fill the `sync: false`
+# values when prompted. See DEPLOYMENT.md for the full walkthrough.
+services:
+  - type: web
+    name: agrichain-api
+    runtime: python
+    plan: free
+    region: singapore            # closest Render region to Supabase ap-south-1 (Mumbai)
+    branch: main
+    buildCommand: pip install -r backend/requirements.txt -r trust-layer/requirements.txt
+    # Start uvicorn directly: run.py would seed (TRUNCATE) the database on every boot.
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.14.0"
+      - key: APP_ENV
+        value: production
+      - key: DEMO_MODE
+        value: "false"           # set "true" only for a supervised public demo (opens /demo/* and Admin writes)
+      # --- secrets / per-deployment values (entered in the dashboard) ---
+      - key: ALLOWED_ORIGINS     # e.g. https://agrichain.vercel.app
+        sync: false
+      - key: ALLOWED_ORIGIN_REGEX  # optional, e.g. ^https://agrichain-[a-z0-9-]+-you\.vercel\.app$ for previews
+        sync: false
+      - key: DATABASE_URL        # Supabase *pooler* URI (Render has no IPv6 route to the direct host)
+        sync: false
+      - key: PRIVATE_KEY         # dedicated Amoy relayer key holding the contract roles; never Hardhat #0
+        sync: false
+      - key: PINATA_JWT          # without it documents only get a local, non-IPFS content hash
+        sync: false
+      - key: PRODUCT_REGISTRY_ADDRESS
+        sync: false
+      - key: CUSTODY_TRANSFER_ADDRESS
+        sync: false
+      - key: COLD_CHAIN_MONITOR_ADDRESS
+        sync: false
+      - key: POLICY_CONFIG_ADDRESS
+        sync: false
+      - key: ADMIN_API_TOKEN     # header X-Admin-Token for reset/seed/admin writes
+        generateValue: true
+      - key: DEVICE_API_KEY      # header X-Device-Key for POST /telemetry(/batch) from the ESP32 bridge
+        generateValue: true
+      # --- network ---
+      - key: RPC_URL
+        value: https://rpc-amoy.polygon.technology
+      - key: MIN_PRIORITY_FEE_GWEI
+        value: "30"
+      - key: TX_RECEIPT_TIMEOUT
+        value: "90"

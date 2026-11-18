@@ -42,7 +42,9 @@ from rich.text import Text
 
 DEFAULT_PORT = '/dev/ttyUSB0'
 BAUD = 115200
-DEFAULT_BACKEND = 'http://localhost:8000'
+DEFAULT_BACKEND = os.environ.get('AGRICHAIN_BACKEND_URL', 'http://localhost:8000')
+# Sent as X-Device-Key; required when the backend runs with APP_ENV=production.
+DEVICE_KEY = os.environ.get('AGRICHAIN_DEVICE_KEY')
 DEVICE_ID = 'ESP32-PENTAD-01'
 TRANSIT_LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'transit_logs')
 OUTBOX_DIR = os.path.join(TRANSIT_LOG_DIR, 'outbox')
@@ -484,8 +486,10 @@ def outbox_files():
 
 
 def post_json(url, payload, timeout):
-    req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"),
-                                 headers={"Content-Type": "application/json"})
+    headers = {"Content-Type": "application/json"}
+    if DEVICE_KEY:
+        headers["X-Device-Key"] = DEVICE_KEY
+    req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
@@ -525,7 +529,13 @@ def backend_worker(backend_url, telemetry_queue, backend_state, events, stop_eve
                            f"{resp.get('quarantined_count', 0)} quarantined of {len(chunk)} "
                            f"(TX: {tx[:16]}) — {len(rest)} left in {os.path.basename(path)}")
             except urllib.error.HTTPError as e:
-                if 400 <= e.code < 500:
+                if e.code in (401, 403, 503):
+                    # Auth/config problem (missing or wrong device key), not bad data: keep and retry.
+                    backend_state.update(online=False, verdict="OFFLINE")
+                    next_outbox_try = time.time() + OUTBOX_RETRY_S
+                    events.put(f"🔑 [OUTBOX] Backend refused upload (HTTP {e.code}) — check --device-key / "
+                               f"AGRICHAIN_DEVICE_KEY; {len(readings)} readings kept, retrying")
+                elif 400 <= e.code < 500:
                     # The backend will never accept this payload; retrying would block the queue forever.
                     os.replace(path, path + ".rejected")
                     events.put(f"❌ [OUTBOX] Backend rejected {os.path.basename(path)} (HTTP {e.code}); "
@@ -844,9 +854,13 @@ def run_calibration(link, reset=False):
 # MAIN
 # ==============================================================================
 def main():
+    global DEVICE_KEY
     parser = argparse.ArgumentParser(description="AgriChain Real-Time Telemetry Monitor")
     parser.add_argument("--port", default=DEFAULT_PORT, help=f"Serial port (default {DEFAULT_PORT})")
-    parser.add_argument("--backend", default=DEFAULT_BACKEND, help=f"FastAPI base URL (default {DEFAULT_BACKEND})")
+    parser.add_argument("--backend", default=DEFAULT_BACKEND,
+                        help=f"FastAPI base URL (default {DEFAULT_BACKEND}; env AGRICHAIN_BACKEND_URL)")
+    parser.add_argument("--device-key", default=DEVICE_KEY,
+                        help="X-Device-Key for a production backend (env AGRICHAIN_DEVICE_KEY)")
     parser.add_argument("--clear", action="store_true", help="Delete onboard LittleFS records WITHOUT downloading them")
     parser.add_argument("--skip-sync", action="store_true", help="Skip offline download and start dashboard immediately")
     parser.add_argument("--batch", type=str, default="BAT-MGO-701", help="Default active produce lot ID")
@@ -854,6 +868,8 @@ def main():
                         help="Calibrate MQ-135 R0 in clean air (sensor pre-heated), store it on the device, and exit")
     parser.add_argument("--reset-r0", action="store_true", help="Erase the stored MQ-135 calibration and exit")
     args = parser.parse_args()
+    DEVICE_KEY = args.device_key
+    args.backend = args.backend.rstrip("/")
 
     batch_idx = next((i for i, b in enumerate(BATCH_PRESETS) if b["batch_id"] == args.batch), 0)
 

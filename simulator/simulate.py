@@ -57,9 +57,10 @@ FAULT_MAP = {
 def send_telemetry(endpoint: str, payload: dict) -> dict:
     """Send a single telemetry JSON payload via HTTP POST."""
     data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        endpoint, data=data, headers={"Content-Type": "application/json"}
-    )
+    headers = {"Content-Type": "application/json"}
+    if os.environ.get("AGRICHAIN_DEVICE_KEY"):  # required by a production backend
+        headers["X-Device-Key"] = os.environ["AGRICHAIN_DEVICE_KEY"]
+    req = urllib.request.Request(endpoint, data=data, headers=headers)
     with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read().decode("utf-8"))
 

@@ -26,7 +26,7 @@ AgriChain bridges physical hardware IoT telemetry to an on-chain EVM blockchain 
    - Physical Bounds, Range & Plausibility Validation
    - Haversine Velocity Checks & Rate-of-Change Boundaries
    - 11-D Time-Series Feature Engineering
-   - Isolation Forest ML Anomaly Detection (F1 = 0.9722, Latency ~1.8ms)
+   - Isolation Forest ML Anomaly Detection (F1 = 0.9722 on synthetic faults; see audit report — IF currently adds only false positives)
    - Cryptographic Replay Detection & SHA-256 Fingerprint Matching
          │
          ├── [ VALID & READY_FOR_ORACLE ]
@@ -35,7 +35,7 @@ AgriChain bridges physical hardware IoT telemetry to an on-chain EVM blockchain 
          │   [ Modular Smart Contracts (Hardhat Port 8545 / Polygon Amoy) ]
          │     ├── ProductRegistry.sol (Metadata, IPFS CID Anchoring, Circuit Breaker)
          │     ├── CustodyTransfer.sol (Monotonic Lifecycle & Cumulative Price Trail)
-         │     ├── ColdChainMonitor.sol (Batched Writes — 52.71% Gas Reduction)
+         │     ├── ColdChainMonitor.sol (Batched Writes — 54.31% Gas Reduction at N=20)
          │     ├── PolicyConfig.sol (Crop Temperature / Humidity Thresholds)
          │     └── AccessControlRoles.sol (OpenZeppelin Role-Based Access Control)
          │
@@ -154,32 +154,36 @@ The host Python script connects to `/dev/ttyUSB0` at 115200 baud and orchestrate
 
 Claude Code, you are instructed to perform a rigorous, multi-tiered stability and accuracy audit across every layer of the AgriChain codebase. Use the following checklist to guide your inspections and improvements:
 
+> **Status as of 2026-11-18.** Results, reproductions and open defects are in [`reports/CODEBASE_AUDIT_2026-11-18.md`](reports/CODEBASE_AUDIT_2026-11-18.md). Legend: `[x]` verified, `[!]` checked and defective (see report), `[ ]` not yet audited.
+
 ### Audit Tier 1: Embedded Firmware (`hardware/test_pentad/src/main.cpp`)
-- [ ] **Watchdog & Timing Stability**: Verify that no blocking calls (`delay()`) stall the main execution loop. Ensure TinyGPSPlus character encoding happens on every loop iteration to prevent serial FIFO buffer overruns.
-- [ ] **ADC Calibration & Noise**: Check if analog averaging (16x oversampling) is sufficient. Verify voltage conversion math for 12-bit ADC (`4095.0f`) with 11dB attenuation.
-- [ ] **LittleFS Reliability & Wear Leveling**: Inspect `initStorage()`, `appendStorageRecord()`, and `dumpStorageRecords()`. Ensure that file handles are always cleanly closed, even during power loss. Check that `saveRecordCount()` does not cause excessive flash sector wear.
-- [ ] **Serial Protocol Robustness**: Audit `checkIncomingSerial()` and `executeCommand()`. Ensure buffer overflow protection on command strings and clean string termination.
+- [x] **Watchdog & Timing Stability**: no blocking LED delay, GPS pumped every loop and during dumps; ADC sampling blocks ~20 ms per channel per cycle, which the UART driver buffer absorbs.
+- [x] **ADC Calibration & Noise**: `analogReadMilliVolts()` (eFuse-calibrated), 32 samples over one mains period, MQ-135 divider math corrected, `gas_sat` at the ~3.1 V ceiling.
+- [x] **LittleFS Reliability & Wear Leveling**: count file removed (boot scan instead), torn lines repaired, no implicit format, two-segment rotation, acked deletes.
+- [x] **Serial Protocol Robustness**: fixed 128-char command buffer; overlong lines discarded whole.
 
 ### Audit Tier 2: Host Serial Bridge (`hardware/monitor_live.py`)
-- [ ] **Serial Port Exception Handling**: Ensure the serial connection handles abrupt physical disconnects, reconnects, and permission errors (`/dev/ttyUSB0`) gracefully without unhandled tracebacks.
-- [ ] **Thread Safety**: Audit `telemetry_queue`, `cmd_queue`, and `backend_state`. Ensure that GUI updates in `with Live(...)` never block on network requests to FastAPI.
-- [ ] **Batch Forwarding Parity**: Verify that records synced from flash are mapped into the exact schema expected by `POST /telemetry/batch` in `backend/routers/telemetry.py`.
+- [x] **Serial Port Exception Handling**: reconnect loop and permission/missing-device diagnostics. *Physical unplug/replug not yet tested on hardware.*
+- [x] **Thread Safety**: all backend I/O on one worker thread; UI thread never blocks on HTTP (a manual `[S]` sync blocks the UI for the dump duration by design).
+- [x] **Batch Forwarding Parity**: payloads validated against `TelemetryBatchRequest`; tamper mapped to `TAMPER_OPENED`/`SHOCK_DETECTED`/`SEALED`.
 
 ### Audit Tier 3: FastAPI Backend & AI Trust Layer (`backend/`, `trust-layer/`)
-- [ ] **Pre-Validation Persistence Rule**: Verify that every reading sent to `POST /telemetry` or `POST /telemetry/batch` is written to the `readings` table with status `'PENDING'` *before* AI validation executes (RULES.md §3).
-- [ ] **Isolation Forest Model Health**: Verify that `trust-layer/` models load reliably, handle cold-start conditions gracefully, and accurately detect all 7 simulated fault categories (temp spike, humidity spike, GPS teleportation, timestamp drift, replay attack, gap, composite).
-- [ ] **Database Concurrency**: Check that SQLite connection handling (`check_same_thread=False` and WAL mode) does not suffer from database lock contention when rapid 1 Hz batches arrive.
-- [ ] **Dual-Storage Reliability**: Verify that Supabase PostgreSQL connection falls back smoothly to local SQLite if internet access drops.
+- [!] **Pre-Validation Persistence Rule**: a PENDING row is written first, but `readings` keeps only batch/temp/humidity, so device, timestamp, location, VOC and tamper are lost (report #6).
+- [!] **Isolation Forest Model Health**: F1 0.9722 reproduces, but normal-data FPR is 35–40%; with the IF disabled F1 = 1.0 / FPR = 0, and real device data is flagged ~100% (report §2).
+- [ ] **Database Concurrency**: not yet audited.
+- [ ] **Dual-Storage Reliability**: not yet audited.
+- [!] **Authentication**: none. Login is passwordless, tokens are never checked, and CORS allows any origin (report #1–2).
 
 ### Audit Tier 4: Smart Contracts (`contracts/`)
-- [ ] **Strict Integer Representation**: Confirm that prices are strictly integer paise (`uint256 pricePaise`) and temperatures are strictly integer deci-celsius (`int256 tempDeciC`). Confirm no floating-point math exists anywhere on-chain (RULES.md §2).
-- [ ] **Monotonic Custody State Machine**: Verify `CustodyTransfer.sol` enforces forward-only progression (`REGISTERED → IN_TRANSIT → IN_STORAGE → AT_RETAIL → SOLD`) and blocks backward transitions.
-- [ ] **Pausable Circuit Breakers**: Ensure emergency pause mechanisms lock mutations while preserving read-only queries during security audits.
-- [ ] **Gas Efficiency**: Verify that `ColdChainMonitor.recordConditionsBatch` executes within expected gas limits (benchmark target: >50% savings over individual writes).
+- [x] **Strict Integer Representation**: integers on-chain. *Caveat: silent `int64`/`uint32` narrowing in `ColdChainMonitor` (report #11). Off-chain, the traceability price trail uses float rupees and synthesized prices (report #3).*
+- [x] **Monotonic Custody State Machine**: backward and identical transitions revert (tested). *Caveats: stage skipping is allowed, there's no current-holder check, and `cumulativePricePaise` is overwritten (report #12).*
+- [x] **Pausable Circuit Breakers**: tested for ProductRegistry, ColdChainMonitor and CustodyTransfer.
+- [x] **Gas Efficiency**: reproduced 45.31% / 51.31% / **54.31%** savings at N = 5 / 10 / 20. A single modular write costs 73.6k gas vs 28.7k monolithic.
 
 ### Audit Tier 5: Multi-Role React Frontend (`frontend/`)
-- [ ] **Style Lock & Zero Library Additions**: Do not add Redux, Zustand, React Router, or modify Tailwind palettes (RULES.md §1 & §6).
-- [ ] **Live UI Feedback for Physical Breaches**: Ensure that when the ESP32 reports a shock (`shocks > 0`) or an optical tamper (`tamper_status == 'TAMPERED'`), the Logistics transit dashboard, Dark Store GRN gate, and Consumer provenance views display immediate visual warning badges.
+- [x] **Style Lock & Zero Library Additions**: no changes made; the production build succeeds.
+- [ ] **Live UI Feedback for Physical Breaches**: not yet verified. The backend's tamper values are `TAMPER_OPENED` / `SHOCK_DETECTED` (reason codes `CRATE_TAMPER_DETECTED` / `TRANSIT_MECHANICAL_SHOCK_DETECTED`), not `TAMPERED`.
+- [!] **Static and random values shown as live**: hard-coded revenue and expiry totals, and `Math.random()` "hashes" (report #15).
 
 ---
 
@@ -235,15 +239,19 @@ pio run -d hardware/test_pentad -t upload --upload-port /dev/ttyUSB0
 
 ### 8.3 Subsystem Test Suites
 ```bash
-# 1. Smart Contract Test Suite (22 passing)
+# 1. Smart Contract Test Suite (22 passing; in-process Hardhat network, safe)
 cd contracts && npx hardhat test
 
-# 2. AI Trust Layer Test Suite (147 passing)
-.venv/bin/pytest trust-layer/tests/
+# 2. AI Trust Layer Test Suite (147 passing). It writes to the DB and rewrites
+#    trust-layer/reports/figures/benchmark_summary.*, so point it at a copy:
+cp backend/agrichain.db /tmp/tl.db && SQLITE_DB_PATH=/tmp/tl.db .venv/bin/pytest trust-layer/tests/
 
-# 3. Full 10-Phase Capstone System Verification
+# 3. Full 10-Phase Capstone System Verification (needs a running backend on :8000)
 .venv/bin/python backend/scripts/verify_final_system.py
 ```
+
+> [!WARNING]
+> The repo `.env` sets `DATABASE_URL` (Supabase) and `RPC_URL` + `PRIVATE_KEY`. Starting the backend or running the capstone script with it writes to the cloud DB and the configured chain. For testing, use the isolated recipe in `reports/CODEBASE_AUDIT_2026-11-18.md` §6.
 
 ---
 
