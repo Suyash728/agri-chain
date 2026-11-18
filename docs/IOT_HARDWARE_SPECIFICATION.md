@@ -102,7 +102,7 @@ $$\frac{dT}{dt} \approx \frac{\Delta T}{\Delta t} = \frac{T_\infty - T(t)}{\tau_
                   | [GPIO 16] <--- NEO-6M GPS TX (UART2 RX)
                   | [GPIO 17] ---> NEO-6M GPS RX (UART2 TX)
                   | [GPIO 25] ---> Low-Side N-MOSFET Gate (Peripheral Power Switch)
-                  | [GPIO 27] <--- SW-420 Vibration DO (Hardware Interrupt, FALLING)
+                  | [GPIO 32] <--- SW-420 Vibration DO (Hardware Interrupt, FALLING)
                   | [GPIO 34] <--- MQ-135 AOUT (via 10k/20k Voltage Divider from 5V)
                   | [GPIO 35] <--- GL5528 LDR Optical Tamper (with 10k pull-down to GND)
                   +----------------------------------------------+
@@ -117,7 +117,7 @@ $$\frac{dT}{dt} \approx \frac{\Delta T}{\Delta t} = \frac{T_\infty - T(t)}{\tau_
 | **Temperature/RH** | DHT22 Data | GPIO 4 | $+3.3\text{V}$ Logic | $4.7\text{k}\Omega$ pull-up resistor to 3.3V. |
 | **Air Quality Gas** | MQ-135 AOUT | GPIO 34 (ADC1_CH6) | $+5.0\text{V}$ Heater | Route AOUT through $10\text{k}\Omega$ (series) / $20\text{k}\Omega$ (shunt to GND) divider (gain = 1.5, scales 5V to 3.33V). |
 | **Satellite GPS** | NEO-6M TX / RX | GPIO 16 (RX2) / GPIO 17 (TX2) | $+3.3\text{V}$ Logic | Cross-connected directly (3.3V CMOS UART TTL at 9600 baud). |
-| **Transit Shock** | SW-420 DO | GPIO 27 (EXT ISR) | $+3.3\text{V}$ Logic | Configured as `INPUT_PULLUP` with falling-edge interrupt and 25ms debounce. |
+| **Transit Shock** | SW-420 DO | GPIO 32 (EXT ISR) | $+3.3\text{V}$ Logic | Configured as `INPUT_PULLUP` with falling-edge interrupt; edges within 200 ms are coalesced into one impact event. |
 | **Optical Tamper** | GL5528 LDR | GPIO 35 (ADC1_CH7) | $+3.3\text{V}$ Logic | $10\text{k}\Omega$ pull-down resistor to GND. Sealed crate ($<1\text{ lux}$) reads low; lid opened ($>150\text{ lux}$) latches breach. |
 
 > [!CAUTION]

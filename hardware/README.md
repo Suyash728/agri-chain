@@ -13,7 +13,7 @@
 | **DHT22 (AM2302)** | Precision temperature & humidity | ₹179.36 | ElectronicsComp | GPIO 4 (4.7kΩ pull-up to 3.3V) |
 | **MQ-135 Gas Sensor** | Ethylene / VOC / spoilage detection | ₹119.00 | Robu.in | GPIO 34 (ADC1_CH6 via 10k/20k divider) |
 | **u-blox NEO-6M GPS** | Real-time highway coordinates | ₹232.46 | ElectronicsComp | UART2: GPIO 16 (RX2) / GPIO 17 (TX2) |
-| **SW-420 Vibration** | Transit shock & rough handling | ₹211.22 | ElectronicsComp | GPIO 27 (External Interrupt, FALLING) |
+| **SW-420 Vibration** | Transit shock & rough handling | ₹211.22 | ElectronicsComp | GPIO 32 (External Interrupt, FALLING) |
 | **GL5528 CdS LDR** | Optical lid-open tamper latch | ₹15.00 | Local / Robu | GPIO 35 (ADC1_CH7 with 10kΩ pull-down) |
 | **LG INR18650 Li-Ion** | 2600mAh primary energy storage | ₹387.00 | Robu.in | 3.7V / 9.62 Wh |
 | **TP4056 + DW01A** | Type-C 1A battery charge & BMS | ₹18.88 | ElectronicsComp | Li-Ion Management |
@@ -36,7 +36,7 @@
                   | [GPIO 16] <--- NEO-6M GPS TX (UART2 RX)
                   | [GPIO 17] ---> NEO-6M GPS RX (UART2 TX)
                   | [GPIO 25] ---> Low-Side N-MOSFET Gate (Peripheral Power Switch)
-                  | [GPIO 27] <--- SW-420 Vibration DO (Hardware Interrupt, FALLING)
+                  | [GPIO 32] <--- SW-420 Vibration DO (Hardware Interrupt, FALLING)
                   | [GPIO 34] <--- MQ-135 AOUT (via 10k/20k Voltage Divider from 5V)
                   | [GPIO 35] <--- GL5528 LDR Optical Tamper (with 10k pull-down to GND)
                   +----------------------------------------------+
@@ -46,8 +46,22 @@
 
 ## 3. Firmware Flashing (PlatformIO)
 
-The edge firmware is located in [`hardware/esp32_firmware/src/main.cpp`](esp32_firmware/src/main.cpp).
+There are two firmwares; they share the pinout above.
 
+| Firmware | Transport | Offline buffer | Status |
+| :--- | :--- | :--- | :--- |
+| [`test_pentad/`](test_pentad/src/main.cpp) | USB serial to `monitor_live.py` | Two 175 KB LittleFS segments with **two-phase sync** (`CMD:SYNC` → host saves → `CMD:ACK:<n>`), SHA-256 chain, device clock | **Active.** See CLAUDE.md §4.4 for the wire protocol. |
+| [`esp32_firmware/`](esp32_firmware/src/main.cpp) | Wi-Fi HTTP POST to `/telemetry` | 10-slot `/offline_queue.txt` | Standalone Wi-Fi variant. Credentials are compiled into the source. |
+
+### 3a. Active node (`test_pentad`) + Mission Control
+```bash
+.venv/bin/pio run -d hardware/test_pentad -t upload --upload-port /dev/ttyUSB0
+./run_monitor.sh                                  # sync flash, then live dashboard
+.venv/bin/python hardware/monitor_live.py --calibrate-r0   # MQ-135 clean-air calibration (once)
+```
+Synced dumps are saved in `hardware/transit_logs/` (raw lines + `.meta.json`), and upload to the backend is queued in `hardware/transit_logs/outbox/`.
+
+### 3b. Wi-Fi variant (`esp32_firmware`)
 1. Open `hardware/esp32_firmware/` in VS Code with PlatformIO.
 2. In `src/main.cpp`, update mobile hotspot credentials and target FastAPI backend server IP:
    ```cpp
