@@ -74,11 +74,11 @@ The physical node is built on an **ESP32 DevKit v1 (30-pin, ESP-WROOM-32)**:
 | :--- | :--- | :--- | :--- | :--- |
 | **Microclimate** | DHT11 / DHT22 | `GPIO 4` | Digital 1-Wire | Requires $4.7\text{k}\Omega$ pull-up to 3.3V rail. Measures Temp (°C) and Humidity (% RH). |
 | **Gas E-Nose (Rot/VOC)** | MQ-135 | `GPIO 34` | Analog (ADC1_CH6) | **Strict ADC1 rule.** Heater powered by 5V rail. Analog out routed through a $10\text{k}\Omega$ series / $20\text{k}\Omega$ shunt voltage divider (gain = 1.5, scaling 5.0V to 3.33V). |
-| **Mechanical Shock** | SW-420 | `GPIO 32` | Digital IRQ | Configured with `INPUT_PULLUP`, attached to hardware falling-edge interrupt (`onShockISR`) with a 25ms debounce latch. |
-| **Optical Anti-Tamper**| GL5528 CdS LDR | `GPIO 35` | Analog (ADC1_CH7) | **Strict ADC1 rule.** $10\text{k}\Omega$ pull-down resistor to GND. Sealed crate ($<1\text{ lux}$) reads near 0V; opened lid ($>150\text{ lux}$) signals crate breach. |
+| **Mechanical Shock** | SW-420 | `GPIO 32` | Digital IRQ | Configured with `INPUT_PULLUP`, attached to hardware falling-edge interrupt (`onShockISR`). Edges within 200 ms of each other are coalesced into one impact event (contact chatter). Sensitivity is set by the module's trim pot. |
+| **Optical Anti-Tamper**| GL5528 CdS LDR | `GPIO 35` | Analog (ADC1_CH7) | **Strict ADC1 rule.** $10\text{k}\Omega$ pull-down resistor to GND. Sealed crate ($<1\text{ lux}$) reads near 0V; opened lid ($>150\text{ lux}$) signals crate breach. Tamper latches above ADC 2500 and clears below 2200 (hysteresis). |
 | **Highway Geolocation**| u-blox NEO-6M GPS | `GPIO 16` (RX2)<br>`GPIO 17` (TX2) | Hardware UART2 | 9600 baud, 8N1. Non-blocking stream ingestion via TinyGPSPlus. ESP32 RX2 connects to GPS TX; TX2 connects to GPS RX. |
-| **Offline Storage** | Winbond SPI Flash | Onboard SPI | LittleFS | 1.4 MB dedicated filesystem partition (`/agrichain_log.jsonl` and `/agrichain_count.bin`). |
-| **Edge Crypto Engine** | Hardware mbedTLS | Silicon | SHA-256 Engine | Sub-millisecond continuous hash-chain calculation producing 16-hex compact fingerprints. |
+| **Offline Storage** | Winbond SPI Flash | Onboard SPI | LittleFS | 1.4 MB filesystem partition: `/agrichain_log.jsonl` + `/agrichain_log.old.jsonl` (log segments), `/agrichain_boot.bin` (boot counter), `/agrichain_chain.bin` (chain head when log is empty), `/agrichain_cal.bin` (MQ-135 R0). |
+| **Edge Crypto Engine** | Hardware mbedTLS | Silicon | SHA-256 Engine | Hash chain over stored records; every packet carries the full 64-hex hash plus a 16-hex `prev` hint. |
 | **Status Beacon** | Onboard LED | `GPIO 2` | Digital Out | Pulses on physical impact shocks or optical tamper breach. |
 
 > [!CAUTION]
@@ -98,14 +98,19 @@ $$\text{Condensation Margin} = T_{\text{surface}} - T_{\text{dew}}$$
 ### 4.2 Hygrothermally Compensated Gas Sensing (MQ-135)
 Chemiresistive $\text{SnO}_2$ sensors drift significantly with ambient temperature and humidity. To prevent false spoilage alarms, firmware applies a two-variable polynomial compensation factor:
 $$C_{\text{th}}(T, H) = (1.385 - 0.0152T + 0.00011T^2) \times (1.133 - 0.00205H)$$
-$$R_s = R_L \times \left(\frac{3.3 - V_{\text{RL}}}{V_{\text{RL}}}\right), \quad \text{Ratio} = \frac{R_s}{R_0 \times C_{\text{th}}(T, H)}$$
-$$\text{CO}_2\text{ ppm} = 110.47 \times (\text{Ratio})^{-2.862}, \quad \text{NH}_3\text{ ppm} = 102.20 \times (\text{Ratio})^{-2.473}$$
+$$V_{\text{RL}} = 1.5 \times V_{\text{pin}}, \quad R_s = R_L \times \left(\frac{5.0 - V_{\text{RL}}}{V_{\text{RL}}}\right), \quad \text{Ratio} = \frac{R_s}{R_0 \times C_{\text{th}}(T, H)}$$
+$$\text{CO}_2\text{ ppm} = 400 + 110.47 \times (\text{Ratio})^{-2.862}, \quad \text{NH}_3\text{ ppm} = 102.20 \times (\text{Ratio})^{-2.473}$$
 $$\text{Ethanol/Alcohol ppm} = 77.255 \times (\text{Ratio})^{-3.180}$$
+- $V_{\text{pin}}$ comes from `analogReadMilliVolts()` (eFuse-calibrated), averaged over 32 samples spanning 20 ms (one 50 Hz mains period). Readings at the ~3.1 V ADC ceiling set `gas_sat`.
+- MQ-135 cannot measure absolute CO₂, so CO₂ is reported as ambient 400 ppm plus the curve's excess.
+- **R0 calibration**: `CMD:CAL_R0` (or `monitor_live.py --calibrate-r0`) sets $R_0 = \overline{R_s/C_{\text{th}}} / 3.6$ in clean air after warm-up and stores it in flash; `CMD:CAL_R0:<kΩ>` restores a known value; `CMD:CAL_R0:RESET` erases it. Packets carry `gas_cal`, and the host forwards `freshness_voc_ppm` (alcohol ppm) only when `gas_cal` is true. $R_L$'s exact value cancels out of the ratio once R0 is calibrated with the same formula.
 
 ### 4.3 Hardware SHA-256 Hash Chaining
-To prevent telemetry tampering or injection between edge sampling and host transmission, the firmware maintains a continuous cryptographic hash chain:
-$$h_i = \text{SHA-256}\left(h_{i-1} \parallel \text{cycle} \parallel T \parallel H \parallel V_{\text{gas}} \parallel \text{shocks} \parallel \text{lux}\right)$$
-The first 16 characters of $h_i$ are transmitted as a compact fingerprint in every packet and stored in LittleFS.
+Only **stored** records extend the chain, so every synced record can be re-verified on the host:
+$$h_i = \text{SHA-256}\left(h_{i-1} \parallel \texttt{"|"} \parallel \text{body}_i\right)$$
+where $\text{body}_i$ is the record's exact JSON text up to (not including) the trailing `,"prev":"<16 hex>","hash":"<64 hex>"}`. The genesis value is SHA-256 of the empty string. Live packets carry the hash they would have if stored. The head is recovered at boot from the last stored record (or `/agrichain_chain.bin` when the log is empty), so the chain continues across reboots and syncs.
+- **Host verification** (`verify_chain` in `monitor_live.py`): dumps are saved byte-for-byte; the last verified head is kept in `hardware/transit_logs/chain_state.json`. Each sync reports verified records, the start anchor (`previous_sync` / `genesis` / `unanchored`), **gaps** (records removed on the device) and **tampered** records (hash doesn't recompute).
+- **Limit**: the chain is unkeyed, so it detects corruption, edits and deletions by anyone who doesn't recompute the chain. It is not a device signature; that would need an HMAC key in eFuse/NVS.
 
 ### 4.4 LittleFS Ring Buffer & Wire Protocol
 - **Storage Boundaries**: Two 175 KB segments (`/agrichain_log.jsonl` current, `/agrichain_log.old.jsonl` previous) = 350 KB ceiling, with a 200 KB free-space reserve guard. Rotation drops only the oldest segment; the filesystem is never silently formatted (a failed mount prints `STORAGE_ERROR:MOUNT_FAILED_REFORMATTING`). Record counts are recovered by scanning the log at boot (no count file); a boot counter lives in `/agrichain_boot.bin`.

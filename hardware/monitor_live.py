@@ -15,8 +15,10 @@ Features:
 """
 import sys
 import os
+import re
 import time
 import json
+import hashlib
 import argparse
 import select
 import termios
@@ -44,6 +46,10 @@ DEFAULT_BACKEND = 'http://localhost:8000'
 DEVICE_ID = 'ESP32-PENTAD-01'
 TRANSIT_LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'transit_logs')
 OUTBOX_DIR = os.path.join(TRANSIT_LOG_DIR, 'outbox')
+CHAIN_STATE_PATH = os.path.join(TRANSIT_LOG_DIR, 'chain_state.json')
+CHAIN_GENESIS = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+# Firmware record framing: <body>,"prev":"<16 hex>","hash":"<64 hex>"}   with hash = SHA256(prev_full | body)
+CHAIN_RE = re.compile(r'^(\{.*),"prev":"([0-9a-f]{16})","hash":"([0-9a-f]{64})"\}$')
 MIN_VALID_EPOCH = 1704067200          # 2024-01-01T00:00:00Z; device ts below this means "clock not set"
 LDR_TAMPER_ADC = 2500                 # fallback for records from firmware without the "tamper" field
 BATCH_CHUNK = 25                      # readings per POST /telemetry/batch request
@@ -153,6 +159,88 @@ def build_batch_readings(records, batch_info, anchor):
             last_fix = (rec.get("lat"), rec.get("lon"))
         prev_shocks = rec.get("shocks", prev_shocks)
     return readings
+
+
+# ==============================================================================
+# HASH-CHAIN VERIFICATION (raw record lines, exactly as stored on the device)
+# ==============================================================================
+def chain_link(prev_full_hex, body):
+    return hashlib.sha256(f"{prev_full_hex}|{body}".encode("utf-8")).hexdigest()
+
+
+def verify_chain(raw_lines, start_head=None):
+    """Recompute the device's SHA-256 chain over synced records (oldest first).
+
+    The first chained record is verified against `start_head` (the last hash this host saw from
+    the device) or the genesis value. A later record whose `prev` does not match its predecessor
+    is a *gap* (records removed on-device, e.g. CLEAR or rotation); a record whose `prev` matches
+    but whose hash does not recompute is *tampered* (content changed after it was written).
+    """
+    res = {"total": len(raw_lines), "verified": 0, "legacy": 0, "gaps": [], "tampered": [],
+           "start": "none", "last_head": None}
+    prev = None
+    for i, raw in enumerate(raw_lines):
+        m = CHAIN_RE.match(raw)
+        if not m:
+            res["legacy"] += 1
+            prev = None
+            continue
+        body, prev_hint, claimed = m.groups()
+        if prev is None:
+            anchors = [(start_head, "previous_sync"), (CHAIN_GENESIS, "genesis")]
+            matched = next((label for h, label in anchors
+                            if h and h.startswith(prev_hint) and chain_link(h, body) == claimed), None)
+            if res["start"] == "none":
+                res["start"] = matched or "unanchored"
+            if matched:
+                res["verified"] += 1
+            elif res["verified"] or res["start"] != "unanchored":
+                res["gaps"].append(i)
+        elif not prev.startswith(prev_hint):
+            res["gaps"].append(i)
+        elif chain_link(prev, body) == claimed:
+            res["verified"] += 1
+        else:
+            res["tampered"].append(i)
+        prev = claimed
+        res["last_head"] = claimed
+    return res
+
+
+def describe_chain(res):
+    chained = res["total"] - res["legacy"]
+    parts = [f"{res['verified']}/{chained} chained records verified"]
+    if res["start"] == "previous_sync":
+        parts.append("continues from last sync")
+    elif res["start"] == "genesis":
+        parts.append("starts at genesis")
+    elif res["start"] == "unanchored":
+        parts.append("start not linked to a known head (first sync, or records dropped on device)")
+    if res["gaps"]:
+        parts.append(f"{len(res['gaps'])} gap(s)")
+    if res["tampered"]:
+        parts.append(f"⚠️ {len(res['tampered'])} TAMPERED record(s) at {res['tampered'][:5]}")
+    if res["legacy"]:
+        parts.append(f"{res['legacy']} legacy/unchained")
+    return "; ".join(parts)
+
+
+def load_chain_head(device_id=DEVICE_ID):
+    try:
+        with open(CHAIN_STATE_PATH, encoding="utf-8") as f:
+            return json.load(f).get(device_id, {}).get("head")
+    except (OSError, ValueError):
+        return None
+
+
+def save_chain_head(head, device_id=DEVICE_ID):
+    try:
+        with open(CHAIN_STATE_PATH, encoding="utf-8") as f:
+            state = json.load(f)
+    except (OSError, ValueError):
+        state = {}
+    state[device_id] = {"head": head, "updated": datetime.now(timezone.utc).isoformat()}
+    _write_durable(CHAIN_STATE_PATH, json.dumps(state, indent=2))
 
 
 # ==============================================================================
@@ -280,6 +368,7 @@ class SyncResult:
     path: Optional[str] = None
     acked: bool = False
     message: str = ""
+    chain: Optional[dict] = None
 
 
 def _write_durable(path, text):
@@ -336,7 +425,9 @@ def sync_flash(link, log: Callable[[str], None], on_json=None) -> SyncResult:
     os.makedirs(TRANSIT_LOG_DIR, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     path = os.path.join(TRANSIT_LOG_DIR, f"transit_dump_{stamp}.jsonl")
-    _write_durable(path, "".join(json.dumps(r) + "\n" for r in records))
+    # Store the device's exact bytes: re-serialising would make the hash chain unverifiable later.
+    _write_durable(path, "".join(raw + "\n" for raw in raw_lines))
+    chain = verify_chain(raw_lines, load_chain_head())
     meta = {
         "synced_at": datetime.now(timezone.utc).isoformat(),
         "port": link.port,
@@ -346,8 +437,10 @@ def sync_flash(link, log: Callable[[str], None], on_json=None) -> SyncResult:
         "device_complete_count": complete,
         "received_lines": len(raw_lines),
         "unparseable_lines": unparseable,
+        "chain": chain,
         "acked": False,
     }
+    log(f"🔒 [CHAIN] {describe_chain(chain)}")
 
     result = SyncResult(False, records=records, anchor=anchor, path=path)
     if complete is None:
@@ -363,6 +456,9 @@ def sync_flash(link, log: Callable[[str], None], on_json=None) -> SyncResult:
                           else f"device rejected ACK ({reply}); flash NOT cleared")
         if unparseable:
             result.message += f"; {unparseable} corrupt line(s) kept verbatim in the dump"
+        if result.acked and chain["last_head"]:
+            save_chain_head(chain["last_head"])   # next sync must continue from here
+    result.chain = chain
     meta["acked"] = result.acked
     _write_durable(path[:-len(".jsonl")] + ".meta.json", json.dumps(meta, indent=2))
     return result
@@ -527,7 +623,9 @@ def format_sensor_table(data, batch_info, backend_state):
     if is_warmup:
         gas_badge = "[bold yellow]⏳ Heater Pre-Heating / Calibrating[/bold yellow]"
     elif data.get("gas_cal") is not True:
-        gas_badge = "[bold yellow]⚠️ Uncalibrated R0 — not forwarded[/bold yellow]"
+        gas_badge = "[bold yellow]⚠️ Uncalibrated R0 — run --calibrate-r0[/bold yellow]"
+    elif data.get("gas_sat"):
+        gas_badge = "[bold red]🚨 SENSOR AT ADC CEILING (very high VOC)[/bold red]"
     elif co2 > 1500.0 or nh3 > 15.0 or alc > 30.0:
         gas_badge = "[bold red]🚨 ACTIVE SPOILAGE & ROT DETECTED[/bold red]"
     elif co2 > 850.0:
@@ -623,7 +721,7 @@ def format_sensor_table(data, batch_info, backend_state):
     table.add_row(
         "💾 Edge Security Buffer",
         "LittleFS Partition\nmbedTLS SHA-256",
-        f"Flash: {flash_records} recs ({kb_used:.1f} KB) | Clock: {ts_src}\nSHA-256 Hash: [bright_cyan]{rec_hash}[/bright_cyan]",
+        f"Flash: {flash_records} recs ({kb_used:.1f} KB) | Clock: {ts_src}\nSHA-256 Hash: [bright_cyan]{rec_hash[:16]}…[/bright_cyan]",
         storage_status
     )
 
@@ -697,6 +795,52 @@ def keyboard_listener(cmd_queue, stop_event):
 
 
 # ==============================================================================
+# MQ-135 CALIBRATION
+# ==============================================================================
+def run_calibration(link, reset=False):
+    """One-shot R0 calibration. Returns a process exit code."""
+    try:
+        link.drain(0.3)
+        if reset:
+            link.write_line("CMD:CAL_R0:RESET")
+            reply = wait_for(link, ["CAL:"], 3.0)
+            console.print(f"[cyan]{reply or 'no reply from device'}[/cyan]")
+            return 0 if reply == "CAL:RESET" else 1
+
+        console.print(Panel(
+            "Calibrating MQ-135 R0. The sensor must be in [bold]clean outdoor-quality air[/bold] (no produce, "
+            "no people breathing on it), powered for at least 20 minutes — a brand-new sensor needs a "
+            "24–48 h burn-in first. R0 = smoothed compensated Rs ÷ 3.6 (datasheet clean-air ratio).",
+            border_style="yellow"))
+        while True:
+            st, _ = query_status(link)
+            if st is None:
+                console.print("[bold red]❌ Device did not answer CMD:STATUS[/bold red]")
+                return 1
+            if "gas_cal" not in st:
+                console.print("[bold red]❌ Device firmware has no calibration support; reflash first[/bold red]")
+                return 1
+            if not st.get("warmup"):
+                break
+            console.print("[yellow]⏳ Heater still in its warm-up window; waiting…[/yellow]")
+            time.sleep(5)
+        console.print(f"Current R0: {st.get('r0')} kΩ (calibrated: {st.get('gas_cal')})")
+        link.write_line("CMD:CAL_R0")
+        reply = wait_for(link, ["CAL:"], 3.0)
+        if reply and reply.startswith("CAL:OK:"):
+            console.print(f"[bold green]✅ Stored R0 = {reply.split(':')[2]} kΩ on the device. "
+                          f"Gas readings are now marked gas_cal=true and will be forwarded.[/bold green]")
+            return 0
+        console.print(f"[bold red]❌ Calibration failed: {reply or 'no reply'}[/bold red]")
+        return 1
+    except LinkLost as e:
+        console.print(f"[bold red]❌ Lost {link.port}: {e}[/bold red]")
+        return 1
+    finally:
+        link.close()
+
+
+# ==============================================================================
 # MAIN
 # ==============================================================================
 def main():
@@ -706,6 +850,9 @@ def main():
     parser.add_argument("--clear", action="store_true", help="Delete onboard LittleFS records WITHOUT downloading them")
     parser.add_argument("--skip-sync", action="store_true", help="Skip offline download and start dashboard immediately")
     parser.add_argument("--batch", type=str, default="BAT-MGO-701", help="Default active produce lot ID")
+    parser.add_argument("--calibrate-r0", action="store_true",
+                        help="Calibrate MQ-135 R0 in clean air (sensor pre-heated), store it on the device, and exit")
+    parser.add_argument("--reset-r0", action="store_true", help="Erase the stored MQ-135 calibration and exit")
     args = parser.parse_args()
 
     batch_idx = next((i for i, b in enumerate(BATCH_PRESETS) if b["batch_id"] == args.batch), 0)
@@ -724,6 +871,9 @@ def main():
     if not link.open():
         console.print(f"[bold red]❌ Cannot open {args.port}: {link.last_error}[/bold red]")
         sys.exit(1)
+
+    if args.calibrate_r0 or args.reset_r0:
+        sys.exit(run_calibration(link, reset=args.reset_r0))
 
     recent_logs = []
     events = queue.Queue()          # log lines from worker threads

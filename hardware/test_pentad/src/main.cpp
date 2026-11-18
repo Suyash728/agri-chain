@@ -61,10 +61,35 @@
 #define LED_PULSE_MS         40
 #define CMD_MAX_LEN          128
 #define MIN_VALID_EPOCH      1704067200UL    // 2024-01-01T00:00:00Z — anything earlier is treated as an unset clock
+#define CAL_PATH             "/agrichain_cal.bin"
+#define CHAIN_HEAD_PATH      "/agrichain_chain.bin"
+#define CAL_MAGIC            0x52304331UL    // "R0C1"
 
-// MQ-135 Calibration Constants (Load Resistor RL = 10k, Clean Air R0 = 10k nominal)
-const float RL_VALUE = 10.0f;
-const float R0_CLEAN_AIR = 10.0f;
+// ADC acquisition: 32 eFuse-calibrated samples spread over 20 ms (one 50 Hz mains period)
+#define ADC_SAMPLES            32
+#define ADC_SAMPLE_SPACING_US  625
+#define ADC_MAX_MV             3100.0f       // usable ceiling at 11 dB attenuation
+
+// SW-420: edges closer than this belong to the same physical impact (contact chatter)
+#define SHOCK_COALESCE_MS    200
+
+// LDR tamper hysteresis (raw ADC counts) so the state doesn't flap at the threshold
+#define LDR_TAMPER_ON_ADC    2500.0f
+#define LDR_TAMPER_OFF_ADC   2200.0f
+
+// MQ-135 electrical model
+//   Sensor heater + load resistor run on 5 V; AOUT (across RL) reaches GPIO 34 through a
+//   10k series / 20k shunt divider, so V_RL = V_pin * 1.5. RL's absolute value cancels out of
+//   Rs/R0 once R0 is calibrated with the same formula.
+const float RL_VALUE = 10.0f;                 // kOhm (nominal)
+const float MQ_VC = 5.0f;                     // sensor circuit supply
+const float MQ_DIVIDER_GAIN = 1.5f;           // (10k + 20k) / 20k
+const float MQ_CLEAN_AIR_RATIO = 3.6f;        // datasheet Rs/R0 in clean air
+const float R0_UNCALIBRATED = 10.0f;          // placeholder until CMD:CAL_R0 runs
+const float GAS_EMA_ALPHA = 0.1f;             // ~10 s smoothing for calibration
+
+// Genesis value of the record hash chain (SHA-256 of the empty string)
+const char* CHAIN_GENESIS = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
 // ==============================================================================
 // GLOBAL OBJECTS & STATE
@@ -79,10 +104,12 @@ volatile uint32_t lastShockMs = 0;
 
 void IRAM_ATTR onShockISR() {
   uint32_t now = millis();
-  if (now - lastShockMs > 25) { // 25ms hardware debounce latch
+  // One impact makes the SW-420 spring contact chatter for tens of ms. Count a new event only
+  // after SHOCK_COALESCE_MS of quiet; every edge restarts the quiet window.
+  if (now - lastShockMs > SHOCK_COALESCE_MS) {
     totalShocks = totalShocks + 1;
-    lastShockMs = now;
   }
+  lastShockMs = now;
 }
 
 uint32_t getShockCount() {
@@ -130,35 +157,40 @@ char serialCmdBuffer[CMD_MAX_LEN + 1];
 size_t serialCmdLen = 0;
 bool serialCmdOverflow = false;
 
-// Cryptographic SHA-256 Hash Chaining
-char prevRecordHash[65] = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
-char currentRecordHash[65] = "0000000000000000000000000000000000000000000000000000000000000000";
+// MQ-135 calibration state
+float mqR0 = R0_UNCALIBRATED;
+bool gasCalibrated = false;
+float gasRsEma = 0.0f;
+bool gasRsEmaInit = false;
+
+// Optical tamper latch (hysteresis)
+bool tamperLatched = false;
+
+// SHA-256 hash chain over STORED records:
+//   hash_i = SHA256( hash_{i-1} || "|" || body_i )
+// where body_i is the record's JSON text up to (not including) the trailing ,"prev":...,"hash":...}
+// The chain head is the hash of the newest stored record, so the host can recompute and verify
+// every synced record. Live packets carry the hash they WOULD have if stored.
+char chainHead[65];
+void saveChainHead();
 
 inline uint32_t storedRecordCount() { return oldRecords + curRecords; }
 inline size_t storedBytes() { return oldBytes + curBytes; }
 
-void computeRecordHashChain(uint32_t cycleNum, float tempC, float humPct, float gasV, uint32_t shocks, float lux, char* outShortHash) {
-  char payload[192];
-  snprintf(payload, sizeof(payload), "%s|%lu|%.2f|%.2f|%.3f|%lu|%.1f",
-           prevRecordHash, (unsigned long)cycleNum, tempC, humPct, gasV, (unsigned long)shocks, lux);
-
-  byte shaResult[32];
+void sha256ChainHex(const char* prevHex, const char* body, char* out65) {
+  byte digest[32];
   mbedtls_sha256_context ctx;
   mbedtls_sha256_init(&ctx);
   mbedtls_sha256_starts(&ctx, 0);
-  mbedtls_sha256_update(&ctx, (const unsigned char*)payload, strlen(payload));
-  mbedtls_sha256_finish(&ctx, shaResult);
+  mbedtls_sha256_update(&ctx, (const unsigned char*)prevHex, strlen(prevHex));
+  mbedtls_sha256_update(&ctx, (const unsigned char*)"|", 1);
+  mbedtls_sha256_update(&ctx, (const unsigned char*)body, strlen(body));
+  mbedtls_sha256_finish(&ctx, digest);
   mbedtls_sha256_free(&ctx);
-
   for (int i = 0; i < 32; i++) {
-    sprintf(currentRecordHash + (i * 2), "%02x", shaResult[i]);
+    sprintf(out65 + (i * 2), "%02x", digest[i]);
   }
-  currentRecordHash[64] = 0;
-  strncpy(prevRecordHash, currentRecordHash, 65);
-
-  // Return 16-character compact hexadecimal fingerprint
-  strncpy(outShortHash, currentRecordHash, 16);
-  outShortHash[16] = 0;
+  out65[64] = 0;
 }
 
 // ==============================================================================
@@ -214,7 +246,10 @@ struct ClimateMetrics {
 
 struct GasMetrics {
   float avgAdc;
-  float voltage;
+  float voltage;      // at the GPIO pin (after divider)
+  float sensorV;      // reconstructed V_RL on the 5 V side
+  float rsK;          // hygrothermally compensated Rs (kOhm)
+  bool saturated;     // pin voltage at the ADC ceiling -> concentrations are lower bounds
   float ratio;
   float co2Ppm;
   float nh3Ppm;
@@ -287,51 +322,61 @@ ClimateMetrics readClimate() {
   return m;
 }
 
+// Average raw counts (for thresholds) and eFuse-calibrated millivolts (for physics) over one
+// mains period. GPS bytes keep arriving into the UART driver's ring buffer meanwhile.
+void sampleAdc(uint8_t pin, float* rawAvg, float* mvAvg) {
+  uint32_t rawSum = 0, mvSum = 0;
+  for (int i = 0; i < ADC_SAMPLES; i++) {
+    rawSum += analogRead(pin);
+    mvSum += analogReadMilliVolts(pin);
+    delayMicroseconds(ADC_SAMPLE_SPACING_US);
+  }
+  *rawAvg = rawSum / (float)ADC_SAMPLES;
+  *mvAvg = mvSum / (float)ADC_SAMPLES;
+}
+
 GasMetrics readGasSensors(float tempC, float humPct) {
   GasMetrics g;
-  uint32_t adcSum = 0;
-  for (int i = 0; i < 16; i++) {
-    adcSum += analogRead(PIN_MQ135);
-    delayMicroseconds(100);
-  }
-  g.avgAdc = adcSum / 16.0f;
-  g.voltage = (g.avgAdc / 4095.0f) * 3.3f;
+  float mv;
+  sampleAdc(PIN_MQ135, &g.avgAdc, &mv);
+  g.voltage = mv / 1000.0f;
+  g.saturated = (mv >= ADC_MAX_MV - 20.0f);
 
-  float vRL = g.voltage > 0.05f ? g.voltage : 0.05f;
-  if (vRL >= 3.3f) vRL = 3.29f;
-  float Rs = RL_VALUE * ((3.3f - vRL) / vRL);
+  // Undo the 10k/20k divider to recover the voltage across RL on the 5 V side
+  float vRL = g.voltage * MQ_DIVIDER_GAIN;
+  if (vRL < 0.01f) vRL = 0.01f;
+  if (vRL > MQ_VC - 0.01f) vRL = MQ_VC - 0.01f;
+  g.sensorV = vRL;
+  float Rs = RL_VALUE * ((MQ_VC - vRL) / vRL);
 
   // Hygrothermal Compensation Factor C_th(T, H)
   float C_th = (1.385f - (0.0152f * tempC) + (0.00011f * tempC * tempC)) * (1.133f - (0.00205f * humPct));
   if (C_th <= 0.1f) C_th = 0.1f;
-  float Rs_corrected = Rs / C_th;
-  g.ratio = Rs_corrected / R0_CLEAN_AIR;
+  g.rsK = Rs / C_th;
+
+  g.isWarmingUp = (millis() < HEATER_WARMUP_MS);
+  if (!g.isWarmingUp) {
+    gasRsEma = gasRsEmaInit ? gasRsEma + GAS_EMA_ALPHA * (g.rsK - gasRsEma) : g.rsK;
+    gasRsEmaInit = true;
+  }
+
+  g.ratio = g.rsK / mqR0;
   if (g.ratio <= 0.01f) g.ratio = 0.01f;
 
-  // Power-law gas concentrations (PPM)
-  g.co2Ppm     = 110.47f * powf(g.ratio, -2.862f);
+  // Datasheet power-law fits (ppm). In clean air Rs/R0 ~= 3.6, where these give a few ppm.
+  // MQ-135 cannot measure absolute CO2: report ambient 400 ppm plus the curve's excess.
+  g.co2Ppm     = 400.0f + 110.47f * powf(g.ratio, -2.862f);
   g.nh3Ppm     = 102.20f * powf(g.ratio, -2.473f);
   g.alcoholPpm = 77.255f * powf(g.ratio, -3.180f);
   g.acetonePpm = 34.660f * powf(g.ratio, -3.369f);
-
-  if (g.co2Ppm < 400.0f) g.co2Ppm = 400.0f;
-  if (g.nh3Ppm < 0.1f) g.nh3Ppm = 0.1f;
-  if (g.alcoholPpm < 0.1f) g.alcoholPpm = 0.1f;
-  if (g.acetonePpm < 0.1f) g.acetonePpm = 0.1f;
-
-  g.isWarmingUp = (millis() < HEATER_WARMUP_MS);
   return g;
 }
 
 OpticsMetrics readOptics() {
   OpticsMetrics o;
-  uint32_t adcSum = 0;
-  for (int i = 0; i < 16; i++) {
-    adcSum += analogRead(PIN_LDR);
-    delayMicroseconds(100);
-  }
-  o.avgAdc = adcSum / 16.0f;
-  o.voltage = (o.avgAdc / 4095.0f) * 3.3f;
+  float mv;
+  sampleAdc(PIN_LDR, &o.avgAdc, &mv);
+  o.voltage = mv / 1000.0f;
   o.lightPct = (o.avgAdc / 4095.0f) * 100.0f;
 
   // Realistic optical Lux scaling for GL5528 photoresistor
@@ -341,7 +386,9 @@ OpticsMetrics readOptics() {
     if (o.estimatedLux < 0.0f) o.estimatedLux = 0.0f;
     if (o.estimatedLux > 4000.0f) o.estimatedLux = 4000.0f;
   }
-  o.tamperBreach = (o.avgAdc > 2500.0f);
+  if (o.avgAdc > LDR_TAMPER_ON_ADC) tamperLatched = true;
+  else if (o.avgAdc < LDR_TAMPER_OFF_ADC) tamperLatched = false;
+  o.tamperBreach = tamperLatched;
   return o;
 }
 
@@ -430,6 +477,7 @@ void ensureFreeSpace() {
   LittleFS.remove(LOG_OLD_PATH);
   oldRecords = 0;
   oldBytes = 0;
+  saveChainHead();
   Serial.println("STORAGE_PRUNED:ALL_SEGMENTS");
 }
 
@@ -446,6 +494,92 @@ void loadBootCount() {
     w.write((const uint8_t*)&bootCount, sizeof(bootCount));
     w.close();
   }
+}
+
+// --- Hash chain head persistence -------------------------------------------------
+// The head normally lives in the newest stored record. It is written to its own file
+// only when the log is emptied (ACK / CLEAR / prune), so appends cost no extra flash writes.
+bool readLastRecordHash(const char* path, char* out65) {
+  if (!LittleFS.exists(path)) return false;
+  File f = LittleFS.open(path, "r");
+  if (!f) return false;
+  size_t size = f.size();
+  if (size == 0) { f.close(); return false; }
+  const size_t window = 1400;              // > one record
+  size_t start = size > window ? size - window : 0;
+  f.seek(start);
+  static char buf[window + 1];
+  size_t n = f.read((uint8_t*)buf, window);
+  f.close();
+  buf[n] = 0;
+  const char* key = "\"hash\":\"";
+  const size_t keyLen = strlen(key);
+  char* last = nullptr;
+  for (char* s = strstr(buf, key); s != nullptr; s = strstr(s + keyLen, key)) last = s;
+  if (last == nullptr) return false;
+  last += keyLen;
+  for (int i = 0; i < 64; i++) {
+    if (!isxdigit((unsigned char)last[i])) return false;   // legacy 16-hex records don't qualify
+  }
+  if (last[64] != '"') return false;
+  memcpy(out65, last, 64);
+  out65[64] = 0;
+  return true;
+}
+
+void saveChainHead() {
+  File f = LittleFS.open(CHAIN_HEAD_PATH, "w");
+  if (f) {
+    f.write((const uint8_t*)chainHead, 64);
+    f.close();
+  }
+}
+
+void recoverChainHead() {
+  if (readLastRecordHash(LOG_FILE_PATH, chainHead)) return;
+  if (readLastRecordHash(LOG_OLD_PATH, chainHead)) return;
+  File f = LittleFS.open(CHAIN_HEAD_PATH, "r");
+  if (f && f.size() >= 64) {
+    f.read((uint8_t*)chainHead, 64);
+    chainHead[64] = 0;
+    f.close();
+    bool ok = true;
+    for (int i = 0; i < 64; i++) ok &= isxdigit((unsigned char)chainHead[i]) != 0;
+    if (ok) return;
+  } else if (f) {
+    f.close();
+  }
+  strncpy(chainHead, CHAIN_GENESIS, sizeof(chainHead));
+}
+
+// --- MQ-135 R0 calibration persistence ----------------------------------------------
+struct CalRecord {
+  uint32_t magic;
+  float r0;
+};
+
+void loadCalibration() {
+  mqR0 = R0_UNCALIBRATED;
+  gasCalibrated = false;
+  File f = LittleFS.open(CAL_PATH, "r");
+  if (!f) return;
+  CalRecord rec;
+  if (f.size() >= sizeof(rec) && f.read((uint8_t*)&rec, sizeof(rec)) == sizeof(rec)
+      && rec.magic == CAL_MAGIC && isfinite(rec.r0) && rec.r0 > 0.01f && rec.r0 < 10000.0f) {
+    mqR0 = rec.r0;
+    gasCalibrated = true;
+  }
+  f.close();
+}
+
+bool saveCalibration(float r0) {
+  if (!fsAvailable) return false;
+  CalRecord rec = {CAL_MAGIC, r0};
+  File f = LittleFS.open(CAL_PATH, "w");
+  if (!f) return false;
+  bool ok = f.write((const uint8_t*)&rec, sizeof(rec)) == sizeof(rec);
+  f.close();
+  return ok;
 }
 
 void initStorage() {
@@ -468,15 +602,19 @@ void initStorage() {
 
   oldRecords = scanLogFile(LOG_OLD_PATH, &oldBytes);
   curRecords = scanLogFile(LOG_FILE_PATH, &curBytes);
+  recoverChainHead();
   ensureFreeSpace();
+  loadCalibration();
 
-  Serial.printf("STORAGE_ANNOUNCE:{\"records\":%u,\"bytes\":%u,\"free_kb\":%u,\"boot\":%lu}\n",
+  Serial.printf("STORAGE_ANNOUNCE:{\"records\":%u,\"bytes\":%u,\"free_kb\":%u,\"boot\":%lu,\"head\":\"%.16s\",\"gas_cal\":%s}\n",
                 (unsigned int)storedRecordCount(), (unsigned int)storedBytes(),
-                (unsigned int)(fsFreeBytes() / 1024), (unsigned long)bootCount);
+                (unsigned int)(fsFreeBytes() / 1024), (unsigned long)bootCount, chainHead,
+                gasCalibrated ? "true" : "false");
 }
 
-void appendStorageRecord(const char* jsonPacket) {
-  if (!fsAvailable) return;
+// Returns true only if the full record and its newline reached flash.
+bool appendStorageRecord(const char* jsonPacket) {
+  if (!fsAvailable) return false;
 
   ensureFreeSpace();
   if (curBytes >= MAX_LOG_FILE_BYTES) {
@@ -484,7 +622,7 @@ void appendStorageRecord(const char* jsonPacket) {
   }
 
   File f = LittleFS.open(LOG_FILE_PATH, "a");
-  if (!f) return;
+  if (!f) return false;
   size_t len = strlen(jsonPacket);
   size_t written = f.write((const uint8_t*)jsonPacket, len);
   written += f.write((const uint8_t*)"\n", 1);
@@ -493,6 +631,7 @@ void appendStorageRecord(const char* jsonPacket) {
     curBytes += written;
     curRecords++;
   }
+  return written == len + 1;
 }
 
 // Stream one file as OFFLINE_JSON lines; returns the number of lines sent.
@@ -501,7 +640,7 @@ uint32_t dumpLogFile(const char* path, size_t maxBytes) {
   if (maxBytes == 0 || !LittleFS.exists(path)) return 0;
   File f = LittleFS.open(path, "r");
   if (!f) return 0;
-  char line[768];
+  static char line[1100];
   uint32_t count = 0;
   size_t consumed = 0;
   while (f.available() && consumed < maxBytes) {
@@ -603,6 +742,7 @@ void acknowledgeDump(uint32_t ackCount) {
 
   logGeneration++;
   lastDump.pending = false;
+  saveChainHead();
   Serial.println("OFFLINE_SYNC_COMPLETE:OK");
 }
 
@@ -611,6 +751,7 @@ void clearStorageRecords() {
     LittleFS.remove(LOG_OLD_PATH);
     LittleFS.remove(LOG_FILE_PATH);
     LittleFS.remove(LOG_TMP_PATH);
+    saveChainHead();   // the chain continues across a clear; the host sees the gap
   }
   oldRecords = curRecords = 0;
   oldBytes = curBytes = 0;
@@ -632,7 +773,8 @@ void executeCommand(char* raw) {
 
   if (strcmp(cmd, "STATUS") == 0) {
     Serial.printf("STATUS:{\"records\":%u,\"bytes\":%u,\"free_kb\":%u,\"uptime\":%lu,\"up_ms\":%lu,\"boot\":%lu,"
-                  "\"ts\":%lu,\"ts_src\":\"%s\",\"shocks\":%lu,\"streaming\":%s,\"pending_ack\":%s,\"hash\":\"%.16s\"}\n",
+                  "\"ts\":%lu,\"ts_src\":\"%s\",\"shocks\":%lu,\"streaming\":%s,\"pending_ack\":%s,"
+                  "\"gas_cal\":%s,\"r0\":%.3f,\"warmup\":%s,\"head\":\"%s\"}\n",
                   (unsigned int)storedRecordCount(),
                   (unsigned int)storedBytes(),
                   (unsigned int)(fsAvailable ? fsFreeBytes() / 1024 : 0),
@@ -644,7 +786,48 @@ void executeCommand(char* raw) {
                   (unsigned long)getShockCount(),
                   liveStreamActive ? "true" : "false",
                   lastDump.pending ? "true" : "false",
-                  currentRecordHash);
+                  gasCalibrated ? "true" : "false",
+                  mqR0,
+                  (millis() < HEATER_WARMUP_MS) ? "true" : "false",
+                  chainHead);
+  }
+  else if (strcmp(cmd, "CAL_R0") == 0) {
+    // Clean-air calibration: R0 = smoothed compensated Rs / datasheet clean-air ratio.
+    if (millis() < HEATER_WARMUP_MS || !gasRsEmaInit) {
+      Serial.println("CAL:REJECTED:WARMUP");
+    } else {
+      float r0 = gasRsEma / MQ_CLEAN_AIR_RATIO;
+      if (!isfinite(r0) || r0 <= 0.01f || r0 >= 10000.0f) {
+        Serial.println("CAL:REJECTED:OUT_OF_RANGE");
+      } else if (!saveCalibration(r0)) {
+        Serial.println("CAL:REJECTED:STORAGE");
+      } else {
+        mqR0 = r0;
+        gasCalibrated = true;
+        Serial.printf("CAL:OK:%.3f\n", mqR0);
+      }
+    }
+  }
+  else if (strncmp(cmd, "CAL_R0:", 7) == 0) {
+    const char* arg = cmd + 7;
+    if (strcmp(arg, "RESET") == 0) {
+      LittleFS.remove(CAL_PATH);
+      mqR0 = R0_UNCALIBRATED;
+      gasCalibrated = false;
+      Serial.println("CAL:RESET");
+    } else {
+      char* end = nullptr;
+      float r0 = strtof(arg, &end);   // restore a previously measured R0 (kOhm)
+      if (end == arg || *end != 0 || !isfinite(r0) || r0 <= 0.01f || r0 >= 10000.0f) {
+        Serial.println("CAL:REJECTED:BAD_VALUE");
+      } else if (!saveCalibration(r0)) {
+        Serial.println("CAL:REJECTED:STORAGE");
+      } else {
+        mqR0 = r0;
+        gasCalibrated = true;
+        Serial.printf("CAL:OK:%.3f\n", mqR0);
+      }
+    }
   }
   else if (strcmp(cmd, "DUMP") == 0 || strcmp(cmd, "SYNC") == 0) {
     dumpStorageRecords();
@@ -684,7 +867,7 @@ void executeCommand(char* raw) {
     Serial.println("STREAM:RESUMED");
   }
   else if (strcmp(cmd, "HELP") == 0 || strcmp(cmd, "?") == 0) {
-    Serial.println("HELP:COMMANDS=STATUS,SYNC,DUMP,ACK:<n>,CLEAR,TIME:<unix>,PAUSE,RESUME");
+    Serial.println("HELP:COMMANDS=STATUS,SYNC,DUMP,ACK:<n>,CLEAR,TIME:<unix>,CAL_R0,CAL_R0:<kohm>,CAL_R0:RESET,PAUSE,RESUME");
   }
   else if (len > 0) {
     Serial.printf("CMD_UNKNOWN:%s\n", raw);
@@ -734,6 +917,8 @@ void setup() {
   gpsSerial.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
 
   delay(200);
+
+  strncpy(chainHead, CHAIN_GENESIS, sizeof(chainHead));
 
   // Initialize LittleFS storage (scans the log once to recover record counts)
   initStorage();
@@ -785,19 +970,16 @@ void loop() {
       ledOffAt = millis() + LED_PULSE_MS;
     }
 
-    // Hardware SHA-256 Cryptographic Hash Chaining
-    char shortHash[17];
-    computeRecordHashChain(cycle, climate.tempC, climate.humPct, gas.voltage, currentShocks, optics.estimatedLux, shortHash);
-
-    // Build machine-readable JSON packet with cryptographic fingerprint
-    char jsonBuf[768];
-    int jsonLen = snprintf(jsonBuf, sizeof(jsonBuf),
+    // Build the record body (JSON without its closing brace). The hash chain covers these exact bytes.
+    static char jsonBuf[1024];
+    int bodyLen = snprintf(jsonBuf, sizeof(jsonBuf),
       "{\"cycle\":%lu,\"uptime\":%lu,\"up_ms\":%lu,\"boot\":%lu,\"ts\":%lu,\"ts_src\":\"%s\","
       "\"temp\":%.2f,\"hum\":%.2f,\"dew_pt\":%.2f,\"heat_idx\":%.2f,\"cond_margin\":%.2f,\"dht_ok\":%s,"
-      "\"gas_adc\":%lu,\"gas_v\":%.3f,\"co2_ppm\":%.1f,\"nh3_ppm\":%.2f,\"alcohol_ppm\":%.2f,\"acetone_ppm\":%.2f,"
+      "\"gas_adc\":%lu,\"gas_v\":%.3f,\"gas_vrl\":%.3f,\"gas_rs\":%.3f,\"gas_ratio\":%.4f,\"gas_sat\":%s,\"gas_cal\":%s,"
+      "\"co2_ppm\":%.1f,\"nh3_ppm\":%.2f,\"alcohol_ppm\":%.2f,\"acetone_ppm\":%.2f,"
       "\"shocks\":%lu,\"shock_delta\":%lu,\"ldr_adc\":%lu,\"ldr_v\":%.3f,\"ldr_pct\":%.1f,\"lux\":%.1f,\"tamper\":%s,"
       "\"gps_fix\":%s,\"lat\":%.6f,\"lon\":%.6f,\"alt\":%.1f,\"speed\":%.1f,\"hdop\":%.2f,\"sats\":%lu,\"nmea_chars\":%lu,"
-      "\"flash_records\":%u,\"flash_bytes\":%u,\"hash\":\"%s\",\"warmup\":%s}",
+      "\"flash_records\":%u,\"flash_bytes\":%u,\"warmup\":%s",
       (unsigned long)cycle,
       (unsigned long)(millis() / 1000),
       (unsigned long)millis(),
@@ -812,6 +994,11 @@ void loop() {
       climate.valid ? "true" : "false",
       (unsigned long)gas.avgAdc,
       gas.voltage,
+      gas.sensorV,
+      gas.rsK,
+      gas.ratio,
+      gas.saturated ? "true" : "false",
+      gasCalibrated ? "true" : "false",
       gas.co2Ppm,
       gas.nh3Ppm,
       gas.alcoholPpm,
@@ -833,10 +1020,17 @@ void loop() {
       (unsigned long)gpsData.nmeaChars,
       (unsigned int)storedRecordCount(),
       (unsigned int)storedBytes(),
-      shortHash,
       gas.isWarmingUp ? "true" : "false"
     );
-    bool jsonOk = (jsonLen > 0 && jsonLen < (int)sizeof(jsonBuf));
+    // Reserve room for: ,"prev":"<16>","hash":"<64>"}  (= 99 chars)
+    bool jsonOk = (bodyLen > 0 && bodyLen + 100 < (int)sizeof(jsonBuf));
+
+    // Hardware SHA-256 chain link: hash = SHA256(head | body)
+    char recordHash[65];
+    if (jsonOk) {
+      sha256ChainHex(chainHead, jsonBuf, recordHash);
+      snprintf(jsonBuf + bodyLen, sizeof(jsonBuf) - bodyLen, ",\"prev\":\"%.16s\",\"hash\":\"%s\"}", chainHead, recordHash);
+    }
 
     // Buffer to LittleFS flash: immediately on a new impact or when the lid is first
     // opened (rising edge), otherwise every OFFLINE_LOG_MS. A lid left open is therefore
@@ -847,7 +1041,9 @@ void loop() {
     bool timeToLog = (millis() - lastLogTime >= OFFLINE_LOG_MS);
     if (jsonOk && (isAnomaly || timeToLog)) {
       lastLogTime = millis();
-      appendStorageRecord(jsonBuf);
+      if (appendStorageRecord(jsonBuf)) {
+        memcpy(chainHead, recordHash, sizeof(chainHead));   // only stored records extend the chain
+      }
     }
 
     // Emit live telemetry stream to PC
