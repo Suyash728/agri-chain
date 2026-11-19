@@ -1359,7 +1359,7 @@ export const GodModeHub = ({
 
           <div className="bg-[#1A1612] p-2.5 rounded-xl border border-[#3D352E] flex items-center justify-between text-xs">
             <div className="flex items-center gap-1.5 text-amber-400 font-bold">
-              <span>★ {godData?.consumer?.passport_rating || '5.0'}</span>
+              <span>★ {godData?.consumer?.passport_rating ?? 'No reviews'}</span>
               <span className="text-[10px] text-[#A89F91]">({godData?.consumer?.verified_reviews_count} verified review)</span>
             </div>
             <p className="text-[10px] text-[#A89F91] truncate max-w-[240px] italic">

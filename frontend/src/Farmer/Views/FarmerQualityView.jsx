@@ -13,77 +13,29 @@ import {
   Link2
 } from 'lucide-react';
 
+// Neutral placeholder until /farmer/quality-rating answers (was a mock with invented counts)
 const initialQualityData = {
-  score: 98,
+  score: 0,
   maxScore: 100,
-  level: "Grade A+ Producer",
-  status: "Certified Origin & Verified Harvest",
-  grade: "Grade A (Prime)",
-  totalBatches: 31,
-  anchoredDocs: 12,
-  reviewCount: 13,
-  avgRating: 5.0,
+  level: "Loading…",
+  status: "Fetching farm record",
+  grade: "—",
+  totalBatches: 0,
+  anchoredDocs: 0,
+  reviewCount: 0,
+  avgRating: null,
+  certificates: [],
   aiVerificationDetails: [
-    { title: "Harvest Quality Grade", status: "Grade A (Export / Prime Standard)" },
-    { title: "Farm Certifications (IPFS)", status: "12 Verified Certificates (IPFS)" },
-    { title: "Fulfillment Reliability", status: "100% On-Time Batch Handover" },
-    { title: "Consumer Satisfaction", status: "5.0/5.0 ★ (13 Buyer Reviews)" },
+    { title: "Harvest Quality Grade", status: "Loading…" },
+    { title: "Farm Certifications (IPFS)", status: "Loading…" },
+    { title: "Fulfillment Reliability", status: "Loading…" },
+    { title: "Consumer Satisfaction", status: "Loading…" },
   ]
 };
 
-const sampleCertificates = [
-  {
-    docType: "NPOP Organic Certification",
-    fileName: "NPOP-Organic-Nashik-2026.pdf",
-    cid: "QmXoypizjW3WknFiJnKLwHCnL72vedxjQkDDP1mXWo6uco",
-    authority: "APEDA India / SGS Laboratory",
-    validTill: "Oct 2027",
-    status: "Verified On-Chain"
-  },
-  {
-    docType: "Pesticide Residue Free Test",
-    fileName: "Zero-Residue-Lab-Test-MH402.pdf",
-    cid: "QmZ4tDuvesekSs4qM5ZBKpXiZGun7S2CYtEZRB3DYXkjGx",
-    authority: "Eurofins Agri-Testing India",
-    validTill: "Batch Certified",
-    status: "Verified On-Chain"
-  },
-  {
-    docType: "Good Agricultural Practices (GAP)",
-    fileName: "IndGAP-Compliance-Audit.pdf",
-    cid: "QmPZ9gcCEpqKTo6aq61g2nXGUhM49BoKSreQzQ3gT1D3vH",
-    authority: "Quality Council of India",
-    validTill: "Dec 2026",
-    status: "Verified On-Chain"
-  }
-];
-
-const sampleReviews = [
-  {
-    reviewer: "Priya S. (Mumbai)",
-    rating: 5,
-    comment: "Extraordinarily fresh strawberries! QR journey scan showed harvested just yesterday in Mahabaleshwar.",
-    crop: "Mahabaleshwar Strawberries",
-    date: "2 days ago"
-  },
-  {
-    reviewer: "Amitabh K. (Pune)",
-    rating: 5,
-    comment: "Crisp cluster tomatoes, perfect ripeness and zero bruising. Verified Grade A produce.",
-    crop: "Vine-Ripened Cluster Tomatoes",
-    date: "4 days ago"
-  },
-  {
-    reviewer: "Rohit N. (Nashik)",
-    rating: 5,
-    comment: "Consistently top-tier harvest. Clean fair-trade price trail right on the package.",
-    crop: "Nashik Red Onions",
-    date: "1 week ago"
-  }
-];
-
 export const FarmerQualityView = ({ onBack, onOpenTraceability }) => {
   const [qualityData, setQualityData] = useState(initialQualityData);
+  const [buyerReviews, setBuyerReviews] = useState([]);
 
   const fetchQuality = () => {
     fetch(`${API_BASE_URL}/farmer/quality-rating`)
@@ -94,6 +46,20 @@ export const FarmerQualityView = ({ onBack, onOpenTraceability }) => {
         }
       })
       .catch(() => {});
+    // Real post-sale reviews (replaces hard-coded sample reviews)
+    fetch(`${API_BASE_URL}/consumer/reviews`)
+      .then((res) => res.json())
+      .then((data) => {
+        const list = Array.isArray(data?.reviews) ? data.reviews : [];
+        setBuyerReviews(list.slice(0, 6).map((r) => ({
+          reviewer: r.author,
+          rating: r.rating,
+          comment: r.comment,
+          crop: r.cropName,
+          date: r.date,
+        })));
+      })
+      .catch(() => setBuyerReviews([]));
   };
 
   useEffect(() => {
@@ -166,8 +132,8 @@ export const FarmerQualityView = ({ onBack, onOpenTraceability }) => {
             <div className="flex items-center text-amber-500">
               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
             </div>
-            <span className="text-sm font-black text-[#2D2620]">{qualityData.avgRating || '5.0'}</span>
-            <span className="text-xs text-[#666057] font-semibold">({qualityData.reviewCount || '13'} Reviews)</span>
+            <span className="text-sm font-black text-[#2D2620]">{qualityData.avgRating != null ? qualityData.avgRating : '—'}</span>
+            <span className="text-xs text-[#666057] font-semibold">({qualityData.reviewCount ?? 0} Reviews)</span>
           </div>
         </div>
       </div>
@@ -205,7 +171,12 @@ export const FarmerQualityView = ({ onBack, onOpenTraceability }) => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {sampleCertificates.map((cert, idx) => (
+          {(qualityData.certificates || []).length === 0 && (
+            <div className="sm:col-span-3 p-4 rounded-2xl bg-[#FAF7F0] border border-dashed border-[#E6E1D5] text-xs text-[#666057]">
+              No certificates uploaded yet. Upload a lab report or organic certificate from a batch to anchor it on IPFS.
+            </div>
+          )}
+          {(qualityData.certificates || []).map((cert, idx) => (
             <div key={idx} className="p-3.5 rounded-2xl bg-white border border-[#E6E1D5] flex flex-col justify-between gap-2.5 shadow-2xs">
               <div>
                 <div className="flex items-center justify-between mb-1">
@@ -247,7 +218,12 @@ export const FarmerQualityView = ({ onBack, onOpenTraceability }) => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {sampleReviews.map((rev, idx) => (
+          {buyerReviews.length === 0 && (
+            <div className="sm:col-span-3 p-4 rounded-2xl bg-[#FAF7F0] border border-dashed border-[#E6E1D5] text-xs text-[#666057]">
+              No buyer reviews yet. Reviews appear here after consumers buy and rate a batch.
+            </div>
+          )}
+          {buyerReviews.map((rev, idx) => (
             <div key={idx} className="p-3.5 rounded-2xl bg-[#FAF7F0] border border-[#E6E1D5] flex flex-col justify-between gap-2">
               <div>
                 <div className="flex items-center justify-between mb-1">

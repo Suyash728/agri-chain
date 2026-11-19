@@ -61,7 +61,7 @@ export const DarkStoreDashboardView = ({ onSelectTab, onOpenNotifications, onOpe
       .then((data) => {
         if (data && data.incidents && data.incidents.length > 0) {
           const mapped = data.incidents.slice(0, 3).map((inc) => ({
-            name: `${inc.crop_name} (${inc.batch_id.slice(0, 8)})`,
+            name: `${inc.crop_name} (${inc.batch_id})`,
             sub: `${inc.failure_type.replace('_', ' ')} • Fault: ${inc.custodian_at_fault}`,
             qty: `${inc.loss_goods_kg} kg`,
             risk: inc.severity === 'HIGH' ? 'Critical' : 'Medium',

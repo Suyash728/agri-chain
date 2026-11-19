@@ -298,7 +298,7 @@ def get_darkstore_inbound():
                 "weightKg": 500,
                 "itemsCount": "1 Batch",
                 "expectedDate": "Today, 05:00 PM",
-                "dateTag": str(r["occurred_at"])[:10],
+                "dateTag": format_local_timestamp(r["occurred_at"], "%Y-%m-%d"),
                 "status": inbound_status,
                 "badgeClass": badge_class,
                 "temp": temp_str,
@@ -439,7 +439,15 @@ def post_darkstore_receive(payload: DarkStoreReceiveRequest):
         from_holder = last_event["to_holder"] if last_event else "SafeXpress"
 
         dark_store_addr = PARTICIPANT_ADDRESSES["dark_store"]
-        price_paise = payload.price_paise if payload.price_paise is not None else 140000
+        # No price given (quick GRN): receive the lot at its latest recorded price rather than a
+        # fixed placeholder, so the consumer price trail never shows a fake intake price.
+        price_paise = payload.price_paise
+        if price_paise is None:
+            last_priced = conn.execute(
+                "SELECT price_paise FROM custody_events WHERE batch_id = ? AND price_paise > 0 ORDER BY id DESC LIMIT 1",
+                (batch_id,),
+            ).fetchone()
+            price_paise = int(last_priced["price_paise"]) if last_priced else 0
 
         try:
             tx_hash = chain.transfer_custody(
@@ -586,7 +594,7 @@ def get_darkstore_expiry_alerts():
                 badge_class = "bg-[#FEE2E2] text-[#991B1B] border border-red-300 font-extrabold"
                 critical_items.append({
                     "batchId": batch_id,
-                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "name": f"{crop.capitalize()} (Batch #{batch_id})",
                     "badge": "Quarantine Alert",
                     "badgeClass": badge_class,
                     "location": f"Quarantine Bay • Bin Q-{idx+1:02d}",
@@ -604,7 +612,7 @@ def get_darkstore_expiry_alerts():
                 badge_class = "bg-[#FFF3EB] text-[#B85C38] border border-[#B85C38]/30"
                 high_items.append({
                     "batchId": batch_id,
-                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "name": f"{crop.capitalize()} (Batch #{batch_id})",
                     "badge": "Salvage Lot (-55%)",
                     "badgeClass": badge_class,
                     "location": f"Clearance Bay C • Bin C-{idx+1:02d}",
@@ -622,7 +630,7 @@ def get_darkstore_expiry_alerts():
                 badge_class = "bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]"
                 medium_items.append({
                     "batchId": batch_id,
-                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "name": f"{crop.capitalize()} (Batch #{batch_id})",
                     "badge": "40% Dynamic Markdown",
                     "badgeClass": badge_class,
                     "location": f"Cold Bay A • Bin A-{idx+1:02d}",
@@ -640,7 +648,7 @@ def get_darkstore_expiry_alerts():
                 badge_class = "bg-[#FEE2E2] text-[#991B1B]"
                 critical_items.append({
                     "batchId": batch_id,
-                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "name": f"{crop.capitalize()} (Batch #{batch_id})",
                     "badge": "0-3 Days",
                     "badgeClass": badge_class,
                     "location": f"Clearance Bay 2 • Bin A-{idx+1:02d}",
@@ -658,7 +666,7 @@ def get_darkstore_expiry_alerts():
                 badge_class = "bg-[#FFF3EB] text-[#B85C38]"
                 high_items.append({
                     "batchId": batch_id,
-                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "name": f"{crop.capitalize()} (Batch #{batch_id})",
                     "badge": "4-7 Days",
                     "badgeClass": badge_class,
                     "location": f"Cold Bay A • Bin A-{idx+1:02d}",
@@ -676,7 +684,7 @@ def get_darkstore_expiry_alerts():
                 badge_class = "bg-[#FEF3C7] text-[#D97706]"
                 medium_items.append({
                     "batchId": batch_id,
-                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "name": f"{crop.capitalize()} (Batch #{batch_id})",
                     "badge": "8-15 Days",
                     "badgeClass": badge_class,
                     "location": f"Cold Bay A • Bin A-{idx+1:02d}",
@@ -694,7 +702,7 @@ def get_darkstore_expiry_alerts():
                 badge_class = "bg-[#EBF3E8] text-[#354424]"
                 safe_items.append({
                     "batchId": batch_id,
-                    "name": f"{crop.capitalize()} (Batch #{batch_id[:8]})",
+                    "name": f"{crop.capitalize()} (Batch #{batch_id})",
                     "badge": "Safe",
                     "badgeClass": badge_class,
                     "location": f"Cold Bay A • Bin A-{idx+1:02d}",
@@ -910,7 +918,7 @@ def get_darkstore_sales():
                 "quantity": "25 kg",
                 "amount": f"₹ {r['price_paise'] // 100:,}",
                 "status": "Delivered",
-                "date": r["occurred_at"],
+                "date": format_local_timestamp(r["occurred_at"], "%Y-%m-%d %H:%M:%S"),
                 "txHash": r["tx_hash"],
             })
 

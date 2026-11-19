@@ -136,7 +136,7 @@ class BatchDocumentResponse(BaseModel):
 
 class DarkStoreReceiveRequest(BaseModel):
     batch_id: str
-    price_paise: Optional[int] = 140000
+    price_paise: Optional[int] = None  # None = receive at the lot's latest recorded price
     holder_name: Optional[str] = "Pune Fresh DarkStore Hub"
 
 

@@ -88,24 +88,24 @@ export const PresenterWalkthroughBanner = ({
 
   return (
     <div className={`w-full transition-all animate-fade-in ${currentRole === 'consumer' ? 'w-full ml-0' : 'w-full md:w-[calc(100%-16rem)] md:ml-64'} px-4 sm:px-6 lg:px-8 pt-3 pb-1`}>
-      <div className="w-full bg-white/95 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-xs p-2.5 sm:p-3 flex items-center justify-between gap-3 text-xs">
+      <div className="w-full bg-white/95 backdrop-blur-md rounded-2xl border border-[#E6E1D5] shadow-xs p-2.5 sm:p-3 flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-3 gap-y-2 text-xs">
         
         {/* Left: Step Badge & Title */}
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+        <div className="flex items-center gap-2.5 flex-1 min-w-[200px]">
           <div className="w-7 h-7 rounded-xl bg-[#354424] text-white flex items-center justify-center flex-shrink-0 shadow-2xs">
             <Compass className="w-4 h-4 text-amber-300" />
           </div>
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-[10px] uppercase tracking-wider text-[#354424] bg-emerald-50 px-2 py-0.5 rounded-full border border-[#E6E1D5]">
+              <span className="font-extrabold text-[10px] uppercase tracking-wider text-[#354424] bg-emerald-50 px-2 py-0.5 rounded-full border border-[#E6E1D5] whitespace-nowrap">
                 {activeStep.badge}
               </span>
-              <span className="text-[10px] font-bold text-[#666057]">
+              <span className="text-[10px] font-bold text-[#666057] whitespace-nowrap">
                 Step {activeStep.step} of 4
               </span>
             </div>
             {!isMinimized && (
-              <p className="font-extrabold text-xs text-[#2D2620] truncate max-w-[130px] sm:max-w-none mt-0.5">
+              <p className="font-extrabold text-xs text-[#2D2620] truncate sm:max-w-none mt-0.5">
                 {activeStep.title}
               </p>
             )}
@@ -113,7 +113,7 @@ export const PresenterWalkthroughBanner = ({
         </div>
 
         {/* Center / Right: Interactive Action Buttons */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
           <button
             onClick={onOpenGodMode}
             className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[11px] font-black flex items-center gap-1 cursor-pointer transition-all shadow-xs hover:brightness-110"

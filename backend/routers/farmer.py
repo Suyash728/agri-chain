@@ -248,20 +248,30 @@ def get_farmer_quality_rating():
         doc_count_row = conn.execute("SELECT count(*) as cnt FROM batch_documents").fetchone()
         doc_count = doc_count_row["cnt"] if isinstance(doc_count_row, dict) else (doc_count_row[0] if doc_count_row else 0)
 
-        reviews_row = conn.execute("SELECT count(*) as cnt, COALESCE(AVG(rating), 4.9) as avg_rating FROM batch_reviews").fetchone()
-        if isinstance(reviews_row, dict):
-            review_count = reviews_row.get("cnt", 0)
-            avg_rating = round(float(reviews_row.get("avg_rating") or 4.9), 1)
-        else:
-            review_count = reviews_row[0] if reviews_row else 0
-            avg_rating = round(float(reviews_row[1] if reviews_row and reviews_row[1] is not None else 4.9), 1)
+        reviews_row = conn.execute("SELECT count(*) as cnt, AVG(rating) as avg_rating FROM batch_reviews").fetchone()
+        review_count = int(reviews_row["cnt"] or 0) if reviews_row else 0
+        # No reviews -> no rating (was a default 4.9)
+        avg_rating = round(float(reviews_row["avg_rating"]), 1) if review_count and reviews_row["avg_rating"] is not None else None
+
+        doc_rows = conn.execute(
+            "SELECT batch_id, doc_type, ipfs_cid, file_name, uploaded_at, tx_hash FROM batch_documents ORDER BY id DESC LIMIT 12"
+        ).fetchall()
+        certificates = [{
+            "docType": d["doc_type"],
+            "fileName": d["file_name"],
+            "cid": str(d["ipfs_cid"]).replace("ipfs://", ""),
+            "batchId": d["batch_id"],
+            "authority": f"Batch #{d['batch_id']}",
+            "validTill": format_local_timestamp(d["uploaded_at"], "%d %b %Y"),
+            "status": "Anchored On-Chain" if d["tx_hash"] else "Stored (not anchored)",
+        } for d in doc_rows]
 
         score = 98 if batch_count > 0 else 0
         level = "Grade A+ Producer" if batch_count > 0 else "Awaiting Harvest"
         status = "Certified Origin & Verified Harvest" if batch_count > 0 else "No Batches Registered"
 
-        cert_status = f"{doc_count} Verified Certificates (IPFS)" if doc_count > 0 else "GAP & Organic Certs Anchored"
-        buyer_status = f"{avg_rating}/5.0 ★ ({review_count} Buyer Reviews)" if review_count > 0 else "4.9/5.0 ★ (Verified Marketplace Reviews)"
+        cert_status = f"{doc_count} Certificate(s) on IPFS" if doc_count > 0 else "No certificates uploaded yet"
+        buyer_status = f"{avg_rating}/5.0 ★ ({review_count} Buyer Reviews)" if review_count > 0 else "No buyer reviews yet"
 
         return {
             "score": score,
@@ -273,6 +283,7 @@ def get_farmer_quality_rating():
             "anchoredDocs": doc_count,
             "reviewCount": review_count,
             "avgRating": avg_rating,
+            "certificates": certificates,
             "aiVerificationDetails": [
                 {"title": "Harvest Quality Grade", "status": "Grade A (Export / Prime Standard)"},
                 {"title": "Farm Certifications (IPFS)", "status": cert_status},
@@ -700,9 +711,9 @@ def get_farmer_shipments():
             transporter = r["to_holder"] if state != "REGISTERED" else "Safexpress Cold Chain (Assigned)"
 
             shipments.append({
-                "id": f"SHP-{b_id[:8]}",
+                "id": f"SHP-{b_id}",
                 "batchId": b_id,
-                "orderId": f"ORD-{b_id[:8]}",
+                "orderId": f"ORD-{b_id}",
                 "cropName": r["crop_name"].title(),
                 "transporter": transporter,
                 "date": format_local_timestamp(r["occurred_at"]) if r["occurred_at"] else "Today",

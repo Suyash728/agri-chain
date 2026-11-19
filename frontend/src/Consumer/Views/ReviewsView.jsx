@@ -4,7 +4,7 @@ import { Star, CheckCircle } from 'lucide-react';
 
 export const ReviewsView = ({ onWriteReviewClick }) => {
   const [reviewsList, setReviewsList] = useState([]);
-  const [averageRating, setAverageRating] = useState(5.0);
+  const [averageRating, setAverageRating] = useState(null);
   const [totalReviews, setTotalReviews] = useState(0);
   const [breakdown, setBreakdown] = useState([
     { stars: 5, percentage: 100 },
@@ -20,7 +20,7 @@ export const ReviewsView = ({ onWriteReviewClick }) => {
       .then((data) => {
         if (data) {
           if (Array.isArray(data.reviews)) setReviewsList(data.reviews);
-          if (data.averageRating) setAverageRating(data.averageRating);
+          setAverageRating(data.averageRating ?? null);
           if (data.totalReviews !== undefined) setTotalReviews(data.totalReviews);
           if (Array.isArray(data.breakdown)) setBreakdown(data.breakdown);
         }
@@ -50,7 +50,7 @@ export const ReviewsView = ({ onWriteReviewClick }) => {
             <div className="bg-white rounded-2xl p-5 border border-[#E6E1D5] shadow-xs flex items-center gap-6">
               {/* Left Large Rating */}
               <div className="flex flex-col items-center justify-center flex-shrink-0 pr-6 border-r border-[#E6E1D5]">
-                <span className="text-4xl font-black text-[#2D2620]">{averageRating.toFixed(1)}</span>
+                <span className="text-4xl font-black text-[#2D2620]">{averageRating != null ? averageRating.toFixed(1) : '—'}</span>
                 <div className="flex items-center gap-0.5 text-amber-500 my-1">
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star key={s} className="w-4 h-4 fill-amber-500 text-amber-500" />

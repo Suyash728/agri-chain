@@ -148,8 +148,8 @@ export const ProductsView = ({ onAddToCart, onProductClick, initialCategory = 'a
                         ₹ {product.price}
                       </span>
                       <div className="flex items-center gap-0.5 text-[10px] font-bold text-[#666057]">
-                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                        <span>{product.rating}</span>
+                        <Star className={`w-3 h-3 ${product.rating != null ? 'text-amber-500 fill-amber-500' : 'text-[#C9C2B6]'}`} />
+                        <span>{product.rating != null ? product.rating : 'New'}</span>
                       </div>
                     </div>
 

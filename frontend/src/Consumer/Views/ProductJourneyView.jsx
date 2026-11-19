@@ -138,7 +138,8 @@ export const ProductJourneyView = ({
 
   // Dynamic reviews for the selected product
   const reviewsCount = liveReviews ? liveReviews.total_reviews : 0;
-  const ratingScore = liveReviews ? liveReviews.average_rating : 5.0;
+  // No reviews -> no score (was a default 5.0 with a full 5★ bar)
+  const ratingScore = liveReviews?.average_rating ?? null;
 
   const displayReviewsList = liveReviews && liveReviews.reviews && liveReviews.reviews.length > 0
     ? liveReviews.reviews.map(r => ({
@@ -157,7 +158,7 @@ export const ProductJourneyView = ({
         const percentage = Math.round((count / liveReviews.reviews.length) * 100);
         return { stars, percentage };
       })
-    : [5, 4, 3, 2, 1].map(stars => ({ stars, percentage: stars === 5 ? 100 : 0 }));
+    : [5, 4, 3, 2, 1].map(stars => ({ stars, percentage: 0 }));
 
   return (
     <div className="flex flex-col gap-3 pb-20 md:pb-8 pt-2">
@@ -263,7 +264,7 @@ export const ProductJourneyView = ({
                   <span className="text-[11px] font-semibold text-[#666057] block">
                     {documents.length > 0 
                       ? `${documents.length} verified decentralized IPFS document(s)` 
-                      : 'AGMARK Organic Certification anchored'}
+                      : 'No certificates uploaded for this batch yet'}
                   </span>
                 </div>
               </div>
@@ -289,10 +290,10 @@ export const ProductJourneyView = ({
               {/* Rating Summary & Breakdown Bars */}
               <div className="flex items-center gap-5 pt-1">
                 <div className="flex flex-col items-center justify-center pr-5 border-r border-[#E6E1D5] flex-shrink-0">
-                  <span className="text-3xl font-black text-[#2D2620]">{Number(ratingScore).toFixed(1)}</span>
+                  <span className="text-3xl font-black text-[#2D2620]">{ratingScore != null ? Number(ratingScore).toFixed(1) : '—'}</span>
                   <div className="flex items-center gap-0.5 text-amber-500 my-1">
                     {[1, 2, 3, 4, 5].map((s) => (
-                      <Star key={s} className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                      <Star key={s} className={`w-3.5 h-3.5 ${ratingScore != null && s <= Math.round(ratingScore) ? 'fill-amber-500 text-amber-500' : 'text-[#E6E1D5]'}`} />
                     ))}
                   </div>
                   <span className="text-[11px] font-semibold text-[#666057]">({reviewsCount} Reviews)</span>
@@ -363,7 +364,9 @@ export const ProductJourneyView = ({
                     <span className="text-xs font-extrabold text-[#2D2620]">Normalized Price Trail (₹ / kg)</span>
                   </div>
                   <span className="text-[10px] font-black text-[#354424] bg-[#EBF3E8] px-2 py-0.5 rounded-full border border-[#C2E0B8]">
-                    {journeyData.priceTrail.farmerSharePct}% Direct Farmer Share
+                    {journeyData.priceTrail.farmerSharePct != null
+                      ? `${journeyData.priceTrail.farmerSharePct}% Direct Farmer Share`
+                      : 'Farmer share shown after sale'}
                   </span>
                 </div>
                 <p className="text-[10px] text-[#666057] font-medium leading-relaxed">

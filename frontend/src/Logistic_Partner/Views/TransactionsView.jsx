@@ -17,7 +17,7 @@ export const TransactionsView = () => {
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           const mapped = data.map(d => ({
-            desc: `${d.type} (${d.crop} - Batch #${d.batchId.slice(0, 10)})`,
+            desc: `${d.type} (${d.crop} - Batch #${d.batchId})`,
             amount: d.amount,
             date: d.date ? d.date.split('T')[0] : 'Today',
             status: d.status,

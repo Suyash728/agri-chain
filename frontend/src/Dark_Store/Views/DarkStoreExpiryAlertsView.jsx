@@ -180,6 +180,9 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
   const hCount = alertsData?.highCount ?? 0;
   const mCount = alertsData?.mediumCount ?? 0;
   const sCount = alertsData?.safeCount ?? (totalAlertItems > 0 ? Math.max(0, totalAlertItems - cCount - hCount - mCount) : 0);
+  // Real-data KPI tiles (previously hard-coded): share of lots not critical/high risk, breached lots
+  const freshnessIndex = totalAlertItems > 0 ? Math.round(((totalAlertItems - cCount - hCount) / totalAlertItems) * 1000) / 10 : null;
+  const breachLots = timelineItems.filter((it) => it.breachDetected).length;
 
   const cPct = totalAlertItems > 0 ? Math.round((cCount / totalAlertItems) * 100) : 0;
   const hPct = totalAlertItems > 0 ? Math.round((hCount / totalAlertItems) * 100) : 0;
@@ -689,8 +692,8 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
             <div className="bg-white p-5 rounded-3xl border border-[#E6E1D5] shadow-xs flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-[#666057] block mb-1">Freshness Index</span>
-                <span className="text-2xl font-black text-[#2D4F1E]">94.8%</span>
-                <span className="text-[10px] font-semibold text-[#556B2F] block mt-1">↑ 2.4% vs last week</span>
+                <span className="text-2xl font-black text-[#2D4F1E]">{freshnessIndex != null ? `${freshnessIndex}%` : '—'}</span>
+                <span className="text-[10px] font-semibold text-[#556B2F] block mt-1">{totalAlertItems > 0 ? `${totalAlertItems - cCount - hCount} of ${totalAlertItems} lots not at risk` : 'No tracked lots'}</span>
               </div>
               <div className="w-11 h-11 rounded-2xl bg-[#EBF3E8] border border-[#D4E4CE] flex items-center justify-center text-[#556B2F]">
                 <ShieldCheck className="w-6 h-6" />
@@ -699,9 +702,9 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
 
             <div className="bg-white p-5 rounded-3xl border border-[#E6E1D5] shadow-xs flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-[#666057] block mb-1">Est. Waste Saved</span>
-                <span className="text-2xl font-black text-[#2D2620]">₹48,250</span>
-                <span className="text-[10px] font-semibold text-[#556B2F] block mt-1">This month via FEFO</span>
+                <span className="text-xs font-bold text-[#666057] block mb-1">Spoilage Write-Off</span>
+                <span className="text-2xl font-black text-[#2D2620]">₹{Math.round(spoilageData?.total_loss_money_inr || 0).toLocaleString('en-IN')}</span>
+                <span className="text-[10px] font-semibold text-[#556B2F] block mt-1">{spoilageData?.total_incidents || 0} incident(s) • {Math.round(spoilageData?.total_loss_goods_kg || 0)} kg</span>
               </div>
               <div className="w-11 h-11 rounded-2xl bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center text-[#D97706]">
                 <Sparkles className="w-6 h-6" />
@@ -710,9 +713,9 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
 
             <div className="bg-white p-5 rounded-3xl border border-[#E6E1D5] shadow-xs flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-[#666057] block mb-1">FEFO Pick Accuracy</span>
-                <span className="text-2xl font-black text-[#2D2620]">99.2%</span>
-                <span className="text-[10px] font-semibold text-[#556B2F] block mt-1">Optimal sequence</span>
+                <span className="text-xs font-bold text-[#666057] block mb-1">Clearance Needed</span>
+                <span className="text-2xl font-black text-[#2D2620]">{cCount + hCount}</span>
+                <span className="text-[10px] font-semibold text-[#556B2F] block mt-1">Critical / high-risk lots (FEFO first)</span>
               </div>
               <div className="w-11 h-11 rounded-2xl bg-[#EEF4FB] border border-[#DCE9FE] flex items-center justify-center text-[#2563EB]">
                 <CheckCircle2 className="w-6 h-6" />
@@ -721,9 +724,9 @@ export const DarkStoreExpiryAlertsView = ({ onBack, initialSubTab = 1 }) => {
 
             <div className="bg-white p-5 rounded-3xl border border-[#E6E1D5] shadow-xs flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-[#666057] block mb-1">NGO Food Rescue</span>
-                <span className="text-2xl font-black text-[#2D2620]">140 kg</span>
-                <span className="text-[10px] font-semibold text-[#556B2F] block mt-1">Zero-waste dispatches</span>
+                <span className="text-xs font-bold text-[#666057] block mb-1">Cold-Chain Breaches</span>
+                <span className="text-2xl font-black text-[#2D2620]">{breachLots}</span>
+                <span className="text-[10px] font-semibold text-[#556B2F] block mt-1">Lots with a recorded breach</span>
               </div>
               <div className="w-11 h-11 rounded-2xl bg-[#F5EEF9] border border-[#E9D5FF] flex items-center justify-center text-[#9333EA]">
                 <Gift className="w-6 h-6" />

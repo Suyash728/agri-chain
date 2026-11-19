@@ -60,17 +60,17 @@ def get_all_consumer_reviews():
                 "origin": r["origin_farm"],
                 "author": short_addr,
                 "badge": "Verified Buyer (On-Chain SOLD)",
-                "date": str(r["created_at"])[:10],
+                "date": format_local_timestamp(r["created_at"], "%Y-%m-%d"),
                 "comment": r["comment"] or "Verified cold-chain journey backed by cryptographic proof.",
                 "rating": rating,
                 "freshnessScore": r["freshness_score"] or 95,
             })
 
         total_rev = len(reviews)
-        avg_rating = round(total_rating / total_rev, 1) if total_rev else 5.0
+        avg_rating = round(total_rating / total_rev, 1) if total_rev else None
         breakdown = []
         for s in [5, 4, 3, 2, 1]:
-            pct = round((star_counts[s] / total_rev) * 100) if total_rev else (100 if s == 5 else 0)
+            pct = round((star_counts[s] / total_rev) * 100) if total_rev else 0
             breakdown.append({"stars": s, "percentage": pct, "count": star_counts[s]})
 
         return {
@@ -209,8 +209,8 @@ def get_consumer_products():
                 rating = round(float(rev_stat["avg_rating"]), 1)
                 rev_count = int(rev_stat["cnt"])
             else:
-                rating = 4.8
-                rev_count = 14 + (idx * 3)
+                rating = None      # no reviews yet (was 4.8 with an invented count)
+                rev_count = 0
 
             products.append({
                 "id": f"prod-{b_id}",
@@ -222,7 +222,7 @@ def get_consumer_products():
                 "rating": rating,
                 "reviewsCount": rev_count,
                 "category": cat,
-                "isBestSeller": (idx % 2 == 0) or rating >= 4.8,
+                "isBestSeller": rating is not None and rating >= 4.5 and rev_count >= 3,
                 "isFavorite": idx % 3 == 0,
                 "image": img,
                 "origin": farm_clean,
@@ -267,7 +267,7 @@ def get_consumer_orders():
             orders.append({
                 "id": f"ORD-{b_id}",
                 "batchId": b_id,
-                "date": r["occurred_at"] or "20 Oct, 2026",
+                "date": format_local_timestamp(r["occurred_at"], "%d %b, %Y") if r["occurred_at"] else "",
                 "status": status,
                 "statusBg": status_bg,
                 "total": amt,

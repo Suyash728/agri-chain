@@ -21,6 +21,7 @@ from common import (
     REASON_CODE_LABELS,
     ROLE_TO_ONCHAIN_MAP,
     format_local_timestamp,
+    iso_utc,
     get_local_lan_ip,
     insert_quarantine_entry,
     _parse_batch_meta,
@@ -200,7 +201,7 @@ def get_logistics_shipments():
                 "coords": f"{lat:.4f}, {lon:.4f}",
                 "priceRupees": r["price_paise"] // 100,
                 "txHash": r["tx_hash"],
-                "occurredAt": r["occurred_at"],
+                "occurredAt": format_local_timestamp(r["occurred_at"], "%Y-%m-%d %H:%M:%S"),
                 "iot": iot_view,
             })
 
@@ -468,7 +469,10 @@ def get_logistics_transactions():
                    c.tx_hash, c.occurred_at, b.crop_name
             FROM custody_events c
             JOIN batches b ON b.batch_id = c.batch_id
-            WHERE c.price_paise > 0
+            -- Only the logistics partner's own money flows: buying from the farm (IN_TRANSIT) and
+            -- the dark store settling with logistics (IN_STORAGE). Farm listings and consumer
+            -- sales are not logistics transactions.
+            WHERE c.price_paise > 0 AND c.state IN ('IN_TRANSIT', 'IN_STORAGE')
             ORDER BY c.id DESC
             LIMIT 20
             """
@@ -499,7 +503,8 @@ def get_logistics_transactions():
                 "amount": f"- ₹ {p_amt:,}",
                 "status": "Enforced On-Chain",
                 "txHash": f"0x{hashlib.sha256(p['incident_id'].encode()).hexdigest()}",
-                "date": str(p["created_at"])[:10],
+                "date": format_local_timestamp(p["created_at"], "%Y-%m-%d"),
+                "occurredAtIso": iso_utc(p["created_at"]),
             })
 
         for e in events:
@@ -514,7 +519,8 @@ def get_logistics_transactions():
                 "amount": f"₹ {amt:,}",
                 "status": "Settled On-Chain",
                 "txHash": e["tx_hash"],
-                "date": e["occurred_at"],
+                "date": format_local_timestamp(e["occurred_at"], "%Y-%m-%d %H:%M:%S"),
+                "occurredAtIso": iso_utc(e["occurred_at"]),
             })
         return txns
     finally:

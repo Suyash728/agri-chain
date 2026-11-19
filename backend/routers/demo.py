@@ -1031,7 +1031,7 @@ def build_godmode_state(conn, batch_id: str):
         (batch_id,),
     ).fetchall()
 
-    avg_rating = round(sum(r["rating"] for r in reviews) / len(reviews), 1) if reviews else 5.0
+    avg_rating = round(sum(r["rating"] for r in reviews) / len(reviews), 1) if reviews else None
 
     price_trail = [
         {"stage": "Farm Harvest", "holder": b_row["farmer_name"], "price_inr": round(price_inr, 2)}

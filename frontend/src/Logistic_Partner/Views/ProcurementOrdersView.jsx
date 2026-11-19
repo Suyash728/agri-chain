@@ -99,8 +99,9 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
         if (Array.isArray(data)) {
           const mapped = data.map((t) => ({
             id: t.id,
-            desc: `${t.type}: ${t.crop || 'Batch'} (${t.batchId ? t.batchId.slice(0, 10) : ''})`,
+            desc: `${t.type}: ${t.crop || 'Batch'} (${t.batchId || ''})`,
             date: t.date || new Date().toISOString().split('T')[0],
+            occurredAtIso: t.occurredAtIso || null,
             amount: t.amount,
             status: t.status,
             category: t.type,
@@ -165,11 +166,22 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
     }
   };
 
+  // "x ago" from the real event time (UTC ISO from the backend), not from list position
+  const relativeTime = (iso) => {
+    const t = iso ? Date.parse(iso) : NaN;
+    if (Number.isNaN(t)) return '';
+    const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+    if (s < 60) return 'just now';
+    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+    return `${Math.floor(s / 86400)}d ago`;
+  };
+
   const recentActivities = txs.slice(0, 7).map((t, idx) => ({
     id: t.id,
     text: `${t.desc} — ${t.amount}`,
     time: t.date,
-    relative: `${idx * 15 + 5}m ago`,
+    relative: relativeTime(t.occurredAtIso),
     dot: idx === 0 ? 'bg-[#556B2F]' : (idx % 2 === 1 ? 'bg-[#2B6CB0]' : 'bg-[#B85C38]'),
   }));
 

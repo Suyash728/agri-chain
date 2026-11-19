@@ -1,4 +1,6 @@
+import os
 import socket
+from zoneinfo import ZoneInfo
 import hashlib
 import json
 import math
@@ -16,22 +18,37 @@ PARTICIPANT_ADDRESSES = {
 }
 
 
-def format_local_timestamp(dt_val, fmt="%Y-%m-%d %H:%M") -> str:
-    """Converts a database datetime or ISO string from UTC to local system time (IST, UTC+5:30)."""
-    if not dt_val:
-        return ""
+# Timestamps are stored in UTC and shown in the business timezone (IST by default), independent of
+# the server's own timezone: Render and most hosts run in UTC.
+DISPLAY_TZ = ZoneInfo(os.getenv("APP_TIMEZONE", "Asia/Kolkata"))
+
+
+def _as_utc_datetime(dt_val):
+    """DB value (SQLite naive-UTC string or Postgres datetime) -> aware UTC datetime, or None."""
     if isinstance(dt_val, str):
         try:
-            clean_str = dt_val.replace("Z", "+00:00")
-            dt_val = datetime.fromisoformat(clean_str)
-        except Exception:
-            return dt_val[:16]
+            dt_val = datetime.fromisoformat(dt_val.replace("Z", "+00:00"))
+        except ValueError:
+            return None
     if isinstance(dt_val, datetime):
-        if dt_val.tzinfo is None:
-            dt_val = dt_val.replace(tzinfo=timezone.utc)
-        local_dt = dt_val.astimezone()
-        return local_dt.strftime(fmt)
-    return str(dt_val)[:16]
+        return dt_val if dt_val.tzinfo else dt_val.replace(tzinfo=timezone.utc)
+    return None
+
+
+def format_local_timestamp(dt_val, fmt="%Y-%m-%d %H:%M") -> str:
+    """Format a stored UTC timestamp in DISPLAY_TZ (APP_TIMEZONE, default Asia/Kolkata)."""
+    if not dt_val:
+        return ""
+    dt = _as_utc_datetime(dt_val)
+    if dt is None:
+        return str(dt_val)[:16]
+    return dt.astimezone(DISPLAY_TZ).strftime(fmt)
+
+
+def iso_utc(dt_val) -> Optional[str]:
+    """Unambiguous UTC ISO-8601 timestamp for client-side calculations (e.g. "5m ago")."""
+    dt = _as_utc_datetime(dt_val) if dt_val else None
+    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z") if dt else None
 
 
 def get_local_lan_ip():

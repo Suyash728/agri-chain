@@ -80,7 +80,9 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
       const res = await fetch(`${API_BASE_URL}/darkstore/receive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ batch_id: batchId, price_paise: 140000 }),
+        // No price prompt on the quick GRN: the backend records the lot at its latest recorded price.
+        // Use "Confirm Inbound GRN" to enter an intake price.
+        body: JSON.stringify({ batch_id: batchId }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -229,7 +231,7 @@ export const InboundGRNView = ({ onBack, onOpenNotifications, onOpenGRN }) => {
           {/* Confirm Inbound GRN Action Button */}
           <button 
             type="button"
-            onClick={() => onOpenGRN && onOpenGRN(deliveries[0]?.id || '')}
+            onClick={() => onOpenGRN && onOpenGRN(deliveries[0]?.batchId || '')}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-[#354424] text-white text-xs font-bold hover:bg-[#26321A] transition-colors cursor-pointer shadow-xs"
           >
             <span>📋 Confirm Inbound GRN</span>

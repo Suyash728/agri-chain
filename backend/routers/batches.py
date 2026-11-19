@@ -20,6 +20,7 @@ from common import (
     REASON_CODE_LABELS,
     ROLE_TO_ONCHAIN_MAP,
     format_local_timestamp,
+    iso_utc,
     get_local_lan_ip,
     insert_quarantine_entry,
     _parse_batch_meta,
@@ -419,83 +420,57 @@ def get_batch_traceability(batch_id: str):
             (batch_id,),
         ).fetchall()
 
-        # Extract stage lot values from events
-        farm_price_inr = 0.0
-        transit_price_inr = 0.0
-        storage_price_inr = 0.0
-        retail_price_inr = 0.0
-
-        if events and events[0]["price_paise"]:
-            farm_price_inr = events[0]["price_paise"] / 100.0
-        if farm_price_inr <= 0 and "||price=" in raw_farm:
+        # Stage lot prices exactly as recorded (integer paise; RULES.md §2). No fallbacks or invented
+        # markups: a stage that hasn't happened yet has no price, and margins can be negative.
+        farm_paise = int(events[0]["price_paise"]) if events and events[0]["price_paise"] else None
+        if farm_paise is None and "||price=" in raw_farm:
             for part in raw_farm.split("||"):
                 if part.startswith("price="):
                     try:
-                        farm_price_inr = float(part.replace("price=", "").strip())
-                    except Exception:
+                        farm_paise = int(round(float(part.replace("price=", "").strip()) * 100))
+                    except ValueError:
                         pass
-
+        transit_paise = storage_paise = sold_paise = None
         for ev in events:
-            st = ev["state"]
-            amt = (ev["price_paise"] or 0) / 100.0
-            if st == "IN_TRANSIT" and amt > 0:
-                transit_price_inr = amt
-            elif st in ("IN_STORAGE", "AT_RETAIL") and amt > 0:
-                storage_price_inr = amt
-            elif st == "SOLD" and amt > 0:
-                retail_price_inr = amt
+            amt = int(ev["price_paise"] or 0)
+            if amt <= 0:
+                continue
+            if ev["state"] == "IN_TRANSIT":
+                transit_paise = amt
+            elif ev["state"] in ("IN_STORAGE", "AT_RETAIL"):
+                storage_paise = amt
+            elif ev["state"] == "SOLD":
+                sold_paise = amt
 
-        # Compute Solution A: Normalized Unit Rates (₹/kg)
-        if transit_price_inr > 0:
-            transit_rate = round(transit_price_inr / qty_kg, 2)
-        else:
-            transit_rate = 32.0
+        def per_kg(lot_paise):
+            """Rate in ₹/kg for display (money stays in paise until formatting)."""
+            return None if lot_paise is None or qty_kg <= 0 else round(lot_paise / qty_kg / 100.0, 2)
 
-        if farm_price_inr >= 1000:
-            farm_rate = round(farm_price_inr / qty_kg, 2)
-        elif farm_price_inr > 0 and farm_price_inr < 200:
-            farm_rate = round(farm_price_inr, 2)
-        else:
-            farm_rate = max(15.0, round(transit_rate * 0.875, 2))
+        def fmt_rate(rate):
+            return None if rate is None else f"₹{rate:.2f} / kg"
 
-        if storage_price_inr > 0:
-            storage_rate = round(storage_price_inr / qty_kg, 2)
-        else:
-            storage_rate = round(transit_rate * 1.08, 2)
+        def lot_label(lot_paise):
+            return None if lot_paise is None else f"Lot: ₹{lot_paise // 100:,}"
 
-        if retail_price_inr >= storage_price_inr and storage_price_inr > 0:
-            # Whole lot checked out at retail
-            pack_kg = qty_kg
-            retail_rate = round(retail_price_inr / qty_kg, 2)
-        elif retail_price_inr > 0:
-            # Disaggregated consumer retail pack/crate (e.g. ₹650 for a 15 kg crate)
-            pack_kg = max(5.0, round(retail_price_inr / max(25.0, storage_rate * 1.25), 0))
-            retail_rate = round(retail_price_inr / pack_kg, 2)
-        else:
-            pack_kg = 15.0
-            retail_rate = round(storage_rate * 1.25, 2)
+        farm_rate, transit_rate = per_kg(farm_paise), per_kg(transit_paise)
+        storage_rate, retail_rate = per_kg(storage_paise), per_kg(sold_paise)
 
-        # Enforce progressive monotonic price trail
-        transit_rate = max(transit_rate, round(farm_rate + 2.0, 2))
-        storage_rate = max(storage_rate, round(transit_rate + 2.40, 2))
-        retail_rate = max(retail_rate, round(storage_rate + 6.50, 2))
-
-        # Build price transparency breakdown model
-        farmer_share_pct = round((farm_rate / retail_rate) * 100.0, 1)
-        logistics_share_pct = round(((transit_rate - farm_rate) / retail_rate) * 100.0, 1)
-        darkstore_share_pct = round(((storage_rate - transit_rate) / retail_rate) * 100.0, 1)
-        retail_share_pct = max(0.0, round(100.0 - (farmer_share_pct + logistics_share_pct + darkstore_share_pct), 1))
+        def share(part_paise):
+            if part_paise is None or not sold_paise:
+                return None
+            return round(part_paise * 100.0 / sold_paise, 1)
 
         price_trail = {
             "farmerRate": farm_rate,
             "logisticsRate": transit_rate,
             "darkstoreRate": storage_rate,
             "retailRate": retail_rate,
-            "farmerSharePct": farmer_share_pct,
-            "logisticsSharePct": logistics_share_pct,
-            "darkstoreSharePct": darkstore_share_pct,
-            "retailSharePct": retail_share_pct,
-            "packKg": int(pack_kg),
+            # Shares of the final consumer price; None until the batch is sold
+            "farmerSharePct": share(farm_paise),
+            "logisticsSharePct": share(transit_paise - farm_paise) if transit_paise and farm_paise else None,
+            "darkstoreSharePct": share(storage_paise - transit_paise) if storage_paise and transit_paise else None,
+            "retailSharePct": share(sold_paise - storage_paise) if sold_paise and storage_paise else None,
+            "packKg": int(qty_kg),          # sales are recorded per lot
             "batchQtyKg": int(qty_kg),
         }
 
@@ -510,9 +485,9 @@ def get_batch_traceability(batch_id: str):
             "timestamp": reg_time,
             "location": clean_farm,
             "holder": batch_row["farmer_name"],
-            "pricePaise": int(farm_rate * qty_kg * 100),
+            "pricePaise": farm_paise or 0,
             "unitRateInr": farm_rate,
-            "rateFormatted": f"₹{farm_rate:.2f} / kg",
+            "rateFormatted": fmt_rate(farm_rate),
             "stageDetail": f"Farm-Gate Base ({int(qty_kg)} kg Lot)",
         })
         step_num += 1
@@ -538,8 +513,8 @@ def get_batch_traceability(batch_id: str):
                     "location": f"Farm gate pickup with {ev['to_holder']}",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
-                    "unitRateInr": farm_rate,
-                    "rateFormatted": f"₹{farm_rate:.2f} / kg",
+                    "unitRateInr": per_kg(ev["price_paise"] or None),
+                    "rateFormatted": fmt_rate(per_kg(ev["price_paise"] or None)),
                     "stageDetail": "Procurement Handoff",
                 })
                 step_num += 1
@@ -552,9 +527,9 @@ def get_batch_traceability(batch_id: str):
                     "location": f"In Transit with {ev['to_holder']}",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
-                    "unitRateInr": transit_rate,
-                    "rateFormatted": f"₹{transit_rate:.2f} / kg",
-                    "stageDetail": f"Bulk Reefer Fleet (Lot: ₹{int(transit_price_inr):,})" if transit_price_inr > 0 else "Reefer Highway Transit",
+                    "unitRateInr": per_kg(ev["price_paise"] or None),
+                    "rateFormatted": fmt_rate(per_kg(ev["price_paise"] or None)),
+                    "stageDetail": f"Bulk Reefer Fleet ({lot_label(ev['price_paise'] or None)})" if ev["price_paise"] else "Reefer Highway Transit",
                 })
                 step_num += 1
             elif st == "IN_STORAGE":
@@ -566,9 +541,9 @@ def get_batch_traceability(batch_id: str):
                     "location": f"{ev['to_holder']} (Cold Storage Bay)",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
-                    "unitRateInr": storage_rate,
-                    "rateFormatted": f"₹{storage_rate:.2f} / kg",
-                    "stageDetail": f"Cold Hub Intake (Lot: ₹{int(storage_price_inr):,})" if storage_price_inr > 0 else "Cold Hub Storage",
+                    "unitRateInr": per_kg(ev["price_paise"] or None),
+                    "rateFormatted": fmt_rate(per_kg(ev["price_paise"] or None)),
+                    "stageDetail": f"Cold Hub Intake ({lot_label(ev['price_paise'] or None)})" if ev["price_paise"] else "Cold Hub Storage",
                 })
                 step_num += 1
             elif st == "AT_RETAIL":
@@ -580,9 +555,9 @@ def get_batch_traceability(batch_id: str):
                     "location": f"{ev['to_holder']}",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
-                    "unitRateInr": storage_rate,
-                    "rateFormatted": f"₹{storage_rate:.2f} / kg",
-                    "stageDetail": "Retail Merchandising",
+                    "unitRateInr": per_kg(ev["price_paise"] or None),
+                    "rateFormatted": fmt_rate(per_kg(ev["price_paise"] or None)),
+                    "stageDetail": f"Retail Merchandising ({lot_label(ev['price_paise'] or None)})" if ev["price_paise"] else "Retail Merchandising",
                 })
                 step_num += 1
             elif st == "SOLD":
@@ -594,9 +569,9 @@ def get_batch_traceability(batch_id: str):
                     "location": "Consumer Doorstep",
                     "holder": ev["to_holder"],
                     "pricePaise": ev["price_paise"],
-                    "unitRateInr": retail_rate,
-                    "rateFormatted": f"₹{retail_rate:.2f} / kg",
-                    "stageDetail": f"Retail Pack ({int(pack_kg)} kg @ ₹{int(retail_price_inr):,})" if retail_price_inr < storage_price_inr and retail_price_inr > 0 else f"Final Delivery ({int(qty_kg)} kg)",
+                    "unitRateInr": per_kg(ev["price_paise"] or None),
+                    "rateFormatted": fmt_rate(per_kg(ev["price_paise"] or None)),
+                    "stageDetail": f"Final Delivery ({int(qty_kg)} kg, {lot_label(ev['price_paise'] or None)})" if ev["price_paise"] else f"Final Delivery ({int(qty_kg)} kg)",
                 })
                 step_num += 1
 
@@ -643,7 +618,7 @@ def get_batch_traceability(batch_id: str):
                 "pricePaise": ev["price_paise"],
                 "priceRupees": ev["price_paise"] // 100,
                 "txHash": ev["tx_hash"],
-                "occurredAt": ev["occurred_at"],
+                "occurredAt": format_local_timestamp(ev["occurred_at"], "%Y-%m-%d %H:%M:%S"),
             })
 
         # Compute dynamic Quality & Freshness score (inspired by ADOS consensus & telemetry health)
@@ -728,7 +703,7 @@ def create_batch_review(batch_id: str, payload: ReviewCreateRequest):
         total_rev = len(rows)
         avg_rating = round(sum(r["rating"] for r in rows) / total_rev, 1) if total_rev else payload.rating
         fresh_vals = [r["freshness_score"] for r in rows if r["freshness_score"] is not None]
-        avg_freshness = round(sum(fresh_vals) / len(fresh_vals), 1) if fresh_vals else 95.0
+        avg_freshness = round(sum(fresh_vals) / len(fresh_vals), 1) if fresh_vals else None
 
         return {
             "success": True,
@@ -755,11 +730,12 @@ def get_batch_reviews(batch_id: str):
             (batch_id,)
         ).fetchall()
 
-        reviews = [dict(r) for r in rows]
+        # created_at as unambiguous UTC ISO so the browser renders the local date correctly
+        reviews = [{**dict(r), "created_at": iso_utc(r["created_at"])} for r in rows]
         total_rev = len(reviews)
-        avg_rating = round(sum(r["rating"] for r in reviews) / total_rev, 1) if total_rev else 5.0
+        avg_rating = round(sum(r["rating"] for r in reviews) / total_rev, 1) if total_rev else None  # no reviews -> no average
         fresh_vals = [r["freshness_score"] for r in reviews if r["freshness_score"] is not None]
-        avg_freshness = round(sum(fresh_vals) / len(fresh_vals), 1) if fresh_vals else 98.0
+        avg_freshness = round(sum(fresh_vals) / len(fresh_vals), 1) if fresh_vals else None
 
         return {
             "batch_id": batch_id,

@@ -3,6 +3,16 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Package, ThermometerSnowflake, QrCode, Search, CheckCircle2, ShoppingBag, Clock, Bike, ArrowRight, X, ShieldCheck } from 'lucide-react';
 import { FulfillmentOrdersView } from './FulfillmentOrdersView';
 
+// Stable 32-bit FNV-1a fingerprint of the bin QR payload (was Math.random(), which changed on every render)
+const binFingerprint = (str) => {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).toUpperCase().padStart(8, '0');
+};
+
 export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
   const [activeStepTab, setActiveStepTab] = useState(initialSubTab); // 1 = Micro-Inventory, 2 = Products
   const [selectedBay, setSelectedBay] = useState('All');
@@ -199,7 +209,7 @@ export const MicroInventoryView = ({ onBack, initialSubTab = 1 }) => {
                   className="w-full h-full object-contain"
                 />
               </div>
-              <span className="font-mono text-[11px] font-bold text-[#354424]">BIN-HASH: 0x{Math.random().toString(16).substring(2, 10).toUpperCase()}...</span>
+              <span className="font-mono text-[11px] font-bold text-[#354424]">BIN-HASH: 0x{binFingerprint(`AGRICHAIN-BIN:${selectedBinQR.bin}:PRODUCE:${selectedBinQR.produce}:EXP:${selectedBinQR.expiry}`)}</span>
             </div>
 
             <div className="space-y-2 text-xs">
