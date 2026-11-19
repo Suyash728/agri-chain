@@ -1,60 +1,48 @@
 # AgriChain — AI Pre-Chain Trust Layer
 
-> **Pre-Chain Oracle Gatekeeper: Validates IoT Telemetry using Machine Learning & Cryptographic Integrity before On-Chain Anchoring.**
+Validates IoT telemetry before anything is anchored on-chain, so corrupt, implausible or replayed readings don't reach immutable storage. The backend imports this package directly (`backend/routers/telemetry.py`). More context is in [`../CLAUDE.md`](../CLAUDE.md) §8.
 
----
-
-## 1. Overview & Pipeline
-
-The **AI Trust Layer** sits between IoT sensor devices and the blockchain. It prevents corrupt, implausible, or spoofed sensor data from consuming on-chain gas or entering immutable storage.
-
+## Pipeline
 ```
-IoT Sensors / Telemetry Simulator
-              │
-              ▼
-    [ AI Trust Pipeline ]
-      1. Schema & Bound Validation (Pydantic models & static crop boundaries)
-      2. Physical & Temporal Plausibility (Haversine GPS velocity, max rate-of-change, sequence)
-      3. 11-D Feature Engineering (Dynamic rolling vectors, temperature/humidity acceleration)
-      4. ML Anomaly Detection (Unsupervised Isolation Forest, F1 = 0.9722)
-      5. Cryptographic Integrity (Canonical SHA-256 fingerprinting & replay detection)
-      6. Verdict & Disposition Engine:
-           ├── VALID + READY_FOR_ORACLE ──► Downstream Oracle / ColdChainMonitor.sol
-           └── ANOMALOUS + QUARANTINED ───► IsoLog SHA-256 Hash-Chained Quarantine Log
+reading ─► 1. schema & range checks (physical bounds, crop policy)
+        ─► 2. plausibility (Haversine speed, temperature/humidity rate of change, timestamp order)
+        ─► 3. 11-D feature vector (values, deltas, rates, distance, speed, time gap)
+        ─► 4. Isolation Forest anomaly score
+        ─► 5. integrity & replay detection (canonical SHA-256 fingerprint)
+        ─► 6. verdict: VALID · BREACH (genuine policy violation, still anchored) · ANOMALOUS (quarantined) · INSUFFICIENT_EVIDENCE
 ```
+Quarantined readings go into the backend's IsoLog hash chain (`GET /quarantine/verify-integrity`).
 
----
-
-## 2. Decision Matrix & Eligibility Gate
-
-| Verdict | Disposition | Oracle Action | System Response |
-|---|---|---|---|
-| **`VALID`** | **`READY_FOR_ORACLE`** | **Approved** | Batched for on-chain commit via `ColdChainMonitor.recordConditionsBatch` |
-| **`ANOMALOUS`** | **`QUARANTINED`** | **Rejected** | Persisted to off-chain quarantine audit log with reason codes |
-| **`INSUFFICIENT_EVIDENCE`**| **`ON_HOLD`** | **Rejected** | Held pending historical sequence points |
-| Any mismatch / Tamper | Tampered | **Rejected** | Triggers circuit breaker and security alert |
-
----
-
-## 3. Directory Layout
-
+## Layout
 ```
 trust-layer/
 ├── app/
-│   ├── main.py                   FastAPI service entry point
-│   ├── config.py                 Hyperparameters & thresholds
-│   ├── schemas/                  Pydantic data models (telemetry, features, verdict, oracle handoff v1.0)
-│   ├── routers/                  Telemetry ingestion, health, and benchmark routes
-│   └── services/                 Range check, plausibility, feature extractor, Isolation Forest, simulator
-├── tests/                        147 unit & integration tests covering all validation stages
-└── requirements.txt
+│   ├── config.py      Thresholds, hyperparameters, SQLITE_DB_PATH
+│   ├── schemas/       Telemetry, features, verdict, evaluation models
+│   ├── routers/       Standalone FastAPI routes (health, telemetry)
+│   └── services/      validator, plausibility, features, anomaly_detector, integrity, verdict, simulator, evaluation
+├── tests/             147 tests
+└── reports/figures/   Regenerated benchmark summary and charts
 ```
 
----
-
-## 4. Running the Tests
-
+## Tests
 ```bash
-# Run complete AI Trust Layer test suite (147 tests)
-pytest trust-layer/tests/ -v
+cp backend/agrichain.db /tmp/tl.db && SQLITE_DB_PATH=/tmp/tl.db pytest trust-layer/tests/   # 147 passing
 ```
+The suite writes to the database at `SQLITE_DB_PATH` (default `backend/agrichain.db`) and rewrites `reports/figures/benchmark_summary.*`, so point it at a copy.
+
+## Evaluation (reproduced 2026-11-18)
+`EvaluationService.run_pipeline_evaluation` covers seven fault types:
+- temperature spike, humidity spike, GPS jump, timestamp disorder, replay, gap, combined;
+- each injected at the last of 5 simulated readings.
+
+| Config | Precision | Recall | F1 | False-positive rate (normal data) |
+|---|---|---|---|---|
+| Default (seed 42, 5 sequences per fault) | 94.59% | 100% | 0.9722 | **40%** |
+| 20 sequences per fault | 95.24% | 100% | 0.9756 | 35% |
+| **Isolation Forest disabled** | 100% | 100% | **1.000** | **0%** |
+
+**The rules catch every synthetic fault; the Isolation Forest only adds false positives.** Its features include absolute latitude, longitude and temperature, and it is trained on 40 simulated readings, so real-device data is flagged almost every time. Next steps:
+- rate/delta-only features;
+- evaluation on real device traces;
+- treating the model as advisory until it beats the rules alone.

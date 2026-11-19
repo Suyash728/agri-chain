@@ -42,7 +42,7 @@ The comparison also hides some context. A single modular condition write costs *
    - CORS reflects every origin with credentials (`allow_origin_regex=r"^https?://.*$"`).
    - So anyone who can reach :8000 can call `/admin/roles/grant`, `/admin/contracts/pause`, `/admin/system-reset`, `/demo/reset`, `/batches/{id}/custody`, and so on.
 2. **On-chain RBAC is effectively bypassed.** Every chain write is signed by one relayer key (`PRIVATE_KEY`) that holds all roles. With finding 1, the contracts' role separation protects nothing in practice.
-3. **The consumer price trail fabricates numbers** (`backend/routers/batches.py`, traceability). This undermines the project's core "farmer fair-share" claim.
+3. *(Fixed 2026-11-20: the trail now shows recorded lot prices ÷ weight, in integer paise, with `null` for stages that haven't happened.)* **The consumer price trail fabricates numbers** (`backend/routers/batches.py`, traceability). This undermines the project's core "farmer fair-share" claim.
    - **Hard-coded defaults.** Missing stages get defaults: transit ₹32/kg, farm `max(15, transit × 0.875)`, storage transit × 1.08, retail storage × 1.25.
    - **Invented markups.** "Enforce progressive monotonic price trail" inserts markups (+₹2.00, +₹2.40, +₹6.50 /kg) whenever the real prices don't rise.
    - **Unit guessing.** Farm prices ≥ 1000 are treated as lot totals, and prices < 200 as per-kg.
@@ -70,7 +70,7 @@ The comparison also hides some context. A single modular condition write costs *
     - **Not tied to the registry.** Custody can be initialized for a batch that `ProductRegistry` never registered.
 13. **`ProductRegistry` doesn't bind to the caller.** Any farmer can register a batch under another farmer's address, or attach documents to another farmer's batch.
 14. **No off-chain custody-order validation**, despite RULES.md §4 claiming it. The backend relies entirely on the chain revert.
-15. **The frontend shows static or random values as if live:**
+15. *(Fixed 2026-11-20, except the dead `Consumer/RevenueView.jsx`.)* **The frontend shows static or random values as if live:**
     - `RevenueView` has a hard-coded ₹11,28,450.
     - `DarkStoreExpiryAlertsView` has a hard-coded ₹48,250.
     - `MicroInventoryView` shows `Math.random()` output as a "BIN-HASH 0x…".
@@ -81,6 +81,38 @@ The comparison also hides some context. A single modular condition write costs *
 17. **Wrong SW-420 pin in docs.** `hardware/README.md` and `docs/IOT_HARDWARE_SPECIFICATION.md` put the SW-420 on GPIO 27, but both firmwares use **GPIO 32**. *(Fixed in this commit.)*
 18. **`AGENTS.md` references a non-existent `TASKS.md`.** *(Fixed in this commit.)*
 19. **Two firmwares, and the docs only explained one.** `hardware/esp32_firmware/` (Wi-Fi + HTTP + 10-slot queue, credentials in source) and `hardware/test_pentad/` (USB serial + two-phase LittleFS sync, the one in active use). *(Clarified in `hardware/README.md`.)*
+
+## 3b. Dashboard end-to-end pass (2026-11-20)
+
+**What was checked.** Everything ran on an isolated stack (scratch Hardhat chain, SQLite copy, no `.env`):
+- **API:** every GET endpoint (52).
+- **Desktop crawl:** every role and screen (31) at 1440 px. It flagged console errors, failed requests and broken values (`NaN`, `undefined`, `null`, `Invalid Date`).
+- **Mobile pass:** 15 screens at 390 px, checking horizontal overflow.
+- **UI-driven journey:** farmer Add Stock → logistics Accept Shipment → link a sensor → dark store GRN → Record Sale → consumer journey → admin pause/unpause. It was checked against the API and the chain, and every displayed rate was asserted to equal the recorded lot price ÷ weight.
+- **Regressions:** 147 trust-layer tests, 22 contract tests, IoT linking, production access policy and the frontend build all pass.
+
+**Fixed in this pass:**
+- **Price trail:**
+  - The consumer trail no longer invents rates, markups or pack sizes, and money stays in integer paise.
+  - The quick GRN button recorded a fixed ₹1,400 for every batch. It now records the lot's latest recorded price.
+  - The header "Confirm Inbound GRN" button passed `DLY #…` instead of the batch ID.
+- **Logistics ledger:** it labelled farm listings and consumer sales as "Dark Store Settlement". It now shows only IN_TRANSIT and IN_STORAGE flows, plus penalties.
+- **Batch IDs:** they were truncated to 8–10 characters in farmer shipments (which produced duplicate React keys), the ledger, dark store expiry and the dashboard. Full IDs are shown now.
+- **Timestamps:** they now convert to `APP_TIMEZONE` (default Asia/Kolkata) instead of the server's timezone. Five fields that leaked raw UTC are fixed, and "x min ago" uses real event times instead of list position.
+- **Invented ratings, reviews and certificates:** removed and replaced with real data or honest empty states.
+  - The default 5.0 / 4.9 / 4.8 ratings are gone.
+  - Fake review counts (`14 + 3 × index`) are gone.
+  - "Best Seller" was given to every other product.
+  - Farmer quality page: the three sample certificates with made-up CIDs and the three invented buyer reviews are replaced.
+  - The "AGMARK" and "GAP & Organic" claims with no documents are gone.
+- **Dark store Expiry KPIs:** the hard-coded 94.8% / ₹48,250 / 99.2% / 140 kg are replaced with values computed from the alert, spoilage and breach data. The bin "hash" was `Math.random()`; it is now a stable fingerprint.
+- **Mobile:** the presenter walkthrough banner collapsed on phones.
+
+**Still open:**
+- **Seeded demo prices are unrealistically low** (e.g. mango ₹1/kg at the farm). The old trail hid this behind invented markups.
+- **The farmer quality score is a heuristic.** "98/100", "Grade A+ Producer" and "100% On-Time Batch Handover" are not derived from data, and need a product decision on how to score.
+- **Seeded harvest dates are fixed in October 2026**, so most seeded lots now show as expiry-critical.
+- **Authentication** (#1–2), the **ML false positives / circuit breaker** (#4) and **IPFS fallback CIDs** (#5) are unchanged.
 
 ## 4. Suggested order of fixes
 1. **Auth.** Real login (password hash or wallet signature) and a dependency that checks a signed token and role on every mutating route. Restrict CORS to the frontend origin. Remove or guard the `/demo/*` and `/admin/system-reset` routes outside demo mode.

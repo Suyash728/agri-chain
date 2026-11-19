@@ -1,69 +1,45 @@
-# RULES.md — Hard Engineering Constraints
+# RULES.md — Hard Constraints
 
-> **Strict, non-negotiable architectural and engineering rules for AgriChain.**
+Non-negotiable rules for every change to AgriChain. Context and the reasons behind them are in [`CLAUDE.md`](CLAUDE.md); decisions are logged in [`MEMORY.md`](MEMORY.md).
 
----
-
-## 1. Approved Technology Stack
-
-| Layer | Approved Technologies | Prohibited |
+## 1. Technology stack
+| Layer | Use | Don't use |
 |---|---|---|
-| **Frontend** | React 18, Vite, Tailwind CSS, `lucide-react`, `ethers` v6 | Redux, Zustand, React Router, Next.js, TypeScript conversion, unapproved UI component libraries |
-| **Backend** | Python 3.11+, FastAPI, `uvicorn`, `web3.py`, `pydantic` | Django, Flask, Express/Node backend |
-| **AI Trust Layer** | `scikit-learn` (Isolation Forest), `numpy`, `scipy` | Unvetted ML frameworks or external black-box prediction APIs |
-| **Blockchain** | Solidity 0.8.28, Hardhat, OpenZeppelin (`AccessControl`, `Pausable`) | Foundry, Truffle, non-EVM chains |
-| **Storage** | Supabase Cloud PostgreSQL (`psycopg2`), local SQLite fallback, Pinata IPFS | MongoDB, DynamoDB, unvetted cloud databases |
-| **IoT / Hardware**| C++ (ESP32 Arduino framework / PlatformIO), Python simulator | Proprietary uncompiled binaries |
+| Frontend | React 18, Vite, Tailwind CSS, `lucide-react`, `ethers` v6 | Redux, Zustand, React Router, Next.js, TypeScript conversion, new UI component libraries |
+| Backend | Python 3.11+ (developed on 3.14), FastAPI, uvicorn, web3.py, pydantic | Django, Flask, a Node backend |
+| AI trust layer | scikit-learn (Isolation Forest), numpy, scipy | Unvetted ML frameworks, external prediction APIs |
+| Blockchain | Solidity (solc 0.8.28), Hardhat, OpenZeppelin `AccessControl` / `Pausable` | Foundry, Truffle, non-EVM chains |
+| Storage | Supabase PostgreSQL (psycopg 3), SQLite fallback, Pinata IPFS | MongoDB, DynamoDB, other cloud databases |
+| IoT | C++ on ESP32 (Arduino framework, PlatformIO), Python simulators | Proprietary binaries |
 
----
+## 2. Integer money and temperature
+- **Money is integer paise** (1 INR = 100 paise) in Solidity (`uint256 pricePaise`), SQL (`INTEGER`/`BIGINT`) and Python (`int`). Convert to rupees only when formatting for display: `(price_paise / 100).toFixed(2)`.
+- **Temperature is integer deci-°C** (24.5 °C → 245, −2.0 °C → −20) on-chain and in logic comparisons. Floats are for sensor ingestion and display only.
 
-## 2. Strict Integer Representation for Money & Temperature
+## 3. Persist before validating
+Every packet received by `POST /telemetry` or `/telemetry/batch` is written to `readings` **before** the AI trust layer runs. Valid and quarantined readings both stay auditable. Never drop a packet before it is logged.
 
-- **Money is ALWAYS Integer Paise**:
-  - Store and pass prices as `price_paise` (1 INR = 100 paise).
-  - Used uniformly in Solidity (`uint256 pricePaise`), PostgreSQL/SQLite (`INTEGER`), and Python (`int`).
-  - **Floats for money are strictly prohibited.** Conversion to rupees occurs only at the final display layer in the frontend: `(price_paise / 100).toFixed(2)`.
-- **Temperature is ALWAYS Integer Deci-Celsius**:
-  - Temperatures are signed integer tenths of a degree Celsius (`temp_deci_c`, e.g., $24.5^\circ\text{C} = 245$, $-2.0^\circ\text{C} = -20$) in contracts and logic comparisons.
-  - Converted to float representation only for visual UI rendering.
+## 4. Forward-only custody
+`REGISTERED → IN_TRANSIT → IN_STORAGE → AT_RETAIL → SOLD`. Backward or repeated transitions are rejected by `CustodyTransfer.sol`.
 
----
+## 5. Frontend design is fixed
+- Don't restyle or recreate existing views, change the palette or fonts, or add UI libraries.
+- When wiring data, replace mock imports with `fetch()` calls that return the same JSON shape.
+- If a screen renders wrongly, fix the backend response shape first.
+- **Exception:** small, self-contained additions are allowed when a feature needs input the existing UI can't capture (e.g. `frontend/src/components/iot/`). Build them from the existing palette, `rounded-2xl/3xl` cards, `lucide-react` icons and the modal pattern.
 
-## 3. Persistence Before AI Validation (Audit Trail Integrity)
+## 6. No invented data
+APIs and screens show recorded data, or an explicit empty or `null` state. Never synthesize prices, markups, ratings, review counts, certificates, KPIs, timestamps or coordinates and present them as real. Suggested prices may only *prefill* an input that the operator confirms.
 
-Every incoming sensor telemetry payload at `POST /telemetry` **must be persisted to the `readings` table before AI evaluation runs**. 
-- Rejecting or dropping unvalidated telemetry prior to logging violates audit integrity.
-- Both `VALID` and `ANOMALOUS` (quarantined) readings remain auditable in the database.
+## 7. Smart-contract safety
+- State-changing functions are role-gated (`onlyRole(...)`) and respect `Pausable` circuit breakers.
+- Condition writes support batching (`recordConditionsBatch`).
+- No unbounded loops over storage arrays.
+- Never deploy to a public network with a published test key (e.g. Hardhat account #0).
 
----
+## 8. Secrets and testing
+- Secrets (`PRIVATE_KEY`, `DATABASE_URL`, `PINATA_JWT`, `ADMIN_API_TOKEN`, `DEVICE_API_KEY`) live only in `.env` or the hosting dashboard. Never hard-code them. `.env` and `*.db` stay git-ignored. `.env.example` documents every variable.
+- **Never run tests or the backend against the real `.env`**: it points at Supabase and a live chain. Use isolated copies (`CLAUDE.md` §13.3).
 
-## 4. Forward-Only Monotonic Custody State Transitions
-
-Produce custody transitions strictly advance forward:
-$$\text{REGISTERED} \longrightarrow \text{IN\_TRANSIT} \longrightarrow \text{IN\_STORAGE} \longrightarrow \text{AT\_RETAIL} \longrightarrow \text{SOLD}$$
-- Backward transitions (e.g., `AT_RETAIL → IN_TRANSIT`) are blocked by smart contract logic (`CustodyTransfer.sol`) and backend validators.
-
----
-
-## 5. Smart Contract Safety & Access Control
-
-- State-mutating functions must be protected by OpenZeppelin role modifiers (`onlyRole(FARMER_ROLE)`, `onlyRole(ORACLE_ROLE)`, etc.) or `onlyOwner`.
-- Telemetry condition writes must support batched execution (`recordConditionsBatch`) to minimize EVM gas costs.
-- Critical operations must respect emergency pauses via `Pausable` circuit breakers.
-- No unbounded loops over dynamic arrays in Solidity.
-
----
-
-## 6. Frontend Consistency & Style Lock
-
-- **Wire, Never Recreate**: Replace mock imports only with `fetch()` returning identical JSON shapes.
-- **Style Lock**: Preserve existing Tailwind CSS utility classes, color palettes, fonts, and component layout.
-- If a screen renders unexpectedly, fix the backend response data shape rather than editing frontend JSX styling.
-
----
-
-## 7. Secrets Management
-
-- Secrets (private keys, `DATABASE_URL`, `PINATA_JWT`) must reside exclusively in `.env` and are loaded via environment variables.
-- Never hardcode credentials, private keys, or database connection strings into source code.
-- `.env` and local database files must remain in `.gitignore`.
+## 9. Commits
+Format: `[scope] description` (e.g. `[hardware] two-phase littlefs sync`, `[backend] fix telemetry batch ingestion`). Never commit `.env`, `node_modules/`, `.venv/` or `*.db`.

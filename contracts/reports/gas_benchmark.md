@@ -1,6 +1,6 @@
 # Smart Contract Gas Benchmark Report
 
-**Generated:** 2026-10-20T16:00:41.155Z  
+**Generated:** 2026-11-19T19:23:31.599Z  
 **EVM Target:** Paris (Solidity 0.8.28 with 200 Optimizer runs)
 
 ## 1. Function Execution Gas Comparison
@@ -19,5 +19,5 @@
 | **10** | 5,65,340 gas | 2,75,218 gas | **51.31%** | 27,522 gas |
 | **20** | 11,30,680 gas | 5,16,509 gas | **54.31%** | 25,825 gas |
 
-### Key Finding for IEEE Research Paper
-Condition write aggregation via `recordConditionsBatch` achieves **over 60% gas reduction** for 10+ samples, enabling high-frequency cold-chain monitoring at fractional transaction overhead.
+### Key Finding
+Batching condition writes via `recordConditionsBatch` saves **54.31%** of gas at N = 20 (45.31% at N = 5, 51.31% at N = 10, 54.31% at N = 20). For context, a single modular RBAC write costs 73,634 gas versus 28,650 for the monolithic contract, so batching largely offsets the per-write overhead of the modular design (25,825 gas per reading at N = 20).

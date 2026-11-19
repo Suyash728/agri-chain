@@ -2,6 +2,8 @@
 
 > **Physical IoT edge node firmware, hardware architecture, and simulation runner for cold-chain produce monitoring.**  
 > **Detailed Engineering Specification:** See [`docs/IOT_HARDWARE_SPECIFICATION.md`](../docs/IOT_HARDWARE_SPECIFICATION.md) for the 49-page synthesis, itemized BOM, biochemical equations, and 7-day sprint plan.
+> **Firmware protocol, sync and batch linking:** [`../CLAUDE.md`](../CLAUDE.md) §4–§6.
+> **Current build:** the bench node uses a **DHT11** (`DHTTYPE DHT11` in `test_pentad/src/main.cpp`); the BOM below specifies the DHT22 upgrade (change `DHTTYPE`).
 
 ---
 
@@ -35,7 +37,7 @@
                   | [GPIO 4]  <--- DHT22 Data (with 4.7k pull-up to 3.3V)
                   | [GPIO 16] <--- NEO-6M GPS TX (UART2 RX)
                   | [GPIO 17] ---> NEO-6M GPS RX (UART2 TX)
-                  | [GPIO 25] ---> Low-Side N-MOSFET Gate (Peripheral Power Switch)
+                  | [GPIO 25] ---> Low-Side N-MOSFET Gate (optional; Wi-Fi firmware only)
                   | [GPIO 32] <--- SW-420 Vibration DO (Hardware Interrupt, FALLING)
                   | [GPIO 34] <--- MQ-135 AOUT (via 10k/20k Voltage Divider from 5V)
                   | [GPIO 35] <--- GL5528 LDR Optical Tamper (with 10k pull-down to GND)
@@ -77,7 +79,20 @@ Synced dumps are saved in `hardware/transit_logs/` (raw lines + `.meta.json`), a
 
 ---
 
-## 4. Hardware Simulation Runner
+## 4. Day-to-day use with the active node
+```bash
+./run_monitor.sh                                   # sync flash (SYNC → save → ACK), then live dashboard
+./run_monitor.sh --batch BAT-APL-903               # also link the device to a batch at start
+.venv/bin/python hardware/monitor_live.py --calibrate-r0   # MQ-135 clean-air calibration (once)
+```
+- **Linking:** link the sensor to a produce batch on the website (Logistics → Shipment Tracking → *Manage Sensors*), or press `[B]` in the monitor. The monitor syncs flash to the old batch before switching.
+- **Hosted backend:** set `AGRICHAIN_BACKEND_URL` and `AGRICHAIN_DEVICE_KEY` (see `../DEPLOYMENT.md`).
+- **Where files go:**
+  - synced dumps: `transit_logs/transit_dump_*.jsonl`, with `.meta.json` alongside;
+  - pending uploads: `transit_logs/outbox/`;
+  - records synced while unlinked: `transit_logs/outbox/unassigned/`.
+
+## 5. Hardware Simulation Runner
 
 Run without physical hardware to test the entire ingestion pipeline:
 
@@ -96,4 +111,7 @@ python hardware/simulate_esp32.py --mode spoilage
 
 # 5. Continuous streaming telemetry
 python hardware/simulate_esp32.py --mode stream --count 5
+
+# 6. Act as a virtual IoT device linked to a batch (link SIM-02 on the website first)
+python hardware/simulate_esp32.py --virtual SIM-02 --mode stream
 ```

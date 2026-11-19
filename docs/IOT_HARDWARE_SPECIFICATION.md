@@ -127,7 +127,9 @@ $$\frac{dT}{dt} \approx \frac{\Delta T}{\Delta t} = \frac{T_\infty - T(t)}{\tau_
 
 ## 5. Firmware Architecture & Industrial Resilience Patterns
 
-The embedded firmware ([`hardware/esp32_firmware/src/main.cpp`](file:///home/suyash/Projects/agri-chain/hardware/esp32_firmware/src/main.cpp)) implements five production-grade resilience patterns:
+> **Note (2026-11):** the node in active use runs `hardware/test_pentad/` (USB serial, two-phase LittleFS sync, SHA-256 record chain); see `CLAUDE.md` §4. The patterns below describe the standalone Wi-Fi variant.
+
+The embedded firmware ([`hardware/esp32_firmware/src/main.cpp`](../hardware/esp32_firmware/src/main.cpp)) implements five production-grade resilience patterns:
 
 1. **Non-Blocking `millis()` Execution:** The main loop contains zero `delay()` calls, ensuring sub-millisecond responsiveness for GPS stream parsing and tamper detection.
 2. **On-Chip Cryptographic SHA-256 Digest:** Uses the ESP32 hardware mbedTLS engine (`mbedtls/md.h`) to compute the SHA-256 digest of the serialized JSON payload. The hash is attached in the `X-Payload-SHA256` HTTP header for pre-chain verification.

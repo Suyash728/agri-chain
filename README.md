@@ -1,140 +1,83 @@
 # AgriChain
 
-> **A Decentralized IoT-Blockchain Framework with Customized Smart Contracts and Pre-Chain AI Gatekeeper for Transparent and Traceable Agricultural Supply Chains.**
+> **A decentralized IoT–blockchain framework with customized smart contracts and a pre-chain AI gatekeeper for transparent, traceable agricultural supply chains.**
 
-[![Status](https://img.shields.io/badge/Status-All_Phases_Complete-emerald?style=flat-square)]()
-[![Solidity](https://img.shields.io/badge/Solidity-0.8.28_Pausable-blue?style=flat-square)]()
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI_Python_3.11-green?style=flat-square)]()
-[![AI Trust Layer](https://img.shields.io/badge/AI_Trust-F1_0.9722_Isolation_Forest-purple?style=flat-square)]()
+[![Solidity](https://img.shields.io/badge/Solidity-0.8.28_%7C_OpenZeppelin_RBAC_%2B_Pausable-blue?style=flat-square)]()
+[![Backend](https://img.shields.io/badge/Backend-FastAPI_%7C_Python_3.11%2B-green?style=flat-square)]()
+[![Gas](https://img.shields.io/badge/Batched_writes-54.31%25_gas_saved_(N%3D20)-purple?style=flat-square)]()
 [![Storage](https://img.shields.io/badge/Storage-Supabase_PostgreSQL_%2B_IPFS-teal?style=flat-square)]()
 [![Frontend](https://img.shields.io/badge/Frontend-React_18_%7C_Tailwind_%7C_ethers.js-orange?style=flat-square)]()
+[![IoT](https://img.shields.io/badge/IoT-ESP32_%7C_LittleFS_%7C_SHA--256_chain-red?style=flat-square)]()
 
----
+## What it does
 
-## 1. Overview
+Perishable produce passes through farmers, cold-chain logistics and dark stores. When it spoils, nobody can prove who was responsible, and consumers can't see how much of the price reached the farmer. AgriChain addresses both problems:
 
-AgriChain is an end-to-end farm-to-fork supply chain traceability framework for perishable crops. An **AI Pre-Chain Trust Layer** evaluates IoT telemetry before committing data on-chain, quarantining sensor anomalies and physical tampering while immutably anchoring verified conditions. Every custody transfer records stage markups, guaranteeing the farmer's fair share is transparent to the consumer.
+- **Sensors ride with the crate.** An ESP32 node measures temperature, humidity, gas (VOC), shocks, lid opening and GPS. It buffers readings in flash while offline and hands them over with a verifiable SHA-256 chain when connected.
+- **A pre-chain AI trust layer checks every reading** (range, physical plausibility, Isolation Forest, replay detection) before conditions are anchored on an EVM chain. Suspect readings go to a hash-chained quarantine log.
+- **Custody and prices are recorded on-chain.** Every transfer (farm → transit → dark store → retail → sold) is forward-only and records the stage price in integer paise. The consumer sees the real price trail and the farmer's share.
+- **Each role has its own portal:** Farmer, Logistics, Dark Store, Consumer and Admin, plus a God Mode demo hub.
 
 ```
-[IoT Node / ESP32] ──► [AI Trust Layer (F1: 0.9722)] ──┬──► [EVM Modular Contracts] (52.7% gas saved)
-                                                      ├──► [Supabase PostgreSQL & IPFS Pinata]
-                                                      └──► [Multi-Role Frontend & God Mode Hub]
+ESP32 / virtual sensors ─► host bridge (sync, batch link) ─► FastAPI + AI trust layer ─┬─► contracts (Hardhat / Polygon Amoy)
+                                                                                       ├─► Supabase PostgreSQL / SQLite, IPFS
+                                                                                       └─► React multi-role web app
 ```
 
----
+## Quick start
 
-## 2. Key Capabilities
-
-- **Pre-Chain AI Gatekeeper**: 11-D feature extraction and Isolation Forest ($F_1 = 0.9722$) filter corrupt sensor data; valid telemetry is batched and anchored on-chain.
-- **Modular Smart Contracts**: 5 contracts (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, `AccessControlRoles`) with OpenZeppelin RBAC and Pausable circuit breakers.
-- **52.71% Gas Reduction**: Batched oracle writes (`recordConditionsBatch`) drastically reduce on-chain storage costs for continuous monitoring.
-- **Fair-Share Transparency**: Immutable price tracking across Farmer, Logistics, and Dark Store with non-repudiable fair-share percentage calculations.
-- **Role-Aligned Portals**:
-  - **Farmer**: Farm reputation, crop lot registration, IPFS lab certificates (NPOP Organic, IndGAP).
-  - **Logistics**: Reefer telematics, cold-chain monitoring, GPS route view, smart seal breach alerts, SLA penalties.
-  - **Dark Store**: Inbound GRN AI Trust Gate (automated quarantine / clearance), micro-inventory, retail checkout.
-  - **Consumer**: QR provenance, farm-to-fork journey timeline, transparent price breakdown, verified reviews.
-  - **Admin & Auditor**: Role management, emergency circuit breakers, SHA-256 hash-chain verification.
-- **Omniscient God Mode & Demo Lab**: Synchronized 4-quadrant command hub with 1-click simulation scenarios and automated presenter tour.
-
----
-
-## 3. Quick Start
-
-### One-Command Unified Launcher (Post-Installation)
-
-Run the entire 5-tier architecture (Hardhat local blockchain, automated contract deployment, FastAPI backend, demonstration data seeding, and Vite React frontend) with a single command:
-
-**Linux & macOS:**
-```bash
-./run.sh
-```
-
-**Windows (Command Prompt / PowerShell):**
-```cmd
-run.bat
-```
-or in PowerShell:
-```powershell
-.\run.ps1
-```
-
-**Cross-Platform Python Direct:**
-```bash
-python run.py
-```
-
-**Optional CLI Flags:**
-- `--no-browser`: Do not automatically open the default web browser (`http://localhost:3000`).
-- `--simulator`: Simultaneously launch the background ESP32 IoT telemetry stream simulator.
-- `--no-seed`: Skip demonstration dataset seeding on startup (retain existing database state).
-- `--kill-ports`: Automatically terminates any conflicting processes holding ports 8545, 8000, or 3000.
-
-> [!TIP]
-> Press `Ctrl+C` at any time to cleanly terminate all child services without leaving orphan processes or locked ports.
-
----
-
-### Manual Step-by-Step Setup
 ```bash
 git clone https://github.com/Suyash728/agri-chain.git && cd agri-chain
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r backend/requirements.txt -r trust-layer/requirements.txt
-```
+(cd contracts && npm install) && (cd frontend && npm install)
+cp .env.example .env            # defaults: local SQLite + local Hardhat chain
 
-### 2. Start Blockchain Node & Deploy Contracts
+./run.sh                        # Windows: run.bat or .\run.ps1   ·   any OS: python run.py
+```
+`run.py` starts a Hardhat chain on :8545, deploys the contracts, starts the backend on :8000, seeds demo data, and serves the web app on :3000. The flags are `--no-browser`, `--simulator`, `--no-seed` and `--kill-ports`.
+
+> [!WARNING]
+> Seeding **empties the database first**. If your `.env` points `DATABASE_URL` at a real Supabase project, run with `--no-seed`.
+
+### With the physical sensor node
 ```bash
-cd contracts && npm install
-npx hardhat node
-# In a new terminal:
-npx hardhat run scripts/deploy_amoy.cjs --network localhost
+.venv/bin/pio run -d hardware/test_pentad -t upload --upload-port /dev/ttyUSB0   # flash the ESP32
+./run_monitor.sh                                                                # sync flash + live dashboard
 ```
+Link the sensor to a produce batch in **Logistics → Shipment Tracking → Manage Sensors** (or press `[B]` in the monitor). No hardware? Use `python simulator/simulate.py --virtual`.
 
-### 3. Start Backend & Database
+## Tests
 ```bash
-cd backend
-uvicorn main:app --reload --port 8000
+cd contracts && npx hardhat test                    # 22 passing
+SQLITE_DB_PATH=/tmp/tl.db .venv/bin/pytest trust-layer/tests/     # 147 passing (use a DB copy)
+cd contracts && npx hardhat run scripts/benchmark_gas.cjs          # gas benchmark
 ```
 
-### 4. Launch Frontend
-```bash
-cd frontend && npm install
-npm run dev  # Open http://localhost:3000
-```
+## Results (reproduced 2026-11-18)
+| Claim | Result |
+|---|---|
+| Batched condition writes | **45.31% / 51.31% / 54.31%** gas saved at N = 5 / 10 / 20. A single modular write costs 73.6k gas vs 28.7k monolithic. |
+| AI trust layer, synthetic faults (7 types) | F1 **0.9722** (precision 94.59%, recall 100%). The **false-positive rate on normal data is 40%**, and the rules alone score F1 1.0, so the Isolation Forest currently adds only false positives. |
 
----
+Details, method and open issues are in [`reports/CODEBASE_AUDIT_2026-11-18.md`](reports/CODEBASE_AUDIT_2026-11-18.md).
 
-## 4. Verification & Testing
+## Repository
+| Path | Contents |
+|---|---|
+| `hardware/` | ESP32 firmware (`test_pentad/` active, `esp32_firmware/` Wi-Fi variant), host bridge `monitor_live.py`, simulator |
+| `backend/` | FastAPI API, Web3 relayer, Supabase/SQLite storage, IPFS, IoT device linking |
+| `trust-layer/` | Validation pipeline, Isolation Forest, fault simulator and evaluation |
+| `contracts/` | Solidity contracts, Hardhat tests, gas benchmark, deploy script |
+| `frontend/` | React 18 + Vite + Tailwind multi-role app |
+| `simulator/` | Multi-fault telemetry streaming simulator |
 
-```bash
-# Full capstone 8-stage verification (Contracts + DB + AI + Custody)
-python backend/scripts/verify_final_system.py
-
-# Run smart contract unit tests (22 passing) & gas benchmarks
-cd contracts && npx hardhat test && node scripts/benchmark_gas.cjs
-
-# Run full backend and AI test suite (163 passing)
-pytest trust-layer/tests/
-
-# Run ESP32 physical sensor simulation (nominal & breach fault demo)
-python hardware/simulate_esp32.py --mode demo
-```
-
----
-
-## 5. Repository Layout
-
-```
-.
-├── backend/       FastAPI REST API, dual-storage (Supabase/SQLite), Web3 relayer, IPFS pinning
-├── contracts/     Hardhat suite: 5 modular Solidity contracts + gas benchmark
-├── frontend/      React 18 + Vite + Tailwind multi-role UI + God Mode Hub
-├── trust-layer/   AI Pre-Chain anomaly detection microservice (F1: 0.9722)
-├── hardware/      ESP32 firmware (DHT22, GPS, GPIO 4 button) & Python simulator
-└── simulator/     IoT multi-scenario telemetry streaming simulator
-```
-
----
+## Documentation
+- [`CLAUDE.md`](CLAUDE.md): the full engineering guide (architecture, firmware protocol, backend, commands, status).
+- [`RULES.md`](RULES.md): the hard constraints. [`MEMORY.md`](MEMORY.md): the decision log.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md), [`PRD.md`](PRD.md): architecture overview and product requirements.
+- [`DEPLOYMENT.md`](DEPLOYMENT.md): free-tier deployment (Render, Vercel, Supabase, Polygon Amoy).
+- [`docs/`](docs/): hardware specification, breadboard guide, academic material.
 
 ## License
 MIT Academic License — Capstone Major Project 2026–2027.

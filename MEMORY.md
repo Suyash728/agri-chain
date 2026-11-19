@@ -1,197 +1,56 @@
-# MEMORY.md — AgriChain System Memory & Project State
+# MEMORY.md — Decision Log
 
-> **Compact Source of Truth for AgriChain.**
-> Comprehensive historical session logs are archived in `docs/reference/MEMORY_FULL_ARCHIVE.md`.
+Dated record of what changed and **why**, newest first. It is not a specification. The current system is described in [`CLAUDE.md`](CLAUDE.md) and the constraints in [`RULES.md`](RULES.md). The session-by-session history up to 2026-11-08 is in [`docs/archive/MEMORY_FULL_ARCHIVE.md`](docs/archive/MEMORY_FULL_ARCHIVE.md).
 
----
-
-## 1. System Overview & 5-Tier Architecture
-
-AgriChain is a tamper-evident agricultural supply chain platform connecting physical IoT edge telemetry to an EVM blockchain via a pre-chain AI Trust Layer.
-
-```
-[ ESP32 Hardware Node / Simulator ]
-         │ (HTTP / Serial 115200 baud)
-         ▼
-[ FastAPI Backend (Port 8000) ] ──► [ Dual Storage: Supabase Cloud PostgreSQL / SQLite ]
-         │
-         ▼
-[ Pre-Chain AI Trust Layer ]
-  - Range, Rate-of-Change & Haversine Plausibility Checks
-  - 11-D Time-Series Feature Engineering
-  - Isolation Forest ML Anomaly Detection (F1 = 0.9722 on synthetic faults, Latency ~1.8ms)
-  - Cryptographic Replay Detection & SHA-256 Fingerprinting
-         │
-         ├── [ VALID & READY_FOR_ORACLE ]
-         │         │
-         │         ▼ (web3.py relayer / client MetaMask)
-         │   [ Modular Smart Contracts (Hardhat Port 8545 / Polygon Amoy) ]
-         │     ├── ProductRegistry.sol (Metadata, IPFS CID Anchoring, Circuit Breaker)
-         │     ├── CustodyTransfer.sol (Monotonic Lifecycle & Cumulative Price Trail)
-         │     ├── ColdChainMonitor.sol (Batched Writes — 54.31% Gas Reduction at N=20)
-         │     ├── PolicyConfig.sol (Crop Temperature / Humidity Thresholds)
-         │     └── AccessControlRoles.sol (OpenZeppelin Role-Based Access Control)
-         │
-         └── [ ANOMALOUS / CORRUPTED ]
-                   │
-                   ▼
-             [ IsoLog SHA-256 Hash-Chained Quarantine Ledger ]
-
-         │
-         ▼
-[ Multi-Role Frontend (Port 3000) ]
-  Farmer | Logistics | Dark Store | Consumer | Admin | God Mode Hub
-```
+**How to add an entry:** date, what changed, why, and anything a later agent must not undo. Keep it to a few lines and link to code or reports for detail.
 
 ---
 
-## 2. Inviolable System Rules & Data Constraints
+## 2026-11-20 — Dashboard end-to-end pass; docs refactor
+- **Every screen checked.** All roles and screens were tested on an isolated stack: 31 desktop, 15 mobile, plus a UI-driven journey from farmer to consumer and an admin pause. Results are in the audit report §3b.
+- **No invented data anywhere.** The consumer price trail now shows recorded lot prices ÷ weight (integer paise). Fabricated ratings, review counts, best-seller flags, certificates and expiry KPIs are gone. *Why:* the platform's purpose is a trustworthy price and condition trail, and invented numbers defeat it. This is now RULES.md §6.
+- **Quick GRN price.** The quick GRN records the lot's latest recorded price; it used to record a fixed ₹1,400. The header GRN passes the real batch ID.
+- **Logistics ledger.** It shows only IN_TRANSIT and IN_STORAGE flows plus penalties.
+- **Timestamps** are shown in `APP_TIMEZONE` (default Asia/Kolkata) rather than server time. Render runs in UTC.
+- **Docs restructured.** CLAUDE.md is the single full guide; AGENTS.md points to it; RULES.md lists the hard constraints; this file is the decision log. Superseded docs moved to `docs/archive/`. Core docs now quote the **reproduced** metrics: gas 54.31% at N=20; F1 0.9722 on synthetic faults with a 40% false-positive rate. The academic guides in `docs/` were deliberately left unchanged.
 
-1. **Money Representation**: Always integer `price_paise` (1 INR = 100 paise). Never use floating-point for financial calculations.
-2. **Temperature Representation**: Always integer `temp_deci_c` on-chain (24.5°C = 245). Floats are allowed only in off-chain AI ingestion before discretization.
-3. **Audit Trail Persistence**: Every incoming telemetry ping is recorded in `readings` before AI evaluation to maintain an audit trail.
-4. **State Machine Transition**: Produce custody transitions are strictly monotonic and forward-only:
-   $$\text{REGISTERED} \longrightarrow \text{IN\_TRANSIT} \longrightarrow \text{IN\_STORAGE} \longrightarrow \text{AT\_RETAIL} \longrightarrow \text{SOLD}$$
-5. **Frontend Constraints**: Wire, never recreate. Do not modify color palettes, fonts, or Tailwind layouts in `frontend/`. Replace mock data only with exact matching API response schemas.
+## 2026-11-19 — IoT device ↔ batch linking (branch `feature/iot-batch-linking`)
+- **Who picks the batch.** An operator links a sensor to a batch on the website (Logistics Shipment Tracking, Dark Store Incoming Deliveries) or with the monitor's `[B]` picker, and the monitor follows the website. *Why:* the user chose manual linking with a good picker over automatic linking on custody change.
+- **Offline records.** They go to the batch linked at sync time (option B). The monitor syncs to the old batch before every switch, and unlinked syncs are held. Link history is dated so time-window allocation (option A) can be added later.
+- **Virtual devices.** Simulators can act as virtual devices with `--virtual`. Only explicitly registered devices are tracked, so default simulators and God Mode behave as before.
+- **Frontend rule relaxed** to allow small self-contained additions (RULES.md §5), approved by the user.
 
----
+## 2026-11-19 — Free-tier deployment config (branch `deploy/free-tier`)
+- **Hosting:** Render (backend), Vercel (frontend), Supabase (DB), Polygon Amoy (chain), plus a GitHub Actions keep-alive. See `DEPLOYMENT.md`.
+- **`APP_ENV=production` access policy:**
+  - a CORS allow-list;
+  - `X-Device-Key` for telemetry;
+  - `X-Admin-Token` for destructive and admin routes;
+  - `/demo/*` hidden unless `DEMO_MODE`.
+- **Chain safety:** network-derived fees and a nonce lock. Production refuses Hardhat key #0, and persona roles are granted only on local networks. *Why:* the deploy script granted roles to Hardhat accounts with published keys, on every network.
+- Fixed a farm-stage BREACH crash (a non-existent `batches.farmer_address` column).
 
-## 3. Subsystem Specifications
+## 2026-11-18 — Codebase audit
+- **Results:** all suites pass, but the headline claims don't hold. Gas savings are 54.31% (not 52.71% or ">60%"). F1 reproduces, but the Isolation Forest adds only false positives.
+- **Critical findings:** no authentication; a fabricated price trail (fixed 2026-11-20).
+- Full report: `reports/CODEBASE_AUDIT_2026-11-18.md`.
+- **Testing rule:** the repo `.env` points at Supabase and a live chain. Always test on isolated copies.
 
-### A. Smart Contracts (`contracts/`)
-- **Solidity Version**: `0.8.28` using OpenZeppelin `AccessControl` and `Pausable`.
-- **RBAC Roles**: `DEFAULT_ADMIN_ROLE`, `FARMER_ROLE`, `LOGISTICS_ROLE`, `RETAILER_ROLE`, `ORACLE_ROLE`.
-- **Condition Batching**: `ColdChainMonitor.recordConditionsBatch` reproduces **54.31% gas reduction** at $N=20$ (45.31% at N=5, 51.31% at N=10; re-run 2026-11-18). A single modular write costs 73.6k gas vs 28.7k for the monolithic `AgriChainCore`.
-- **Circuit Breaker**: Emergency pausing locks batch registration, custody transfer, and condition logging during security audits.
-- **Verification**: `npx hardhat test` (22/22 tests passing).
+## 2026-11-18 — ESP32 firmware and host bridge (branch `hardware/two-phase-sync`)
+- **Two-phase LittleFS sync.** `SYNC` dumps; the host fsyncs, then sends `ACK:n`. Two-segment rotation, no silent format, a device clock (host `TIME`, GPS UTC preferred), `shock_delta` / `tamper`, and a hash chain over stored records that the host verifies. *Why:* the old sync cleared flash without an acknowledgement, and rotation wiped everything.
+- **MQ-135 math.** It now accounts for the 1.5 divider and 5 V supply, uses eFuse-calibrated ADC reads, and has stored R0 calibration. VOC is forwarded only when calibrated, because uncalibrated readings exceeded the 50 ppm spoilage threshold in clean air.
+- **Host bridge.** It connects without resetting the board, keeps an outbox with retry, reconnects, and maps tamper to the values the backend understands (`TAMPER_OPENED` / `SHOCK_DETECTED`).
+- **Hardware state (physical board):**
+  - the SW-420 is oversensitive;
+  - the LDR saturates in room light;
+  - the MQ-135 is uncalibrated.
 
-### B. Backend & Storage (`backend/`)
-- **Framework**: FastAPI with modular APIRouter architecture (`routers/farmer.py`, `routers/logistics.py`, `routers/darkstore.py`, `routers/consumer.py`, `routers/telemetry.py`, `routers/admin.py`, `routers/batches.py`, `routers/demo.py`, `routers/common.py`), centralized Pydantic schemas (`schemas.py`), Web3.py client (`chain.py`), Pinata IPFS integration (`ipfs.py`), and dual-storage adapter (`db.py`).
-- **Database**: Connects to Supabase PostgreSQL when `DATABASE_URL` is set, with seamless fallback to SQLite (`backend/agrichain.db`).
-- **Endpoints**: 80 modular route operations covering Telemetry (`POST /telemetry`, `POST /telemetry/batch`), Batches (`/batches/*`), Dashboards (`/farmer/*`, `/logistics/*`, `/darkstore/*`, `/admin/*`), and Traceability (`GET /batches/{id}/traceability`). All template mock data removed and all frontend fetches centralized to `${API_BASE_URL}`.
-
-### C. AI Trust Layer (`trust-layer/`)
-- **Pipeline**: Schema validation → Plausibility → Feature Extraction → Isolation Forest → Replay Check → Verdict Engine → IsoLog Quarantine.
-- **Metrics (reproduced 2026-11-18, default config, seed 42)**: Precision 94.59%, Recall 100%, F1 0.9722, **false-positive rate on normal data 40%** (35% at 20 sequences/fault). The earlier figures (P 96.30% / R 98.18%) are not reproducible. With the Isolation Forest disabled, F1 = 1.000 and FPR = 0%: the rules catch every synthetic fault and the IF only adds false positives. See `reports/CODEBASE_AUDIT_2026-11-18.md`.
-- **Verification**: `pytest trust-layer/tests/` (147/147 tests passing).
-
-### D. Physical Hardware IoT Node (`hardware/test_pentad/`)
-- **Target**: ESP32 DevKit v1 (30-pin) programmed in PlatformIO (C++/Arduino).
-- **Sensors & Pinout**:
-  - `DHT11`: GPIO 4 (Microclimate & Magnus-Tetens dew point)
-  - `MQ-135`: GPIO 34 / ADC1 (Two-variable hygrothermally compensated gas e-nose: $\text{CO}_2, \text{NH}_3$, alcohol, acetone)
-  - `SW-420`: GPIO 32 / IRQ (falling-edge impact counter; edges within 200 ms coalesced into one event; `shock_delta` per packet)
-  - `LDR`: GPIO 35 / ADC1 (Optical lux & crate anti-tamper; latches > ADC 2500, clears < 2200)
-  - `NEO-6M GPS`: RX=GPIO 16, TX=GPIO 17 (TinyGPSPlus, 9600 baud, non-blocking; GPS UTC sets the record clock)
-  - `LittleFS Flash`: two 175 KB log segments (350 KB ceiling, 200 KB reserve guard); rotation drops only the oldest segment
-- **Offline Sync (two-phase)**: `CMD:SYNC` only dumps; the host saves + fsyncs the dump, then `CMD:ACK:<n>` deletes exactly those records. Records carry `ts`/`ts_src`/`boot`/`up_ms` so offline timestamps are real (`CMD:TIME` from host, GPS UTC preferred).
-- **MQ-135**: divider-corrected (V_RL = 1.5 × V_pin, Vc = 5 V), eFuse-calibrated ADC; R0 must be calibrated in clean air (`--calibrate-r0`) before gas values (`gas_cal: true`) are forwarded to the backend.
-- **Edge Security**: SHA-256 chain over stored records (`hash = SHA256(prev | body)`, full 64-hex), verified on the host each sync (gaps vs tampering); head persists across reboots.
-- **Mission Control (`run_monitor.sh` / `hardware/monitor_live.py`)**:
-  - Live 1 Hz dashboard; connects without resetting the board; auto-reconnects on USB disconnect.
-  - Durable outbox (`hardware/transit_logs/outbox/`) retries `/telemetry/batch`; maps tamper to `TAMPER_OPENED` / `SHOCK_DETECTED` / `SEALED`.
-  - Interactive hotkeys: `[P]` Pause/Resume, `[S]` Sync Flash, `[C]` Clear Flash (press twice), `[M]` Google Maps, `[B]` Cycle Produce Batch, `[Q]` Clean Quit.
-  - Terminal audio alerts (`\a` for impact shocks, `\a\a` for optical light breach).
-
----
-
-## 4. Key Verification & Operational Commands
-
-```bash
-# 1. Start Local Blockchain Node & Run Tests
-cd contracts && npx hardhat node
-cd contracts && npx hardhat test               # 22 passing
-
-# 2. Run AI Trust Layer Test Suite
-pytest trust-layer/tests/                      # 147 passing
-
-# 3. Start Backend API Server
-cd backend && uvicorn main:app --reload --port 8000
-
-# 4. Start Frontend Web Client
-cd frontend && npm run dev                     # Port 3000
-
-# 5. Capstone End-to-End System Verification
-python backend/scripts/verify_final_system.py  # 10-phase exhaustive verification
-
-# 6. E2E Playwright Screenshot & Visual Fidelity Inspection
-python scripts/e2e_screenshots_inspection.py   # Full-page screenshots for 12 role views
-
-# 7. E2E Multi-Role Manual Batch Flow Verification
-python scripts/test_full_ui_journey.py         # Full Farmer -> Logistics -> Dark Store -> Consumer flow
-
-# 8. Physical Hardware Mission Control
-./run_monitor.sh [--skip-sync] [--batch BAT-MGO-701]
-```
-
----
-
-## 5. Active Produce Lot Presets
-
-| Batch ID | Crop Name | Origin / Cluster | Target Policy |
-| :--- | :--- | :--- | :--- |
-| `BAT-MGO-701` | Alphonso Mango | Ratnagiri GI Cold-Chain | 10–15°C, 85–90% RH |
-| `BAT-TOM-802` | Organic Field Tomatoes | Nashik Agro Cluster | 8–12°C, 85–90% RH |
-| `BAT-APL-903` | Shimla Royal Apples | Himachal Controlled Atmos | 0–4°C, 90–95% RH |
-| `BAT-TUR-404` | Salem Pure Turmeric | Curcumin High Grade | Ambient dry |
-| `BAT-WHT-505` | Sharbati Golden Wheat | MP Sehore Dry Storage | Ambient dry |
-| `BAT-BER-606` | Fresh Strawberries | Mahabaleshwar Cold Express | 0–2°C, 90–95% RH |
-
-
----
-
-## 6. Unified Full-Stack Launchers (Cross-Platform)
-
-- **Linux & macOS**: `./run.sh`
-- **Windows**: `run.bat` (Command Prompt) or `.\run.ps1` (PowerShell)
-- **Direct Python**: `python run.py [--no-browser] [--simulator] [--no-seed] [--kill-ports]`
-- **Orchestration Lifecycle**:
-  1. **Pre-flight Check**: Detects virtual environment Python (`.venv/bin/python` or `.venv\Scripts\python.exe`) and CLI tools (`npx`, `npm`).
-  2. **Port Conflict Resolution**: Audits ports 8545, 8000, 3000 (auto-clears conflicts with `--kill-ports`).
-  3. **Tier 1 (Blockchain)**: Spawns Hardhat EVM node on port 8545 with JSON-RPC readiness polling (`eth_blockNumber`).
-  4. **Tier 2 (Contracts)**: Executes `contracts/scripts/deploy_amoy.cjs --network localhost`, deploying `ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, configuring RBAC roles and manifests.
-  5. **Tier 3 (Backend & AI)**: Spawns FastAPI REST server & AI Trust Layer on port 8000 (`uvicorn main:app`), polling `/docs` for health.
-  6. **Tier 4 (Data Seeding)**: Calls `POST /admin/seed-demo-data` to seed multi-role produce lots, condition metrics, and custody trails.
-  7. **Tier 5 (Web UI)**: Spawns Vite React 18 web client on port 3000.
-  8. **Browser Launch**: Auto-opens default web browser to `http://localhost:3000`.
-  9. **Graceful Teardown**: Captures `Ctrl+C` (SIGINT/SIGTERM) and terminates process groups (`os.killpg` / `taskkill /F /T`), ensuring clean port release.
-
-
----
-
-## 7. Claude Code Project Handoff & IoT Audit Mandate
-
-- **Handoff Document Created**: [`CLAUDE.md`](file:///home/suyash/Projects/agri-chain/CLAUDE.md) at repository root.
-- **Scope & Objectives Documented**:
-  1. Full 5-tier architecture context (ESP32 $\rightarrow$ FastAPI $\rightarrow$ Pre-Chain AI Trust Layer $\rightarrow$ EVM Smart Contracts $\rightarrow$ React 18 Multi-Role UI).
-  2. Active hardware sprint definition: Physical ESP32 DevKit v1 node with DHT11/22, MQ-135, SW-420, LDR, NEO-6M GPS.
-  3. LittleFS offline ring buffer storage protocol, serial wire protocol (`CMD:STATUS`, `CMD:SYNC`, `CMD:CLEAR`), and automatic host download to `hardware/transit_logs/`.
-  4. End-to-end ingestion pipeline into `POST /telemetry` / `POST /telemetry/batch` with pre-validation persistence, Isolation Forest scoring, and on-chain batch anchoring.
-  5. Exhaustive multi-tier stability and accuracy audit directive spanning Firmware, Host Serial Bridge, Backend/AI Trust, Smart Contracts, and Multi-Role UI.
-  6. Non-negotiable engineering rules (integer paise, integer deci-°C, monotonic custody state machine, frontend style lock).
-
----
-
-## 8. Codebase Audit (2026-11-18)
-
-- **Full report**: [`reports/CODEBASE_AUDIT_2026-11-18.md`](reports/CODEBASE_AUDIT_2026-11-18.md). It covers 22/22 contract tests, 147/147 trust-layer tests, the frontend build, and the 10-phase capstone script (passes on an isolated stack).
-- **Critical open defects**:
-  - no backend authentication (passwordless login, unchecked tokens, open CORS) while one relayer key holds every on-chain role;
-  - the consumer price trail synthesizes rates and markups when data is missing or non-monotonic.
-- **High open defects**:
-  - Isolation Forest false positives (35–40%) permanently block custody through the circuit breaker;
-  - the IPFS fallback "CID" is not a real CID;
-  - the `readings` audit table drops device, timestamp, location, VOC and tamper;
-  - failed batch anchoring is not retried.
-- **Testing rule**: the repo `.env` targets Supabase and a live chain, so test only on isolated copies (report §6).
-
----
-
-## 9. IoT Device ↔ Batch Linking (2026-11-19, branch `feature/iot-batch-linking`)
-
-- **Choosing the batch:** the operator links a sensor to a batch from the website (Logistics Shipment Tracking, Dark Store Incoming Deliveries) or from the monitor's `[B]` picker. The monitor follows the website link. Hard-coded batch presets were removed.
-- **Offline records:** they go to the batch linked at sync time. The monitor syncs to the old batch before switching. Unlinked syncs are held and released to the next link.
-- **History and tables:** link history is dated, ready for later time-window allocation. New tables are `iot_devices`, `device_assignments` and `device_telemetry`.
-- **Virtual devices:** simulators run with `--virtual` act as `SIMULATED` devices. Default simulator and God Mode behaviour are unchanged.
-- **Frontend rule relaxed:** small self-contained additions are allowed (sensor picker and sensor card in `frontend/src/components/iot/`). See CLAUDE.md §7.5.
-- **Known interaction:** any ANOMALOUS reading still permanently blocks a batch through the custody circuit breaker (audit #4). A desk-bound ESP32 (29 °C, LDR saturated) will quarantine whatever batch it is linked to.
+## 2026-11-09 and earlier — Build history (summary)
+- **Aug–Sep 2026:**
+  - Phases 1–10 built the frontend design, then Hardhat contracts, the SQLite backend, rule-based validation and the simulator.
+  - Next came the AI trust layer (Isolation Forest, 7 fault types), role dashboards and quarantine UI, and modular contracts (RBAC, Pausable, batched writes).
+  - Supabase + IPFS, role wallets and reviews came last.
+- **Oct 2026:**
+  - The quarantine log was separated from on-chain breach recording, and the IsoLog hash chain added.
+  - The reference-repository review, quality scoring, God Mode and the presenter walkthrough were also added.
+- **Nov 2026:** `main.py` was split into routers, the cross-platform runners (`run.sh`/`run.bat`/`run.ps1`/`run.py`) were added, and CLAUDE.md was created.

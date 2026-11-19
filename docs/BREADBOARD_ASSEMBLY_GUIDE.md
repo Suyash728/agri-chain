@@ -16,7 +16,7 @@ This guide walks you step-by-step through assembling and flashing your physical 
 | **DT0016** | DHT11 Module | Blue 3-Pin Sensor Breakout | Temperature & Relative Humidity | Built-in pull-up resistor. Firmware set to `DHT11` |
 | **DT0029** | MQ-135 Gas Sensor | 4-Pin Metal-Mesh Chemiresistor | Biochemical Volatiles (Ethylene, Rot) | Requires **5V (VIN)** for heater; AO to ADC1 (GPIO 34) |
 | **DT0008** | NEO-6M GPS Module | GY-GPS6MV2 + Ceramic Patch Antenna | Cold-Chain Transit Geolocation | Hardware UART2 (`GPIO 16` RX / `GPIO 17` TX) |
-| **DT0076** | SW-420 Sensor | Blue Module with LM393 & Trimpot | Transit Shock / Vibration Interrupt | Connected to `GPIO 27` hardware interrupt |
+| **DT0076** | SW-420 Sensor | Blue Module with LM393 & Trimpot | Transit Shock / Vibration Interrupt | Connected to `GPIO 32` hardware interrupt |
 | **DT0151** | Breadboard | GL-12 840 Points Solderless | Prototyping Platform | Central divider isolates ESP32 dual pin banks |
 | **—** | Jumpers | 10 M-M + 10 F-F Jumper Wires | Interconnections | Used for breadboard routing |
 | **DT0066** | TP4056 Module | Type-C 1A Li-Ion Charger with Protection | Battery Power Subsystem | Phase 2 standalone crate power |
@@ -52,7 +52,7 @@ flowchart TD
 
     DHT -- "Signal (OUT)" --> ESP4["GPIO 4 (D4)"]
     MQ -- "Analog (AO)" --> ESP34["GPIO 34 (ADC1_CH6)"]
-    SW -- "Digital (DO)" --> ESP27["GPIO 27 (Interrupt)"]
+    SW -- "Digital (DO)" --> ESP32P["GPIO 32 (Interrupt)"]
     GPS -- "TX Pin" --> ESP16["GPIO 16 (RX2)"]
     GPS -- "RX Pin" --> ESP17["GPIO 17 (TX2)"]
 ```
@@ -70,7 +70,7 @@ flowchart TD
 | **MQ-135** | `DO` (Digital Out) | *Leave Unconnected* | — | — | Digital comparator output unused |
 | **SW-420** | `VCC` | `3V3` | Red (+) Rail | M-M / F-M | 3.3V Power |
 | **SW-420** | `GND` | `GND` | Blue (-) Rail | M-M / F-M | Ground |
-| **SW-420** | `DO` (Digital Out) | `GPIO 27` (D27) | Breadboard Row | M-M / F-M | Hardware interrupt on physical shock |
+| **SW-420** | `DO` (Digital Out) | `GPIO 32` (D32) | Breadboard Row | M-M / F-M | Hardware interrupt on physical shock |
 | **NEO-6M GPS** | `VCC` | `3V3` (or VIN) | Red (+) Rail | M-M / F-M | 3.3V GPS receiver power |
 | **NEO-6M GPS** | `GND` | `GND` | Blue (-) Rail | M-M / F-M | Ground |
 | **NEO-6M GPS** | `TX` (Module Transmit) | `GPIO 16` (RX2) | Breadboard Row | M-M / F-M | NMEA 9600 baud GPS stream into ESP32 |
@@ -107,7 +107,7 @@ flowchart TD
 ### Step 5: Wire the SW-420 (Vibration & Mechanical Shock)
 1. Connect `VCC` to the `3V3` rail.
 2. Connect `GND` to the `GND` rail.
-3. Connect `DO` to ESP32 **`GPIO 27`** (marked `D27` or `27`).
+3. Connect `DO` to ESP32 **`GPIO 32`** (marked `D32` or `32`).
 4. *Sensitivity Tuning*: Gently tap the breadboard. If the onboard LED on the SW-420 does not flash, or stays constantly on, use a small flat-head screwdriver to turn the blue potentiometer until the LED turns on only when tapped.
 
 ### Step 6: Connect the NEO-6M GPS & Antenna
@@ -122,7 +122,11 @@ flowchart TD
 
 ## 4. Software Configuration & Flashing
 
-The firmware is located in [`hardware/esp32_firmware/src/main.cpp`](file:///home/suyash/Projects/agri-chain/hardware/esp32_firmware/src/main.cpp).
+> **Which firmware?** The active node runs **`hardware/test_pentad/`** (USB serial to the host monitor, LittleFS two-phase sync, SHA-256 chain):
+> `.venv/bin/pio run -d hardware/test_pentad -t upload --upload-port /dev/ttyUSB0`, then `./run_monitor.sh`. See `CLAUDE.md` §4–§5.
+> The steps below are for the standalone **Wi-Fi variant** (`hardware/esp32_firmware/`), which posts directly to the backend over HTTP.
+
+The Wi-Fi firmware is located in [`hardware/esp32_firmware/src/main.cpp`](../hardware/esp32_firmware/src/main.cpp).
 
 ### Configure Your Wi-Fi & Backend Endpoint
 Open `hardware/esp32_firmware/src/main.cpp` and update lines 38–40:

@@ -1,72 +1,45 @@
-# AgriChain Backend API
+# AgriChain Backend
 
-FastAPI REST API serving multi-role dashboards, smart contract orchestration, AI trust layer ingestion, dual-mode relational storage, IPFS document pinning, and Omniscient God Mode synchronization.
+FastAPI API for every role. It handles telemetry ingestion through the AI trust layer, the Web3 relayer for the contracts, dual storage (Supabase PostgreSQL or SQLite), IPFS pinning and IoT device linking. Full details are in [`../CLAUDE.md`](../CLAUDE.md) §6–§7.
 
----
-
-## 1. Architecture & Capabilities
-
-- **Modular Smart Contract Relayer (`chain.py`)**: Interfaces with deployed EVM contracts (`ProductRegistry`, `CustodyTransfer`, `ColdChainMonitor`, `PolicyConfig`, `AccessControlRoles`) on local Hardhat nodes or Polygon Amoy.
-- **Dual-Storage Relational Layer (`db.py`)**: Seamlessly connects to Supabase Cloud PostgreSQL via `DATABASE_URL` session pooler, with automatic fallback to local SQLite (`backend/agrichain.db`).
-- **Pre-Chain AI Trust Layer Ingestion**: Ingests IoT sensor telemetry (`POST /telemetry`), routes payloads through 11-D feature extraction and Isolation Forest ML models ($F_1 = 0.9722$), and anchors verified batches on-chain while quarantining anomalies.
-- **Decentralized Storage (`ipfs.py`)**: Pins produce inspection certificates (PDF/images) to IPFS via Pinata and anchors cryptographic CIDs (`ipfs://Qm...`) on-chain.
-- **Omniscient God Mode (`main.py`)**: Consolidated real-time 4-quadrant state aggregation (`GET /demo/godmode/{id}`) and automated cinematic presentation tour (`POST /demo/godmode/tour-step`).
-- **Tamper-Evident Quarantine Audit**: Implements IsoLog SHA-256 hash chaining (`prev_hash` → `entry_hash`) with runtime cryptographic verification (`GET /quarantine/verify-integrity`).
-
----
-
-## 2. Directory Structure
-
+## Layout
 ```
 backend/
-├── main.py                     FastAPI application, lifespan handler & multi-role endpoints
-├── db.py                       Dual database adapter (PostgreSQL + SQLite) with connection pooling
-├── chain.py                    Web3.py client for modular smart contracts & role management
-├── ipfs.py                     Pinata IPFS pinning gateway & cryptographic CID hasher
-├── migrations/                 PostgreSQL DDL schema definitions (11 normalized tables)
-├── modular-abis/               Exported ABIs for modular contracts
-├── modular-deployments.json    Active contract deployment addresses
-└── scripts/                    Verification and test suites
-    ├── verify_final_system.py  Capstone 8-stage automated verification suite
-    ├── seed_demo_batch.py      Batch seeder utility for presentations
-    └── migrate_sqlite_to_supabase.py Database migration utility
+├── main.py            App, lifespan (init_db + baseline model), access-policy middleware, router registration
+├── settings.py        APP_ENV / DEMO_MODE / CORS allow-list / admin & device keys (production policy)
+├── db.py              Supabase PostgreSQL (DATABASE_URL) or SQLite (agrichain.db); 16 tables created on boot
+├── chain.py           web3.py relayer: EIP-1559 fees, nonce lock, contract addresses from manifest or *_ADDRESS env
+├── ipfs.py            Pinata pinning; local content-hash fallback without credentials (not a real IPFS CID)
+├── iot.py             Device registry, device ↔ batch links (dated), device telemetry
+├── common.py          Shared helpers: timestamps in APP_TIMEZONE (format_local_timestamp, iso_utc), labels
+├── seeder.py          Demo dataset (POST /admin/seed-demo-data; TRUNCATEs first)
+├── routers/           common · telemetry · batches · farmer · logistics · darkstore · consumer · admin · demo · devices
+├── migrations/        001_initial_schema.sql (PostgreSQL; applied idempotently on every boot)
+├── modular-abis/      Contract ABIs
+├── modular-deployments.json   Local deployment addresses (written by contracts/scripts/deploy_amoy.cjs)
+└── scripts/           verify_final_system.py (10-phase check), migrate_sqlite_to_supabase.py, seed_demo_batch.py
 ```
 
----
-
-## 3. Running the Backend
-
-### Prerequisites
-Ensure Python 3.11+ is installed and dependencies are satisfied:
+## Run locally
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
 pip install -r backend/requirements.txt -r trust-layer/requirements.txt
+cd backend && uvicorn main:app --reload --port 8000        # API docs: http://localhost:8000/docs
 ```
+Settings come from the repo-root `.env` (see `../.env.example`):
 
-### Environment Configuration (`.env`)
-Create `.env` in the repository root:
-```env
-DATABASE_URL="postgresql://postgres.[REF]:[PASS]@aws-0-ap-south-1.pooler.supabase.com:5432/postgres"
-HARDHAT_RPC_URL="http://127.0.0.1:8545"
-PINATA_JWT="your_pinata_jwt_here"
-```
+| Variable | Meaning |
+|---|---|
+| `DATABASE_URL` | Supabase **pooler** URI. Leave empty for local SQLite. |
+| `RPC_URL`, `PRIVATE_KEY` | Chain endpoint and relayer key (local Hardhat by default). |
+| `*_ADDRESS` | Optional contract address overrides. |
+| `PINATA_JWT` | IPFS pinning. |
+| `APP_ENV`, `DEMO_MODE`, `ALLOWED_ORIGINS`, `ADMIN_API_TOKEN`, `DEVICE_API_KEY` | Production access policy (`../DEPLOYMENT.md`). |
+| `APP_TIMEZONE` | Display timezone (default `Asia/Kolkata`). |
 
-### Start the Server
-```bash
-cd backend
-uvicorn main:app --reload --port 8000
-```
-Swagger API documentation is available at `http://localhost:8000/docs`.
+> [!WARNING]
+> If `.env` points at Supabase, starting the backend reads and writes your cloud database, and `POST /admin/seed-demo-data` empties it first. For testing, use the isolated recipe in `../CLAUDE.md` §13.3.
 
----
-
-## 4. Verification Tests
-
-```bash
-# Execute capstone 8-stage full system test
-python backend/scripts/verify_final_system.py
-
-# Execute full AI Trust Layer test suite
-pytest trust-layer/tests/
-```
+## Rules that apply here
+- **Money in integer paise;** persist every reading before validation (`../RULES.md`).
+- **Never return invented values.** Prices, ratings, reviews, certificates and KPIs come from the database, or are `null` / empty.
+- **Name new PostgreSQL tables carefully.** The PG adapter appends `RETURNING id` to INSERTs whose SQL mentions `readings`, `users`, `quarantine` and similar.

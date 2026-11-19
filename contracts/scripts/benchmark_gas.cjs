@@ -214,8 +214,16 @@ async function main() {
 |---|---|---|---|---|
 ${batchResults.map(r => `| **${r.readingsCount}** | ${r.singleTotalGas.toLocaleString()} gas | ${r.batchedGas.toLocaleString()} gas | **${r.savingsPercentage.toFixed(2)}%** | ${r.avgGasPerReading.toLocaleString()} gas |`).join("\n")}
 
-### Key Finding for IEEE Research Paper
-Condition write aggregation via \`recordConditionsBatch\` achieves **over 60% gas reduction** for 10+ samples, enabling high-frequency cold-chain monitoring at fractional transaction overhead.
+### Key Finding
+${(() => {
+    // Computed from this run's results (the text used to be hard-coded)
+    const best = batchResults.reduce((a, b) => (b.savingsPercentage > a.savingsPercentage ? b : a));
+    const single = benchmarkReport.operationsGas.singleConditionRecord;
+    return `Batching condition writes via \`recordConditionsBatch\` saves **${best.savingsPercentage.toFixed(2)}%** of gas at N = ${best.readingsCount} ` +
+      `(${batchResults.map(r => `${r.savingsPercentage.toFixed(2)}% at N = ${r.readingsCount}`).join(", ")}). ` +
+      `For context, a single modular RBAC write costs ${single.modularWithRBAC.toLocaleString()} gas versus ${single.monolithic.toLocaleString()} for the monolithic contract, ` +
+      `so batching largely offsets the per-write overhead of the modular design (${best.avgGasPerReading.toLocaleString()} gas per reading at N = ${best.readingsCount}).`;
+  })()}
 `;
 
   const mdPath = path.join(reportsDir, "gas_benchmark.md");
