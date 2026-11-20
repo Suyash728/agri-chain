@@ -196,7 +196,7 @@ Lines over 128 characters are discarded whole (`CMD_REJECTED:TOO_LONG`).
 - **Design rule:** see RULES.md §5. Small self-contained additions are allowed when a feature needs input the existing UI can't capture, e.g. `components/iot/`.
 - **Live-data rule:** never render hard-coded or random values as if they were live data. Use real data or an explicit empty state.
 - **Browser storage:** use `src/utils/storage.js` (`storageGet` / `storageSet` / `storageRemove` / `storageKeys`), never `localStorage` directly. Blocked storage must not break a page.
-- **Static audit:** `cd ~/Projects/trustlayer && uv run trustlayer audit ~/Projects/agri-chain [--all]` should stay at 0 high / 0 medium. Fix the finding, or add `# trustlayer: ignore[check] -- <reason>` only for a deliberate, narrow case.
+- **Static audit:** `cd ~/Projects/killscore && uv run killscore audit ~/Projects/agri-chain [--all]` should stay at 0 high / 0 medium. Fix the finding, or add `# killscore: ignore[check] -- <reason>` only for a deliberate, narrow case.
 
 ## 11. Simulations
 - **God Mode / Demo Lab:** `/demo/*`, hidden in production unless `DEMO_MODE=true`.

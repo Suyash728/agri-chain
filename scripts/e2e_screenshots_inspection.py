@@ -48,7 +48,7 @@ def run():
                 if splash.is_visible(timeout=1000):
                     page.locator("body").click()
                     time.sleep(0.5)
-            except Exception:  # trustlayer: ignore[fail-open, composed] -- splash screen is optional
+            except Exception:  # killscore: ignore[fail-open, composed] -- splash screen is optional
                 pass
 
             page.wait_for_timeout(1500)

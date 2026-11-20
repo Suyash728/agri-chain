@@ -45,9 +45,9 @@ if sys.platform == "win32":
     # Enable ANSI escape sequences on Windows 10/11
     try:
         import ctypes
-        kernel32 = ctypes.windll.kernel32  # trustlayer: ignore[api-resolution] -- Windows-only, inside sys.platform guard
+        kernel32 = ctypes.windll.kernel32  # killscore: ignore[api-resolution] -- Windows-only, inside sys.platform guard
         kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
-    except Exception:  # trustlayer: ignore[fail-open, composed] -- Windows ANSI colours are cosmetic
+    except Exception:  # killscore: ignore[fail-open, composed] -- Windows ANSI colours are cosmetic
         pass
 
 ROOT_DIR = Path(__file__).resolve().parent
@@ -110,12 +110,12 @@ def kill_port(port: int):
                 if len(parts) >= 5 and "LISTENING" in line:
                     pid = parts[-1]
                     subprocess.run(f"taskkill /F /PID {pid}", shell=True, capture_output=True)
-        except Exception:  # trustlayer: ignore[fail-open, composed] -- best-effort port cleanup; a busy port fails loudly at bind
+        except Exception:  # killscore: ignore[fail-open, composed] -- best-effort port cleanup; a busy port fails loudly at bind
             pass
     else:
         try:
             subprocess.run(f"fuser -k {port}/tcp", shell=True, capture_output=True)
-        except Exception:  # trustlayer: ignore[fail-open, composed] -- best-effort port cleanup; a busy port fails loudly at bind
+        except Exception:  # killscore: ignore[fail-open, composed] -- best-effort port cleanup; a busy port fails loudly at bind
             pass
 
 def wait_for_http(url: str, timeout: float = 20.0, method: str = "GET", post_data: dict = None) -> bool:
@@ -148,7 +148,7 @@ def terminate_process(proc, name="Service"):
     except Exception:
         try:
             proc.terminate()
-        except Exception:  # trustlayer: ignore[fail-open, composed] -- process already gone
+        except Exception:  # killscore: ignore[fail-open, composed] -- process already gone
             pass
 
 def cleanup_all():
@@ -223,13 +223,13 @@ def main():
     # Step 1: Start Hardhat Local Blockchain Node (Port 8545)
     # =========================================================================
     print(f"\n1. {Colors.CYAN}Starting Hardhat Local Blockchain Node (Port 8545)...{Colors.RESET}")
-    hardhat_log = open(LOGS_DIR / "hardhat.log", "w", encoding="utf-8")  # trustlayer: ignore[composed] -- stays open for the child process's lifetime
+    hardhat_log = open(LOGS_DIR / "hardhat.log", "w", encoding="utf-8")  # killscore: ignore[composed] -- stays open for the child process's lifetime
     
     popen_kwargs = {"cwd": str(CONTRACTS_DIR), "stdout": hardhat_log, "stderr": hardhat_log}
     if sys.platform != "win32":
         popen_kwargs["preexec_fn"] = os.setsid
     else:
-        popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP  # trustlayer: ignore[api-resolution] -- Windows-only branch
+        popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP  # killscore: ignore[api-resolution] -- Windows-only branch
 
     proc_hardhat = subprocess.Popen([npx_bin, "hardhat", "node"], **popen_kwargs)
     processes["Hardhat Blockchain Node"] = proc_hardhat
@@ -264,13 +264,13 @@ def main():
     # Step 3: Start FastAPI Backend & AI Trust Layer (Port 8000)
     # =========================================================================
     print(f"\n3. {Colors.CYAN}Starting FastAPI REST Backend & AI Trust Layer (Port 8000)...{Colors.RESET}")
-    backend_log = open(LOGS_DIR / "backend.log", "w", encoding="utf-8")  # trustlayer: ignore[composed] -- stays open for the child process's lifetime
+    backend_log = open(LOGS_DIR / "backend.log", "w", encoding="utf-8")  # killscore: ignore[composed] -- stays open for the child process's lifetime
     
     popen_kwargs_backend = {"cwd": str(BACKEND_DIR), "stdout": backend_log, "stderr": backend_log}
     if sys.platform != "win32":
         popen_kwargs_backend["preexec_fn"] = os.setsid
     else:
-        popen_kwargs_backend["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP  # trustlayer: ignore[api-resolution] -- Windows-only branch
+        popen_kwargs_backend["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP  # killscore: ignore[api-resolution] -- Windows-only branch
 
     backend_cmd = [python_bin, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
     proc_backend = subprocess.Popen(backend_cmd, **popen_kwargs_backend)
@@ -301,13 +301,13 @@ def main():
     # Step 5: Start Vite + React 18 Frontend (Port 3000)
     # =========================================================================
     print(f"\n5. {Colors.CYAN}Starting Vite + React 18 Web Client (Port 3000)...{Colors.RESET}")
-    frontend_log = open(LOGS_DIR / "frontend.log", "w", encoding="utf-8")  # trustlayer: ignore[composed] -- stays open for the child process's lifetime
+    frontend_log = open(LOGS_DIR / "frontend.log", "w", encoding="utf-8")  # killscore: ignore[composed] -- stays open for the child process's lifetime
     
     popen_kwargs_frontend = {"cwd": str(FRONTEND_DIR), "stdout": frontend_log, "stderr": frontend_log}
     if sys.platform != "win32":
         popen_kwargs_frontend["preexec_fn"] = os.setsid
     else:
-        popen_kwargs_frontend["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP  # trustlayer: ignore[api-resolution] -- Windows-only branch
+        popen_kwargs_frontend["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP  # killscore: ignore[api-resolution] -- Windows-only branch
 
     frontend_cmd = [npm_bin, "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
     proc_frontend = subprocess.Popen(frontend_cmd, **popen_kwargs_frontend)
@@ -322,12 +322,12 @@ def main():
     # Optional simulator
     if args.simulator:
         print(f"\n6. {Colors.CYAN}Launching IoT Telemetry Simulator in background...{Colors.RESET}")
-        sim_log = open(LOGS_DIR / "simulator.log", "w", encoding="utf-8")  # trustlayer: ignore[composed] -- stays open for the child process's lifetime
+        sim_log = open(LOGS_DIR / "simulator.log", "w", encoding="utf-8")  # killscore: ignore[composed] -- stays open for the child process's lifetime
         sim_kwargs = {"cwd": str(ROOT_DIR), "stdout": sim_log, "stderr": sim_log}
         if sys.platform != "win32":
             sim_kwargs["preexec_fn"] = os.setsid
         else:
-            sim_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP  # trustlayer: ignore[api-resolution] -- Windows-only branch
+            sim_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP  # killscore: ignore[api-resolution] -- Windows-only branch
         proc_sim = subprocess.Popen([python_bin, "hardware/simulate_esp32.py", "--mode", "demo"], **sim_kwargs)
         processes["IoT Simulator"] = proc_sim
         print(f"   {Colors.GREEN}✔ IoT Telemetry streaming to /telemetry{Colors.RESET}")

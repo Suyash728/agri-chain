@@ -29,8 +29,8 @@ TRUST_LAYER_PATH = ROOT_DIR / "trust-layer"
 if str(TRUST_LAYER_PATH) not in sys.path:
     sys.path.insert(0, str(TRUST_LAYER_PATH))
 
-from app.schemas.simulation import FaultConfig, FaultType, SimulationConfig  # trustlayer: ignore[api-resolution] -- trust-layer/ is put on sys.path above
-from app.services.simulator import telemetry_simulator  # trustlayer: ignore[api-resolution] -- trust-layer/ is put on sys.path above
+from app.schemas.simulation import FaultConfig, FaultType, SimulationConfig  # killscore: ignore[api-resolution] -- trust-layer/ is put on sys.path above
+from app.services.simulator import telemetry_simulator  # killscore: ignore[api-resolution] -- trust-layer/ is put on sys.path above
 
 # Crop default environmental set-points
 CROP_DEFAULTS = {
@@ -118,7 +118,7 @@ def run_simulator(
     start_lat = 18.5204
     start_lon = 73.8567
     try:
-        from app.services.history import history_repository  # trustlayer: ignore[api-resolution] -- trust-layer/ is put on sys.path above
+        from app.services.history import history_repository  # killscore: ignore[api-resolution] -- trust-layer/ is put on sys.path above
         last_reading = history_repository.get_last_reading(device_id=device_id, batch_id=batch_id)
         if last_reading:
             if last_reading.timestamp:

@@ -7,7 +7,7 @@ Dated record of what changed and **why**, newest first. It is not a specificatio
 ---
 
 ## 2026-11-20 — TrustLayer audit (`~/Projects/trustlayer`, `audit --all`)
-- **Result:** 6 high / 82 medium / 874 low → 0 / 0 / 586 low (`audit` default: 0 / 0 / 0). 36 findings are suppressed inline, each with `# trustlayer: ignore[...] -- <reason>`. Don't remove a marker without fixing what it describes.
+- **Result:** 6 high / 82 medium / 874 low → 0 / 0 / 586 low (`audit` default: 0 / 0 / 0). 36 findings are suppressed inline, each with `# killscore: ignore[...] -- <reason>`. Don't remove a marker without fixing what it describes.
 - **Real bugs fixed:**
   - `logger` was never defined in the `admin`, `consumer` and `demo` routers, so 15 error handlers raised `NameError`. Ruff only reported this as F405 because of `from schemas import *`.
   - Checkout auto-inserted a 5-star review.

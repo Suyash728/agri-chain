@@ -24,7 +24,7 @@ import pathlib
 if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:  # trustlayer: ignore[fail-open, composed] -- Windows console encoding is cosmetic
+    except Exception:  # killscore: ignore[fail-open, composed] -- Windows console encoding is cosmetic
         pass
 
 ROOT_DIR = pathlib.Path(__file__).resolve().parents[2]

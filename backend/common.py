@@ -165,7 +165,7 @@ def origin_meta_value(origin, key: str) -> Optional[float]:
 
 
 def _parse_batch_meta(b):
-    origin = b["origin_farm"] if "origin_farm" in b.keys() else ""  # trustlayer: ignore[composed] -- sqlite3.Row: `in row` tests values, so .keys() is required
+    origin = b["origin_farm"] if "origin_farm" in b.keys() else ""  # killscore: ignore[composed] -- sqlite3.Row: `in row` tests values, so .keys() is required
     cat = ""
     qty = 0.5
     price = 2500.0
