@@ -1,6 +1,7 @@
 import { API_BASE_URL } from '../utils/api';
 import React, { useState } from 'react';
 import { AlertTriangle, Trash2, CheckCircle2, RefreshCw, X, ShieldAlert } from 'lucide-react';
+import { storageKeys, storageRemove } from '../utils/storage';
 
 export const CleanSlateModal = ({ isOpen, onClose, onResetComplete }) => {
   const [loading, setLoading] = useState(false);
@@ -23,13 +24,9 @@ export const CleanSlateModal = ({ isOpen, onClose, onResetComplete }) => {
       }
       const data = await res.json();
       setResult(data);
-      try {
-        Object.keys(localStorage).forEach((key) => {
-          if (key.startsWith('agrichain_read_notifs_')) {
-            localStorage.removeItem(key);
-          }
-        });
-      } catch (_) {}
+      storageKeys()
+        .filter((key) => key.startsWith('agrichain_read_notifs_'))
+        .forEach(storageRemove);
       window.dispatchEvent(new CustomEvent('agrichain-data-reset', { detail: data }));
       window.dispatchEvent(new CustomEvent('agrichain-data-updated', { detail: data }));
       if (onResetComplete) {

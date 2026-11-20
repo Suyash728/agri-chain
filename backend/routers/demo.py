@@ -1,32 +1,23 @@
-import math
 import time
 import json
 import uuid
-import socket
 import hashlib
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Union, Dict, Any
+from datetime import datetime, timezone
+from typing import Dict, Any
 
-from fastapi import APIRouter, HTTPException, Query, Body, File, UploadFile, Form, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
 
 import chain
-import ipfs
-from db import get_connection, DB_PATH
+from db import get_connection
 from common import (
     PARTICIPANT_ADDRESSES,
-    SENSOR_CORRUPTION_CODES,
-    COLD_CHAIN_POLICY_BREACH_CODES,
-    REASON_CODE_LABELS,
-    ROLE_TO_ONCHAIN_MAP,
-    format_local_timestamp,
-    get_local_lan_ip,
     insert_quarantine_entry,
-    _parse_batch_meta,
-    _resolve_category_id,
-    _resolve_crop_icon,
+    origin_meta_value,
 )
 from schemas import *
+
+import logging
+logger = logging.getLogger("agrichain.demo")
 
 router = APIRouter()
 
@@ -169,7 +160,7 @@ def post_demo_iot_inject(payload: DemoIotInjectRequest):
 
         if is_fraud:
             # Cryptographic fraud / replay attack: Isolated off-chain
-            reason = f"SENSOR_REPLAY_ATTACK_DETECTED: Duplicate signature"
+            reason = "SENSOR_REPLAY_ATTACK_DETECTED: Duplicate signature"
             r_cur = conn.execute(
                 """
                 INSERT INTO readings (batch_id, temp_c, humidity_pct, verdict, tx_hash)
@@ -940,20 +931,11 @@ def build_godmode_state(conn, batch_id: str):
     parts = origin_full.split("||")
     origin_display = parts[0].strip()
     qty_kg = 1000.0
-    price_inr = 20000.0
-    for p in parts[1:]:
-        p = p.strip()
-        if p.startswith("qty="):
-            try:
-                val = float(p.split("=")[1])
-                qty_kg = val * 1000.0 if val <= 10.0 else val
-            except Exception:
-                pass
-        elif p.startswith("price="):
-            try:
-                price_inr = float(p.split("=")[1])
-            except Exception:
-                pass
+    meta_qty = origin_meta_value(origin_full, "qty")
+    if meta_qty is not None:
+        qty_kg = meta_qty * 1000.0 if meta_qty <= 10.0 else meta_qty
+    meta_price = origin_meta_value(origin_full, "price")
+    price_inr = meta_price if meta_price is not None else 20000.0
 
     price_per_kg = round(price_inr / qty_kg, 2) if qty_kg > 0 else 20.0
 
@@ -1198,7 +1180,7 @@ def post_demo_godmode_tour_step(payload: DemoGodModeTourStepRequest):
             except Exception:
                 tx_reg = f"0x{uuid.uuid4().hex}"
 
-            encoded_origin = f"Nashik Valley Cluster #4 ||cat=vegetables||qty=1.00||price=20000.00"
+            encoded_origin = "Nashik Valley Cluster #4 ||cat=vegetables||qty=1.00||price=20000.00"
             conn.execute(
                 """
                 INSERT INTO batches (batch_id, crop_name, origin_farm, harvest_date, farmer_name)

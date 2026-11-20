@@ -38,14 +38,16 @@ export async function apiRequest(endpoint, options = {}, timeoutMs = 15000) {
 
     if (!response.ok) {
       let errorDetail = `API Request failed with status ${response.status}`;
-      try {
-        const errJson = await response.json();
-        errorDetail = errJson.detail || errJson.message || errorDetail;
-      } catch (_) {
+      // Read the body once: after a failed response.json() the stream is used up, so a
+      // second response.text() could never return the plain-text error.
+      const errText = await response.text().catch(() => '');
+      if (errText) {
         try {
-          const errText = await response.text();
-          if (errText) errorDetail = errText;
-        } catch (_) {}
+          const errJson = JSON.parse(errText);
+          errorDetail = (errJson && (errJson.detail || errJson.message)) || errorDetail;
+        } catch {
+          errorDetail = errText; // not JSON: show the server's text as-is
+        }
       }
       const err = new Error(errorDetail);
       err.status = response.status;

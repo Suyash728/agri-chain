@@ -16,6 +16,7 @@ import {
   Clock
 } from 'lucide-react';
 import { API_BASE_URL } from '../../utils/api';
+import { storageSet } from '../../utils/storage';
 
 export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
   const [notifications, setNotifications] = useState([]);
@@ -123,9 +124,7 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
     const allIds = notifications.map((n) => n.id);
     const newSet = new Set(allIds);
     setReadIds(newSet);
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(allIds));
-    } catch (_) {}
+    storageSet(storageKey, JSON.stringify(allIds));
     window.dispatchEvent(new CustomEvent('agrichain-notifications-read', { detail: { role } }));
     showToast('All notifications marked as read!');
   };
@@ -139,9 +138,7 @@ export const NotificationsModal = ({ isOpen, onClose, role = 'farmer' }) => {
       next.add(id);
     }
     setReadIds(next);
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
-    } catch (_) {}
+    storageSet(storageKey, JSON.stringify(Array.from(next)));
     window.dispatchEvent(new CustomEvent('agrichain-notifications-read', { detail: { role } }));
   };
 

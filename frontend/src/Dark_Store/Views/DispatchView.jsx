@@ -36,9 +36,7 @@ export const DispatchView = ({ onBack }) => {
   const handleCallRider = (rider) => {
     setActiveCallToast(`Calling ${rider.name} (${rider.vehicle}) at +91 98765 43210...`);
     setTimeout(() => setActiveCallToast(null), 4000);
-    try {
-      window.location.href = 'tel:+919876543210';
-    } catch (_) {}
+    window.location.href = 'tel:+919876543210';
   };
 
   return (

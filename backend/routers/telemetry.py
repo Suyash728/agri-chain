@@ -1,33 +1,25 @@
 import math
-import time
-import json
 import uuid
-import socket
 import hashlib
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Union, Dict, Any
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Body, File, UploadFile, Form, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
 
 import chain
-import ipfs
 from db import get_connection, DB_PATH
 import iot
 from common import (
-    PARTICIPANT_ADDRESSES,
     SENSOR_CORRUPTION_CODES,
     COLD_CHAIN_POLICY_BREACH_CODES,
     REASON_CODE_LABELS,
-    ROLE_TO_ONCHAIN_MAP,
-    format_local_timestamp,
-    get_local_lan_ip,
     insert_quarantine_entry,
-    _parse_batch_meta,
-    _resolve_category_id,
-    _resolve_crop_icon,
+    origin_meta_value,
 )
 from schemas import *
+
+import logging
+logger = logging.getLogger("agrichain.telemetry")
 
 router = APIRouter()
 
@@ -139,8 +131,8 @@ def _ingest_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
         if not anomaly_detector.is_trained():
             try:
                 evaluation_service._fit_baseline_model(seed=42)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("Isolation Forest baseline fit failed; anomaly score unavailable: %s", e)
         anomaly = anomaly_detector.predict_features(features)
 
         # 7. Cryptographic Integrity & Replay Detection
@@ -385,12 +377,9 @@ def _ingest_telemetry(payload: TelemetryRequest, anchor_onchain: bool = True):
                 ).fetchone()
                 crop_n = batch_info["crop_name"] if batch_info else (payload.crop_name or "Produce")
                 loss_kg = 200.0
-                if batch_info and "qty=" in str(batch_info["origin_farm"]):
-                    try:
-                        qty_str = str(batch_info["origin_farm"]).split("qty=")[1].split("||")[0]
-                        loss_kg = float(qty_str) * 1000.0
-                    except Exception:
-                        pass
+                meta_qty = origin_meta_value(batch_info["origin_farm"], "qty") if batch_info else None
+                if meta_qty is not None:
+                    loss_kg = meta_qty * 1000.0
 
                 latest_price_paise = 6000
                 custody_row = conn.execute(

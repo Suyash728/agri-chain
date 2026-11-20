@@ -2,11 +2,8 @@ import os
 import socket
 from zoneinfo import ZoneInfo
 import hashlib
-import json
-import math
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Tuple, Dict, Any
-from db import get_connection
+from datetime import datetime, timezone
+from typing import Optional
 
 PARTICIPANT_ADDRESSES = {
     "farmer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -150,26 +147,36 @@ REASON_CODE_LABELS = {
 }
 
 
+def _meta_float(text) -> Optional[float]:
+    """Float from an origin_farm metadata value, or None when it isn't a number."""
+    try:
+        return float(str(text).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def origin_meta_value(origin, key: str) -> Optional[float]:
+    """Numeric `key=` field from an origin_farm string ("Farm||cat=..||qty=..||price=.."), or None."""
+    for part in str(origin or "").split("||"):
+        part = part.strip()
+        if part.startswith(f"{key}="):
+            return _meta_float(part[len(key) + 1:])
+    return None
+
+
 def _parse_batch_meta(b):
-    origin = b["origin_farm"] if "origin_farm" in b.keys() else ""
+    origin = b["origin_farm"] if "origin_farm" in b.keys() else ""  # trustlayer: ignore[composed] -- sqlite3.Row: `in row` tests values, so .keys() is required
     cat = ""
     qty = 0.5
     price = 2500.0
     if "||cat=" in origin:
-        parts = origin.split("||")
-        for part in parts:
+        for part in origin.split("||"):
             if part.startswith("cat="):
                 cat = part.replace("cat=", "").strip()
-            elif part.startswith("qty="):
-                try:
-                    qty = float(part.replace("qty=", "").strip())
-                except:
-                    pass
-            elif part.startswith("price="):
-                try:
-                    price = float(part.replace("price=", "").strip())
-                except:
-                    pass
+        parsed_qty = origin_meta_value(origin, "qty")
+        parsed_price = origin_meta_value(origin, "price")
+        qty = parsed_qty if parsed_qty is not None else qty
+        price = parsed_price if parsed_price is not None else price
     return cat, qty, price
 
 

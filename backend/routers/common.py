@@ -1,32 +1,19 @@
-import math
-import time
-import json
-import uuid
-import socket
-import hashlib
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Union, Dict, Any
+from datetime import datetime, timezone
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Body, File, UploadFile, Form, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, Response
 
 import chain
 import ipfs
-from db import get_connection, DB_PATH
+from db import get_connection
 from common import (
-    PARTICIPANT_ADDRESSES,
-    SENSOR_CORRUPTION_CODES,
-    COLD_CHAIN_POLICY_BREACH_CODES,
-    REASON_CODE_LABELS,
-    ROLE_TO_ONCHAIN_MAP,
     format_local_timestamp,
     get_local_lan_ip,
-    insert_quarantine_entry,
-    _parse_batch_meta,
-    _resolve_category_id,
-    _resolve_crop_icon,
 )
 from schemas import *
+
+import logging
+logger = logging.getLogger("agrichain.common")
 
 router = APIRouter()
 
@@ -449,7 +436,7 @@ def get_universal_notifications(role: Optional[str] = None):
                     "recipient_role": "consumer",
                     "category": "QUALITY_AUDIT",
                     "title": f"Quality Shield Audit: #{q['batch_id']}",
-                    "desc": f"AI Trust Layer intercepted sub-optimal cold-chain conditions. 100% farm freshness guarantee applied.",
+                    "desc": "AI Trust Layer intercepted sub-optimal cold-chain conditions. 100% farm freshness guarantee applied.",
                     "time": format_local_timestamp(q["created_at"]),
                     "icon": "ShieldCheck",
                     "color": "text-emerald-700",

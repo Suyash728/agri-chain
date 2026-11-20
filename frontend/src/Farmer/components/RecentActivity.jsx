@@ -6,17 +6,16 @@ const formatDisplayDate = (val) => {
   if (typeof val !== 'string') return String(val);
   if (val === 'Just now' || val.includes('ago') || val.includes('Today')) return val;
   if (val.includes('T') || val.includes('+') || val.endsWith('Z')) {
-    try {
-      const d = new Date(val);
-      if (!isNaN(d.getTime())) {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const hours = String(d.getHours()).padStart(2, '0');
-        const mins = String(d.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day} ${hours}:${mins}`;
-      }
-    } catch (e) {}
+    // new Date() never throws; an unparseable string gives an invalid date and falls through.
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const mins = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${mins}`;
+    }
   }
   return val;
 };

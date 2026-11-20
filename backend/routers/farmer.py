@@ -1,32 +1,19 @@
-import math
-import time
-import json
-import uuid
-import socket
-import hashlib
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Union, Dict, Any
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Query, Body, File, UploadFile, Form, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
 
 import chain
-import ipfs
-from db import get_connection, DB_PATH
+from db import get_connection
 from common import (
     PARTICIPANT_ADDRESSES,
-    SENSOR_CORRUPTION_CODES,
-    COLD_CHAIN_POLICY_BREACH_CODES,
-    REASON_CODE_LABELS,
-    ROLE_TO_ONCHAIN_MAP,
     format_local_timestamp,
-    get_local_lan_ip,
-    insert_quarantine_entry,
     _parse_batch_meta,
     _resolve_category_id,
-    _resolve_crop_icon,
 )
 from schemas import *
+
+import logging
+logger = logging.getLogger("agrichain.farmer")
 
 router = APIRouter()
 
@@ -144,16 +131,9 @@ def get_farmer_crops():
             total_tonnes = 0.0
             total_val = 0
             for c in cat["crops"]:
-                try:
-                    q_str = c["quantity"].split()[0]
-                    total_tonnes += float(q_str)
-                except:
-                    total_tonnes += 0.5
-                try:
-                    v_str = c["value"].replace("₹", "").replace(",", "").strip()
-                    total_val += int(float(v_str))
-                except:
-                    total_val += 2500
+                # Both strings were formatted from numbers just above, so they always parse.
+                total_tonnes += float(c["quantity"].split()[0])
+                total_val += int(float(c["value"].replace("₹", "").replace(",", "").strip()))
 
             result.append({
                 "id": cat["id"],
@@ -555,7 +535,7 @@ def confirm_farmer_order(batch_id: str):
         to_holder = "Safexpress Cold Chain Logistics"
         price_paise = last_event["price_paise"] if (last_event and last_event["price_paise"]) else 0
         now_str = datetime.now(timezone.utc).strftime("%d %b, %Y • %I:%M %p")
-        tx_hash = "0x" + hashlib.sha256(f"{real_batch_id}:CONFIRMED:{time.time()}".encode()).hexdigest()
+        tx_hash = None
 
         try:
             if chain and hasattr(chain, "transfer_custody"):
@@ -567,8 +547,8 @@ def confirm_farmer_order(batch_id: str):
                 )
                 if onchain_tx:
                     tx_hash = onchain_tx
-        except Exception:
-            pass
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"On-chain custody transfer failed: {e}")
 
         conn.execute(
             """
@@ -615,7 +595,7 @@ def complete_farmer_order(batch_id: str):
         to_holder = "Consumer Doorstep Delivery"
         price_paise = last_event["price_paise"] if (last_event and last_event["price_paise"]) else 0
         now_str = datetime.now(timezone.utc).strftime("%d %b, %Y • %I:%M %p")
-        tx_hash = "0x" + hashlib.sha256(f"{real_batch_id}:SOLD:{time.time()}".encode()).hexdigest()
+        tx_hash = None
 
         try:
             if chain and hasattr(chain, "transfer_custody"):
@@ -627,8 +607,8 @@ def complete_farmer_order(batch_id: str):
                 )
                 if onchain_tx:
                     tx_hash = onchain_tx
-        except Exception:
-            pass
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"On-chain custody transfer failed: {e}")
 
         conn.execute(
             """

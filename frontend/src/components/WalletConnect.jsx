@@ -96,8 +96,8 @@ export const WalletProvider = ({ children }) => {
 
       if (isAdmin.status === 'fulfilled' && isAdmin.value) return 'Admin / Farmer';
       if (isFarmer.status === 'fulfilled' && isFarmer.value) return 'Farmer';
-    } catch (_) {
-      // Fallback to default persona on chain read error
+    } catch (err) {
+      console.warn('Role lookup on chain failed; showing the default persona:', err);
     }
 
     return 'Consumer';

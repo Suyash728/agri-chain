@@ -6,7 +6,6 @@ Utility script to feed the optimal multi-role demonstration dataset across
 blockchain and database whenever wanted.
 """
 
-import os
 import sys
 import pathlib
 

@@ -31,7 +31,7 @@ APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
 IS_PRODUCTION = APP_ENV == "production"
 DEMO_MODE = _env_bool("DEMO_MODE", default=not IS_PRODUCTION)
 ALLOWED_ORIGINS = _env_list("ALLOWED_ORIGINS")
-ALLOWED_ORIGIN_REGEX = os.getenv("ALLOWED_ORIGIN_REGEX") or None
+ALLOWED_ORIGIN_REGEX = os.getenv("ALLOWED_ORIGIN_REGEX") or None  # trustlayer: ignore[fail-open] -- optional regex; None disables it
 ADMIN_API_TOKEN = os.getenv("ADMIN_API_TOKEN") or None
 DEVICE_API_KEY = os.getenv("DEVICE_API_KEY") or None
 

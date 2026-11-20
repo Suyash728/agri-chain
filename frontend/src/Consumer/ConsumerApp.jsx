@@ -200,9 +200,10 @@ export const ConsumerApp = ({ onLogout, currentTab = 'home', onSelectTab, initia
       });
 
       if (res.ok) {
+        const order = await res.json().catch(() => ({}));
         setIsOrderSuccessOpen(true);
         setCartItems([]);
-        showToast('Order confirmed! Tracking dispatch.');
+        showToast(order.anchored === false ? order.message : 'Order confirmed! Tracking dispatch.');
         window.dispatchEvent(new CustomEvent('agrichain-data-updated'));
       } else {
         const errJson = await res.json().catch(() => ({}));

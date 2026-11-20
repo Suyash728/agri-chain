@@ -5,6 +5,7 @@ SQLite database management for the AI Trust Layer.
 Persists telemetry history, immutable audit trails, and cryptographic replay records.
 """
 
+import logging
 import pathlib
 import sqlite3
 from typing import Optional
@@ -80,8 +81,9 @@ def get_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
         try:
             conn.execute("PRAGMA journal_mode = WAL")
             conn.execute("PRAGMA busy_timeout = 5000")
-        except Exception:
-            pass
+        except sqlite3.Error as e:
+            # WAL is a concurrency optimisation; the connection still works in the default mode.
+            logging.getLogger("trustlayer.db").warning("SQLite PRAGMA setup failed for %s: %s", target_path, e)
     return conn
 
 

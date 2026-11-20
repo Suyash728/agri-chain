@@ -4,7 +4,6 @@ Complete Phase 3 (Remaining Screenshots 06-12) & Phase 4 (Strategic Questions)
 Using local vLLM Qwen3-VL-8B-Thinking on http://127.0.0.1:8001
 """
 
-import os
 import json
 import base64
 import time

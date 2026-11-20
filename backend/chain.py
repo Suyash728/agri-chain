@@ -292,8 +292,8 @@ def transfer_custody(
                     c_rec = custody_transfer_contract.functions.getCustody(b32).call()
                     if c_rec[3] and c_rec[1] >= state_int:
                         return "0x" + hashlib.sha256(f"{batch_id}:{state_int}:ONCHAIN_ALREADY_SET".encode()).hexdigest()
-                except Exception:
-                    pass
+                except Exception as lookup_err:
+                    logger.debug("Custody lookup after revert failed for %s: %s", batch_id, lookup_err)
             raise
     elif legacy_contract:
         try:
@@ -512,10 +512,7 @@ def grant_role(role_name: str, account_address: str) -> dict:
             target_contracts.append(("ProductRegistry", product_registry_contract))
         if custody_transfer_contract:
             target_contracts.append(("CustodyTransfer", custody_transfer_contract))
-    elif role_key == "LOGISTICS_ROLE":
-        if custody_transfer_contract:
-            target_contracts.append(("CustodyTransfer", custody_transfer_contract))
-    elif role_key == "RETAILER_ROLE":
+    elif role_key in ("LOGISTICS_ROLE", "RETAILER_ROLE"):
         if custody_transfer_contract:
             target_contracts.append(("CustodyTransfer", custody_transfer_contract))
     elif role_key == "ORACLE_ROLE":
@@ -553,10 +550,7 @@ def revoke_role(role_name: str, account_address: str) -> dict:
             target_contracts.append(("ProductRegistry", product_registry_contract))
         if custody_transfer_contract:
             target_contracts.append(("CustodyTransfer", custody_transfer_contract))
-    elif role_key == "LOGISTICS_ROLE":
-        if custody_transfer_contract:
-            target_contracts.append(("CustodyTransfer", custody_transfer_contract))
-    elif role_key == "RETAILER_ROLE":
+    elif role_key in ("LOGISTICS_ROLE", "RETAILER_ROLE"):
         if custody_transfer_contract:
             target_contracts.append(("CustodyTransfer", custody_transfer_contract))
     elif role_key == "ORACLE_ROLE":

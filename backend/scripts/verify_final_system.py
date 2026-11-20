@@ -24,7 +24,7 @@ import pathlib
 if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
+    except Exception:  # trustlayer: ignore[fail-open, composed] -- Windows console encoding is cosmetic
         pass
 
 ROOT_DIR = pathlib.Path(__file__).resolve().parents[2]
@@ -74,7 +74,7 @@ def main():
         "role": "LOGISTICS_ROLE"
     })
     assert grant_res.get("success"), "Role grant failed on-chain"
-    print(f"  [PASS] AccessControlRoles: LOGISTICS_ROLE verified on CustodyTransfer contract")
+    print("  [PASS] AccessControlRoles: LOGISTICS_ROLE verified on CustodyTransfer contract")
 
     # Test batched oracle condition writes directly on ColdChainMonitor
     import chain
@@ -184,12 +184,12 @@ def main():
     assert breach_resp.get("verdict") == "ANOMALOUS", "Breach must be flagged ANOMALOUS"
     assert breach_resp.get("disposition") == "QUARANTINED", "Breach must be QUARANTINED"
     assert breach_resp.get("tx_hash") is None, "Quarantined reading must NEVER be mined on-chain!"
-    print(f"  [PASS] ESP32 Fault Push-Button: 48.0°C breach caught & quarantined off-chain (tx=None)")
+    print("  [PASS] ESP32 Fault Push-Button: 48.0°C breach caught & quarantined off-chain (tx=None)")
 
     # Verify quarantine log
     q_records = get_json("/telemetry/quarantine")
     assert any(r.get("batchId") == quarantine_batch_id or r.get("batch_id") == quarantine_batch_id for r in q_records), "Breach not found in quarantine log"
-    print(f"  [PASS] Quarantine Log: Incident recorded with full audit evidence and reason codes")
+    print("  [PASS] Quarantine Log: Incident recorded with full audit evidence and reason codes")
 
     # Verify Food Safety Circuit Breaker: dark store receiving MUST reject quarantined batch
     try:
@@ -282,7 +282,7 @@ def main():
     # Verify document retrieval
     docs = get_json(f"/batches/{batch_id}/documents")
     assert len(docs) >= 1 and docs[0]["ipfs_cid"] == ipfs_resp["ipfs_cid"], "Failed to retrieve pinned document"
-    print(f"  [PASS] Document Retrieval: Pinned document metadata verified via API")
+    print("  [PASS] Document Retrieval: Pinned document metadata verified via API")
 
     # =========================================================================
     # CHECK 6: Dark Store Receiving & Consumer Checkout
@@ -317,7 +317,7 @@ def main():
         "reviewer_address": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
     })
     assert rev_resp.get("success"), "Failed to submit consumer review"
-    print(f"  [PASS] Verified Consumer Review posted: 5/5 stars (Freshness: 98/100)")
+    print("  [PASS] Verified Consumer Review posted: 5/5 stars (Freshness: 98/100)")
 
     # Query reviews and average rating
     batch_reviews = get_json(f"/batches/{batch_id}/reviews")

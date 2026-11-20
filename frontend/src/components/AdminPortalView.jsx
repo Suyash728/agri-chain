@@ -28,6 +28,7 @@ import {
   Check
 } from 'lucide-react';
 import { CleanSlateModal } from './CleanSlateModal';
+import { storageKeys, storageRemove } from '../utils/storage';
 
 export const AdminPortalView = ({ currentTab = 'all' }) => {
   const [participants, setParticipants] = useState([]);
@@ -120,13 +121,9 @@ export const AdminPortalView = ({ currentTab = 'all' }) => {
         throw new Error(err.detail || 'Failed to feed demonstration dataset');
       }
       const data = await res.json();
-      try {
-        Object.keys(localStorage).forEach((key) => {
-          if (key.startsWith('agrichain_read_notifs_')) {
-            localStorage.removeItem(key);
-          }
-        });
-      } catch (_) {}
+      storageKeys()
+        .filter((key) => key.startsWith('agrichain_read_notifs_'))
+        .forEach(storageRemove);
       window.dispatchEvent(new CustomEvent('agrichain-data-reset', { detail: data }));
       setActionStatus({
         type: 'success',

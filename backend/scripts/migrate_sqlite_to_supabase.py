@@ -20,7 +20,7 @@ from typing import Dict, Any, List
 if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
+    except Exception:  # trustlayer: ignore[fail-open, composed] -- Windows console encoding is cosmetic
         pass
 
 ROOT_DIR = pathlib.Path(__file__).resolve().parents[2]
@@ -206,7 +206,7 @@ def migrate_to_postgres(target_url: str, sqlite_path: pathlib.Path, dry_run: boo
 
 
 def main():
-    target_default = os.environ["DATABASE_URL"] if "DATABASE_URL" in os.environ else None
+    target_default = os.environ.get("DATABASE_URL")  # trustlayer: ignore[fail-open] -- unset means an announced dry run below
     parser = argparse.ArgumentParser(description="Migrate AgriChain SQLite database to Supabase PostgreSQL.")
     parser.add_argument(
         "--target-url",

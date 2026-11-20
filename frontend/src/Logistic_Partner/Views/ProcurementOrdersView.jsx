@@ -137,8 +137,8 @@ export const ProcurementOrdersView = ({ onNavigate }) => {
         );
         const receipt = await tx.wait();
         clientTxHash = receipt.hash || tx.hash;
-      } catch (_) {
-        // Fallback to backend relayer on user rejection
+      } catch (err) {
+        console.warn('Wallet custody transfer skipped or rejected; falling back to the backend relayer:', err);
       }
     }
 

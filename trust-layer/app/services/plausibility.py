@@ -212,7 +212,7 @@ def run_plausibility_checks(
                 name="timestamp_duplicate_check",
                 passed=False,
                 reason_code="DUPLICATE_TIMESTAMP",
-                calculated_value=f"0.0 s",
+                calculated_value="0.0 s",
                 threshold="> 0.0 s",
                 details=(
                     f"Duplicate timestamp detected for device {current.device_id}: "

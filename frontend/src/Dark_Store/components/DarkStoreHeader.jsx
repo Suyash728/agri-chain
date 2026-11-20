@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, Calendar, ChevronDown, Check } from 'lucide-react';
 import { useNotificationCount } from '../../utils/useNotificationCount';
 import { DateRangePicker } from '../../components/DateRangePicker';
+import { storageSet } from '../../utils/storage';
 
 export const DarkStoreHeader = ({ onOpenNotifications, unreadCount }) => {
   const [selectedStore, setSelectedStore] = useState(() => {
@@ -18,9 +19,7 @@ export const DarkStoreHeader = ({ onOpenNotifications, unreadCount }) => {
   const handleSelectStore = (store) => {
     setSelectedStore(store);
     setIsStoreOpen(false);
-    try {
-      localStorage.setItem('agrichain_selected_darkstore', store);
-    } catch {}
+    storageSet('agrichain_selected_darkstore', store);
     window.dispatchEvent(new CustomEvent('agrichain-store-changed', { detail: { store } }));
   };
 

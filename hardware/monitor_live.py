@@ -302,7 +302,7 @@ class SerialLink:
         if self.ser is not None:
             try:
                 self.ser.close()
-            except Exception:
+            except Exception:  # trustlayer: ignore[fail-open, composed] -- closing anyway
                 pass
         self.ser = None
 
@@ -605,7 +605,7 @@ def backend_worker(backend_url, telemetry_queue, backend_state, events, stop_eve
                     try:
                         post_json(f"{backend_url}/devices/register",
                                   {"device_id": DEVICE_ID, "label": "ESP32 Crate Node (physical)", "kind": "HARDWARE"}, 3.0)
-                    except (urllib.error.URLError, OSError, ValueError):
+                    except (urllib.error.URLError, OSError, ValueError):  # trustlayer: ignore[fail-open, composed] -- next 5 s poll retries the registration
                         pass
             except (urllib.error.URLError, OSError, ValueError):
                 backend_state["link_poll_ok"] = False
@@ -906,7 +906,7 @@ def keyboard_listener(cmd_queue, stop_event):
     finally:
         try:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        except termios.error:
+        except termios.error:  # trustlayer: ignore[fail-open, composed] -- terminal already gone
             pass
 
 
@@ -1086,7 +1086,7 @@ def main():
     def on_json(line):
         try:
             current_data.update(json.loads(line[5:]))
-        except ValueError:
+        except ValueError:  # trustlayer: ignore[fail-open, composed] -- partial serial line; next packet arrives in 1 s
             pass
 
     def handshake(log_fn, allow_clear):
@@ -1263,7 +1263,7 @@ def main():
                             else:
                                 clear_armed_until = time.time() + 3.0
                                 log("⚠️ [FLASH] Press [C] again within 3s to DELETE flash records without downloading them")
-                    except LinkLost:
+                    except LinkLost:  # trustlayer: ignore[fail-open, composed] -- reconnect logic below handles it
                         pass  # handled by the reconnect logic below
 
                 # 2. Serial ingestion / reconnect
@@ -1326,7 +1326,7 @@ def main():
                                 if active["link"]:   # unlinked: nothing to attribute live readings to
                                     try:
                                         telemetry_queue.put_nowait((packet, active["link"]))
-                                    except queue.Full:
+                                    except queue.Full:  # trustlayer: ignore[fail-open, composed] -- live packets are best-effort; flash keeps the record
                                         pass  # backend far behind; live packets are best-effort (flash holds the record)
                     elif line.startswith(("STORAGE_", "OFFLINE_ACK_REJECTED", "CMD_")):
                         log(f"📟 [DEVICE] {line}")
@@ -1390,7 +1390,7 @@ def main():
                 footer_text.append("[Q] ", style="bold bright_red")
                 footer_text.append("Quit", style="white")
                 layout["footer"].update(Panel(footer_text, style="bright_blue"))
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:  # trustlayer: ignore[fail-open, composed] -- Ctrl-C is the normal way to quit
         pass
     finally:
         stop_event.set()

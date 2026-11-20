@@ -1,33 +1,21 @@
-import math
-import time
-import json
-import uuid
-import socket
-import hashlib
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Union, Dict, Any
+from datetime import datetime, timezone
+from typing import List
 
-from fastapi import APIRouter, HTTPException, Query, Body, File, UploadFile, Form, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException, File, UploadFile, Form
 
 import chain
 import ipfs
-from db import get_connection, DB_PATH
+from db import get_connection
 from common import (
     PARTICIPANT_ADDRESSES,
-    SENSOR_CORRUPTION_CODES,
-    COLD_CHAIN_POLICY_BREACH_CODES,
-    REASON_CODE_LABELS,
-    ROLE_TO_ONCHAIN_MAP,
     format_local_timestamp,
     iso_utc,
-    get_local_lan_ip,
-    insert_quarantine_entry,
-    _parse_batch_meta,
-    _resolve_category_id,
-    _resolve_crop_icon,
+    origin_meta_value,
 )
 from schemas import *
+
+import logging
+logger = logging.getLogger("agrichain.batches")
 
 router = APIRouter()
 
@@ -272,14 +260,9 @@ def list_all_batches():
 
             # Parse quantity
             qty_str = "500 kg"
-            if "||qty=" in raw_farm:
-                for part in raw_farm.split("||"):
-                    if part.startswith("qty="):
-                        try:
-                            q = float(part.replace("qty=", "").strip())
-                            qty_str = f"{int(q * 1000)} kg" if q < 10 else f"{int(q)} kg"
-                        except Exception:
-                            pass
+            q = origin_meta_value(raw_farm, "qty")
+            if q is not None:
+                qty_str = f"{int(q * 1000)} kg" if q < 10 else f"{int(q)} kg"
 
             result.append({
                 "batch_id": r["batch_id"],
@@ -311,20 +294,9 @@ def get_batch_by_id(batch_id: str):
         clean_farm = raw_farm.split("||")[0].strip()
 
         # Parse quantity and farmer price from metadata
-        qty_val = 0.5
-        farmer_meta_price = None
-        if "||" in raw_farm:
-            for part in raw_farm.split("||"):
-                if part.startswith("qty="):
-                    try:
-                        qty_val = float(part.replace("qty=", "").strip())
-                    except Exception:
-                        pass
-                elif part.startswith("price="):
-                    try:
-                        farmer_meta_price = float(part.replace("price=", "").strip())
-                    except Exception:
-                        pass
+        parsed_qty = origin_meta_value(raw_farm, "qty")
+        qty_val = parsed_qty if parsed_qty is not None else 0.5
+        farmer_meta_price = origin_meta_value(raw_farm, "price")
 
         qty_str = f"{int(qty_val * 1000)} kg" if qty_val < 10 else f"{int(qty_val)} kg"
 
@@ -405,14 +377,9 @@ def get_batch_traceability(batch_id: str):
 
         # Parse quantity in kg (e.g. 0.25 tonnes = 250 kg)
         qty_kg = 500.0
-        if "||qty=" in raw_farm:
-            for part in raw_farm.split("||"):
-                if part.startswith("qty="):
-                    try:
-                        q = float(part.replace("qty=", "").strip())
-                        qty_kg = q * 1000.0 if q < 20.0 else q
-                    except Exception:
-                        pass
+        q = origin_meta_value(raw_farm, "qty")
+        if q is not None:
+            qty_kg = q * 1000.0 if q < 20.0 else q
         qty_str = f"{int(qty_kg)} kg" if qty_kg >= 1 else f"{qty_kg:.1f} kg"
 
         events = conn.execute(
@@ -423,13 +390,10 @@ def get_batch_traceability(batch_id: str):
         # Stage lot prices exactly as recorded (integer paise; RULES.md §2). No fallbacks or invented
         # markups: a stage that hasn't happened yet has no price, and margins can be negative.
         farm_paise = int(events[0]["price_paise"]) if events and events[0]["price_paise"] else None
-        if farm_paise is None and "||price=" in raw_farm:
-            for part in raw_farm.split("||"):
-                if part.startswith("price="):
-                    try:
-                        farm_paise = int(round(float(part.replace("price=", "").strip()) * 100))
-                    except ValueError:
-                        pass
+        if farm_paise is None:
+            meta_price = origin_meta_value(raw_farm, "price")
+            if meta_price is not None:
+                farm_paise = int(round(meta_price * 100))
         transit_paise = storage_paise = sold_paise = None
         for ev in events:
             amt = int(ev["price_paise"] or 0)
@@ -589,8 +553,9 @@ def get_batch_traceability(batch_id: str):
                     "humidityPct": c["humidityPct"],
                     "breach": c["breach"],
                 })
-        except Exception:
-            pass
+        except Exception as e:
+            # Fall back to the SQLite readings below; the chain may be unreachable.
+            logger.warning("Condition records for %s unavailable from chain: %s", batch_id, e)
 
         # If on-chain records are fewer than SQLite records, merge with SQLite readings
         readings = conn.execute(

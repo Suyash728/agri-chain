@@ -6,6 +6,20 @@ Dated record of what changed and **why**, newest first. It is not a specificatio
 
 ---
 
+## 2026-11-20 — TrustLayer audit (`~/Projects/trustlayer`, `audit --all`)
+- **Result:** 6 high / 82 medium / 874 low → 0 / 0 / 586 low (`audit` default: 0 / 0 / 0). 36 findings are suppressed inline, each with `# trustlayer: ignore[...] -- <reason>`. Don't remove a marker without fixing what it describes.
+- **Real bugs fixed:**
+  - `logger` was never defined in the `admin`, `consumer` and `demo` routers, so 15 error handlers raised `NameError`. Ruff only reported this as F405 because of `from schemas import *`.
+  - Checkout auto-inserted a 5-star review.
+  - Checkout and farmer confirm/complete stored a fabricated SHA-256 "tx hash" when the chain write failed. Now: farmer custody returns 500 (as darkstore does), and checkout stores NULL with `anchored: false` and an honest message.
+  - The farmer category totals invented 0.5 t / ₹2,500 per unparseable crop.
+  - Sale IDs were truncated (`SO-BAT-MGO-`, a duplicate React key) and now use the event ID.
+  - `api.js` re-read an already-consumed response body.
+  - "Copied" showed even when the clipboard write failed.
+  - The app went blank when `localStorage` was blocked.
+- **Shared helpers:** `common.origin_meta_value` replaces six copies of the `origin_farm` "||qty=..||price=.." parser. `frontend/src/utils/storage.js` is the only place that touches `localStorage`.
+- **Keep `"origin_farm" in b.keys()`** (common.py). `b` is a `sqlite3.Row`, and `in row` tests values, so ruff's SIM118 fix would break it.
+
 ## 2026-11-20 — Dashboard end-to-end pass; docs refactor
 - **Every screen checked.** All roles and screens were tested on an isolated stack: 31 desktop, 15 mobile, plus a UI-driven journey from farmer to consumer and an admin pause. Results are in the audit report §3b.
 - **No invented data anywhere.** The consumer price trail now shows recorded lot prices ÷ weight (integer paise). Fabricated ratings, review counts, best-seller flags, certificates and expiry KPIs are gone. *Why:* the platform's purpose is a trustworthy price and condition trail, and invented numbers defeat it. This is now RULES.md §6.

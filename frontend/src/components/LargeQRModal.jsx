@@ -9,11 +9,14 @@ export const LargeQRModal = ({ isOpen, onClose, batchId, cropName, origin }) => 
   const targetUrl = getBatchConsumerPassportUrl(batchId);
 
   const handleCopy = () => {
-    try {
-      navigator.clipboard.writeText(targetUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (_) {}
+    // writeText is async: only show "copied" once it actually succeeded.
+    Promise.resolve()
+      .then(() => navigator.clipboard.writeText(targetUrl))
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch((err) => console.warn('Copy to clipboard failed:', err));
   };
 
   return (

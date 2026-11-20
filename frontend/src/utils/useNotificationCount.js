@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from './api';
+import { storageKeys, storageRemove, storageSet } from './storage';
 
 export function useNotificationCount(role = 'all') {
   const [count, setCount] = useState(0);
@@ -34,8 +35,9 @@ export function useNotificationCount(role = 'all') {
         const cData = await countRes.json();
         setCount(typeof cData.count === 'number' ? cData.count : 0);
       }
-    } catch (_) {
-      // Keep existing state on transient network failures
+    } catch (err) {
+      // Keep the existing count on transient network failures.
+      console.warn('Notification count refresh failed:', err);
     }
   }, [normalizedRole, getReadIds]);
 
@@ -48,23 +50,22 @@ export function useNotificationCount(role = 'all') {
         const list = await res.json();
         if (Array.isArray(list)) {
           const allIds = list.map((n) => n.id);
-          localStorage.setItem(storageKey, JSON.stringify(allIds));
+          storageSet(storageKey, JSON.stringify(allIds));
         }
       }
-    } catch (_) {}
+    } catch (err) {
+      // The badge is already cleared locally; only the server-side read list failed to load.
+      console.warn('Could not load notifications to mark them read:', err);
+    }
   }, [normalizedRole, storageKey]);
 
   useEffect(() => {
     refreshCount();
 
     const handleReset = () => {
-      try {
-        Object.keys(localStorage).forEach((key) => {
-          if (key.startsWith('agrichain_read_notifs_')) {
-            localStorage.removeItem(key);
-          }
-        });
-      } catch (_) {}
+      storageKeys()
+        .filter((key) => key.startsWith('agrichain_read_notifs_'))
+        .forEach(storageRemove);
       setCount(0);
     };
 

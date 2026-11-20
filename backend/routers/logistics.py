@@ -1,34 +1,20 @@
-import math
-import time
-import json
-import uuid
-import socket
 import hashlib
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Union, Dict, Any
 
-from fastapi import APIRouter, HTTPException, Query, Body, File, UploadFile, Form, Response
-from pydantic import BaseModel
+from fastapi import APIRouter
 
-import chain
-import ipfs
-from db import get_connection, DB_PATH
+from db import get_connection
 import iot
 from common import (
-    PARTICIPANT_ADDRESSES,
-    SENSOR_CORRUPTION_CODES,
-    COLD_CHAIN_POLICY_BREACH_CODES,
-    REASON_CODE_LABELS,
-    ROLE_TO_ONCHAIN_MAP,
     format_local_timestamp,
     iso_utc,
-    get_local_lan_ip,
-    insert_quarantine_entry,
     _parse_batch_meta,
     _resolve_category_id,
     _resolve_crop_icon,
 )
 from schemas import *
+
+import logging
+logger = logging.getLogger("agrichain.logistics")
 
 router = APIRouter()
 

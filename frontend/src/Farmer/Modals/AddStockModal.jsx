@@ -58,11 +58,11 @@ export const AddStockModal = ({ isOpen, onClose, onAddStock }) => {
           );
           const initTx = await custodyContract.initializeCustody(b32, account);
           await initTx.wait();
-        } catch (_) {
-          // Relayer will ensure on-chain registration
+        } catch (err) {
+          console.warn('Wallet initializeCustody failed; the backend relayer will register custody:', err);
         }
-      } catch (_) {
-        // Fallback to backend relayer on user rejection
+      } catch (err) {
+        console.warn('Wallet registration skipped or rejected; falling back to the backend relayer:', err);
       }
     }
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, MapPin, Check } from 'lucide-react';
+import { storageSet } from '../../utils/storage';
 
 export const AddressModal = ({ isOpen, onClose, currentAddress, onSelectAddress }) => {
   if (!isOpen) return null;
@@ -31,9 +32,7 @@ export const AddressModal = ({ isOpen, onClose, currentAddress, onSelectAddress 
               <div
                 key={addr.id}
                 onClick={() => {
-                  try {
-                    localStorage.setItem('agrichain_delivery_address', addr.city);
-                  } catch {}
+                  storageSet('agrichain_delivery_address', addr.city);
                   window.dispatchEvent(new CustomEvent('agrichain-address-changed', {
                     detail: { address: addr.city }
                   }));

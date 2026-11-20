@@ -65,7 +65,7 @@ def send_reading(temperature: float, humidity: float, voc_ppm: float = 12.4, tam
     if is_fault:
         print(f"🚨 [FAULT INJECTION] {label}")
     else:
-        print(f"📦 [ESP32 HARDWARE] Sending Nominal Cold-Chain Telemetry")
+        print("📦 [ESP32 HARDWARE] Sending Nominal Cold-Chain Telemetry")
     print(f"Payload: {json.dumps(payload, indent=2)}")
     print(f"Header X-Payload-SHA256: {sha256_digest}")
 

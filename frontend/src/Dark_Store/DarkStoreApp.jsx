@@ -23,6 +23,7 @@ import { RecordSaleModal } from './Modals/RecordSaleModal';
 // Shared Modals
 import { NotificationsModal } from '../Farmer/Modals/NotificationsModal';
 import { MoreMenuSheet } from '../Farmer/Modals/MoreMenuSheet';
+import { storageSet } from '../utils/storage';
 
 export const DarkStoreApp = ({ currentTab, onSelectTab, onLogout }) => {
   const [internalTab, setInternalTab] = useState(() => {
@@ -62,9 +63,7 @@ export const DarkStoreApp = ({ currentTab, onSelectTab, onLogout }) => {
     } else {
       setInternalTab(tabId);
     }
-    try {
-      localStorage.setItem('agrichain_darkstore_tab', tabId);
-    } catch (_) {}
+    storageSet('agrichain_darkstore_tab', tabId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

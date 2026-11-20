@@ -1,32 +1,22 @@
-import math
 import time
-import json
 import uuid
-import socket
-import hashlib
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Union, Dict, Any
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Query, Body, File, UploadFile, Form, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
 
 import chain
-import ipfs
-from db import get_connection, DB_PATH
+from db import get_connection
 from common import (
     PARTICIPANT_ADDRESSES,
-    SENSOR_CORRUPTION_CODES,
-    COLD_CHAIN_POLICY_BREACH_CODES,
-    REASON_CODE_LABELS,
-    ROLE_TO_ONCHAIN_MAP,
     format_local_timestamp,
-    get_local_lan_ip,
-    insert_quarantine_entry,
     _parse_batch_meta,
     _resolve_category_id,
     _resolve_crop_icon,
 )
 from schemas import *
+
+import logging
+logger = logging.getLogger("agrichain.consumer")
 
 router = APIRouter()
 
@@ -398,8 +388,8 @@ def post_consumer_checkout(payload: ConsumerCheckoutPayload):
                         b_id = f"BATCH-CLEAN-{int(time.time())}"
                         try:
                             chain.register_batch(b_id, item.name, "Certified Organic Farm, Nashik", "2026-10-24", PARTICIPANT_ADDRESSES["farmer"])
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.warning("On-chain register_batch for %s failed: %s", b_id, e)
                         conn.execute(
                             "INSERT INTO batches (batch_id, crop_name, origin_farm, harvest_date, farmer_name) VALUES (?, ?, 'Certified Organic Farm, Nashik', '2026-10-24', 'Rahul Patil')",
                             (b_id, item.name)
@@ -435,9 +425,7 @@ def post_consumer_checkout(payload: ConsumerCheckoutPayload):
             except Exception as e:
                 logger.warning("On-chain transfer to SOLD: %s", e)
 
-            if not tx_hash:
-                tx_hash = "0x" + hashlib.sha256(f"{b_id}:SOLD:{time.time()}".encode()).hexdigest()
-
+            # No fabricated hash: if the chain write failed, the event is recorded as not anchored (NULL).
             conn.execute(
                 """
                 INSERT INTO custody_events (batch_id, from_holder, to_holder, state, price_paise, occurred_at, tx_hash)
@@ -446,21 +434,16 @@ def post_consumer_checkout(payload: ConsumerCheckoutPayload):
                 (b_id, from_holder, to_holder, price_paise, now_ts, tx_hash)
             )
 
-            # Provision verified customer review
-            existing_rev = conn.execute("SELECT id FROM batch_reviews WHERE batch_id = ?", (b_id,)).fetchone()
-            if not existing_rev:
-                conn.execute(
-                    """
-                    INSERT INTO batch_reviews (batch_id, rating, comment, freshness_score, reviewer_address)
-                    VALUES (?, 5, 'Super fresh and sweet produce! Farm-to-doorstep traceability verified on blockchain.', 99, ?)
-                    """,
-                    (b_id, PARTICIPANT_ADDRESSES["consumer"])
-                )
-
             processed_orders.append({"batchId": b_id, "name": item.name, "txHash": tx_hash})
 
         conn.commit()
 
+        unanchored = sum(1 for o in processed_orders if not o["txHash"])
+        message = (
+            "Order successfully placed and verified on-chain."
+            if unanchored == 0
+            else f"Order placed. On-chain anchoring failed for {unanchored} item(s); they are recorded without a transaction hash."
+        )
         return {
             "success": True,
             "order_id": f"ORD-CUST-{int(time.time())}",
@@ -468,7 +451,8 @@ def post_consumer_checkout(payload: ConsumerCheckoutPayload):
             "orders": processed_orders,
             "total_amount": payload.total_amount,
             "delivery_address": payload.delivery_address,
-            "message": "Order successfully placed and verified on-chain."
+            "anchored": unanchored == 0,
+            "message": message,
         }
     finally:
         conn.close()

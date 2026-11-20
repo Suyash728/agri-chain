@@ -411,8 +411,8 @@ class PostgresConnectionWrapper:
                     self._conn.commit()
                 elif status == psycopg.pq.TransactionStatus.INERROR:
                     self._conn.rollback()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Finalising PostgreSQL transaction before close failed: %s", e)
         self._conn.close()
 
     def __enter__(self):

@@ -1,3 +1,4 @@
+import { storageGet } from '../../utils/storage';
 import { API_BASE_URL } from '../../utils/api';
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, X } from 'lucide-react';
@@ -35,7 +36,7 @@ export const CropDetailsView = ({ category, onBack, onSelectCrop }) => {
     }
 
     // Auto-fetch categories if category prop is missing or empty
-    const targetId = category?.id || (typeof window !== 'undefined' ? localStorage.getItem('agrichain_farmer_crop_category') : null) || 'fruits';
+    const targetId = category?.id || storageGet('agrichain_farmer_crop_category') || 'fruits';
     fetch(`${API_BASE_URL}/farmer/crops`)
       .then(res => res.json())
       .then(data => {

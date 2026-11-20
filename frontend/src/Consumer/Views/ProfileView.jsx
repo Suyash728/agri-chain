@@ -21,6 +21,7 @@ import {
   Smartphone,
   ChevronDown
 } from 'lucide-react';
+import { storageSet } from '../../utils/storage';
 
 export const ProfileView = ({ onNavigate, onLogout }) => {
   const [activeModal, setActiveModal] = useState(null); // 'personal' | 'addresses' | 'payment' | 'notifications' | 'help' | 'terms' | 'logout' | null
@@ -79,9 +80,7 @@ export const ProfileView = ({ onNavigate, onLogout }) => {
               (a.title && newLoc.toLowerCase().includes(a.title.toLowerCase()));
             return { ...a, isDefault: match };
           });
-          try {
-            localStorage.setItem('agrichain_user_addresses', JSON.stringify(updated));
-          } catch {}
+          storageSet('agrichain_user_addresses', JSON.stringify(updated));
           return updated;
         });
       }
@@ -143,9 +142,7 @@ export const ProfileView = ({ onNavigate, onLogout }) => {
     };
     const updated = [...addresses, created];
     setAddresses(updated);
-    try {
-      localStorage.setItem('agrichain_user_addresses', JSON.stringify(updated));
-    } catch {}
+    storageSet('agrichain_user_addresses', JSON.stringify(updated));
     setNewAddr({ title: '', address: '', city: 'Mumbai', pincode: '' });
     setShowAddAddress(false);
     triggerToast('New delivery address added!');
@@ -154,24 +151,18 @@ export const ProfileView = ({ onNavigate, onLogout }) => {
   const handleDeleteAddress = (id) => {
     const updated = addresses.filter(a => a.id !== id);
     setAddresses(updated);
-    try {
-      localStorage.setItem('agrichain_user_addresses', JSON.stringify(updated));
-    } catch {}
+    storageSet('agrichain_user_addresses', JSON.stringify(updated));
     triggerToast('Address removed.');
   };
 
   const handleSetDefaultAddress = (id) => {
     const updated = addresses.map(a => ({ ...a, isDefault: a.id === id }));
     setAddresses(updated);
-    try {
-      localStorage.setItem('agrichain_user_addresses', JSON.stringify(updated));
-    } catch {}
+    storageSet('agrichain_user_addresses', JSON.stringify(updated));
     const chosen = updated.find(a => a.id === id);
     if (chosen) {
       const displayLoc = chosen.title.includes('Home') ? 'Bandra West, Mumbai' : (chosen.city ? `${chosen.city}, Maharashtra` : 'Bandra West, Mumbai');
-      try {
-        localStorage.setItem('agrichain_delivery_address', displayLoc);
-      } catch {}
+      storageSet('agrichain_delivery_address', displayLoc);
       window.dispatchEvent(new CustomEvent('agrichain-address-changed', {
         detail: { address: displayLoc, fullAddress: `${chosen.address}, ${chosen.city} - ${chosen.pincode}` }
       }));

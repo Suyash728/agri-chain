@@ -3,7 +3,6 @@
 E2E UI & Visual Fidelity Inspection Script for AgriChain.
 Captures screenshots across Farmer, Logistics, Dark Store, Consumer, and Admin portals.
 """
-import os
 import time
 import pathlib
 from playwright.sync_api import sync_playwright
@@ -49,7 +48,7 @@ def run():
                 if splash.is_visible(timeout=1000):
                     page.locator("body").click()
                     time.sleep(0.5)
-            except Exception:
+            except Exception:  # trustlayer: ignore[fail-open, composed] -- splash screen is optional
                 pass
 
             page.wait_for_timeout(1500)

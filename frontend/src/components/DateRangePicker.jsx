@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronDown, Check } from 'lucide-react';
+import { storageSet } from '../utils/storage';
 
 export const DATE_PRESETS = [
   { id: 'today', label: 'Today', sublabel: '24 Oct 2026' },
@@ -24,9 +25,7 @@ export const DateRangePicker = ({ initialPeriod = 'today', onDateChange, classNa
   const handleSelect = (preset) => {
     setSelectedId(preset.id);
     setIsOpen(false);
-    try {
-      localStorage.setItem('agrichain_selected_date_period', preset.id);
-    } catch {}
+    storageSet('agrichain_selected_date_period', preset.id);
 
     if (onDateChange) {
       onDateChange(preset);

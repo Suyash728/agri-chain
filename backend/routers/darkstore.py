@@ -1,33 +1,21 @@
-import math
-import time
-import json
 import uuid
-import socket
-import hashlib
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Union, Dict, Any
+from datetime import datetime
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Body, File, UploadFile, Form, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
 
 import chain
-import ipfs
-from db import get_connection, DB_PATH
+from db import get_connection
 import iot
 from common import (
     PARTICIPANT_ADDRESSES,
-    SENSOR_CORRUPTION_CODES,
-    COLD_CHAIN_POLICY_BREACH_CODES,
-    REASON_CODE_LABELS,
-    ROLE_TO_ONCHAIN_MAP,
     format_local_timestamp,
-    get_local_lan_ip,
-    insert_quarantine_entry,
-    _parse_batch_meta,
-    _resolve_category_id,
     _resolve_crop_icon,
 )
 from schemas import *
+
+import logging
+logger = logging.getLogger("agrichain.darkstore")
 
 router = APIRouter()
 
@@ -888,7 +876,7 @@ def get_darkstore_sales():
     try:
         sold_rows = conn.execute(
             """
-            SELECT c.batch_id, c.price_paise, c.occurred_at, c.tx_hash, b.crop_name, b.origin_farm
+            SELECT c.id AS event_id, c.batch_id, c.price_paise, c.occurred_at, c.tx_hash, b.crop_name, b.origin_farm
             FROM custody_events c
             JOIN batches b ON b.batch_id = c.batch_id
             WHERE c.state = 'SOLD'
@@ -911,7 +899,7 @@ def get_darkstore_sales():
 
         for r in sold_rows[:15]:
             recent_orders.append({
-                "id": f"SO-{r['batch_id'][:8]}",
+                "id": f"SO-{r['event_id']}",  # one row per SOLD event; a batch can be sold more than once
                 "batchId": r["batch_id"],
                 "product": r["crop_name"].title(),
                 "customer": "Verified Consumer Delivery",

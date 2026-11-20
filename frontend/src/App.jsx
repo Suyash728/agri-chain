@@ -62,6 +62,7 @@ import { PresenterWalkthroughBanner } from './components/PresenterWalkthroughBan
 import { GodModeHub } from './components/GodModeHub';
 import { LoginModal } from './components/LoginModal';
 import { SplashScreen } from './components/SplashScreen';
+import { storageGet, storageRemove, storageSet } from './utils/storage';
 
 export default function App() {
   // Read URL query parameters and localStorage to initialize state
@@ -94,14 +95,12 @@ export default function App() {
         if (urlRole && urlRole.toLowerCase() === r && urlTab) {
           return urlTab;
         }
-        try {
-          const s = localStorage.getItem(`agrichain_${r}_tab`);
-          if (s) return s;
-          if (r === 'logistics') {
-            const alt = localStorage.getItem('agrichain_logistic_tab');
-            if (alt) return alt;
-          }
-        } catch (_) {}
+        const s = storageGet(`agrichain_${r}_tab`);
+        if (s) return s;
+        if (r === 'logistics') {
+          const alt = storageGet('agrichain_logistic_tab');
+          if (alt) return alt;
+        }
         return defaultTab;
       };
 
@@ -189,7 +188,7 @@ export default function App() {
         setFarmerCrops(cropsRes.value);
         setSelectedCropCategory(prev => {
           if (prev && prev.crops && prev.crops.length > 0) return prev;
-          const targetId = typeof window !== 'undefined' ? (localStorage.getItem('agrichain_farmer_crop_category') || 'fruits') : 'fruits';
+          const targetId = storageGet('agrichain_farmer_crop_category') || 'fruits';
           return cropsRes.value.find(c => c.id === targetId || c.name.toLowerCase() === targetId.toLowerCase()) || cropsRes.value[0] || null;
         });
       }
@@ -274,11 +273,13 @@ export default function App() {
         window.history.replaceState({ role: activeRole, tab: currentTab }, '', newRelativePathQuery);
       }
 
-      localStorage.setItem('agrichain_active_role', activeRole);
+      storageSet('agrichain_active_role', activeRole);
       if (currentTab) {
-        localStorage.setItem(`agrichain_${activeRole}_tab`, currentTab);
+        storageSet(`agrichain_${activeRole}_tab`, currentTab);
       }
-    } catch (_) {}
+    } catch (err) {
+      console.warn('Could not sync the URL with the current role and tab:', err);
+    }
   }, [activeRole, farmerTab, logisticTab, darkStoreTab, consumerTab, adminTab, consumerBatchId, selectedBatchId]);
 
   // Sync state if user navigates with browser history / URL
@@ -318,9 +319,7 @@ export default function App() {
   const handleSwitchRole = (newRole) => {
     if (newRole !== activeRole) {
       setActiveRole(newRole);
-      try {
-        localStorage.setItem('agrichain_active_role', newRole);
-      } catch (_) {}
+      storageSet('agrichain_active_role', newRole);
     }
   };
 
@@ -329,41 +328,31 @@ export default function App() {
     if (tabId !== 'crop-details') {
       setSelectedCropCategory(null);
     }
-    try {
-      localStorage.setItem('agrichain_farmer_tab', tabId);
-    } catch (_) {}
+    storageSet('agrichain_farmer_tab', tabId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectLogisticTab = (tabId) => {
     setLogisticTab(tabId);
-    try {
-      localStorage.setItem('agrichain_logistics_tab', tabId);
-      localStorage.setItem('agrichain_logistic_tab', tabId);
-    } catch (_) {}
+    storageSet('agrichain_logistics_tab', tabId);
+    storageSet('agrichain_logistic_tab', tabId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectDarkStoreTab = (tabId) => {
     setDarkStoreTab(tabId);
-    try {
-      localStorage.setItem('agrichain_darkstore_tab', tabId);
-    } catch (_) {}
+    storageSet('agrichain_darkstore_tab', tabId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectConsumerTab = (tabId) => {
     setConsumerTab(tabId);
-    try {
-      localStorage.setItem('agrichain_consumer_tab', tabId);
-    } catch (_) {}
+    storageSet('agrichain_consumer_tab', tabId);
   };
 
   const handleSelectAdminTab = (tabId) => {
     setAdminTab(tabId);
-    try {
-      localStorage.setItem('agrichain_admin_tab', tabId);
-    } catch (_) {}
+    storageSet('agrichain_admin_tab', tabId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -389,11 +378,9 @@ export default function App() {
 
   const handleSelectCategory = (category) => {
     setSelectedCropCategory(category);
-    try {
-      if (category?.id) {
-        localStorage.setItem('agrichain_farmer_crop_category', category.id);
-      }
-    } catch (_) {}
+    if (category?.id) {
+      storageSet('agrichain_farmer_crop_category', category.id);
+    }
     handleSelectFarmerTab('crop-details');
   };
 
@@ -446,28 +433,30 @@ export default function App() {
   const { count: unreadNotifsCount } = useNotificationCount(activeRole);
 
   const [currentUser, setCurrentUser] = useState(() => {
+    const saved = storageGet('agrichain_current_user');
+    if (!saved) return null;
     try {
-      const saved = localStorage.getItem('agrichain_current_user');
-      if (saved) return JSON.parse(saved);
-    } catch (_) {}
-    return null;
+      return JSON.parse(saved);
+    } catch (err) {
+      console.warn('Ignoring an unreadable saved login:', err);
+      storageRemove('agrichain_current_user');
+      return null;
+    }
   });
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const handleLogout = () => {
-    try {
-      localStorage.removeItem('agrichain_current_user');
-      fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST' }).catch(() => {});
-    } catch (_) {}
+    storageRemove('agrichain_current_user');
+    fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST' }).catch((err) => {
+      console.warn('Logout request failed; the local session is cleared anyway:', err);
+    });
     setCurrentUser(null);
     setIsLoginModalOpen(true);
   };
 
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
-    try {
-      localStorage.setItem('agrichain_current_user', JSON.stringify(user));
-    } catch (_) {}
+    storageSet('agrichain_current_user', JSON.stringify(user));
     if (user && user.role) {
       const defaultTab = user.role === 'admin' ? 'all' : (user.role === 'consumer' ? 'home' : 'dashboard');
       handleNavigateRoleAndTab(user.role, defaultTab);
